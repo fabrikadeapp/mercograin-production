@@ -24,8 +24,18 @@ COPY . .
 # Build Next.js app
 RUN npm run build
 
+# Create entrypoint script for migrations and seed
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Running database migrations..."\n\
+npx prisma migrate deploy || echo "Migrations already applied"\n\
+echo "Seeding database..."\n\
+npx prisma db seed || echo "Seed already applied"\n\
+echo "Starting application..."\n\
+npm run start' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Start with migrations
+CMD ["/app/entrypoint.sh"]
