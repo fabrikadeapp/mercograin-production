@@ -1,31 +1,67 @@
 /**
  * redis.ts
- * Cliente Redis para cache
+ * Cliente Redis para cache (opcional)
+ * Se Redis não estiver disponível, cache é desabilitado gracefully
  */
 
 import Redis from 'ioredis'
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+const redisUrl = process.env.REDIS_URL
 
-let redis: Redis
+let redis: Redis | null = null
+let isConnected = false
 
-if (process.env.NODE_ENV === 'production') {
-  redis = new Redis(redisUrl)
-} else {
-  // Em desenvolvimento, reutilizar conexão global
-  const global = globalThis as any
-  if (!global.redis) {
-    global.redis = new Redis(redisUrl)
+if (redisUrl) {
+  try {
+    redis = new Redis(redisUrl, {
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000)
+        return delay
+      },
+      enableReadyCheck: false,
+      enableOfflineQueue: false,
+      connectTimeout: 5000
+    })
+
+    redis.on('error', (err) => {
+      console.warn('[Redis] Erro (cache desabilitado):', err.message)
+      isConnected = false
+    })
+
+    redis.on('connect', () => {
+      console.log('[Redis] Conectado')
+      isConnected = true
+    })
+
+    redis.on('close', () => {
+      console.warn('[Redis] Desconectado')
+      isConnected = false
+    })
+  } catch (err) {
+    console.warn('[Redis] Não foi possível conectar. Cache será desabilitado.')
+    redis = null
   }
-  redis = global.redis
 }
 
-redis.on('error', (err) => {
-  console.error('[Redis] Erro:', err)
-})
+// Wrapper para operações Redis seguras
+const safeRedis = {
+  async get(key: string): Promise<string | null> {
+    if (!redis || !isConnected) return null
+    try {
+      return await redis.get(key)
+    } catch (err) {
+      console.warn('[Redis] Erro ao GET:', err)
+      return null
+    }
+  },
+  async setex(key: string, ttl: number, value: string): Promise<void> {
+    if (!redis || !isConnected) return
+    try {
+      await redis.setex(key, ttl, value)
+    } catch (err) {
+      console.warn('[Redis] Erro ao SETEX:', err)
+    }
+  }
+}
 
-redis.on('connect', () => {
-  console.log('[Redis] Conectado')
-})
-
-export { redis }
+export { safeRedis as redis }
