@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { ToastProvider } from '@/contexts/ToastContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-gray-50">{children}</body>
+      <body className="bg-gray-50">
+        <ToastProvider position="top-right">{children}</ToastProvider>
+      </body>
     </html>
   )
 }
