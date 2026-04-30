@@ -4,23 +4,32 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '@/components/ui/Table'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { EmptyState } from '@/components/EmptyState'
+import { useToast } from '@/contexts/ToastContext'
+import { formatDate } from '@/lib/utils/formatters'
 
 interface Cliente {
   id: string
   nome: string
   email?: string
   telefone?: string
-  tipo: 'comprador' | 'vendedor'
-  cidade?: string
-  criadoEm: string
+  tipo: 'comprador' | 'vendedor' | 'ambos'
+  ativo: boolean
+  criadaEm: string
 }
 
 export default function ClientesPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { success, error: showError } = useToast()
+
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -36,140 +45,159 @@ export default function ClientesPage() {
   const fetchClientes = async () => {
     try {
       const response = await fetch('/api/clientes')
-      if (!response.ok) {
-        throw new Error('Erro ao buscar clientes')
-      }
+      if (!response.ok) throw new Error('Erro ao buscar clientes')
       const data = await response.json()
       setClientes(data)
-      setError('')
     } catch (err) {
-      setError('Erro ao carregar clientes')
+      showError('Erro ao carregar clientes')
       console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja deletar este cliente?')) {
-      return
-    }
+  const handleDelete = async (id: string, nome: string) => {
+    if (!confirm(`Deseja deletar o cliente "${nome}"?`)) return
 
     try {
-      const response = await fetch(`/api/clientes/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error('Erro ao deletar cliente')
-      }
+      const response = await fetch(`/api/clientes/${id}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Erro ao deletar')
 
       setClientes(clientes.filter((c) => c.id !== id))
+      success('Cliente deletado com sucesso')
     } catch (err) {
-      alert('Erro ao deletar cliente')
-      console.error(err)
+      showError('Erro ao deletar cliente')
     }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Carregando clientes...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen text="Carregando clientes..." />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
+              <h1 className="text-3xl font-bold text-gray-900">👥 Clientes</h1>
               <p className="text-gray-600 mt-1">Gerencie seus clientes e parceiros comerciais</p>
             </div>
-            <div className="flex gap-4">
-              <Link
-                href="/clientes/novo"
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
-              >
-                + Novo Cliente
-              </Link>
-            </div>
+            <Link href="/clientes/novo">
+              <Button variant="primary">+ Novo Cliente</Button>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-
         {clientes.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-600 text-lg">Nenhum cliente cadastrado ainda</p>
-            <Link
-              href="/clientes/novo"
-              className="text-blue-600 hover:underline mt-4 inline-block font-semibold"
-            >
-              Criar primeiro cliente
-            </Link>
-          </div>
+          <Card variant="elevated">
+            <CardContent className="py-12">
+              <EmptyState
+                icon="👥"
+                title="Nenhum cliente cadastrado"
+                description="Comece adicionando seu primeiro cliente"
+                action={{
+                  label: 'Novo Cliente',
+                  onClick: () => router.push('/clientes/novo'),
+                }}
+              />
+            </CardContent>
+          </Card>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full">
-              <thead className="bg-gray-100 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Nome</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tipo</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cidade</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+          <Card variant="elevated">
+            <CardContent className="p-0">
+              {/* Desktop View */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHead>
+                    <TableRow isHeader>
+                      <TableHeaderCell>Nome</TableHeaderCell>
+                      <TableHeaderCell>Email</TableHeaderCell>
+                      <TableHeaderCell>Telefone</TableHeaderCell>
+                      <TableHeaderCell>Tipo</TableHeaderCell>
+                      <TableHeaderCell>Status</TableHeaderCell>
+                      <TableHeaderCell>Criado em</TableHeaderCell>
+                      <TableHeaderCell className="text-right">Ações</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {clientes.map((cliente) => (
+                      <TableRow key={cliente.id}>
+                        <TableCell className="font-semibold">{cliente.nome}</TableCell>
+                        <TableCell className="text-sm">{cliente.email || '-'}</TableCell>
+                        <TableCell className="text-sm">{cliente.telefone || '-'}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            {cliente.tipo === 'ambos' ? 'Comprador/Vendedor' : cliente.tipo}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={cliente.ativo ? 'ativo' : 'inativo'} />
+                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(cliente.criadaEm)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Link href={`/clientes/${cliente.id}/editar`}>
+                              <Button variant="secondary" size="sm">
+                                Editar
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(cliente.id, cliente.nome)}
+                            >
+                              Deletar
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="md:hidden space-y-3 p-4">
                 {clientes.map((cliente) => (
-                  <tr key={cliente.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">{cliente.nome}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{cliente.email || '-'}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          cliente.tipo === 'comprador'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {cliente.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{cliente.cidade || '-'}</td>
-                    <td className="px-6 py-4 text-right text-sm space-x-2">
-                      <Link
-                        href={`/clientes/${cliente.id}/editar`}
-                        className="text-blue-600 hover:underline font-semibold"
-                      >
-                        Editar
+                  <div key={cliente.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{cliente.nome}</h3>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {cliente.tipo === 'ambos' ? 'Comprador/Vendedor' : cliente.tipo}
+                        </p>
+                      </div>
+                      <StatusBadge status={cliente.ativo ? 'ativo' : 'inativo'} />
+                    </div>
+
+                    {cliente.email && <p className="text-xs text-gray-600 mb-1">📧 {cliente.email}</p>}
+                    {cliente.telefone && <p className="text-xs text-gray-600 mb-2">📱 {cliente.telefone}</p>}
+                    <p className="text-xs text-gray-500 mb-3">Criado em: {formatDate(cliente.criadaEm)}</p>
+
+                    <div className="flex gap-2">
+                      <Link href={`/clientes/${cliente.id}/editar`} className="flex-1">
+                        <Button variant="secondary" size="sm" className="w-full">
+                          Editar
+                        </Button>
                       </Link>
-                      <button
-                        onClick={() => handleDelete(cliente.id)}
-                        className="text-red-600 hover:underline font-semibold"
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(cliente.id, cliente.nome)}
                       >
                         Deletar
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

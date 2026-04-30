@@ -1,51 +1,80 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { useToast } from '@/contexts/ToastContext'
+import { schemas } from '@/lib/utils/validators'
+
+const clienteSchema = z.object({
+  nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  telefone: schemas.phone.optional().or(z.literal('')),
+  tipo: z.enum(['comprador', 'vendedor', 'ambos']),
+  cpf: z.string().optional().or(z.literal('')),
+  cnpj: z.string().optional().or(z.literal('')),
+  endereco: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
+})
+
+type ClienteFormData = z.infer<typeof clienteSchema>
+
+const TIPO_OPCOES = [
+  { value: 'comprador', label: 'Comprador' },
+  { value: 'vendedor', label: 'Vendedor' },
+  { value: 'ambos', label: 'Comprador e Vendedor' },
+]
 
 export default function NovoClientePage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    telefone: '',
-    cnpj: '',
-    cpf: '',
-    endereco: '',
-    cidade: '',
-    estado: '',
-    tipo: 'comprador' as const,
+  const { success, error: showError } = useToast()
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ClienteFormData>({
+    resolver: zodResolver(clienteSchema),
+    defaultValues: {
+      tipo: 'comprador',
+    },
   })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const tipo = watch('tipo')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
+  const onSubmit = async (data: ClienteFormData) => {
     try {
+      const payload = {
+        ...data,
+        cpf: data.cpf || undefined,
+        cnpj: data.cnpj || undefined,
+        email: data.email || undefined,
+        telefone: data.telefone || undefined,
+      }
+
       const response = await fetch('/api/clientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Erro ao criar cliente')
+        const res = await response.json()
+        throw new Error(res.error || 'Erro ao criar cliente')
       }
 
+      success('Cliente criado com sucesso!')
       router.push('/clientes')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar cliente')
-      setLoading(false)
+      showError(err instanceof Error ? err.message : 'Erro ao criar cliente')
     }
   }
 
@@ -62,179 +91,120 @@ export default function NovoClientePage() {
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow p-8">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle>Informações do Cliente</CardTitle>
+            <CardDescription>Preencha os dados básicos do cliente</CardDescription>
+          </CardHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nome */}
-            <div>
-              <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
-                Nome Completo/Razão Social *
-              </label>
-              <input
-                id="nome"
-                name="nome"
-                type="text"
-                value={formData.nome}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ex: João Silva ou ABC Comércio"
-                required
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Nome */}
+              <Input
+                label="Nome Completo / Razão Social *"
+                placeholder="João Silva ou Empresa LTDA"
+                {...register('nome')}
+                error={errors.nome?.message}
               />
-            </div>
 
-            {/* Tipo */}
-            <div>
-              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Cliente *
-              </label>
-              <select
-                id="tipo"
-                name="tipo"
-                value={formData.tipo}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="comprador">Comprador</option>
-                <option value="vendedor">Vendedor</option>
-              </select>
-            </div>
-
-            {/* Dados Pessoais/Empresa */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-2">
-                  CPF
-                </label>
-                <input
-                  id="cpf"
-                  name="cpf"
-                  type="text"
-                  value={formData.cpf}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700 mb-2">
-                  CNPJ
-                </label>
-                <input
-                  id="cnpj"
-                  name="cnpj"
-                  type="text"
-                  value={formData.cnpj}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="00.000.000/0000-00"
-                />
-              </div>
-            </div>
-
-            {/* Email e Telefone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
+              {/* Email e Telefone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="email@example.com"
+                  {...register('email')}
+                  error={errors.email?.message}
                 />
-              </div>
-              <div>
-                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefone
-                </label>
-                <input
-                  id="telefone"
-                  name="telefone"
-                  type="tel"
-                  value={formData.telefone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-            </div>
 
-            {/* Endereço */}
-            <div>
-              <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-2">
-                Endereço
-              </label>
-              <input
-                id="endereco"
-                name="endereco"
-                type="text"
-                value={formData.endereco}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <Input
+                  label="Telefone"
+                  placeholder="(11) 98765-4321"
+                  mask="phone"
+                  {...register('telefone')}
+                  error={errors.telefone?.message}
+                />
+              </div>
+
+              {/* Tipo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Cliente *</label>
+                <select
+                  {...register('tipo')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {TIPO_OPCOES.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* CPF ou CNPJ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="CPF (opcional)"
+                  placeholder="000.000.000-00"
+                  mask="cpf"
+                  {...register('cpf')}
+                  error={errors.cpf?.message}
+                />
+
+                <Input
+                  label="CNPJ (opcional)"
+                  placeholder="00.000.000/0000-00"
+                  mask="cnpj"
+                  {...register('cnpj')}
+                  error={errors.cnpj?.message}
+                />
+              </div>
+
+              {/* Endereço */}
+              <Input
+                label="Endereço (opcional)"
                 placeholder="Rua, número, complemento"
+                {...register('endereco')}
+                error={errors.endereco?.message}
               />
-            </div>
 
-            {/* Cidade e Estado */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
-                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-2">
-                  Cidade
-                </label>
-                <input
-                  id="cidade"
-                  name="cidade"
-                  type="text"
-                  value={formData.cidade}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: São Paulo"
+              {/* Cidade e Estado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Cidade (opcional)"
+                  placeholder="São Paulo"
+                  {...register('cidade')}
+                  error={errors.cidade?.message}
                 />
-              </div>
-              <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado
-                </label>
-                <input
-                  id="estado"
-                  name="estado"
-                  type="text"
-                  value={formData.estado}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+                <Input
+                  label="Estado (opcional)"
                   placeholder="SP"
                   maxLength={2}
+                  {...register('estado')}
+                  error={errors.estado?.message}
                 />
               </div>
-            </div>
 
-            {/* Botões */}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Criando...' : 'Criar Cliente'}
-              </button>
-              <Link
-                href="/clientes"
-                className="flex-1 bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-400 transition text-center"
-              >
-                Cancelar
-              </Link>
-            </div>
-          </form>
-        </div>
+              {/* Botões */}
+              <div className="flex gap-4 pt-4 border-t">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="flex-1"
+                  isLoading={isSubmitting}
+                >
+                  {isSubmitting ? 'Criando...' : 'Criar Cliente'}
+                </Button>
+                <Link href="/clientes" className="flex-1">
+                  <Button variant="secondary" className="w-full">
+                    Cancelar
+                  </Button>
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

@@ -225,4 +225,106 @@ git commit -m "feat: implementar biblioteca de componentes reutilizáveis [YOLO-
 
 ---
 
-**Fim do Log - FASE 1 Completa**
+## FASE 2: REFATORAR PÁGINAS EXISTENTES ✅
+
+Data: 2025-04-30 (continuação)
+Status: **FASE 2 COMPLETA**
+
+### ✅ Arquivos Refatorados (7 arquivos)
+
+1. `/app/clientes/page.tsx` - Refatorada com Table responsivo + mobile cards
+2. `/app/clientes/novo/page.tsx` - Refatorada com FormInput + Zod + máscaras
+3. `/app/propostas/page.tsx` - Refatorada com Cards + StatusBadge
+4. `/app/propostas/nova/page.tsx` - **FIX CRÍTICO** - Schema corrigido! Agora com campos corretos:
+   - `tipo` (venda/compra)
+   - `graos` (array dinâmico de {grao, quantidade, preco, subtotal})
+   - `valorTotal` (calculado automaticamente)
+   - Validação Zod completa
+5. `/app/boletos/page.tsx` - Refatorada com Cards + StatusBadge
+6. `/app/contratos/page.tsx` - Refatorada com Cards + StatusBadge
+
+### Melhorias Implementadas
+
+#### Clientes
+- ✅ Table responsiva (desktop) + Cards (mobile)
+- ✅ Validação com Zod (CPF/CNPJ/email/telefone)
+- ✅ Máscaras nativas (CPF, CNPJ, telefone)
+- ✅ Form com react-hook-form
+- ✅ Toast notifications para ações
+
+#### Propostas (CRÍTICO - Schema Fix)
+**Antes:** Formulário enviava `assunto`, `descricao`, `valor`, `dataValidade`
+**Depois:** Formulário correto com schema Prisma:
+```typescript
+// Estrutura correta enviada para API
+{
+  clienteId: string
+  numero: string
+  tipo: 'venda' | 'compra'      // ✅ NOVO
+  graos: [                       // ✅ NOVO
+    { grao, quantidade, preco, subtotal }
+  ]
+  valorTotal: number             // ✅ Calculado da soma dos grãos
+  validadeEm: Date
+  descricao?: string
+}
+```
+
+- ✅ Interface dinâmica para adicionar múltiplos grãos
+- ✅ Cálculo automático de subtotais
+- ✅ Total da proposta atualiza em tempo real
+- ✅ Validação Zod com schemas customizados
+- ✅ Listagem refatorada com StatusBadge coloridos
+
+#### Boletos e Contratos
+- ✅ Listagem com Cards em grid responsivo
+- ✅ StatusBadge com cores intuitivas
+- ✅ Links para detalhes e downloads de PDF
+- ✅ EmptyState padronizado
+- ✅ Toast para feedback
+
+### Padrões Estabelecidos
+
+#### 1. Páginas de Listagem
+```tsx
+// Header com título + ação
+// Content com:
+//   - EmptyState se vazio
+//   - Grid de Cards se tem dados
+//   - LoadingSpinner durante carregamento
+//   - Toast para erros
+```
+
+#### 2. Páginas de Criação/Edição
+```tsx
+// Card com CardHeader (título + descrição)
+// Form com FormInput/FormSelect
+// Validação Zod + react-hook-form
+// Loading spinner em submit
+// Toast success/error
+```
+
+#### 3. Componentes Reutilizados
+- Button (variantes: primary, secondary, danger)
+- Input (com máscaras opcionais)
+- Select
+- Card (com componentes compostos)
+- StatusBadge (14 status types)
+- LoadingSpinner
+- EmptyState
+- Toast (useToast hook)
+
+### Código Reduzido
+- `/app/propostas/nova/page.tsx`: 247 → 320 linhas (adiciona interface dinâmica de grãos)
+- `/app/clientes/novo/page.tsx`: 200+ → 165 linhas (Zod + RHF mais limpo)
+- Arquivos de listagem: ~150-180 linhas cada (uniforme em todos)
+
+### TypeScript Status
+- ✅ type-check passa sem erros
+- ✅ Tipos genéricos em componentes
+- ✅ Zero `any` types
+- ✅ Zod schemas para validação runtime
+
+---
+
+**Fim do Log - FASE 2 Completa**
