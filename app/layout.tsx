@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'MercoGrain - Trading de Grãos',
   description: 'Sistema integrado de cotação, proposta, contrato e cobrança para trading de grãos',
