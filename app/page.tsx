@@ -192,6 +192,22 @@ export default async function Home() {
               </div>
             </div>
           </Link>
+
+          {/* Relatórios */}
+          <Link href="/relatorios">
+            <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full">
+              <div className="bg-cyan-600 h-32 flex items-center justify-center">
+                <span className="text-white text-5xl">📊</span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Relatórios Detalhados</h3>
+                <p className="text-gray-600 mb-4">
+                  Análises com gráficos e métricas mensais.
+                </p>
+                <p className="text-green-600 font-semibold text-sm">✅ Ativo</p>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Status Footer */}

@@ -126,12 +126,19 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">📊 Dashboard</h1>
               <p className="text-gray-600 mt-1">Visão geral do seu negócio</p>
             </div>
-            <button
-              onClick={fetchStats}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              🔄 Atualizar
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={fetchStats}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                🔄 Atualizar
+              </button>
+              <Link href="/relatorios">
+                <button className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors">
+                  📊 Relatórios
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
