@@ -149,6 +149,133 @@ export async function getOilPrice(): Promise<number | null> {
 }
 
 /**
+ * Busca preço da soja (CBOT - cents/bushel)
+ * Investing.com URL: /commodities/us-soybeans
+ */
+export async function getSoybeanPrice(): Promise<number | null> {
+  try {
+    const cached = await redis.get('soybean-price-usd')
+    if (cached) return parseFloat(cached)
+
+    console.log('[Investing] Buscando preço da soja...')
+
+    const response = await axios.get(`${INVESTING_COM_BASE}/commodities/us-soybeans`, {
+      headers,
+      timeout: 10000
+    })
+
+    const $ = cheerio.load(response.data)
+    const price = $('[data-test="instrument-header-current-price"]')?.text()?.trim()
+
+    if (price) {
+      const normalized = parseFloat(price.replace(',', '.'))
+      if (normalized > 0) {
+        // Cache por 1 hora
+        await redis.setex('soybean-price-usd', 3600, normalized.toString())
+        console.log(`[Investing] Preço da soja obtido: ${normalized}`)
+        return normalized
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('[Investing] Erro ao buscar preço da soja:', error)
+    return null
+  }
+}
+
+/**
+ * Busca preço do milho (CBOT - cents/bushel)
+ * Investing.com URL: /commodities/us-corn
+ */
+export async function getCornPrice(): Promise<number | null> {
+  try {
+    const cached = await redis.get('corn-price-usd')
+    if (cached) return parseFloat(cached)
+
+    console.log('[Investing] Buscando preço do milho...')
+
+    const response = await axios.get(`${INVESTING_COM_BASE}/commodities/us-corn`, {
+      headers,
+      timeout: 10000
+    })
+
+    const $ = cheerio.load(response.data)
+    const price = $('[data-test="instrument-header-current-price"]')?.text()?.trim()
+
+    if (price) {
+      const normalized = parseFloat(price.replace(',', '.'))
+      if (normalized > 0) {
+        // Cache por 1 hora
+        await redis.setex('corn-price-usd', 3600, normalized.toString())
+        console.log(`[Investing] Preço do milho obtido: ${normalized}`)
+        return normalized
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('[Investing] Erro ao buscar preço do milho:', error)
+    return null
+  }
+}
+
+/**
+ * Busca preço do trigo (CBOT - cents/bushel)
+ * Investing.com URL: /commodities/us-wheat
+ */
+export async function getWheatPrice(): Promise<number | null> {
+  try {
+    const cached = await redis.get('wheat-price-usd')
+    if (cached) return parseFloat(cached)
+
+    console.log('[Investing] Buscando preço do trigo...')
+
+    const response = await axios.get(`${INVESTING_COM_BASE}/commodities/us-wheat`, {
+      headers,
+      timeout: 10000
+    })
+
+    const $ = cheerio.load(response.data)
+    const price = $('[data-test="instrument-header-current-price"]')?.text()?.trim()
+
+    if (price) {
+      const normalized = parseFloat(price.replace(',', '.'))
+      if (normalized > 0) {
+        // Cache por 1 hora
+        await redis.setex('wheat-price-usd', 3600, normalized.toString())
+        console.log(`[Investing] Preço do trigo obtido: ${normalized}`)
+        return normalized
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.error('[Investing] Erro ao buscar preço do trigo:', error)
+    return null
+  }
+}
+
+/**
+ * Busca preços de múltiplos grãos de uma vez
+ */
+export async function getGrainPrices(): Promise<{
+  soja: number | null
+  milho: number | null
+  trigo: number | null
+  taxaCambio: number | null
+}> {
+  const [soja, milho, trigo, taxaCambio] = await Promise.all([
+    getSoybeanPrice(),
+    getCornPrice(),
+    getWheatPrice(),
+    getExchangeRate(),
+  ])
+
+  return { soja, milho, trigo, taxaCambio }
+}
+
+/**
  * Busca múltiplos dados do Investing.com de uma vez
  */
 export async function getInvestingData() {
