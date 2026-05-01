@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { enviarNotificacaoProposta } from '@/lib/services/email-notifications'
 
 const updatePropostaSchema = z.object({
   numero: z.string().optional(),
@@ -233,6 +234,29 @@ export async function PATCH(
       },
       include: { cliente: true },
     })
+
+    // Enviar notificação por email
+    if (updated.cliente.email) {
+      const notificacaoTipo =
+        status === 'aceita' ? 'proposta_aceita' :
+        status === 'rejeitada' ? 'proposta_rejeitada' :
+        status === 'enviada' ? 'proposta_enviada' : null
+
+      if (notificacaoTipo) {
+        try {
+          await enviarNotificacaoProposta({
+            tipo: notificacaoTipo,
+            numero: updated.numero,
+            cliente: updated.cliente.nome,
+            valor: Number(updated.valorTotal || 0),
+            email: updated.cliente.email,
+          })
+        } catch (emailError) {
+          console.error('Erro ao enviar notificação:', emailError)
+          // Não falhar a requisição se o email falhar
+        }
+      }
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { enviarNotificacaoContrato } from '@/lib/services/email-notifications'
 
 const updateContratoSchema = z.object({
   numero: z.string().optional(),
@@ -214,8 +215,28 @@ export async function PATCH(
         statusAssinatura,
         assinadoEm: statusAssinatura === 'assinado' && !contrato.assinadoEm ? new Date() : undefined,
       },
-      include: { cliente: true },
+      include: {
+        cliente: true,
+        proposta: {
+          select: { numero: true },
+        },
+      },
     })
+
+    // Enviar notificação por email quando contrato é assinado
+    if (statusAssinatura === 'assinado' && updated.cliente.email) {
+      try {
+        await enviarNotificacaoContrato({
+          tipo: 'contrato_assinado',
+          numero: updated.numero,
+          proposta: updated.proposta.numero,
+          email: updated.cliente.email,
+        })
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação:', emailError)
+        // Não falhar a requisição se o email falhar
+      }
+    }
 
     return NextResponse.json(updated)
   } catch (error) {
