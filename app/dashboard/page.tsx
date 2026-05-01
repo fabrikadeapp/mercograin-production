@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -56,6 +57,21 @@ interface DashboardStats {
       status: string
       vencimento: string
       data: string
+    }>
+  }
+  alerts: {
+    boletosVencidos: Array<{
+      id: string
+      numero: string
+      cliente: string
+      valor: number
+      vencimento: string
+    }>
+    propostasPendentes: Array<{
+      id: string
+      numero: string
+      cliente: string
+      validadeEm: string
     }>
   }
 }
@@ -176,6 +192,73 @@ export default function DashboardPage() {
             </Card>
           </Link>
         </div>
+
+        {/* Alerts */}
+        {(stats.alerts.boletosVencidos.length > 0 || stats.alerts.propostasPendentes.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Boletos Vencidos */}
+            {stats.alerts.boletosVencidos.length > 0 && (
+              <Card className="border-l-4 border-l-red-600 bg-red-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="text-2xl">🚨</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-red-900">Boletos Vencidos</h3>
+                      <p className="text-sm text-red-700">{stats.alerts.boletosVencidos.length} boleto(s) vencido(s)</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {stats.alerts.boletosVencidos.map((boleto) => (
+                      <Link key={boleto.id} href={`/boletos/${boleto.id}`}>
+                        <div className="p-2 bg-white rounded border border-red-200 hover:bg-red-100 transition-colors cursor-pointer">
+                          <p className="font-semibold text-red-900">BLT-{boleto.numero}</p>
+                          <p className="text-sm text-gray-600">{boleto.cliente}</p>
+                          <p className="text-sm font-bold text-red-600">{formatCurrency(boleto.valor)}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link href="/boletos?status=vencido" className="block mt-4">
+                    <Button variant="primary" size="sm" className="w-full">
+                      Ver Todos os Vencidos
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Propostas Pendentes */}
+            {stats.alerts.propostasPendentes.length > 0 && (
+              <Card className="border-l-4 border-l-orange-600 bg-orange-50">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <span className="text-2xl">⏳</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-orange-900">Propostas Pendentes</h3>
+                      <p className="text-sm text-orange-700">{stats.alerts.propostasPendentes.length} proposta(s) aguardando resposta</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {stats.alerts.propostasPendentes.map((proposta) => (
+                      <Link key={proposta.id} href={`/propostas/${proposta.id}`}>
+                        <div className="p-2 bg-white rounded border border-orange-200 hover:bg-orange-100 transition-colors cursor-pointer">
+                          <p className="font-semibold text-orange-900">PROP-{proposta.numero}</p>
+                          <p className="text-sm text-gray-600">{proposta.cliente}</p>
+                          <p className="text-sm text-orange-600">Válida até: {formatDate(new Date(proposta.validadeEm))}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                  <Link href="/propostas?status=enviada" className="block mt-4">
+                    <Button variant="primary" size="sm" className="w-full">
+                      Ver Todas as Pendentes
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
         {/* Status Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

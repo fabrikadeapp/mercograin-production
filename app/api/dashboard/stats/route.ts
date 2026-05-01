@@ -159,6 +159,39 @@ export async function GET(request: NextRequest) {
       _sum: { valor: true },
     })
 
+    // Alertas: Boletos vencidos
+    const boletosVencidos = await db.boleto.findMany({
+      where: {
+        cliente: { usuarioId: session.user.id },
+        status: 'vencido',
+      },
+      select: {
+        id: true,
+        numero: true,
+        valor: true,
+        vencimento: true,
+        cliente: { select: { nome: true } },
+      },
+      orderBy: { vencimento: 'asc' },
+      take: 5,
+    })
+
+    // Alertas: Propostas pendentes
+    const propostasPendentes = await db.proposta.findMany({
+      where: {
+        cliente: { usuarioId: session.user.id },
+        status: 'enviada',
+      },
+      select: {
+        id: true,
+        numero: true,
+        cliente: { select: { nome: true } },
+        validadeEm: true,
+      },
+      orderBy: { validadeEm: 'asc' },
+      take: 5,
+    })
+
     return NextResponse.json({
       summary: {
         clientes: clientesTotal,
@@ -206,6 +239,21 @@ export async function GET(request: NextRequest) {
           status: b.status,
           vencimento: b.vencimento,
           data: b.criadoEm,
+        })),
+      },
+      alerts: {
+        boletosVencidos: boletosVencidos.map((b: any) => ({
+          id: b.id,
+          numero: b.numero,
+          cliente: b.cliente.nome,
+          valor: Number(b.valor),
+          vencimento: b.vencimento,
+        })),
+        propostasPendentes: propostasPendentes.map((p: any) => ({
+          id: p.id,
+          numero: p.numero,
+          cliente: p.cliente.nome,
+          validadeEm: p.validadeEm,
         })),
       },
     })
