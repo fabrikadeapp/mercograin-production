@@ -24,7 +24,17 @@ export async function GET(
 
     const contrato = await db.contrato.findUnique({
       where: { id: params.id },
-      include: { cliente: true },
+      include: {
+        cliente: true,
+        proposta: {
+          select: {
+            numero: true,
+            graos: true,
+            valorTotal: true,
+            tipo: true,
+          },
+        },
+      },
     })
 
     if (!contrato) {
