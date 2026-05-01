@@ -1,6 +1,7 @@
 import { auth, signOut } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { SearchGlobal } from '@/components/SearchGlobal'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,7 @@ export default async function Home() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">🌾 MercoGrain</h1>
               <p className="text-gray-600">Sistema Integrado de Trading de Grãos</p>
@@ -38,6 +39,11 @@ export default async function Home() {
                 </button>
               </form>
             </div>
+          </div>
+
+          {/* Search Bar */}
+          <div>
+            <SearchGlobal />
           </div>
         </div>
       </div>
