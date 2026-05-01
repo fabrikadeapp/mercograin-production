@@ -172,18 +172,20 @@ export default async function Home() {
           </div>
 
           {/* Dashboard */}
-          <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
-            <div className="bg-indigo-600 h-32 flex items-center justify-center">
-              <span className="text-white text-5xl">📈</span>
+          <Link href="/dashboard">
+            <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition cursor-pointer h-full">
+              <div className="bg-indigo-600 h-32 flex items-center justify-center">
+                <span className="text-white text-5xl">📈</span>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Dashboard Financeiro</h3>
+                <p className="text-gray-600 mb-4">
+                  Visualize estatísticas e fluxo de caixa.
+                </p>
+                <p className="text-green-600 font-semibold text-sm">✅ Ativo</p>
+              </div>
             </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Dashboard Financeiro</h3>
-              <p className="text-gray-600 mb-4">
-                Visualize estatísticas e fluxo de caixa.
-              </p>
-              <p className="text-gray-500 text-sm">⏳ Semana 8</p>
-            </div>
-          </div>
+          </Link>
         </div>
 
         {/* Status Footer */}

@@ -4,33 +4,65 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/Card'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
 interface DashboardStats {
-  clientesTotal: number
-  clientesAtivos: number
-  propostasTotal: number
-  propostasAbertas: number
-  propostasAceitasValor: string
-  boletosTotal: number
-  boletosPagos: number
-  boletosAbertos: number
-  boletosVencidos: number
-  boletosValorTotal: string
-  boletosValorPago: string
-  receita24h: string
-  receita30d: string
+  summary: {
+    clientes: number
+    propostas: number
+    contratos: number
+    boletos: number
+  }
+  propostas: {
+    total: number
+    porStatus: Record<string, number>
+    valorTotal: number
+  }
+  contratos: {
+    total: number
+    porStatus: Record<string, number>
+  }
+  boletos: {
+    total: number
+    porStatus: Record<string, number>
+    arrecadado: number
+    aberto: number
+  }
+  activity: {
+    ultimasPropostas: Array<{
+      id: string
+      numero: string
+      cliente: string
+      status: string
+      valor: number
+      data: string
+    }>
+    ultimosContratos: Array<{
+      id: string
+      numero: string
+      proposta: string
+      cliente: string
+      status: string
+      data: string
+    }>
+    ultimosBoletos: Array<{
+      id: string
+      numero: string
+      cliente: string
+      valor: number
+      status: string
+      vencimento: string
+      data: string
+    }>
+  }
 }
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const { error: showError } = useToast()
-
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -46,30 +78,24 @@ export default function DashboardPage() {
   }, [status, router])
 
   const fetchStats = async () => {
+    setLoading(true)
     try {
       const response = await fetch('/api/dashboard/stats')
-      if (!response.ok) throw new Error('Erro ao buscar estatísticas')
+      if (!response.ok) throw new Error('Erro ao carregar estatísticas')
 
-      const data = await response.json()
+      const data: DashboardStats = await response.json()
       setStats(data)
     } catch (err) {
-      showError('Erro ao carregar dashboard')
-      console.error(err)
+      console.error('Error fetching stats:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando dashboard..." />
-  }
-
-  if (!stats) {
+  if (loading || !stats) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-600">Erro ao carregar dashboard</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner />
       </div>
     )
   }
@@ -79,215 +105,217 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">📊 Dashboard</h1>
-          <p className="text-gray-600 mt-1">Visão geral dos seus negócios</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">📊 Dashboard</h1>
+              <p className="text-gray-600 mt-1">Visão geral do seu negócio</p>
+            </div>
+            <button
+              onClick={fetchStats}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              🔄 Atualizar
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* KPI Row 1: Receita */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* Receita 24h */}
-          <Card variant="elevated" className="border-l-4 border-l-green-500">
-            <CardContent className="p-4">
-              <p className="text-gray-600 text-sm">Receita 24h</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">
-                {formatCurrency(parseFloat(stats.receita24h))}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">Últimas 24 horas</p>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Link href="/clientes">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl font-bold text-blue-600">
+                  {stats.summary.clientes}
+                </div>
+                <p className="text-gray-600 mt-2 font-medium">Clientes</p>
+                <p className="text-gray-500 text-sm mt-1">👥 Cadastrados</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/propostas">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl font-bold text-purple-600">
+                  {stats.summary.propostas}
+                </div>
+                <p className="text-gray-600 mt-2 font-medium">Propostas</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {formatCurrency(Number(stats.propostas.valorTotal) || 0)}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/contratos">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl font-bold text-green-600">
+                  {stats.summary.contratos}
+                </div>
+                <p className="text-gray-600 mt-2 font-medium">Contratos</p>
+                <p className="text-gray-500 text-sm mt-1">🤝 Assinados</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/boletos">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl font-bold text-orange-600">
+                  {stats.summary.boletos}
+                </div>
+                <p className="text-gray-600 mt-2 font-medium">Boletos</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  {formatCurrency(stats.boletos.arrecadado)}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Status Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Propostas Status */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Status Propostas</h3>
+              <div className="space-y-3">
+                {Object.entries(stats.propostas.porStatus).map(([status, count]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <StatusBadge status={status} />
+                    <span className="font-semibold text-gray-900">{count}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Receita 30d */}
-          <Card variant="elevated" className="border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
-              <p className="text-gray-600 text-sm">Receita 30 dias</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">
-                {formatCurrency(parseFloat(stats.receita30d))}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">Últimos 30 dias</p>
+          {/* Contratos Status */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Status Contratos</h3>
+              <div className="space-y-3">
+                {Object.entries(stats.contratos.porStatus).map(([status, count]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <StatusBadge status={status} />
+                    <span className="font-semibold text-gray-900">{count}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Boletos Vencidos */}
-          <Card variant="elevated" className="border-l-4 border-l-red-500">
-            <CardContent className="p-4">
-              <p className="text-gray-600 text-sm">Boletos Vencidos</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">{stats.boletosVencidos}</p>
-              <p className="text-xs text-gray-500 mt-2">Requerem ação</p>
+          {/* Boletos Status */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Status Boletos</h3>
+              <div className="space-y-3">
+                {Object.entries(stats.boletos.porStatus).map(([status, count]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <StatusBadge status={status} />
+                    <span className="font-semibold text-gray-900">{count}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Arrecadado:</span>
+                  <span className="font-bold text-green-600">
+                    {formatCurrency(stats.boletos.arrecadado)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Em aberto:</span>
+                  <span className="font-bold text-red-600">
+                    {formatCurrency(stats.boletos.aberto)}
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Grid: Clientes, Propostas, Boletos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Clientes */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">👥 Clientes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.clientesTotal}</span>
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Últimas Propostas */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Últimas Propostas</h3>
+                <Link href="/propostas" className="text-blue-600 hover:underline text-sm">
+                  Ver tudo →
+                </Link>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Ativos</span>
-                <span className="text-lg font-semibold text-green-600">{stats.clientesAtivos}</span>
+              <div className="space-y-3">
+                {stats.activity.ultimasPropostas.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Nenhuma proposta ainda</p>
+                ) : (
+                  stats.activity.ultimasPropostas.map((prop) => (
+                    <Link key={prop.id} href={`/propostas/${prop.id}`}>
+                      <div className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{prop.numero}</p>
+                            <p className="text-sm text-gray-600">{prop.cliente}</p>
+                          </div>
+                          <StatusBadge status={prop.status} />
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm text-gray-500">
+                            {formatDate(new Date(prop.data))}
+                          </span>
+                          <span className="font-bold text-gray-900">
+                            {formatCurrency(prop.valor)}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Taxa Ativa</span>
-                <span className="text-lg font-semibold">
-                  {stats.clientesTotal > 0
-                    ? ((stats.clientesAtivos / stats.clientesTotal) * 100).toFixed(0)
-                    : 0}
-                  %
-                </span>
-              </div>
-              <Link href="/clientes" className="block mt-4">
-                <Button variant="secondary" className="w-full" size="sm">
-                  Ver Clientes
-                </Button>
-              </Link>
             </CardContent>
           </Card>
 
-          {/* Propostas */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">📋 Propostas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.propostasTotal}</span>
+          {/* Últimos Boletos */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Últimos Boletos</h3>
+                <Link href="/boletos" className="text-blue-600 hover:underline text-sm">
+                  Ver tudo →
+                </Link>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Abertas</span>
-                <span className="text-lg font-semibold text-orange-600">{stats.propostasAbertas}</span>
+              <div className="space-y-3">
+                {stats.activity.ultimosBoletos.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Nenhum boleto ainda</p>
+                ) : (
+                  stats.activity.ultimosBoletos.map((boleto) => (
+                    <Link key={boleto.id} href={`/boletos/${boleto.id}`}>
+                      <div className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{boleto.numero}</p>
+                            <p className="text-sm text-gray-600">{boleto.cliente}</p>
+                          </div>
+                          <StatusBadge status={boleto.status} />
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm text-gray-500">
+                            Venc. {formatDate(new Date(boleto.vencimento))}
+                          </span>
+                          <span className="font-bold text-gray-900">
+                            {formatCurrency(boleto.valor)}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Valor Aceitas</span>
-                <span className="text-sm font-semibold text-green-600">
-                  {formatCurrency(parseFloat(stats.propostasAceitasValor))}
-                </span>
-              </div>
-              <Link href="/propostas" className="block mt-4">
-                <Button variant="secondary" className="w-full" size="sm">
-                  Ver Propostas
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Boletos */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">💰 Boletos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Total</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.boletosTotal}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Abertos</span>
-                <span className="text-lg font-semibold text-blue-600">{stats.boletosAbertos}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Pagos</span>
-                <span className="text-lg font-semibold text-green-600">{stats.boletosPagos}</span>
-              </div>
-              <Link href="/boletos" className="block mt-4">
-                <Button variant="secondary" className="w-full" size="sm">
-                  Ver Boletos
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Valores */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Boletos */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">Resumo Financeiro - Boletos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center pb-3 border-b">
-                <span className="text-gray-600">Valor Total</span>
-                <span className="text-lg font-bold text-gray-900">
-                  {formatCurrency(parseFloat(stats.boletosValorTotal))}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Valor Recebido</span>
-                <span className="text-lg font-bold text-green-600">
-                  {formatCurrency(parseFloat(stats.boletosValorPago))}
-                </span>
-              </div>
-              {parseFloat(stats.boletosValorTotal) > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Taxa de Recebimento</span>
-                    <span className="text-sm font-semibold">
-                      {((parseFloat(stats.boletosValorPago) / parseFloat(stats.boletosValorTotal)) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-600 h-2 rounded-full"
-                      style={{
-                        width: `${(parseFloat(stats.boletosValorPago) / parseFloat(stats.boletosValorTotal)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Próximas Ações */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">⚡ Próximas Ações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {stats.boletosVencidos > 0 && (
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                  <p className="text-sm font-medium text-red-800">
-                    ⚠️ {stats.boletosVencidos} boleto(s) vencido(s)
-                  </p>
-                  <Link href="/boletos?status=vencido">
-                    <button className="text-xs text-red-600 hover:text-red-700 font-medium mt-1">
-                      Ver boletos vencidos →
-                    </button>
-                  </Link>
-                </div>
-              )}
-
-              {stats.propostasAbertas > 0 && (
-                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-orange-800">
-                    📋 {stats.propostasAbertas} proposta(s) pendente(s)
-                  </p>
-                  <Link href="/propostas?status=rascunho">
-                    <button className="text-xs text-orange-600 hover:text-orange-700 font-medium mt-1">
-                      Ver propostas abertas →
-                    </button>
-                  </Link>
-                </div>
-              )}
-
-              {stats.boletosVencidos === 0 && stats.propostasAbertas === 0 && (
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-green-800">
-                    ✅ Tudo em dia!
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>

@@ -1,8 +1,14 @@
-import { db } from '@/lib/db'
-import { auth } from '@/auth'
-import { NextResponse } from 'next/server'
+/**
+ * GET /api/dashboard/stats
+ * Retorna estatísticas para o dashboard
+ * Inclui: clientes, propostas, contratos, boletos, receita, etc
+ */
 
-export async function GET() {
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+
+export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
@@ -10,134 +16,206 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const userId = session.user.id
+    // Buscar todas as estatísticas em paralelo
+    const [
+      clientesTotal,
+      propostasTotal,
+      propostasPorStatus,
+      contratosTotal,
+      contratoPorStatus,
+      boletosTotal,
+      boletoPorStatus,
+      arrecadacao,
+      ultimasPropostas,
+      ultimosContratos,
+      ultimosBoletos,
+    ] = await Promise.all([
+      // Clientes
+      db.cliente.count({
+        where: { usuarioId: session.user.id },
+      }),
+      // Propostas total
+      db.proposta.count({
+        where: { cliente: { usuarioId: session.user.id } },
+      }),
+      // Propostas por status
+      db.proposta.groupBy({
+        by: ['status'],
+        where: { cliente: { usuarioId: session.user.id } },
+        _count: true,
+      }),
+      // Contratos total
+      db.contrato.count({
+        where: { cliente: { usuarioId: session.user.id } },
+      }),
+      // Contratos por status
+      db.contrato.groupBy({
+        by: ['statusAssinatura'],
+        where: { cliente: { usuarioId: session.user.id } },
+        _count: true,
+      }),
+      // Boletos total
+      db.boleto.count({
+        where: { cliente: { usuarioId: session.user.id } },
+      }),
+      // Boletos por status
+      db.boleto.groupBy({
+        by: ['status'],
+        where: { cliente: { usuarioId: session.user.id } },
+        _count: true,
+      }),
+      // Arrecadação (boletos pagos)
+      db.boleto.aggregate({
+        where: {
+          cliente: { usuarioId: session.user.id },
+          status: 'pago',
+        },
+        _sum: { valor: true },
+      }),
+      // Últimas 5 propostas
+      db.proposta.findMany({
+        where: { cliente: { usuarioId: session.user.id } },
+        select: {
+          id: true,
+          numero: true,
+          status: true,
+          valorTotal: true,
+          criadaEm: true,
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { criadaEm: 'desc' },
+        take: 5,
+      }),
+      // Últimos 5 contratos
+      db.contrato.findMany({
+        where: { cliente: { usuarioId: session.user.id } },
+        select: {
+          id: true,
+          numero: true,
+          statusAssinatura: true,
+          criadoEm: true,
+          proposta: { select: { numero: true } },
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { criadoEm: 'desc' },
+        take: 5,
+      }),
+      // Últimos 5 boletos
+      db.boleto.findMany({
+        where: { cliente: { usuarioId: session.user.id } },
+        select: {
+          id: true,
+          numero: true,
+          valor: true,
+          status: true,
+          vencimento: true,
+          criadoEm: true,
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { criadoEm: 'desc' },
+        take: 5,
+      }),
+    ])
 
-    // Datas para cálculos
-    const now = new Date()
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-    // 1. Clientes
-    const clientesTotal = await db.cliente.count({
-      where: { usuarioId: userId },
-    })
-
-    const clientesAtivos = await db.cliente.count({
-      where: { usuarioId: userId, ativo: true },
-    })
-
-    // 2. Propostas
-    const propostasTotal = await db.proposta.count({
-      where: { cliente: { usuarioId: userId } },
-    })
-
-    const propostasAbertas = await db.proposta.count({
-      where: {
-        cliente: { usuarioId: userId },
-        status: 'rascunho',
+    // Processar status de propostas
+    const propostasPorStatusMap = propostasPorStatus.reduce(
+      (acc: any, item: any) => {
+        acc[item.status] = item._count
+        return acc
       },
-    })
+      {}
+    )
 
-    // Valor total de propostas aceitas
-    const propostasAceitas = await db.proposta.findMany({
-      where: {
-        cliente: { usuarioId: userId },
-        status: 'aceita',
+    // Processar status de contratos
+    const contratosPorStatusMap = contratoPorStatus.reduce(
+      (acc: any, item: any) => {
+        acc[item.statusAssinatura] = item._count
+        return acc
       },
-      select: { valorTotal: true },
-    })
+      {}
+    )
 
-    const propostasAceitasValor = propostasAceitas
-      .reduce((sum, p) => sum + parseFloat(p.valorTotal as any), 0)
-      .toString()
-
-    // 3. Boletos
-    const boletosTotal = await db.boleto.count({
-      where: { cliente: { usuarioId: userId } },
-    })
-
-    const boletosPagos = await db.boleto.count({
-      where: { cliente: { usuarioId: userId }, status: 'pago' },
-    })
-
-    const boletosAbertos = await db.boleto.count({
-      where: { cliente: { usuarioId: userId }, status: 'aberto' },
-    })
-
-    const boletosVencidos = await db.boleto.count({
-      where: {
-        cliente: { usuarioId: userId },
-        status: 'vencido',
+    // Processar status de boletos
+    const boletosPorStatusMap = boletoPorStatus.reduce(
+      (acc: any, item: any) => {
+        acc[item.status] = item._count
+        return acc
       },
+      {}
+    )
+
+    // Calcular valores de propostas
+    const propostasValor = await db.proposta.aggregate({
+      where: { cliente: { usuarioId: session.user.id } },
+      _sum: { valorTotal: true },
     })
 
-    // Valores dos boletos
-    const boletosPagosData = await db.boleto.findMany({
-      where: { cliente: { usuarioId: userId }, status: 'pago' },
-      select: { valor: true },
-    })
-
-    const boletosValorPago = boletosPagosData
-      .reduce((sum, b) => sum + parseFloat(b.valor as any), 0)
-      .toString()
-
-    const boletosAllData = await db.boleto.findMany({
-      where: { cliente: { usuarioId: userId } },
-      select: { valor: true },
-    })
-
-    const boletosValorTotal = boletosAllData
-      .reduce((sum, b) => sum + parseFloat(b.valor as any), 0)
-      .toString()
-
-    // 4. Receita
-    // Receita 24h: boletos pagos nos últimos 24h
-    const boletos24h = await db.boleto.findMany({
+    // Calcular valores de boletos abertos
+    const boletosAbertosValor = await db.boleto.aggregate({
       where: {
-        cliente: { usuarioId: userId },
-        status: 'pago',
-        confirmadoEm: { gte: oneDayAgo },
+        cliente: { usuarioId: session.user.id },
+        status: { in: ['aberto', 'vencido'] },
       },
-      select: { valor: true },
+      _sum: { valor: true },
     })
-
-    const receita24h = boletos24h
-      .reduce((sum, b) => sum + parseFloat(b.valor as any), 0)
-      .toString()
-
-    // Receita 30d: boletos pagos nos últimos 30 dias
-    const boletos30d = await db.boleto.findMany({
-      where: {
-        cliente: { usuarioId: userId },
-        status: 'pago',
-        confirmadoEm: { gte: thirtyDaysAgo },
-      },
-      select: { valor: true },
-    })
-
-    const receita30d = boletos30d
-      .reduce((sum, b) => sum + parseFloat(b.valor as any), 0)
-      .toString()
 
     return NextResponse.json({
-      clientesTotal,
-      clientesAtivos,
-      propostasTotal,
-      propostasAbertas,
-      propostasAceitasValor,
-      boletosTotal,
-      boletosPagos,
-      boletosAbertos,
-      boletosVencidos,
-      boletosValorTotal,
-      boletosValorPago,
-      receita24h,
-      receita30d,
+      summary: {
+        clientes: clientesTotal,
+        propostas: propostasTotal,
+        contratos: contratosTotal,
+        boletos: boletosTotal,
+      },
+      propostas: {
+        total: propostasTotal,
+        porStatus: propostasPorStatusMap,
+        valorTotal: propostasValor._sum.valorTotal || 0,
+      },
+      contratos: {
+        total: contratosTotal,
+        porStatus: contratosPorStatusMap,
+      },
+      boletos: {
+        total: boletosTotal,
+        porStatus: boletosPorStatusMap,
+        arrecadado: arrecadacao._sum.valor || 0,
+        aberto: boletosAbertosValor._sum.valor || 0,
+      },
+      activity: {
+        ultimasPropostas: ultimasPropostas.map((p: any) => ({
+          id: p.id,
+          numero: p.numero,
+          cliente: p.cliente.nome,
+          status: p.status,
+          valor: Number(p.valorTotal),
+          data: p.criadaEm,
+        })),
+        ultimosContratos: ultimosContratos.map((c: any) => ({
+          id: c.id,
+          numero: c.numero,
+          proposta: c.proposta.numero,
+          cliente: c.cliente.nome,
+          status: c.statusAssinatura,
+          data: c.criadoEm,
+        })),
+        ultimosBoletos: ultimosBoletos.map((b: any) => ({
+          id: b.id,
+          numero: b.numero,
+          cliente: b.cliente.nome,
+          valor: Number(b.valor),
+          status: b.status,
+          vencimento: b.vencimento,
+          data: b.criadoEm,
+        })),
+      },
     })
   } catch (error) {
-    console.error('Dashboard stats error:', error)
+    console.error('Error fetching dashboard stats:', error)
     return NextResponse.json(
-      { error: 'Erro ao calcular estatísticas' },
+      {
+        error: 'Erro ao carregar estatísticas',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
