@@ -111,6 +111,31 @@ export default function ContratosPage() {
     setPage(newPage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+  const handleDownloadPDF = async (id: string, numero: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    try {
+      const response = await fetch(`/api/contratos/${id}/pdf`)
+      if (!response.ok) throw new Error('Erro ao gerar PDF')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Contrato-${numero}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      success('PDF baixado com sucesso!')
+    } catch (err) {
+      showError('Erro ao baixar PDF')
+      console.error(err)
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -233,7 +258,7 @@ export default function ContratosPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t">
                         <div>
                           <p className="text-xs text-gray-600">Início</p>
                           <p className="text-sm text-gray-900">{formatDate(contrato.dataInicio)}</p>
@@ -254,6 +279,16 @@ export default function ContratosPage() {
                           <p className="text-xs text-gray-600">Criado em</p>
                           <p className="text-sm text-gray-600">{formatDate(contrato.criadoEm)}</p>
                         </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t flex justify-between items-center">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => handleDownloadPDF(contrato.id, contrato.numero, e)}
+                        >
+                          📄 Baixar PDF
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

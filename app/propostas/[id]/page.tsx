@@ -93,6 +93,30 @@ export default function PropostaDetalhesPage() {
       setSaving(false)
     }
   }
+  const handleDownloadPDF = async () => {
+    if (!proposta) return
+
+    try {
+      const response = await fetch(`/api/propostas/${proposta.id}/pdf`)
+      if (!response.ok) throw new Error('Erro ao gerar PDF')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Proposta-${proposta.numero}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      success('PDF baixado com sucesso!')
+    } catch (err) {
+      showError('Erro ao baixar PDF')
+      console.error(err)
+    }
+  }
+
 
   if (loading) {
     return <LoadingSpinner fullScreen text="Carregando proposta..." />
@@ -250,6 +274,12 @@ export default function PropostaDetalhesPage() {
               <CardTitle>Ações</CardTitle>
             </CardHeader>
             <CardContent className="flex gap-3 flex-wrap">
+              <Button
+                variant="secondary"
+                onClick={handleDownloadPDF}
+              >
+                📄 Baixar PDF
+              </Button>
               <Button
                 variant="primary"
                 onClick={() => handleStatusUpdate('aceita')}
