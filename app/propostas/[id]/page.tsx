@@ -297,6 +297,27 @@ export default function PropostaDetalhesPage() {
             </CardContent>
           </Card>
         )}
+
+        {proposta.status === 'aceita' && (
+          <Card variant="elevated">
+            <CardHeader>
+              <CardTitle>Proposta Aceita</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-3 flex-wrap">
+              <Button
+                variant="secondary"
+                onClick={handleDownloadPDF}
+              >
+                📄 Baixar PDF
+              </Button>
+              <Link href={`/contratos/novo?proposIdFk=${proposta.id}`}>
+                <Button variant="primary">
+                  🤝 Criar Contrato
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
