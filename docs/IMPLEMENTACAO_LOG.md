@@ -456,4 +456,214 @@ Status: **FASE 3 COMPLETA** (Propostas 100%, Contratos/Boletos 80%)
 
 ---
 
-**Fim do Log - FASE 3 Completa**
+## FASE 4: TRADINGVIEW WEBHOOKS HARDENING ✅
+
+Data: 2025-04-30 (continuação)
+Status: **FASE 4 COMPLETA** - Webhooks Production-Ready
+
+### ✅ Arquivos Criados (8 arquivos)
+
+#### Utilitários de Rate Limiting & Idempotência
+1. `/lib/utils/rate-limiter.ts` - Rate limiting com Redis
+   - `checkRateLimit()` - 100 req/min por símbolo
+   - `getIdempotencyKey()` - Detecta duplicatas (5min cache)
+   - `markIdempotencyComplete()` - Marca webhook processado
+   - Graceful fallback se Redis offline
+
+2. `/lib/schemas/webhook-schemas.ts` - Validação Zod
+   - `tradingViewWebhookSchema` - Valida payload TradingView
+   - `braspagWebhookSchema` - Para integração futura
+   - `webhookLogSchema` - Auditoria de logs
+
+3. `/lib/redis.ts` (Modificado)
+   - Adicionados métodos: `incr()`, `ttl()`, `expire()`, `del()`, `ping()`
+   - Graceful degradation se Redis indisponível
+
+4. `/prisma/schema.prisma` (Modificado)
+   - WebhookLog schema atualizado com:
+     - `status`: 'recebido' | 'processado' | 'erro' (string)
+     - `timestamp` e `mensagem` para auditoria
+     - `codigoErro`, `ipOrigem` para debug
+
+#### Endpoint TradingView Hardening
+5. `/app/api/webhooks/tradingview/route.ts` (Refatorado)
+   - ✅ Validação Zod de payload
+   - ✅ Rate limiting: 100 req/min por símbolo (429 se excedido)
+   - ✅ Idempotência: 5min cache, retorna 409 se duplicado
+   - ✅ Auditoria completa em logs
+   - ✅ Error handling com códigos apropriados
+   - ✅ Extração de IP da origem para rastreamento
+
+#### Health Check & Logs
+6. `/app/api/webhooks/health/route.ts` - Monitoramento
+   - Database health check + latência
+   - Redis health check + latência
+   - Último webhook recebido (timestamp + grão)
+   - Taxa de erro 24h: `errors/total`
+   - Uptime e performance metrics
+   - Status: 200 se saudável, 503 se degradado
+
+7. `/app/api/webhooks/logs/route.ts` - API de auditoria
+   - Paginação: `?page=1&limit=25`
+   - Filtros: `tipo`, `status`, `dateFrom`, `dateTo`
+   - Retorna logs ordenados por timestamp desc
+   - Validação Zod de query params
+
+8. `/app/webhooks/logs/page.tsx` - UI de auditoria
+   - Listagem paginada de webhooks
+   - Filtros: tipo, status, data range
+   - Badges coloridas por status
+   - Cards responsivos (mobile first)
+   - Stats em cards: total, página, status
+
+### Features Implementadas
+
+#### Rate Limiting
+```
+- Limite: 100 requisições por minuto por símbolo
+- Chave Redis: webhook:tradingview:{symbol}:rate
+- TTL: 60 segundos
+- Resposta 429: Com remaining e resetTime
+- Graceful fallback: Se Redis offline, permitir
+```
+
+#### Idempotência
+```
+- Detecta duplicatas em 5 minutos
+- Chave: webhook:tradingview:{symbol}:{timestamp}
+- Resposta 409: "Webhook duplicado (já processado)"
+- Marca processado ao fim com success info
+```
+
+#### Auditoria & Logging
+```
+Cada webhook registra:
+- tipo, payload, status, mensagem
+- codigoErro (se erro), ipOrigem
+- timestamp automático
+- Indices: tipo, status, timestamp para query rápida
+```
+
+#### Health Check Output
+```json
+{
+  "status": "healthy|degraded",
+  "timestamp": "2025-04-30T...",
+  "uptime": 12345.67,
+  "checks": {
+    "database": { "healthy": true, "latency": "5ms" },
+    "redis": { "healthy": true, "latency": "2ms" }
+  },
+  "webhooks": {
+    "lastReceived": {
+      "timestamp": "...",
+      "grao": "soja"
+    },
+    "metrics24h": {
+      "total": 1234,
+      "errors": 12,
+      "errorRate": "0.97%"
+    }
+  }
+}
+```
+
+### Padrão de Webhook Completo
+
+```
+1. Validar secret header
+2. Parse JSON com erro handling
+3. Validar payload Zod
+4. Normalizar símbolo
+5. Verificar rate limit
+6. Verificar idempotência
+7. Processar (buscar USD/BRL, salvar cotação)
+8. Log bem-sucedido
+9. Marcar processado (idempotência)
+10. Retornar 201 com metadata
+```
+
+### Respostas HTTP
+
+| Código | Caso | Retorno |
+|--------|------|---------|
+| 201 | Sucesso | Cotação salva + metadata |
+| 400 | JSON inválido | `{ error: "Invalid JSON" }` |
+| 400 | Payload inválido | `{ error: "Invalid payload", details }` |
+| 400 | Símbolo desconhecido | `{ error: "Unknown symbol" }` |
+| 401 | Secret inválido | `{ error: "Unauthorized" }` |
+| 409 | Webhook duplicado | `{ ok: true, message: "Webhook duplicado" }` |
+| 429 | Rate limit | `{ error: "Rate limit exceeded", remaining, resetTime }` |
+| 500 | Erro interno | `{ error: "Internal server error" }` |
+
+### Endpoints Criados
+
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/webhooks/tradingview` | POST | Receber webhooks (hardened) |
+| `/api/webhooks/health` | GET | Health check (uptime, DB, Redis, stats) |
+| `/api/webhooks/logs` | GET | Auditoria com filtros e paginação |
+| `/webhooks/logs` | GET (UI) | Dashboard de logs |
+
+### Security Features
+
+- ✅ Validação de secret header (X-TradingView-Secret)
+- ✅ Validação Zod de payload
+- ✅ Rate limiting: 100 req/min por símbolo
+- ✅ Idempotência: detecta e rejeita duplicatas
+- ✅ Auditoria completa: todos os webhooks logados
+- ✅ Rastreamento de IP origem
+- ✅ Error codes apropiados (não expõe detalhes internos)
+
+### Testes Manuais Possíveis
+
+```bash
+# Health check
+curl http://localhost:3000/api/webhooks/health
+
+# Ver logs
+curl "http://localhost:3000/api/webhooks/logs?page=1&status=processado"
+
+# Simular webhook
+curl -X POST http://localhost:3000/api/webhooks/tradingview \
+  -H "X-TradingView-Secret: your-secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ticker": "ZS",
+    "timestamp": 1704067200,
+    "price": 565.50,
+    "signal": "buy",
+    "volume": 150000,
+    "strength": 75
+  }'
+
+# Simular webhook duplicado (mesmo timestamp)
+# Primeira chamada: 201 Created
+# Segunda chamada: 409 Conflict (duplicado)
+```
+
+### Graceful Degradation
+
+Se Redis offline:
+- Rate limiting: permitir (sem limite)
+- Idempotência: permitir (sem dedup)
+- Webhooks: continuam funcionando normalmente
+- Logging: continua no banco de dados
+- Health endpoint: mostra redis=false, status=degraded
+
+### TypeScript Status
+- ✅ type-check passa (com `as any` temporário para novos campos Prisma)
+- ✅ Tipos Zod para validação runtime
+- ✅ Tipos Redis wrapper
+
+### Próxima Etapa: Prisma Migration
+Após deploy, executar:
+```bash
+npx prisma migrate dev --name "add webhook fields"
+npx prisma generate
+```
+Isso removerá os `as any` temporários quando os tipos do Prisma forem atualizados.
+
+---
+
+**Fim do Log - FASE 4 Completa**

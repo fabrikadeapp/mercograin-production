@@ -61,6 +61,49 @@ const safeRedis = {
     } catch (err) {
       console.warn('[Redis] Erro ao SETEX:', err)
     }
+  },
+  async incr(key: string): Promise<number> {
+    if (!redis || !isConnected) return 1
+    try {
+      return await redis.incr(key)
+    } catch (err) {
+      console.warn('[Redis] Erro ao INCR:', err)
+      return 1
+    }
+  },
+  async ttl(key: string): Promise<number> {
+    if (!redis || !isConnected) return -1
+    try {
+      return await redis.ttl(key)
+    } catch (err) {
+      console.warn('[Redis] Erro ao TTL:', err)
+      return -1
+    }
+  },
+  async expire(key: string, seconds: number): Promise<void> {
+    if (!redis || !isConnected) return
+    try {
+      await redis.expire(key, seconds)
+    } catch (err) {
+      console.warn('[Redis] Erro ao EXPIRE:', err)
+    }
+  },
+  async del(key: string): Promise<void> {
+    if (!redis || !isConnected) return
+    try {
+      await redis.del(key)
+    } catch (err) {
+      console.warn('[Redis] Erro ao DEL:', err)
+    }
+  },
+  async ping(): Promise<string> {
+    if (!redis || !isConnected) throw new Error('Redis not connected')
+    try {
+      return await redis.ping()
+    } catch (err) {
+      console.warn('[Redis] Erro ao PING:', err)
+      throw err
+    }
   }
 }
 

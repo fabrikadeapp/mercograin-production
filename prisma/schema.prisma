@@ -170,14 +170,19 @@ model Boleto {
 // ============================================
 
 model WebhookLog {
-  id        String   @id @default(cuid())
-  tipo      String   // 'tradingview' | 'braspag' | 'signaturely'
-  payload   Json
-  status    Int?     // HTTP status
-  erro      String?  @db.Text
-  criadoEm  DateTime @default(now())
+  id          String   @id @default(cuid())
+  tipo        String   // 'tradingview' | 'braspag' | 'signaturely'
+  payload     Json
+  status      String   @default("recebido") // 'recebido' | 'processado' | 'erro'
+  mensagem    String?  @db.Text
+  codigoErro  String?  @db.VarChar(50)
+  ipOrigem    String?  @db.VarChar(50)
+  timestamp   DateTime @default(now())
+  criadoEm    DateTime @default(now())
 
   @@index([tipo])
+  @@index([status])
+  @@index([timestamp])
   @@index([criadoEm])
 }
 
