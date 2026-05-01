@@ -13,7 +13,8 @@
     "db:reset": "prisma migrate reset --force",
     "type-check": "tsc --noEmit",
     "backup:run": "ts-node scripts/backup-cron.ts",
-    "backup:list": "curl -s http://localhost:3000/api/backups -H \"Authorization: Bearer YOUR_TOKEN\" | jq"
+    "backup:list": "curl -s http://localhost:3000/api/backups -H \"Authorization: Bearer YOUR_TOKEN\" | jq",
+    "test": "node __tests__/simple.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
