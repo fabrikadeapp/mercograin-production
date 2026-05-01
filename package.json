@@ -11,7 +11,9 @@
     "db:seed": "npx prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "backup:run": "ts-node scripts/backup-cron.ts",
+    "backup:list": "curl -s http://localhost:3000/api/backups -H \"Authorization: Bearer YOUR_TOKEN\" | jq"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -24,10 +26,12 @@
     "cheerio": "^1.0.0-rc.12",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
+    "dotenv": "^17.4.2",
     "ioredis": "^5.3.0",
     "next": "^14.0.0",
     "next-auth": "^5.0.0-beta.31",
     "nodemailer": "^7.0.13",
+    "pg": "^8.20.0",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
