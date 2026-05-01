@@ -268,6 +268,11 @@ export default function ContratoDetalhesPage() {
               <CardDescription>Escolha a próxima ação para este contrato</CardDescription>
             </CardHeader>
             <CardContent className="flex gap-3 flex-wrap">
+              <Link href={`/contratos/${contrato.id}/editar`}>
+                <Button variant="secondary">
+                  ✏️ Editar
+                </Button>
+              </Link>
               <Button
                 variant="secondary"
                 onClick={handleDownloadPDF}
