@@ -111,6 +111,31 @@ export default function PropostasPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleExportExcel = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter) params.set('status', statusFilter)
+
+      const response = await fetch(`/api/propostas/export?${params.toString()}`)
+      if (!response.ok) throw new Error('Erro ao exportar')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Propostas-${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      success('Excel exportado com sucesso!')
+    } catch (err) {
+      showError('Erro ao exportar Excel')
+      console.error(err)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -121,9 +146,18 @@ export default function PropostasPage() {
               <h1 className="text-3xl font-bold text-gray-900">📋 Propostas</h1>
               <p className="text-gray-600 mt-1">Gerencie suas propostas comerciais</p>
             </div>
-            <Link href="/propostas/nova">
-              <Button variant="primary">+ Nova Proposta</Button>
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={handleExportExcel}
+                disabled={loading || propostas.length === 0}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
+              >
+                📊 Exportar Excel
+              </button>
+              <Link href="/propostas/nova">
+                <Button variant="primary">+ Nova Proposta</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
