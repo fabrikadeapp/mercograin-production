@@ -19,21 +19,59 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const contratos = await db.contrato.findMany({
-      where: {
-        cliente: {
-          usuarioId: session.user.id,
-        },
-      },
-      include: {
-        cliente: {
-          select: { id: true, nome: true },
-        },
-      },
-      orderBy: { criadoEm: 'desc' },
-    })
+    // Query params para paginação e filtros
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
+    const search = searchParams.get('search') || ''
+    const statusAssinatura = searchParams.get('statusAssinatura') || ''
+    const clienteId = searchParams.get('clienteId') || ''
 
-    return NextResponse.json(contratos)
+    const skip = (page - 1) * limit
+
+    // Construir where clause com filtros
+    const where: any = {
+      cliente: {
+        usuarioId: session.user.id,
+      },
+    }
+
+    if (search) {
+      where.OR = [
+        { numero: { contains: search, mode: 'insensitive' } },
+        { cliente: { nome: { contains: search, mode: 'insensitive' } } },
+      ]
+    }
+    if (statusAssinatura) {
+      where.statusAssinatura = statusAssinatura
+    }
+    if (clienteId) {
+      where.clienteId = clienteId
+    }
+
+    // Buscar total e dados
+    const [total, contratos] = await Promise.all([
+      db.contrato.count({ where }),
+      db.contrato.findMany({
+        where,
+        include: {
+          cliente: {
+            select: { id: true, nome: true },
+          },
+        },
+        orderBy: { criadoEm: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ])
+
+    return NextResponse.json({
+      data: contratos,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    })
   } catch (error) {
     console.error('Get contratos error:', error)
     return NextResponse.json(

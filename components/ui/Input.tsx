@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import clsx from 'clsx'
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string
   error?: string
   helperText?: string

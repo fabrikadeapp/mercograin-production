@@ -15,7 +15,7 @@ const clienteSchema = z.object({
   tipo: z.enum(['comprador', 'vendedor']),
 })
 
-// GET - Listar clientes
+// GET - Listar clientes (com paginação e filtros)
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -24,12 +24,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const clientes = await db.cliente.findMany({
-      where: { usuarioId: session.user.id },
-      orderBy: { createdAt: 'desc' },
-    })
+    // Query params para paginação e filtros
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
+    const search = searchParams.get('search') || ''
+    const tipo = searchParams.get('tipo') || ''
+    const ativo = searchParams.get('ativo')
 
-    return NextResponse.json(clientes)
+    const skip = (page - 1) * limit
+
+    // Construir where clause com filtros
+    const where: any = { usuarioId: session.user.id }
+    if (search) {
+      where.OR = [
+        { nome: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { cnpj: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+    if (tipo) {
+      where.tipo = tipo
+    }
+    if (ativo !== null && ativo !== undefined) {
+      where.ativo = ativo === 'true'
+    }
+
+    // Buscar total e dados
+    const [total, clientes] = await Promise.all([
+      db.cliente.count({ where }),
+      db.cliente.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ])
+
+    return NextResponse.json({
+      data: clientes,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    })
   } catch (error) {
     console.error('Get clientes error:', error)
     return NextResponse.json({ error: 'Erro ao buscar clientes' }, { status: 500 })

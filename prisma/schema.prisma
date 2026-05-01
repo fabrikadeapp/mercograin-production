@@ -18,10 +18,13 @@ model User {
   senha     String   // Hash bcrypt
   nome      String
   role      String   @default("user") // 'admin' | 'user' | 'viewer'
+  emailVerificado Boolean @default(false)
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   clientes  Cliente[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([email])
 }
@@ -183,6 +186,54 @@ model WebhookLog {
   @@index([tipo])
   @@index([status])
   @@index([timestamp])
+  @@index([criadoEm])
+}
+
+// ============================================
+// EMAIL VERIFICATION & PASSWORD RESET
+// ============================================
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  criadoEm  DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  criadoEm  DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================
+// AUDITORIA DE AÇÕES
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  acao      String   // 'criar', 'atualizar', 'deletar', 'visualizar'
+  entidade  String   // 'cliente', 'proposta', 'contrato', 'boleto'
+  entidadeId String
+  mudancas  Json?    // Quais campos foram alterados
+  ipAddress String?
+  userAgent String?
+  criadoEm  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entidade])
   @@index([criadoEm])
 }
 

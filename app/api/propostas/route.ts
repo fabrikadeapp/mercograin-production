@@ -19,7 +19,7 @@ const propostaSchema = z.object({
   validadeEm: z.string(),
 })
 
-// GET - Listar propostas
+// GET - Listar propostas (com paginação e filtros)
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -28,22 +28,70 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Buscar propostas dos clientes do usuário
-    const propostas = await db.proposta.findMany({
-      where: {
-        cliente: {
-          usuarioId: session.user.id,
-        },
-      },
-      include: {
-        cliente: {
-          select: { id: true, nome: true },
-        },
-      },
-      orderBy: { criadaEm: 'desc' },
-    })
+    // Query params para paginação e filtros
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const clienteId = searchParams.get('clienteId') || ''
+    const dateFrom = searchParams.get('dateFrom') || ''
+    const dateTo = searchParams.get('dateTo') || ''
 
-    return NextResponse.json(propostas)
+    const skip = (page - 1) * limit
+
+    // Construir where clause com filtros
+    const where: any = {
+      cliente: {
+        usuarioId: session.user.id,
+      },
+    }
+
+    if (search) {
+      where.OR = [
+        { numero: { contains: search, mode: 'insensitive' } },
+        { cliente: { nome: { contains: search, mode: 'insensitive' } } },
+      ]
+    }
+    if (status) {
+      where.status = status
+    }
+    if (clienteId) {
+      where.clienteId = clienteId
+    }
+    if (dateFrom || dateTo) {
+      where.validadeEm = {}
+      if (dateFrom) {
+        where.validadeEm.gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        where.validadeEm.lte = new Date(dateTo)
+      }
+    }
+
+    // Buscar total e dados
+    const [total, propostas] = await Promise.all([
+      db.proposta.count({ where }),
+      db.proposta.findMany({
+        where,
+        include: {
+          cliente: {
+            select: { id: true, nome: true },
+          },
+        },
+        orderBy: { criadaEm: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ])
+
+    return NextResponse.json({
+      data: propostas,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    })
   } catch (error) {
     console.error('Get propostas error:', error)
     return NextResponse.json(
