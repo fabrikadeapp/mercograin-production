@@ -327,4 +327,133 @@ Status: **FASE 2 COMPLETA**
 
 ---
 
-**Fim do Log - FASE 2 Completa**
+---
+
+## FASE 3: FEATURES FALTANTES - CRUD COMPLETO ✅
+
+Data: 2025-04-30 (continuação)
+Status: **FASE 3 COMPLETA** (Propostas 100%, Contratos/Boletos 80%)
+
+### ✅ Páginas Criadas (6 páginas + 5 endpoints)
+
+#### Propostas - CRUD Completo
+1. `/app/propostas/[id]/page.tsx` - Visualizar proposta com table de grãos
+   - Exibe dados detalhados, graos, cliente
+   - Ações: Enviar, Marcar como aceita/rejeitada
+   - Status badges coloridos
+
+2. `/app/propostas/[id]/editar/page.tsx` - Editar proposta (apenas rascunho)
+   - Mesmo form dinâmico de adição de grãos
+   - Cálculo automático de totais
+   - Salvar mudanças
+
+3. `/app/api/propostas/[id]/route.ts` - Endpoints completos
+   - GET: Obter proposta com autenticação
+   - PUT: Atualizar proposta (apenas rascunho)
+   - DELETE: Deletar proposta (apenas rascunho)
+   - PATCH: Atualizar status (rascunho → enviada → aceita/rejeitada)
+
+#### Clientes - Edição Completa
+4. `/app/clientes/[id]/editar/page.tsx` - Editar cliente
+   - Mesmo form de criação
+   - Validação Zod + RHF
+   - Máscaras nativas
+
+#### Contratos - CRUD Base
+5. `/app/api/contratos/[id]/route.ts` - Endpoints
+   - GET, PUT, DELETE, PATCH /status
+
+#### Boletos - CRUD Base
+6. `/app/api/boletos/[id]/route.ts` - Endpoints
+   - GET, PUT, DELETE, PATCH /status
+
+### Features Implementadas
+
+#### Propostas
+- ✅ Visualização detalhada com table responsiva de grãos
+- ✅ Edição apenas em status rascunho
+- ✅ Transição de status: rascunho → enviada → aceita/rejeitada
+- ✅ Cálculo automático de valor total
+- ✅ Autorização por usuário (owner check)
+- ✅ Toast notifications em todas as ações
+
+#### Clientes
+- ✅ Edição com formulário validado
+- ✅ Mesmos campos de criação
+- ✅ Máscaras para CPF/CNPJ/telefone
+
+#### Endpoints
+- ✅ Autenticação em todos os endpoints
+- ✅ Validação Zod de inputs
+- ✅ Error handling consistente
+- ✅ Owner verification (usuário pode acessar apenas seus dados)
+- ✅ Status codes apropriados (401, 403, 404, 400, 500)
+
+### Arquitetura de Pages de Detalhe
+
+```tsx
+// Padrão implementado em [id]/page.tsx:
+1. Fetch com autenticação
+2. LoadingSpinner durante carregamento
+3. Error handling com mensagens
+4. Cards com dados organizados
+5. StatusBadge para status visual
+6. Buttons de ação com isLoading
+7. Toast notifications após ações
+```
+
+### Arquitetura de Endpoints
+
+```typescript
+// Padrão implementado em [id]/route.ts:
+1. Auth check + session validation
+2. Resource lookup
+3. Owner verification
+4. Status check (se aplicável)
+5. Input validation com Zod
+6. Database operation
+7. Error handling com códigos apropriados
+```
+
+### CRUD Status por Entidade
+
+| Entidade | Create | Read | Update | Delete | Status |
+|----------|--------|------|--------|--------|--------|
+| Propostas | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Clientes | ✅ | ✅ | ✅ | ✅ | N/A |
+| Contratos | ⚠️* | ✅ | ✅ | ✅ | ✅ |
+| Boletos | ⚠️* | ✅ | ✅ | ✅ | ✅ |
+
+*Criação de contratos e boletos será via ações de propostas/contratos aceitos (FASE 5)
+
+### TypeScript Status
+- ✅ type-check passa sem erros
+- ✅ Tipos genéricos em endpoints
+- ✅ Zod schemas para runtime validation
+- ✅ Zero `any` types
+
+### Fluxo End-to-End Testável
+
+```
+1. Criar Cliente (/clientes/novo)
+2. Criar Proposta (/propostas/nova) com grãos
+3. Ver Proposta (/propostas/[id])
+4. Editar Proposta (/propostas/[id]/editar)
+5. Enviar Proposta (PATCH status=enviada)
+6. Marcar como Aceita (PATCH status=aceita)
+7. Editar Cliente (/clientes/[id]/editar)
+```
+
+### Funcionalidades Pendentes (FASE 4+)
+
+- Páginas detalhes de contratos e boletos (UI)
+- Criar contrato a partir de proposta aceita
+- Criar boleto a partir de contrato
+- PDF generation para contratos
+- Braspag webhook integration
+- Rate limiting em webhooks
+- Health check endpoint
+
+---
+
+**Fim do Log - FASE 3 Completa**
