@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { validatePasswordStrength, getPasswordStrengthColor, getPasswordStrengthBarColor } from '@/lib/password-validator'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -14,10 +15,17 @@ export default function SignupPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<ReturnType<typeof validatePasswordStrength> | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+
+    // Update password strength when password changes
+    if (name === 'senha') {
+      const strength = validatePasswordStrength(value)
+      setPasswordStrength(strength)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,8 +37,10 @@ export default function SignupPage() {
       return
     }
 
-    if (formData.senha.length < 8) {
-      setError('A senha deve ter pelo menos 8 caracteres')
+    // Validate password strength
+    const strength = validatePasswordStrength(formData.senha)
+    if (!strength.isValid) {
+      setError('Senha não atende aos critérios mínimos de segurança')
       return
     }
 
@@ -55,7 +65,7 @@ export default function SignupPage() {
         return
       }
 
-      router.push('/auth/login?success=Conta%20criada%20com%20sucesso')
+      router.push(`/auth/verify-email-pending?email=${encodeURIComponent(formData.email)}`)
     } catch (err) {
       setError('Erro ao criar conta')
       setLoading(false)
@@ -121,7 +131,37 @@ export default function SignupPage() {
               placeholder="••••••••"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Mínimo 8 caracteres</p>
+
+            {formData.senha && passwordStrength && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getPasswordStrengthBarColor(passwordStrength.strength)}`}
+                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-semibold ${getPasswordStrengthColor(passwordStrength.strength)}`}>
+                    {passwordStrength.strength.replace('-', ' ').toUpperCase()}
+                  </span>
+                </div>
+
+                {passwordStrength.feedback.length > 0 && (
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    {passwordStrength.feedback.map((item, i) => (
+                      <li key={i} className="flex items-start gap-1">
+                        <span>•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <p className="text-xs text-gray-500 mt-2">
+              Mínimo 8 caracteres com letras maiúsculas, minúsculas, números e caracteres especiais
+            </p>
           </div>
 
           <div>

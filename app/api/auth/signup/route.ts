@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateToken, getTokenExpiry, hashToken } from '@/lib/token-service'
 import { sendEmail, emailTemplates } from '@/lib/email-service'
+import { validatePasswordStrength } from '@/lib/password-validator'
 
 const signupSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -16,6 +17,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     const { nome, email, senha } = signupSchema.parse(body)
+
+    // Validate password strength
+    const passwordStrength = validatePasswordStrength(senha)
+    if (!passwordStrength.isValid) {
+      return NextResponse.json(
+        {
+          error: 'Senha não atende aos critérios de segurança',
+          feedback: passwordStrength.feedback,
+        },
+        { status: 400 }
+      )
+    }
 
     // Verificar se usuário já existe
     const existingUser = await db.user.findUnique({

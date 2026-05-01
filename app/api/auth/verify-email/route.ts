@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTokenHash, isTokenExpired } from '@/lib/token-service'
+import { checkRateLimit, getRemainingAttempts, getResetTime } from '@/lib/rate-limiter'
 
 /**
  * GET /api/auth/verify-email?token=xxx
@@ -101,6 +102,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Email é obrigatório' },
         { status: 400 }
+      )
+    }
+
+    // Rate limit: 3 attempts per hour per email
+    const rateLimitKey = `resend-verification:${email}`
+    if (!checkRateLimit(rateLimitKey, 3, 3600000)) {
+      const remaining = getRemainingAttempts(rateLimitKey, 3, 3600000)
+      const resetSeconds = getResetTime(rateLimitKey)
+
+      return NextResponse.json(
+        {
+          error: `Muitas tentativas. Tente novamente em ${resetSeconds} segundo(s).`,
+          remainingAttempts: remaining,
+          resetIn: resetSeconds,
+        },
+        { status: 429 } // Too Many Requests
       )
     }
 
