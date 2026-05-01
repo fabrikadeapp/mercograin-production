@@ -104,7 +104,16 @@ const safeRedis = {
       console.warn('[Redis] Erro ao PING:', err)
       throw err
     }
-  }
+  },
+  async keys(pattern: string): Promise<string[]> {
+    if (!redis || !isConnected) return []
+    try {
+      return await redis.keys(pattern)
+    } catch (err) {
+      console.warn('[Redis] Erro ao KEYS:', err)
+      return []
+    }
+  },
 }
 
 export { safeRedis as redis }

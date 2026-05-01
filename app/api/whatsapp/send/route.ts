@@ -17,6 +17,7 @@ import { auth } from '@/auth'
 import { sendWhatsAppMessage, sendTemplateMessage, testWhatsAppConnection } from '@/lib/whatsapp-service'
 import { queueWhatsAppMessage } from '@/lib/whatsapp-queue'
 import { db } from '@/lib/db'
+import { checkRateLimit, DEFAULT_LIMITS } from '@/lib/rate-limiter-v2'
 import { z } from 'zod'
 
 const sendMessageSchema = z.object({
@@ -47,6 +48,32 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
+    // Rate limit check
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const rateLimitKey = `api:whatsapp:${ip}`
+    const rateLimitResult = await checkRateLimit(rateLimitKey, DEFAULT_LIMITS['api:whatsapp'])
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Muitas requisições. Tente novamente em ${rateLimitResult.retryAfter} segundos.`,
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toISOString(),
+          },
+        }
+      )
+    }
+
 
     const body = await request.json()
     const { phoneNumber, type, message, templateName, templateVars, queue } = sendMessageSchema.parse(body)

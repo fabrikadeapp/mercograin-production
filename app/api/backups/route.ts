@@ -12,6 +12,7 @@ import {
   runFullBackup,
   deleteBackup,
 } from '@/lib/backup-service'
+import { checkRateLimit, DEFAULT_LIMITS } from '@/lib/rate-limiter-v2'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -75,6 +76,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Acesso restrito a admins' },
         { status: 403 }
+      )
+    }
+    // Rate limit: max 5 backups per hour
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
+    const rateLimitKey = `api:backup:${ip}`
+    const rateLimitResult = await checkRateLimit(rateLimitKey, DEFAULT_LIMITS['api:backup'])
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: 'Limite de 5 backups por hora atingido',
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': (rateLimitResult.retryAfter || 60).toString(),
+          },
+        }
       )
     }
 
