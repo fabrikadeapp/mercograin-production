@@ -15,7 +15,7 @@ export default async function Page() {
       <PageHeader
         eyebrow="Mesa de operações · Tempo real"
         title="Dashboard"
-        subtitle="Cotações ao vivo · Yahoo Finance (CBOT + USDBRL)"
+        subtitle="Cotações ao vivo · CEPEA/ESALQ + Twelve Data"
         actions={
           <Button leftIcon={<Plus className="h-4 w-4" />}>Novo contrato</Button>
         }

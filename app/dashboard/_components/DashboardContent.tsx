@@ -29,6 +29,7 @@ import {
   DEMAND_GLOBAL,
   type TopContractRow,
 } from '@/lib/mocks/phb'
+import { useLiveQuotes, type LiveQuotePayload } from '@/lib/quotes/useLiveQuotes'
 
 const CURVE_TABS = [
   { value: 'fisico', label: 'Físico' },
@@ -50,10 +51,45 @@ async function safeJson(url: string) {
   return r.json()
 }
 
+function fmtBRL(v: number | null, fractionDigits = 2): string {
+  if (v === null || !Number.isFinite(v)) return '—'
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })
+}
+
+function fmtPct(v: number | null): string {
+  if (v === null || !Number.isFinite(v)) return '0,00%'
+  const sign = v >= 0 ? '+' : ''
+  return `${sign}${v.toFixed(2).replace('.', ',')}%`
+}
+
+function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePayload | undefined, fallbackSparkline: number[]) {
+  const meta: Record<typeof label, { display: string; ticker: string; unit: string; grainColor: 'soja' | 'milho' | 'trigo' | 'usd'; fractionDigits: number }> = {
+    soja:   { display: 'Soja',  ticker: 'ZS · CBOT',     unit: 'R$/sc 60kg',    grainColor: 'soja',  fractionDigits: 2 },
+    milho:  { display: 'Milho', ticker: 'ZC · CBOT',     unit: 'R$/sc 60kg',    grainColor: 'milho', fractionDigits: 2 },
+    trigo:  { display: 'Trigo', ticker: 'ZW · CBOT',     unit: 'R$/sc 60kg',    grainColor: 'trigo', fractionDigits: 2 },
+    usdbrl: { display: 'Dólar', ticker: 'USDBRL',        unit: 'Comercial',     grainColor: 'usd',   fractionDigits: 4 },
+  }
+  const m = meta[label]
+  const trend: 'pos' | 'neg' = (q?.changePct ?? 0) >= 0 ? 'pos' : 'neg'
+  const sparkline = (q?.sparkline?.length ?? 0) >= 2 ? q!.sparkline : fallbackSparkline
+  return {
+    symbol: m.display,
+    ticker: m.ticker,
+    unit: m.unit,
+    price: q?.price !== null && q?.price !== undefined ? `R$ ${fmtBRL(q.price, m.fractionDigits)}` : '—',
+    delta: { value: fmtPct(q?.changePct ?? null), trend },
+    buy: q?.previousClose !== null && q?.previousClose !== undefined ? fmtBRL(q.previousClose, m.fractionDigits) : '—',
+    sell: q?.high !== null && q?.high !== undefined ? fmtBRL(q.high, m.fractionDigits) : '—',
+    sparklineData: sparkline,
+    grainColor: m.grainColor,
+  }
+}
+
 export function DashboardContent() {
   const [curve, setCurve] = React.useState('fisico')
   const [data, setData] = React.useState<DashState>({})
   const [error, setError] = React.useState<string | null>(null)
+  const { data: live, loading: liveLoading } = useLiveQuotes(60_000)
 
   React.useEffect(() => {
     let cancel = false
@@ -123,7 +159,13 @@ export function DashboardContent() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {MARKETS.map((m) => <MarketCard key={m.symbol} {...m} />)}
+        {(['soja', 'milho', 'trigo', 'usdbrl'] as const).map((label, i) => {
+          const fallback = MARKETS[i]
+          const q = live?.[label]
+          if (liveLoading && !live) return <Skeleton key={label} height={260} />
+          const cardProps = liveToCard(label, q, fallback.sparklineData)
+          return <MarketCard key={label} {...cardProps} />
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
