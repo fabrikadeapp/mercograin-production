@@ -20,10 +20,39 @@ import {
 import { db as prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 300  // 5 min — CEPEA atualiza diariamente
+export const fetchCache = 'force-no-store'
 
 const TON_TO_SC60 = 1000 / 60
 const GRAINS: CepeaLabel[] = ['soja', 'milho', 'trigo']
+
+// Cache em memória para Twelve Data (rate limit free 8 req/min)
+interface MemCache<T> { data: T | null; at: number }
+const TTL_USDBRL = 60_000   // 1 min
+const TTL_SPARK  = 3600_000 // 1 hora
+const usdbrlCache: MemCache<Awaited<ReturnType<typeof fetchTwelveQuote>>> = { data: null, at: 0 }
+const sparkCache: MemCache<number[]> = { data: null, at: 0 }
+
+async function getUsdbrlCached() {
+  const now = Date.now()
+  if (usdbrlCache.data && now - usdbrlCache.at < TTL_USDBRL) return usdbrlCache.data
+  const fresh = await fetchTwelveQuote('usdbrl')
+  if (fresh.price !== null) {
+    usdbrlCache.data = fresh
+    usdbrlCache.at = now
+  }
+  return fresh
+}
+
+async function getUsdbrlSparkCached(): Promise<number[]> {
+  const now = Date.now()
+  if (sparkCache.data && now - sparkCache.at < TTL_SPARK) return sparkCache.data
+  const fresh = await fetchTwelveSparkline('usdbrl').catch(() => [] as number[])
+  if (fresh.length > 0) {
+    sparkCache.data = fresh
+    sparkCache.at = now
+  }
+  return fresh
+}
 
 function emptyPayload(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', symbol: string, currency: string) {
   return {
@@ -68,17 +97,16 @@ async function getCepeaSparkline(grao: CepeaLabel, limit = 30): Promise<number[]
 export async function GET() {
   const fetchedAt = new Date().toISOString()
   try {
-    const [cepea, usdbrlTD, sparkSoja, sparkMilho, sparkTrigo] = await Promise.all([
-      fetchCepeaQuotes(GRAINS),
-      fetchTwelveQuote('usdbrl'),
-      // Sparkline em R$/sc. Se DB ainda não tem histórico, retorna vazio.
-      // Não cai em fallback Twelve Data porque seria USD (escala diferente).
-      getCepeaSparkline('soja'),
-      getCepeaSparkline('milho'),
-      getCepeaSparkline('trigo'),
-    ])
-
-    const sparkUsdbrl = await fetchTwelveSparkline('usdbrl').catch(() => [])
+    const [cepea, usdbrlTD, sparkSoja, sparkMilho, sparkTrigo, sparkUsdbrl] =
+      await Promise.all([
+        fetchCepeaQuotes(GRAINS),
+        getUsdbrlCached(),
+        // Sparkline em R$/sc. Se DB ainda não tem histórico, retorna vazio.
+        getCepeaSparkline('soja'),
+        getCepeaSparkline('milho'),
+        getCepeaSparkline('trigo'),
+        getUsdbrlSparkCached(),
+      ])
 
     // Para cada grão: tenta calcular previousClose a partir do penúltimo
     // ponto da sparkline (R$/sc no caso CEPEA, USD no fallback).
