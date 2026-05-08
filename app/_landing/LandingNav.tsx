@@ -1,14 +1,14 @@
 import Link from 'next/link'
-import { Brand, Button } from '@/components/ui/phb'
+import { Button } from '@/components/ui/phb'
 import { NAV_LINKS } from './data'
+import { SecretAdminPortal } from './SecretAdminPortal'
 
 export function LandingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border-1 bg-bg-0/85 backdrop-blur-md">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
-        <Link href="/" aria-label="PHB Grain — Início">
-          <Brand />
-        </Link>
+        {/* Brand com easter egg: 5 cliques rápidos abrem portal SuperAdmin */}
+        <SecretAdminPortal />
 
         <ul className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
