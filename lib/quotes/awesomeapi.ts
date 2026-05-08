@@ -50,19 +50,27 @@ export async function fetchFxBidAsk(code: string = 'USD-BRL'): Promise<FxBidAsk>
   }
 
   try {
-    const r = await fetch(`https://economia.awesomeapi.com.br/last/${code}`, {
+    const url = `https://economia.awesomeapi.com.br/last/${code}`
+    const r = await fetch(url, {
       cache: 'no-store',
       signal: AbortSignal.timeout(8000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; PHBGrain/1.0; +https://profitsync.ia.br)',
+        'Accept': 'application/json',
+      },
     })
     if (!r.ok) {
-      // serve stale se houver
+      console.warn(`[awesomeapi] ${code} HTTP ${r.status}`)
       if (cached?.data) return cached.data
       return empty
     }
     const j = await r.json() as Record<string, any>
     const key = code.replace('-', '')
     const q = j[key]
-    if (!q) return cached?.data || empty
+    if (!q) {
+      console.warn(`[awesomeapi] ${code} payload sem chave ${key}:`, JSON.stringify(j).substring(0, 200))
+      return cached?.data || empty
+    }
 
     const bid = n(q.bid)
     const ask = n(q.ask)
