@@ -1,16 +1,15 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '50'))
     const entidade = searchParams.get('entidade') || ''
@@ -18,9 +17,11 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {
-      userId: session.user.id,
-    }
+    // AuditLog usa userId; admin com ?scope=all vê tudo
+    const where: any =
+      scope.isAdmin && searchParams.get('scope') === 'all'
+        ? {}
+        : { userId: scope.userId }
 
     if (entidade) {
       where.entidade = entidade

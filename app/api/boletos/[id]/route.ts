@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -7,14 +7,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         cliente: {
           select: {
@@ -41,14 +41,6 @@ export async function GET(
       )
     }
 
-    // Verificar se o usuário é o dono do cliente
-    if (boleto.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
-      )
-    }
-
     return NextResponse.json(boleto)
   } catch (error) {
     console.error('Get boleto error:', error)
@@ -64,22 +56,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Verificar propriedade
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
-    if (!boleto || boleto.cliente.usuarioId !== session.user.id) {
+    if (!boleto) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
+        { error: 'Boleto não encontrado' },
+        { status: 404 }
       )
     }
 
@@ -115,26 +104,22 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Verificar propriedade
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
-    if (!boleto || boleto.cliente.usuarioId !== session.user.id) {
+    if (!boleto) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
+        { error: 'Boleto não encontrado' },
+        { status: 404 }
       )
     }
 
-    // Só pode deletar boletos abertos
     if (boleto.status !== 'aberto') {
       return NextResponse.json(
         { error: 'Só é possível deletar boletos abertos' },

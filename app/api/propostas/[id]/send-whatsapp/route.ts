@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { queueProposalNotification } from '@/lib/whatsapp-queue'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
@@ -24,9 +24,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -34,9 +33,9 @@ export async function POST(
     const body = await request.json().catch(() => ({}))
     const { phoneNumber: providedPhone } = sendWhatsAppSchema.parse(body)
 
-    // Get proposta
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
+    // Get proposta (multi-tenancy via Proposta.usuarioId)
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         cliente: {
           select: {
@@ -53,14 +52,6 @@ export async function POST(
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    // Verify ownership
-    if (proposta.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -90,7 +81,7 @@ export async function POST(
       proposta.tipo,
       formatCurrency(valor),
       formatDate(proposta.validadeEm),
-      session.user.id
+      scope.userId
     )
 
     return NextResponse.json({

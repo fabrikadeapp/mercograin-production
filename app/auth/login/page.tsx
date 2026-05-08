@@ -1,14 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn, getSession } from 'next-auth/react'
 import Link from 'next/link'
 import { Mail, Lock, AlertCircle } from 'lucide-react'
 import { Button, Card, Input, Brand } from '@/components/ui/phb'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const planParam = searchParams.get('plan')
+  const plan =
+    planParam === 'starter' || planParam === 'pro' || planParam === 'enterprise'
+      ? planParam
+      : null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,7 +38,20 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/clientes')
+      // Decide redirect: se houver plan e user não tem assinatura ativa, vai pro checkout
+      if (plan) {
+        try {
+          const sess = await getSession()
+          const subStatus = (sess?.user as any)?.subscriptionStatus
+          if (!['trialing', 'active'].includes(subStatus)) {
+            router.push(`/assinatura/checkout?plan=${plan}`)
+            return
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      router.push('/dashboard')
     } catch (err) {
       setError('Erro ao fazer login')
       setLoading(false)

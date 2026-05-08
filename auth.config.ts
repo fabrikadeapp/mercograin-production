@@ -19,10 +19,29 @@ export const authConfig = {
 
       return isLoggedIn
     },
-    jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user }) {
+      if (user?.id) {
         token.id = user.id
         token.email = user.email
+      }
+      // Refresh role e subscription status em cada chamada (simples; otimizar depois)
+      if (token.id) {
+        try {
+          const u = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: {
+              role: true,
+              subscription: { select: { status: true, trialEnd: true } },
+            },
+          })
+          if (u) {
+            token.role = u.role
+            token.subscriptionStatus = u.subscription?.status || 'none'
+            token.trialEnd = u.subscription?.trialEnd?.toISOString() || null
+          }
+        } catch (e) {
+          // não bloqueia auth se DB falhar
+        }
       }
       return token
     },
@@ -30,6 +49,9 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.email = token.email as string
+        ;(session.user as any).role = token.role as string | undefined
+        ;(session.user as any).subscriptionStatus = token.subscriptionStatus as string | undefined
+        ;(session.user as any).trialEnd = token.trialEnd as string | null | undefined
       }
       return session
     },

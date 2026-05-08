@@ -19,16 +19,47 @@ model User {
   nome      String
   role      String   @default("user") // 'admin' | 'user' | 'viewer'
   emailVerificado Boolean @default(false)
+  stripeCustomerId String? @unique
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
+  subscription Subscription?
   clientes  Cliente[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   classificados Classificado[] @relation("ClassificadoAutor")
   alertasPreco  AlertaPreco[]
+  propostas Proposta[]
+  contratos Contrato[]
+  boletos   Boleto[]
 
   @@index([email])
+}
+
+// ============================================
+// ASSINATURAS (Stripe)
+// ============================================
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String    @unique
+  stripeCustomerId     String
+  stripePriceId        String
+  plan                 String    // 'starter' | 'pro' | 'enterprise'
+  status               String    // 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid'
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status])
+  @@index([stripeCustomerId])
 }
 
 // ============================================
@@ -159,9 +190,13 @@ model Proposta {
 
   contratos Contrato[]
 
+  usuarioId String
+  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@index([clienteId])
   @@index([status])
   @@index([validadeEm])
+  @@index([usuarioId])
 }
 
 // ============================================
@@ -185,9 +220,13 @@ model Contrato {
 
   boletos Boleto[]
 
+  usuarioId String
+  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@index([clienteId])
   @@index([proposIdFk])
   @@index([assinadoEm])
+  @@index([usuarioId])
 }
 
 // ============================================
@@ -211,10 +250,14 @@ model Boleto {
   criadoEm       DateTime @default(now())
   atualizadoEm   DateTime @updatedAt
 
+  usuarioId      String
+  usuario        User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@index([clienteId])
   @@index([status])
   @@index([vencimento])
   @@index([braspagId])
+  @@index([usuarioId])
 }
 
 // ============================================

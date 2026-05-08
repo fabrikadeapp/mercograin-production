@@ -3,7 +3,7 @@
  * POST /api/alertas — create new alert.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -14,13 +14,16 @@ const schema = z.object({
   preco: z.number().positive(),
 })
 
-export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const scope = await getScope(searchParams)
+  if (!scope) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
+  // AlertaPreco já tem userId (escopo direto)
+  const where: any = scope.isAdmin && searchParams.get('scope') === 'all' ? {} : { userId: scope.userId }
   const data = await db.alertaPreco.findMany({
-    where: { userId: session.user.id },
+    where,
     orderBy: { criadoEm: 'desc' },
   })
   return NextResponse.json({ data })
@@ -28,14 +31,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
     const body = await req.json()
     const data = schema.parse(body)
     const created = await db.alertaPreco.create({
-      data: { ...data, userId: session.user.id },
+      data: { ...data, userId: scope.userId },
     })
     return NextResponse.json(created, { status: 201 })
   } catch (e: any) {

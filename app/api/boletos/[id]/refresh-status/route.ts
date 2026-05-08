@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { getBraspagClient } from '@/lib/braspag-client'
 
@@ -8,15 +8,14 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Buscar boleto
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
+    // Buscar boleto (multi-tenancy via Boleto.usuarioId)
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         cliente: true,
         contrato: true,
@@ -27,14 +26,6 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Boleto não encontrado' },
         { status: 404 }
-      )
-    }
-
-    // Verificar propriedade
-    if (boleto.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 403 }
       )
     }
 

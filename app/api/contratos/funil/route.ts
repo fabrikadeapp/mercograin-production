@@ -9,25 +9,25 @@
  * - assinado     ← contratos com statusAssinatura='assinado'
  * - fechado      ← contratos com dataFim no passado e assinados
  */
-import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
-    const userId = session.user.id
 
     const [propostas, contratos] = await Promise.all([
       db.proposta.findMany({
-        where: { cliente: { usuarioId: userId } },
+        where: scope.whereOwn(),
         select: { id: true, status: true, valorTotal: true, contratos: { select: { id: true } } },
       }),
       db.contrato.findMany({
-        where: { cliente: { usuarioId: userId } },
+        where: scope.whereOwn(),
         select: { id: true, statusAssinatura: true, dataFim: true, proposta: { select: { valorTotal: true } } },
       }),
     ])

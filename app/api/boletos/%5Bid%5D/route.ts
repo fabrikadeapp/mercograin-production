@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -13,20 +13,19 @@ const updateBoletoSchema = z.object({
   braspagId: z.string().optional(),
 })
 
-// GET - Obter boleto específico
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: { cliente: true },
     })
 
@@ -34,17 +33,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Boleto não encontrado' },
         { status: 404 }
-      )
-    }
-
-    const cliente = await db.cliente.findUnique({
-      where: { id: boleto.clienteId },
-    })
-
-    if (!cliente || cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -58,34 +46,24 @@ export async function GET(
   }
 }
 
-// PUT - Atualizar boleto
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!boleto) {
       return NextResponse.json(
         { error: 'Boleto não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (boleto.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -123,34 +101,24 @@ export async function PUT(
   }
 }
 
-// DELETE - Deletar boleto
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!boleto) {
       return NextResponse.json(
         { error: 'Boleto não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (boleto.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -168,34 +136,24 @@ export async function DELETE(
   }
 }
 
-// PATCH - Atualizar status
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const boleto = await db.boleto.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!boleto) {
       return NextResponse.json(
         { error: 'Boleto não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (boleto.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 

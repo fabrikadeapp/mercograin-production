@@ -20,8 +20,15 @@ export async function GET(request: NextRequest) {
       200
     )
 
+    // Multi-tenancy: filtrar por userId no payload (admin pode ver tudo via ?scope=all)
+    const wantAll = searchParams.get('scope') === 'all'
+    const baseWhere: any = { tipo: 'whatsapp_send' }
+    if (!wantAll) {
+      baseWhere.payload = { path: ['userId'], equals: session.user.id }
+    }
+
     const rows = await db.webhookLog.findMany({
-      where: { tipo: 'whatsapp_send' },
+      where: baseWhere,
       orderBy: { criadoEm: 'desc' },
       take: limit,
     })

@@ -5,16 +5,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    // Helper "where own" for client-table (uses Cliente.usuarioId)
+    const whereCliente: any = scope.whereOwn()
+    // For Proposta/Contrato/Boleto we filter by their own usuarioId (Multi-tenancy direct).
+    const whereOwn: any = scope.whereOwn()
 
     // Buscar todas as estatísticas em paralelo
     const [
@@ -32,49 +36,49 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // Clientes
       db.cliente.count({
-        where: { usuarioId: session.user.id },
+        where: whereCliente,
       }),
       // Propostas total
       db.proposta.count({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
       }),
       // Propostas por status
       db.proposta.groupBy({
         by: ['status'],
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         _count: true,
       }),
       // Contratos total
       db.contrato.count({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
       }),
       // Contratos por status
       db.contrato.groupBy({
         by: ['statusAssinatura'],
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         _count: true,
       }),
       // Boletos total
       db.boleto.count({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
       }),
       // Boletos por status
       db.boleto.groupBy({
         by: ['status'],
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         _count: true,
       }),
       // Arrecadação (boletos pagos)
       db.boleto.aggregate({
         where: {
-          cliente: { usuarioId: session.user.id },
+          ...whereOwn,
           status: 'pago',
         },
         _sum: { valor: true },
       }),
       // Últimas 5 propostas
       db.proposta.findMany({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         select: {
           id: true,
           numero: true,
@@ -88,7 +92,7 @@ export async function GET(request: NextRequest) {
       }),
       // Últimos 5 contratos
       db.contrato.findMany({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         select: {
           id: true,
           numero: true,
@@ -102,7 +106,7 @@ export async function GET(request: NextRequest) {
       }),
       // Últimos 5 boletos
       db.boleto.findMany({
-        where: { cliente: { usuarioId: session.user.id } },
+        where: whereOwn,
         select: {
           id: true,
           numero: true,
@@ -146,14 +150,14 @@ export async function GET(request: NextRequest) {
 
     // Calcular valores de propostas
     const propostasValor = await db.proposta.aggregate({
-      where: { cliente: { usuarioId: session.user.id } },
+      where: whereOwn,
       _sum: { valorTotal: true },
     })
 
     // Calcular valores de boletos abertos
     const boletosAbertosValor = await db.boleto.aggregate({
       where: {
-        cliente: { usuarioId: session.user.id },
+        ...whereOwn,
         status: { in: ['aberto', 'vencido'] },
       },
       _sum: { valor: true },
@@ -162,7 +166,7 @@ export async function GET(request: NextRequest) {
     // Alertas: Boletos vencidos
     const boletosVencidos = await db.boleto.findMany({
       where: {
-        cliente: { usuarioId: session.user.id },
+        ...whereOwn,
         status: 'vencido',
       },
       select: {
@@ -179,7 +183,7 @@ export async function GET(request: NextRequest) {
     // Alertas: Propostas pendentes
     const propostasPendentes = await db.proposta.findMany({
       where: {
-        cliente: { usuarioId: session.user.id },
+        ...whereOwn,
         status: 'enviada',
       },
       select: {
@@ -196,7 +200,7 @@ export async function GET(request: NextRequest) {
     const ago12 = new Date()
     ago12.setMonth(ago12.getMonth() - 12)
     const contratosMes = await db.contrato.findMany({
-      where: { cliente: { usuarioId: session.user.id }, criadoEm: { gte: ago12 } },
+      where: { ...whereOwn, criadoEm: { gte: ago12 } },
       select: { criadoEm: true, statusAssinatura: true },
     })
     const sparkBuckets: Record<string, { emitidos: number; assinados: number; fechados: number }> = {}
@@ -218,7 +222,7 @@ export async function GET(request: NextRequest) {
 
     // Tonelagem total comprada (soma sacas em propostas aceitas tipo=compra)
     const propostasCompras = await db.proposta.findMany({
-      where: { cliente: { usuarioId: session.user.id }, status: 'aceita', tipo: 'compra' },
+      where: { ...whereOwn, status: 'aceita', tipo: 'compra' },
       select: { graos: true },
     })
     let tonsCompradas = 0

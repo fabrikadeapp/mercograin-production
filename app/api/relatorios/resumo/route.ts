@@ -4,18 +4,20 @@
  * e (mock) eficiência logística para a tela /relatorios.
  */
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 
 const MESES_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(req.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
-    const userId = session.user.id
+    const whereOwn: any = scope.whereOwn()
+    const whereCliente: any = scope.whereOwn()
 
     const now = new Date()
     const ytdStart = new Date(now.getFullYear(), 0, 1)
@@ -31,7 +33,7 @@ export async function GET(_req: NextRequest) {
     ] = await Promise.all([
       db.proposta.findMany({
         where: {
-          cliente: { usuarioId: userId },
+          ...whereOwn,
           status: 'aceita',
           criadaEm: { gte: ytdStart },
         },
@@ -44,21 +46,21 @@ export async function GET(_req: NextRequest) {
       }),
       db.proposta.aggregate({
         where: {
-          cliente: { usuarioId: userId },
+          ...whereOwn,
           status: 'aceita',
           criadaEm: { gte: prevYtdStart, lte: prevYtdEnd },
         },
         _sum: { valorTotal: true },
       }),
       db.contrato.count({
-        where: { cliente: { usuarioId: userId }, criadoEm: { gte: ytdStart } },
+        where: { ...whereOwn, criadoEm: { gte: ytdStart } },
       }),
       db.boleto.findMany({
-        where: { cliente: { usuarioId: userId } },
+        where: whereOwn,
         select: { valor: true, status: true, vencimento: true },
       }),
       db.cliente.findMany({
-        where: { usuarioId: userId },
+        where: whereCliente,
         select: { id: true, nome: true, endereco: true },
       }),
     ])

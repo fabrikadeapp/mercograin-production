@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -22,14 +22,13 @@ const propostaSchema = z.object({
 // GET - Listar propostas (com paginação e filtros)
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Query params para paginação e filtros
-    const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
     const search = searchParams.get('search') || ''
@@ -40,12 +39,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Construir where clause com filtros
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    // Construir where clause com filtros (multi-tenancy via Proposta.usuarioId)
+    const where: any = scope.whereOwn()
 
     if (search) {
       where.OR = [
@@ -104,9 +99,8 @@ export async function GET(request: NextRequest) {
 // POST - Criar proposta
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -114,11 +108,11 @@ export async function POST(request: NextRequest) {
     const data = propostaSchema.parse(body)
 
     // Verificar se cliente pertence ao usuário
-    const cliente = await db.cliente.findUnique({
-      where: { id: data.clienteId },
+    const cliente = await db.cliente.findFirst({
+      where: { id: data.clienteId, ...scope.whereOwn() },
     })
 
-    if (!cliente || cliente.usuarioId !== session.user.id) {
+    if (!cliente) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
@@ -129,6 +123,7 @@ export async function POST(request: NextRequest) {
       data: {
         numero: data.numero,
         clienteId: data.clienteId,
+        usuarioId: scope.userId,
         tipo: data.tipo,
         graos: data.graos,
         valorTotal: String(data.valor),

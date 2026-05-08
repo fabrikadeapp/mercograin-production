@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { enviarNotificacaoContrato } from '@/lib/services/email-notifications'
@@ -14,14 +14,12 @@ const contratoSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Query params para paginação e filtros
-    const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
     const search = searchParams.get('search') || ''
@@ -30,12 +28,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Construir where clause com filtros
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    // Multi-tenancy via Contrato.usuarioId
+    const where: any = scope.whereOwn()
 
     if (search) {
       where.OR = [
@@ -50,7 +44,6 @@ export async function GET(request: NextRequest) {
       where.clienteId = clienteId
     }
 
-    // Buscar total e dados
     const [total, contratos] = await Promise.all([
       db.contrato.count({ where }),
       db.contrato.findMany({
@@ -84,29 +77,43 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     const body = await request.json()
     const data = contratoSchema.parse(body)
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: data.clienteId },
+    const cliente = await db.cliente.findFirst({
+      where: { id: data.clienteId, ...scope.whereOwn() },
     })
 
-    if (!cliente || cliente.usuarioId !== session.user.id) {
+    if (!cliente) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
       )
     }
 
+    // Validar que a proposta também pertence ao usuário
+    const proposta = await db.proposta.findFirst({
+      where: { id: data.proposIdFk, ...scope.whereOwn() },
+    })
+
+    if (!proposta) {
+      return NextResponse.json(
+        { error: 'Proposta não encontrada' },
+        { status: 404 }
+      )
+    }
+
     const contrato = await db.contrato.create({
       data: {
-        ...data,
+        proposIdFk: data.proposIdFk,
+        clienteId: data.clienteId,
+        numero: data.numero,
+        usuarioId: scope.userId,
         dataInicio: new Date(),
         statusAssinatura: 'pendente',
       },
@@ -118,7 +125,6 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Enviar notificação por email
     if (cliente.email) {
       try {
         await enviarNotificacaoContrato({
@@ -129,7 +135,6 @@ export async function POST(request: NextRequest) {
         })
       } catch (emailError) {
         console.error('Erro ao enviar notificação:', emailError)
-        // Não falhar a requisição se o email falhar
       }
     }
 

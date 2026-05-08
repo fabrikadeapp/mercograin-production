@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { enviarNotificacaoProposta } from '@/lib/services/email-notifications'
@@ -28,14 +28,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: { cliente: true },
     })
 
@@ -43,18 +43,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    // Verificar se a proposta pertence ao usuário
-    const cliente = await db.cliente.findUnique({
-      where: { id: proposta.clienteId },
-    })
-
-    if (!cliente || cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -74,14 +62,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: { cliente: true },
     })
 
@@ -89,14 +76,6 @@ export async function PUT(
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    // Verificar autorização e status
-    if (proposta.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -146,28 +125,19 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!proposta) {
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    if (proposta.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -198,14 +168,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: { cliente: true },
     })
 
@@ -213,13 +182,6 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    if (proposta.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -253,7 +215,6 @@ export async function PATCH(
           })
         } catch (emailError) {
           console.error('Erro ao enviar notificação:', emailError)
-          // Não falhar a requisição se o email falhar
         }
       }
     }

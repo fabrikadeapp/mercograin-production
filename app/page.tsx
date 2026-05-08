@@ -1,9 +1,11 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import { LandingPage } from './_landing/LandingPage'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   const session = await auth()
-  redirect(session ? '/dashboard' : '/auth/login')
+  if (session) redirect('/dashboard')
+  return <LandingPage />
 }

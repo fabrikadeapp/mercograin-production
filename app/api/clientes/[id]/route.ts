@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -21,22 +21,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: params.id },
+    const cliente = await db.cliente.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!cliente) {
       return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
-    }
-
-    if (cliente.usuarioId !== session.user.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
     return NextResponse.json(cliente)
@@ -52,22 +48,17 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: params.id },
+    const cliente = await db.cliente.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!cliente) {
       return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
-    }
-
-    if (cliente.usuarioId !== session.user.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -98,22 +89,17 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: params.id },
+    const cliente = await db.cliente.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!cliente) {
       return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
-    }
-
-    if (cliente.usuarioId !== session.user.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
     await db.cliente.delete({

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { User, Mail, Lock, AlertCircle } from 'lucide-react'
 import { Button, Card, Input, Brand } from '@/components/ui/phb'
@@ -13,6 +13,11 @@ import {
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const planParam = searchParams.get('plan')
+  const plan = planParam === 'starter' || planParam === 'pro' || planParam === 'enterprise'
+    ? planParam
+    : 'pro'
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -70,7 +75,9 @@ export default function SignupPage() {
         return
       }
 
-      router.push(`/auth/verify-email-pending?email=${encodeURIComponent(formData.email)}`)
+      router.push(
+        `/auth/verify-email-pending?email=${encodeURIComponent(formData.email)}&plan=${plan}`
+      )
     } catch (err) {
       setError('Erro ao criar conta')
       setLoading(false)
@@ -99,6 +106,7 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="plan" value={plan} />
             <Input
               label="Nome completo"
               name="nome"

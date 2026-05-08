@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import {
   exportContratosExcel,
@@ -17,21 +17,20 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
     const format = searchParams.get('format') || 'list'
     const status = searchParams.get('status')
     const id = searchParams.get('id')
 
     // Detailed export (single contrato)
     if (format === 'detailed' && id) {
-      const contrato = await db.contrato.findUnique({
-        where: { id },
+      const contrato = await db.contrato.findFirst({
+        where: { id, ...scope.whereOwn() },
         include: {
           proposta: {
             select: {
@@ -55,14 +54,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           { error: 'Contrato não encontrado' },
           { status: 404 }
-        )
-      }
-
-      // Verify ownership
-      if (contrato.cliente.usuarioId !== session.user.id) {
-        return NextResponse.json(
-          { error: 'Acesso negado' },
-          { status: 403 }
         )
       }
 
@@ -98,11 +89,7 @@ export async function GET(request: NextRequest) {
     }
 
     // List export (all contratos with filters)
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    const where: any = scope.whereOwn()
 
     if (status) {
       where.statusAssinatura = status

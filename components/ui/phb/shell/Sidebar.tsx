@@ -18,6 +18,7 @@ import {
   Truck,
   MessageCircle,
   WifiOff,
+  CreditCard,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -215,6 +216,10 @@ function SidebarFooter() {
         <span className="eyebrow">Paleta</span>
         <PaletteSwitcher className="scale-75 origin-right" />
       </div>
+      <Link href="/assinatura" className="nav-item">
+        <CreditCard className="h-4 w-4 shrink-0" />
+        <span className="flex-1">Assinatura</span>
+      </Link>
       <Link href="/configuracoes" className="nav-item">
         <Settings className="h-4 w-4 shrink-0" />
         <span className="flex-1">Configurações</span>

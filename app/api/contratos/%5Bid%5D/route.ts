@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { enviarNotificacaoContrato } from '@/lib/services/email-notifications'
@@ -17,14 +17,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const contrato = await db.contrato.findUnique({
-      where: { id: params.id },
+    const contrato = await db.contrato.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         cliente: true,
         proposta: {
@@ -45,17 +45,6 @@ export async function GET(
       )
     }
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: contrato.clienteId },
-    })
-
-    if (!cliente || cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
-      )
-    }
-
     return NextResponse.json(contrato)
   } catch (error) {
     console.error('Get contrato error:', error)
@@ -72,28 +61,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const contrato = await db.contrato.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const contrato = await db.contrato.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!contrato) {
       return NextResponse.json(
         { error: 'Contrato não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (contrato.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -134,28 +114,19 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const contrato = await db.contrato.findUnique({
-      where: { id: params.id },
-      include: { cliente: true },
+    const contrato = await db.contrato.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
     })
 
     if (!contrato) {
       return NextResponse.json(
         { error: 'Contrato não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (contrato.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -179,14 +150,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const contrato = await db.contrato.findUnique({
-      where: { id: params.id },
+    const contrato = await db.contrato.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: { cliente: true },
     })
 
@@ -194,13 +164,6 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Contrato não encontrado' },
         { status: 404 }
-      )
-    }
-
-    if (contrato.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
@@ -223,7 +186,6 @@ export async function PATCH(
       },
     })
 
-    // Enviar notificação por email quando contrato é assinado
     if (statusAssinatura === 'assinado' && updated.cliente.email) {
       try {
         await enviarNotificacaoContrato({
@@ -234,7 +196,6 @@ export async function PATCH(
         })
       } catch (emailError) {
         console.error('Erro ao enviar notificação:', emailError)
-        // Não falhar a requisição se o email falhar
       }
     }
 

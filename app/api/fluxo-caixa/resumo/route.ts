@@ -6,8 +6,8 @@
  * "Saldo atual" também não tem fonte de saldo bancário → derivamos
  * (boletos pagos cumulativos – mock-pagar cumulativo) como proxy.
  */
-import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 const MESES_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -21,13 +21,14 @@ const MOCK_PAGAR_PROX_7D = [
   { id: 'mp5', descricao: 'Impostos · ICMS-ST', doc: 'GR-091026', diasOffset: 7, valor: 110000, status: 'atenção' },
 ]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
-    const userId = session.user.id
+    const whereOwn: any = scope.whereOwn()
     const now = new Date()
     const in7 = new Date(now.getTime() + 7 * 86400000)
     const in30 = new Date(now.getTime() + 30 * 86400000)
@@ -36,23 +37,23 @@ export async function GET() {
 
     const [pagosTotal, abertos30, vencidosAbertos, aReceberProx7d, propostasGrao, pagosUlt30, pagosAnt30] = await Promise.all([
       db.boleto.aggregate({
-        where: { cliente: { usuarioId: userId }, status: 'pago' },
+        where: { ...whereOwn, status: 'pago' },
         _sum: { valor: true },
       }),
       db.boleto.findMany({
         where: {
-          cliente: { usuarioId: userId },
+          ...whereOwn,
           status: { in: ['aberto', 'vencido'] },
           vencimento: { lte: in30 },
         },
         select: { id: true, valor: true, status: true },
       }),
       db.boleto.count({
-        where: { cliente: { usuarioId: userId }, status: 'vencido' },
+        where: { ...whereOwn, status: 'vencido' },
       }),
       db.boleto.findMany({
         where: {
-          cliente: { usuarioId: userId },
+          ...whereOwn,
           status: { in: ['aberto', 'vencido'] },
           vencimento: { gte: now, lte: in7 },
         },
@@ -68,16 +69,16 @@ export async function GET() {
         take: 10,
       }),
       db.proposta.findMany({
-        where: { cliente: { usuarioId: userId }, status: 'aceita' },
+        where: { ...whereOwn, status: 'aceita' },
         select: { graos: true, valorTotal: true },
       }),
       db.boleto.aggregate({
-        where: { cliente: { usuarioId: userId }, status: 'pago', confirmadoEm: { gte: ago30 } },
+        where: { ...whereOwn, status: 'pago', confirmadoEm: { gte: ago30 } },
         _sum: { valor: true },
       }),
       db.boleto.aggregate({
         where: {
-          cliente: { usuarioId: userId },
+          ...whereOwn,
           status: 'pago',
           confirmadoEm: { gte: new Date(ago30.getTime() - 30 * 86400000), lt: ago30 },
         },

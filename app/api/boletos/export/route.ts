@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import {
   exportBoletosExcel,
@@ -15,21 +15,16 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
     // Build query
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    const where: any = scope.whereOwn()
 
     if (status) {
       where.status = status

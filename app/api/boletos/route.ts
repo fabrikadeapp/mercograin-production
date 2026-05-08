@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getBraspagClient } from '@/lib/braspag-client'
@@ -16,14 +16,13 @@ const boletoSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Query params para paginação e filtros
-    const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
     const search = searchParams.get('search') || ''
@@ -33,12 +32,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Construir where clause com filtros
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    // Multi-tenancy via Boleto.usuarioId
+    const where: any = scope.whereOwn()
 
     if (search) {
       where.OR = [
@@ -90,20 +85,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     const body = await request.json()
     const data = boletoSchema.parse(body)
 
-    const cliente = await db.cliente.findUnique({
-      where: { id: data.clienteId },
+    const cliente = await db.cliente.findFirst({
+      where: { id: data.clienteId, ...scope.whereOwn() },
     })
 
-    if (!cliente || cliente.usuarioId !== session.user.id) {
+    if (!cliente) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
@@ -167,6 +161,7 @@ export async function POST(request: NextRequest) {
         numero: data.numero,
         clienteId: data.clienteId,
         contratoIdFk: data.contratoId,
+        usuarioId: scope.userId,
         banco: data.banco,
         valor: new Decimal(data.valor),
         vencimento: new Date(data.vencimento),

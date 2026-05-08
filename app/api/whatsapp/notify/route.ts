@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
     // Resolve número
     let resolvedNumber = number ?? ''
     if (targetType === 'cliente' && targetId) {
-      const cliente = await db.cliente.findUnique({
-        where: { id: targetId },
+      const cliente = await db.cliente.findFirst({
+        where: { id: targetId, usuarioId: session.user.id },
         select: { whatsapp: true, telefone: true, nome: true },
       })
       if (!cliente) {

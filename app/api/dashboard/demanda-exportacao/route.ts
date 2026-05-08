@@ -5,8 +5,8 @@
  * TODO: integrar com fonte oficial (CONAB / MAPA / SECEX).
  * Por enquanto, retorna mock server-side estável para o dashboard.
  */
-import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getScope } from '@/lib/auth/scope'
 
 const MOCK_DEMAND = [
   { label: 'China', value: '58.420 t', amount: 58420, color: 'var(--neg)' },
@@ -16,9 +16,10 @@ const MOCK_DEMAND = [
   { label: 'Índia', value: '8.610 t', amount: 8610, color: 'var(--grain-milho)' },
 ]
 
-export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const scope = await getScope(searchParams)
+  if (!scope) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
   return NextResponse.json({

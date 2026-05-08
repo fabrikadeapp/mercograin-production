@@ -10,8 +10,8 @@
  * Metas: configuráveis. Sem fonte ainda, usamos METAS_DEFAULT por grão (em sacas).
  * Quando o volume realizado / meta = 0, retorna 0% (empty-friendly).
  */
-import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 // TODO: mover para tabela de configuração
@@ -21,17 +21,18 @@ const METAS_DEFAULT: Record<string, { compra: number; venda: number }> = {
   trigo: { compra: 40000, venda: 40000 },
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Contratos assinados deste usuário, com proposta+grãos
     const contratos = await db.contrato.findMany({
       where: {
-        cliente: { usuarioId: session.user.id },
+        ...scope.whereOwn(),
         statusAssinatura: 'assinado',
       },
       include: {

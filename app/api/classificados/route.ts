@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -74,8 +75,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...data,
         expiraEm: data.expiraEm ? new Date(data.expiraEm) : null,
-        autorId: session.user.id,
+        autorId: scope.userId,
       },
     })
 

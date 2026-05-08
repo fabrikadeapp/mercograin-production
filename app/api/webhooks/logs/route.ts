@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -25,6 +26,15 @@ const querySchema = z.object({
  */
 export async function GET(req: NextRequest) {
   try {
+    // Admin-only
+    const scope = await getScope()
+    if (!scope) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+    if (!scope.isAdmin) {
+      return NextResponse.json({ error: 'Acesso restrito a administradores' }, { status: 403 })
+    }
+
     // Parse query params
     const searchParams = req.nextUrl.searchParams
     const query = querySchema.parse({

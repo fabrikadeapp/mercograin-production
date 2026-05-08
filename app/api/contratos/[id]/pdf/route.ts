@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContratoPDFStream, ContratoPDFData } from '@/lib/pdf-service'
 
@@ -12,15 +12,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Fetch contrato with proposta and cliente info
-    const contrato = await db.contrato.findUnique({
-      where: { id: params.id },
+    // Fetch contrato with proposta and cliente info (multi-tenancy via Contrato.usuarioId)
+    const contrato = await db.contrato.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         proposta: {
           select: {
@@ -45,14 +45,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Contrato não encontrado' },
         { status: 404 }
-      )
-    }
-
-    // Verify user ownership
-    if (contrato.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 

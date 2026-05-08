@@ -1,16 +1,17 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    const ownClient: any = scope.whereOwn()
+    const ownDirect: any = scope.whereOwn()
 
-    const { searchParams } = new URL(request.url)
     const query = searchParams.get('q') || ''
 
     if (query.length < 2) {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       // Buscar clientes
       db.cliente.findMany({
         where: {
-          usuarioId: session.user.id,
+          ...ownClient,
           OR: [
             { nome: { contains: query, mode: 'insensitive' } },
             { email: { contains: query, mode: 'insensitive' } },
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       // Buscar propostas
       db.proposta.findMany({
         where: {
-          cliente: { usuarioId: session.user.id },
+          ...ownDirect,
           OR: [
             { numero: { contains: query, mode: 'insensitive' } },
             { cliente: { nome: { contains: query, mode: 'insensitive' } } },
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       // Buscar contratos
       db.contrato.findMany({
         where: {
-          cliente: { usuarioId: session.user.id },
+          ...ownDirect,
           OR: [
             { numero: { contains: query, mode: 'insensitive' } },
             { cliente: { nome: { contains: query, mode: 'insensitive' } } },
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       // Buscar boletos
       db.boleto.findMany({
         where: {
-          cliente: { usuarioId: session.user.id },
+          ...ownDirect,
           OR: [
             { numero: { contains: query, mode: 'insensitive' } },
             { cliente: { nome: { contains: query, mode: 'insensitive' } } },

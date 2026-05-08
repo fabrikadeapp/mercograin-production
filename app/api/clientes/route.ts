@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -18,14 +18,13 @@ const clienteSchema = z.object({
 // GET - Listar clientes (com paginação e filtros)
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     // Query params para paginação e filtros
-    const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
     const search = searchParams.get('search') || ''
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Construir where clause com filtros
-    const where: any = { usuarioId: session.user.id }
+    const where: any = scope.whereOwn()
     if (search) {
       where.OR = [
         { nome: { contains: search, mode: 'insensitive' } },
@@ -77,9 +76,8 @@ export async function GET(request: NextRequest) {
 // POST - Criar cliente
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
     const cliente = await db.cliente.create({
       data: {
         ...data,
-        usuarioId: session.user.id,
+        usuarioId: scope.userId,
       },
     })
 

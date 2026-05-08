@@ -1,9 +1,11 @@
 /**
  * GET / PUT / DELETE /api/classificados/[id]
- * Auth required. Ownership enforced (autor === session.user.id) for write ops.
+ * Auth required. Marketplace: GET shows any classificado.
+ * Write ops require ownership (autor === user) OR admin.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -39,8 +41,8 @@ export async function GET(_req: NextRequest, ctx: { params: { id: string } }) {
 
 export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    const scope = await getScope()
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
     const existing = await db.classificado.findUnique({
@@ -49,8 +51,9 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
     if (!existing) {
       return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
     }
-    if (existing.autorId !== session.user.id) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    if (existing.autorId !== scope.userId && !scope.isAdmin) {
+      // 404 (não revela existência) salvo se for admin que veria via scope=all
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
     }
 
     const body = await req.json()
@@ -78,8 +81,8 @@ export async function PUT(req: NextRequest, ctx: { params: { id: string } }) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: { params: { id: string } }) {
-  const session = await auth()
-  if (!session?.user?.id) {
+  const scope = await getScope()
+  if (!scope) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
   const existing = await db.classificado.findUnique({
@@ -88,8 +91,8 @@ export async function DELETE(_req: NextRequest, ctx: { params: { id: string } })
   if (!existing) {
     return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   }
-  if (existing.autorId !== session.user.id) {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  if (existing.autorId !== scope.userId && !scope.isAdmin) {
+    return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   }
   await db.classificado.delete({ where: { id: ctx.params.id } })
   return NextResponse.json({ ok: true })

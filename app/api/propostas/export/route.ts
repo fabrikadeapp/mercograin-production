@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import {
   exportPropostasToExcel,
@@ -18,21 +18,20 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
     const format = searchParams.get('format') || 'list'
     const status = searchParams.get('status')
     const id = searchParams.get('id')
 
     // Detailed export (single proposta)
     if (format === 'detailed' && id) {
-      const proposta = await db.proposta.findUnique({
-        where: { id },
+      const proposta = await db.proposta.findFirst({
+        where: { id, ...scope.whereOwn() },
         include: {
           cliente: {
             select: {
@@ -49,14 +48,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           { error: 'Proposta não encontrada' },
           { status: 404 }
-        )
-      }
-
-      // Verify ownership
-      if (proposta.cliente.usuarioId !== session.user.id) {
-        return NextResponse.json(
-          { error: 'Acesso negado' },
-          { status: 403 }
         )
       }
 
@@ -93,11 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     // List export (all propostas with filters)
-    const where: any = {
-      cliente: {
-        usuarioId: session.user.id,
-      },
-    }
+    const where: any = scope.whereOwn()
 
     if (status) {
       where.status = status

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { auth } from '@/auth'
+import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { generatePropostaPDFStream, PropostaPDFData } from '@/lib/pdf-service'
 
@@ -12,15 +12,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
+    const { searchParams } = new URL(request.url)
+    const scope = await getScope(searchParams)
+    if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Fetch proposta with cliente info
-    const proposta = await db.proposta.findUnique({
-      where: { id: params.id },
+    // Fetch proposta with cliente info (multi-tenancy via Proposta.usuarioId)
+    const proposta = await db.proposta.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
       include: {
         cliente: {
           select: {
@@ -39,14 +39,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Proposta não encontrada' },
         { status: 404 }
-      )
-    }
-
-    // Verify user ownership
-    if (proposta.cliente.usuarioId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Acesso negado' },
-        { status: 403 }
       )
     }
 
