@@ -1,78 +1,104 @@
 /**
  * POST /api/cotacoes/sync
- * Manually sync prices from Investing.com to database
- * Can include optional bearer token for security
+ * Persists current Yahoo Finance live quotes to the database.
+ *  - Cotacao rows for soja/milho/trigo (preco in USD cents/bushel as Yahoo returns)
+ *  - TaxaCambio row for USD/BRL
+ *
+ * Auth: Bearer ${CRON_SECRET}. Falls back to PRICE_SYNC_TOKEN for backward-compat.
+ * If neither env is set, accepts any request but logs a warning in production.
+ *
+ * Designed to be triggered by a Railway cron job.
  */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { syncPrices } from '@/lib/price-sync-service'
+import { Prisma } from '@prisma/client'
+import { db as prisma } from '@/lib/db'
+import { fetchAllLiveQuotes } from '@/lib/quotes/yahoo'
+
+export const dynamic = 'force-dynamic'
+
+const SIMBOLOS: Record<'soja' | 'milho' | 'trigo', string> = {
+  soja: 'ZS',
+  milho: 'ZC',
+  trigo: 'ZW',
+}
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const expected = process.env.CRON_SECRET || process.env.PRICE_SYNC_TOKEN || ''
+  if (expected) {
+    const auth = request.headers.get('Authorization') || ''
+    if (!auth.startsWith('Bearer ') || auth.slice(7) !== expected) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    console.warn('[cotacoes/sync] CRON_SECRET not set in production — endpoint is open!')
+  }
+
   try {
-    // Optional: Check for authorization token
-    const authHeader = request.headers.get('Authorization')
-    const expectedToken = process.env.PRICE_SYNC_TOKEN
+    const quotes = await fetchAllLiveQuotes()
+    const usdbrl = quotes.usdbrl.price
 
-    if (expectedToken && expectedToken.length > 0) {
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json(
-          { error: 'Token de autenticação ausente' },
-          { status: 401 }
-        )
-      }
+    let persisted = 0
+    const results: Record<string, any> = {}
 
-      const token = authHeader.substring(7)
-      if (token !== expectedToken) {
-        return NextResponse.json(
-          { error: 'Token inválido' },
-          { status: 403 }
-        )
+    // Grain quotes
+    for (const grain of ['soja', 'milho', 'trigo'] as const) {
+      const q = quotes[grain]
+      if (q.price === null) {
+        results[grain] = { skipped: true, reason: 'no price' }
+        continue
       }
+      await prisma.cotacao.create({
+        data: {
+          grao: grain,
+          preco: new Prisma.Decimal(q.price),
+          simbolo: SIMBOLOS[grain],
+          fonte: 'yahoo',
+          dolarReal: usdbrl !== null ? new Prisma.Decimal(usdbrl) : null,
+        },
+      })
+      persisted++
+      results[grain] = { preco: q.price, persisted: true }
     }
 
-    console.log('[API] Sincronizando preços...')
+    // FX
+    if (usdbrl !== null) {
+      await prisma.taxaCambio.create({
+        data: {
+          origem: 'USD',
+          destino: 'BRL',
+          taxa: new Prisma.Decimal(usdbrl),
+          fonte: 'yahoo',
+        },
+      })
+      persisted++
+      results.usdbrl = { taxa: usdbrl, persisted: true }
+    } else {
+      results.usdbrl = { skipped: true, reason: 'no rate' }
+    }
 
-    const result = await syncPrices()
-
-    return NextResponse.json(result)
+    return NextResponse.json({
+      ok: true,
+      persisted,
+      results,
+      timestamp: new Date().toISOString(),
+    })
   } catch (error) {
-    console.error('Error syncing prices:', error)
+    console.error('[cotacoes/sync] error:', error)
     return NextResponse.json(
       {
-        error: 'Erro ao sincronizar cotações',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        ok: false,
+        error: error instanceof Error ? error.message : 'unknown error',
       },
       { status: 500 }
     )
   }
 }
 
-/**
- * GET /api/cotacoes/sync
- * Get sync status and instructions
- */
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({
-    message: 'Endpoint de sincronização de cotações',
+    message: 'POST to sync Yahoo Finance quotes into Cotacao + TaxaCambio',
     method: 'POST',
-    description: 'Sincroniza preços do Investing.com para o banco de dados',
-    usage: 'POST /api/cotacoes/sync',
-    headers: {
-      'Authorization': 'Bearer PRICE_SYNC_TOKEN (opcional)',
-      'Content-Type': 'application/json',
-    },
-    example: {
-      curl: 'curl -X POST http://localhost:3000/api/cotacoes/sync -H "Authorization: Bearer seu-token"',
-      result: {
-        success: true,
-        timestamp: new Date().toISOString(),
-        graos: {
-          soja: { preco: 620.5, armazenado: true },
-          milho: { preco: 450.25, armazenado: true },
-          trigo: { preco: 580.75, armazenado: true },
-        },
-        taxaCambio: { taxa: 4.95, armazenado: true },
-      },
-    },
+    auth: 'Authorization: Bearer $CRON_SECRET',
   })
 }

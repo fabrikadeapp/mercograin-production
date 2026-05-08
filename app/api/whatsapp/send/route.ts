@@ -1,189 +1,88 @@
 /**
  * POST /api/whatsapp/send
- * Send manual WhatsApp message (admin only)
- *
- * Body:
- * {
- *   "phoneNumber": "5511999999999",
- *   "message": "Hello world",
- *   "type": "text" | "template",
- *   "templateName": "proposal_sent" (if type=template),
- *   "templateVars": {...} (if type=template)
- * }
+ * Envia mensagem de texto via Evolution API e registra log em WebhookLog.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { sendWhatsAppMessage, sendTemplateMessage, testWhatsAppConnection } from '@/lib/whatsapp-service'
-import { queueWhatsAppMessage } from '@/lib/whatsapp-queue'
-import { db } from '@/lib/db'
-import { checkRateLimit, DEFAULT_LIMITS } from '@/lib/rate-limiter-v2'
 import { z } from 'zod'
+import { auth } from '@/auth'
+import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
+import { db } from '@/lib/db'
 
-const sendMessageSchema = z.object({
-  phoneNumber: z.string().min(10, 'Número inválido'),
-  type: z.enum(['text', 'template']),
-  message: z.string().optional(),
-  templateName: z.string().optional(),
-  templateVars: z.record(z.string()).optional(),
-  queue: z.boolean().optional().default(false), // Use queue or send immediately
+const sendSchema = z.object({
+  number: z.string().min(8, 'Número inválido'),
+  text: z.string().min(1, 'Mensagem vazia').max(4096),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Check if user is admin
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-    })
-
-    if (user?.role !== 'admin') {
+    const json = await request.json().catch(() => null)
+    const parsed = sendSchema.safeParse(json)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Acesso restrito a admins' },
-        { status: 403 }
+        { error: parsed.error.errors[0]?.message ?? 'Dados inválidos' },
+        { status: 400 }
       )
     }
-    // Rate limit check
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
-    const rateLimitKey = `api:whatsapp:${ip}`
-    const rateLimitResult = await checkRateLimit(rateLimitKey, DEFAULT_LIMITS['api:whatsapp'])
+    const { number, text } = parsed.data
 
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: `Muitas requisições. Tente novamente em ${rateLimitResult.retryAfter} segundos.`,
-          retryAfter: rateLimitResult.retryAfter,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': rateLimitResult.retryAfter?.toString() || '60',
-            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': rateLimitResult.resetTime.toISOString(),
+    let result: { messageId: string }
+    try {
+      result = await sendText(number, text)
+    } catch (err) {
+      const status = err instanceof EvolutionError ? err.status : 500
+      const message = err instanceof Error ? err.message : 'Falha no envio'
+
+      await db.webhookLog
+        .create({
+          data: {
+            tipo: 'whatsapp_send',
+            payload: { number, text, error: message } as any,
+            status: 'erro',
+            mensagem: message,
+            codigoErro: String(status),
           },
-        }
+        })
+        .catch(() => undefined)
+
+      return NextResponse.json(
+        { error: message, status },
+        { status: status >= 400 && status < 600 ? status : 500 }
       )
     }
 
-
-    const body = await request.json()
-    const { phoneNumber, type, message, templateName, templateVars, queue } = sendMessageSchema.parse(body)
-
-    let result: any
-
-    if (queue) {
-      // Queue for async sending
-      const jobId = await queueWhatsAppMessage({
-        type: type === 'text' ? 'send_message' : 'send_template',
-        phoneNumber,
-        message,
-        templateName,
-        templateVars,
-        userId: session.user.id,
+    await db.webhookLog
+      .create({
+        data: {
+          tipo: 'whatsapp_send',
+          payload: {
+            number,
+            text,
+            messageId: result.messageId,
+            userId: session.user.id,
+          } as any,
+          status: 'processado',
+          mensagem: `Enviado (${result.messageId})`,
+        },
       })
+      .catch(() => undefined)
 
-      result = {
-        success: true,
-        method: 'queued',
-        jobId,
-        message: 'Mensagem enfileirada para envio',
-      }
-    } else {
-      // Send immediately
-      let sendResult
-
-      if (type === 'text' && message) {
-        sendResult = await sendWhatsAppMessage(phoneNumber, message)
-      } else if (type === 'template' && templateName && templateVars) {
-        sendResult = await sendTemplateMessage(phoneNumber, templateName, templateVars)
-      } else {
-        return NextResponse.json(
-          { error: 'Dados inválidos para tipo de mensagem' },
-          { status: 400 }
-        )
-      }
-
-      result = {
-        success: sendResult.success,
-        method: 'immediate',
-        messageId: sendResult.messageId,
-        message: sendResult.success ? 'Mensagem enviada' : `Erro: ${sendResult.error}`,
-      }
-    }
-
-    return NextResponse.json(result)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.errors[0].message },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error sending message:', error)
-    return NextResponse.json(
-      {
-        error: 'Erro ao enviar mensagem',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * GET /api/whatsapp/send?phone=5511999999999
- * Test message to given phone number
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    // Check if user is admin
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
     })
-
-    if (user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Acesso restrito a admins' },
-        { status: 403 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const phone = searchParams.get('phone')
-
-    if (!phone) {
-      return NextResponse.json(
-        { error: 'Parâmetro "phone" é obrigatório' },
-        { status: 400 }
-      )
-    }
-
-    // Test connection
-    const result = await testWhatsAppConnection(phone)
-
-    return NextResponse.json(result)
   } catch (error) {
-    console.error('Error testing connection:', error)
+    console.error('[whatsapp/send] erro:', error)
     return NextResponse.json(
       {
-        success: false,
-        message: `Erro: ${error instanceof Error ? error.message : 'Unknown'}`,
+        error:
+          error instanceof Error ? error.message : 'Erro ao enviar mensagem',
+        status: 500,
       },
       { status: 500 }
     )

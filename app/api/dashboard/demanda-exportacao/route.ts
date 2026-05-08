@@ -1,0 +1,29 @@
+/**
+ * GET /api/dashboard/demanda-exportacao
+ * Demanda global por destino (top 5).
+ *
+ * TODO: integrar com fonte oficial (CONAB / MAPA / SECEX).
+ * Por enquanto, retorna mock server-side estável para o dashboard.
+ */
+import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
+
+const MOCK_DEMAND = [
+  { label: 'China', value: '58.420 t', amount: 58420, color: 'var(--neg)' },
+  { label: 'União Europeia', value: '24.180 t', amount: 24180, color: 'var(--warn)' },
+  { label: 'Argentina', value: '18.950 t', amount: 18950, color: 'var(--info)' },
+  { label: 'Estados Unidos', value: '12.430 t', amount: 12430, color: 'var(--accent)' },
+  { label: 'Índia', value: '8.610 t', amount: 8610, color: 'var(--grain-milho)' },
+]
+
+export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+  return NextResponse.json({
+    items: MOCK_DEMAND,
+    totalToneladas: MOCK_DEMAND.reduce((acc, x) => acc + x.amount, 0),
+    fonte: 'mock', // TODO: 'CONAB' | 'MAPA' | 'SECEX'
+  })
+}

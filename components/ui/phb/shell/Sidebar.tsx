@@ -17,6 +17,7 @@ import {
   Coins,
   Truck,
   MessageCircle,
+  WifiOff,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -41,7 +42,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/propostas', icon: ListChecks, label: 'Propostas' },
   { href: '/boletos', icon: Wallet, label: 'Boletos' },
   { href: '/logistica', icon: Truck, label: 'Logística' },
-  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp Bot', badge: '12' },
+  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp Bot' },
 ] as const
 
 function getInitials(name?: string | null): string {
@@ -107,6 +108,56 @@ function SidebarUser() {
   )
 }
 
+function WhatsAppIndicator() {
+  const [state, setState] = React.useState<'open' | 'connecting' | 'close' | 'unknown' | 'loading'>('loading')
+
+  React.useEffect(() => {
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const r = await fetch('/api/whatsapp/status', { cache: 'no-store' })
+        if (!r.ok) {
+          if (!cancelled) setState('unknown')
+          return
+        }
+        const d = await r.json()
+        if (!cancelled) setState(d.status ?? 'unknown')
+      } catch {
+        if (!cancelled) setState('unknown')
+      }
+    }
+    tick()
+    const id = setInterval(tick, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
+  if (state === 'open') {
+    return (
+      <span
+        className="inline-flex items-center justify-center h-5 w-5 rounded-pill text-micro font-bold"
+        style={{ background: 'var(--pos)', color: 'var(--accent-ink)' }}
+        aria-label="Conectado"
+        title="WhatsApp conectado"
+      >
+        ✓
+      </span>
+    )
+  }
+  if (state === 'loading') return null
+  return (
+    <span
+      className="inline-flex items-center justify-center h-5 w-5"
+      title="WhatsApp desconectado"
+      aria-label="Desconectado"
+    >
+      <WifiOff className="h-3.5 w-3.5" style={{ color: 'var(--neg)' }} />
+    </span>
+  )
+}
+
 function SidebarNav() {
   const pathname = usePathname() ?? '/'
   return (
@@ -116,6 +167,7 @@ function SidebarNav() {
         const isActive =
           pathname === item.href ||
           (item.href !== '/' && pathname.startsWith(`${item.href}/`))
+        const isWhatsApp = item.href === '/whatsapp'
         return (
           <Link
             key={item.href}
@@ -124,7 +176,7 @@ function SidebarNav() {
           >
             <Icon className="h-4 w-4 shrink-0" />
             <span className="flex-1 truncate">{item.label}</span>
-            {item.badge ? (
+            {isWhatsApp ? <WhatsAppIndicator /> : item.badge ? (
               <span
                 className="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-pill text-micro font-semibold t-num"
                 style={{ background: 'var(--accent)', color: 'var(--accent-ink)' }}
@@ -144,7 +196,7 @@ function SidebarProCard() {
     <div className="mx-3 mb-3 bg-bg-2 border border-border-1 rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 text-accent" />
-        <span className="text-fg-1 text-small font-semibold">PHB Green Pro</span>
+        <span className="text-fg-1 text-small font-semibold">PHB Grain Pro</span>
       </div>
       <p className="text-fg-3 text-micro leading-snug">
         Cotações em tempo real, integração CEPEA + B3 e bot WhatsApp ilimitado.

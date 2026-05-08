@@ -192,12 +192,58 @@ export async function GET(request: NextRequest) {
       take: 5,
     })
 
+    // Sparklines 12 meses (contratos por mês)
+    const ago12 = new Date()
+    ago12.setMonth(ago12.getMonth() - 12)
+    const contratosMes = await db.contrato.findMany({
+      where: { cliente: { usuarioId: session.user.id }, criadoEm: { gte: ago12 } },
+      select: { criadoEm: true, statusAssinatura: true },
+    })
+    const sparkBuckets: Record<string, { emitidos: number; assinados: number; fechados: number }> = {}
+    for (let i = 0; i < 12; i++) {
+      const d = new Date()
+      d.setMonth(d.getMonth() - (11 - i))
+      const key = `${d.getFullYear()}-${d.getMonth()}`
+      sparkBuckets[key] = { emitidos: 0, assinados: 0, fechados: 0 }
+    }
+    for (const c of contratosMes) {
+      const k = `${c.criadoEm.getFullYear()}-${c.criadoEm.getMonth()}`
+      if (sparkBuckets[k]) {
+        sparkBuckets[k].emitidos++
+        if (c.statusAssinatura === 'assinado') sparkBuckets[k].assinados++
+      }
+    }
+    const sparkEmitidos = Object.values(sparkBuckets).map((b) => b.emitidos)
+    const sparkAssinados = Object.values(sparkBuckets).map((b) => b.assinados)
+
+    // Tonelagem total comprada (soma sacas em propostas aceitas tipo=compra)
+    const propostasCompras = await db.proposta.findMany({
+      where: { cliente: { usuarioId: session.user.id }, status: 'aceita', tipo: 'compra' },
+      select: { graos: true },
+    })
+    let tonsCompradas = 0
+    for (const p of propostasCompras) {
+      const arr = Array.isArray(p.graos) ? (p.graos as any[]) : []
+      for (const g of arr) tonsCompradas += Number(g?.quantidade || 0) * 0.06
+    }
+
     return NextResponse.json({
       summary: {
         clientes: clientesTotal,
         propostas: propostasTotal,
         contratos: contratosTotal,
         boletos: boletosTotal,
+      },
+      kpis: {
+        contatosFeitos: clientesTotal,
+        contratosEmitidos: contratosTotal,
+        contratosAssinados: contratosPorStatusMap['assinado'] || 0,
+        contratosFechados: contratosPorStatusMap['fechado'] || 0,
+        tonsCompradas: Math.round(tonsCompradas),
+      },
+      sparklines: {
+        emitidos: sparkEmitidos,
+        assinados: sparkAssinados,
       },
       propostas: {
         total: propostasTotal,

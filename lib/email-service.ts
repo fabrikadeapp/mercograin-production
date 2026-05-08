@@ -48,12 +48,12 @@ export async function sendEmail(options: EmailOptions) {
 // Templates de email
 export const emailTemplates = {
   resetPassword: (token: string, userName: string) => ({
-    subject: '🔑 Recuperar Senha - MercoGrain',
+    subject: '🔑 Recuperar Senha - PHB Grain',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Olá ${userName},</h2>
         <p style="color: #666; font-size: 16px;">
-          Você solicitou a recuperação de senha para sua conta MercoGrain.
+          Você solicitou a recuperação de senha para sua conta PHB Grain.
         </p>
         <p style="color: #666; font-size: 16px;">
           Clique no link abaixo para criar uma nova senha:
@@ -81,15 +81,15 @@ export const emailTemplates = {
 
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         <p style="color: #999; font-size: 12px;">
-          MercoGrain © ${new Date().getFullYear()}
+          PHB Grain © ${new Date().getFullYear()}
         </p>
       </div>
     `,
-    text: `Recuperar Senha - MercoGrain\n\nOlá ${userName},\n\nVocê solicitou recuperação de senha.\n\nClique aqui para criar uma nova senha:\n${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}\n\nEste link expira em 1 hora.`,
+    text: `Recuperar Senha - PHB Grain\n\nOlá ${userName},\n\nVocê solicitou recuperação de senha.\n\nClique aqui para criar uma nova senha:\n${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}\n\nEste link expira em 1 hora.`,
   }),
 
   proposalSent: (clienteName: string, proposalNumber: string) => ({
-    subject: `📋 Proposta ${proposalNumber} Enviada - MercoGrain`,
+    subject: `📋 Proposta ${proposalNumber} Enviada - PHB Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Nova Proposta Enviada</h2>
@@ -105,7 +105,7 @@ export const emailTemplates = {
   }),
 
   boletoCreated: (clienteName: string, boletoNumber: string, dueDate: string, value: string) => ({
-    subject: `💰 Boleto ${boletoNumber} - MercoGrain`,
+    subject: `💰 Boleto ${boletoNumber} - PHB Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Boleto Criado</h2>
@@ -126,7 +126,7 @@ export const emailTemplates = {
   }),
 
   boleteOverdue: (clienteName: string, boletoNumber: string, daysOverdue: number) => ({
-    subject: `⚠️ Boleto ${boletoNumber} Vencido - MercoGrain`,
+    subject: `⚠️ Boleto ${boletoNumber} Vencido - PHB Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #d97706;">Boleto Vencido</h2>

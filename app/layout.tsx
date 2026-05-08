@@ -8,7 +8,7 @@ import { SessionProviderClient } from '@/contexts/SessionProviderClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'PHB Green — Grain Intelligence',
+  title: 'PHB Grain — Grain Intelligence',
   description: 'Sistema integrado de cotação, proposta, contrato e cobrança para trading de grãos',
 }
 

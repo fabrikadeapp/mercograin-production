@@ -25,8 +25,57 @@ model User {
   clientes  Cliente[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
+  classificados Classificado[] @relation("ClassificadoAutor")
+  alertasPreco  AlertaPreco[]
 
   @@index([email])
+}
+
+// ============================================
+// CLASSIFICADOS (Marketplace)
+// ============================================
+
+model Classificado {
+  id            String    @id @default(cuid())
+  tipo          String    // 'venda' | 'compra'
+  grao          String    // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  variedade     String?
+  safra         String?
+  volumeSc      Int
+  precoSc       Decimal   @db.Decimal(10, 2)
+  modal         String    // 'FOB' | 'CIF'
+  cidade        String
+  uf            String
+  deltaPct      Decimal?  @db.Decimal(5, 2)
+  status        String    @default("ativo") // 'ativo' | 'pausado' | 'fechado'
+  expiraEm      DateTime?
+  autorId       String
+  autor         User      @relation("ClassificadoAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  criadoEm      DateTime  @default(now())
+  atualizadoEm  DateTime  @updatedAt
+
+  @@index([grao, tipo, status])
+  @@index([criadoEm])
+}
+
+// ============================================
+// ALERTAS DE PREÇO
+// ============================================
+
+model AlertaPreco {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol        String    // ex: 'ZS=F'
+  graoLabel     String    // ex: 'soja'
+  operador      String    // '>' | '<'
+  preco         Decimal   @db.Decimal(10, 2)
+  status        String    @default("ativo") // 'ativo' | 'disparado' | 'inativo'
+  ultimoDisparo DateTime?
+  criadoEm      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([status])
 }
 
 // ============================================

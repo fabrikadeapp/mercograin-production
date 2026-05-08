@@ -1,65 +1,37 @@
 /**
  * GET /api/whatsapp/status
- * Check WhatsApp connection status
- * GET /api/whatsapp/status?include=queue - Include queue stats
+ * Retorna estado da instance Evolution dedicada ao PHB Grain.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { getWhatsAppStatus } from '@/lib/whatsapp-service'
-import { getQueueStats } from '@/lib/whatsapp-queue'
-import { db } from '@/lib/db'
+import {
+  getConnectionState,
+  EvolutionError,
+} from '@/lib/whatsapp/evolution'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth()
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Check if user is admin
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
+    const state = await getConnectionState()
+    return NextResponse.json({
+      status: state.status,
+      ownerJid: state.ownerJid ?? null,
+      profileName: state.profileName ?? null,
+      instanceName: state.instanceName,
     })
-
-    if (user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Acesso restrito a admins' },
-        { status: 403 }
-      )
-    }
-
-    // Get WhatsApp status
-    const waStatus = await getWhatsAppStatus()
-
-    // Check if user wants queue stats
-    const { searchParams } = new URL(request.url)
-    const includeQueue = searchParams.has('include') && searchParams.get('include') === 'queue'
-
-    const response: any = {
-      whatsapp: {
-        connected: waStatus.connected,
-        phone: waStatus.phone,
-        qrAvailable: waStatus.qrAvailable,
-        status: waStatus.connected ? '🟢 Conectado' : waStatus.qrAvailable ? '🟡 Aguardando QR' : '🔴 Desconectado',
-      },
-    }
-
-    if (includeQueue) {
-      const queueStats = await getQueueStats()
-      response.queue = queueStats
-    }
-
-    return NextResponse.json(response)
   } catch (error) {
-    console.error('Error getting status:', error)
+    const status = error instanceof EvolutionError ? error.status : 500
+    const message =
+      error instanceof Error ? error.message : 'Erro ao obter status'
+    console.error('[whatsapp/status] erro:', message)
     return NextResponse.json(
-      {
-        error: 'Erro ao obter status',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
+      { error: message, status },
+      { status: status >= 400 && status < 600 ? status : 500 }
     )
   }
 }

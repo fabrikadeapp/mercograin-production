@@ -1,4 +1,4 @@
-# MercoGrain Trading System
+# PHB Grain Trading System
 
 Sistema integrado de **cotação, proposta, contrato e cobrança** para trading de grãos (soja, milho, trigo).
 

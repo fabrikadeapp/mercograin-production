@@ -1,4 +1,4 @@
-// Mock data for PHB Green pages — fidelity-first.
+// Mock data for PHB Grain pages — fidelity-first.
 // TODO: integrar com API.
 
 export const SPARK_UP = [

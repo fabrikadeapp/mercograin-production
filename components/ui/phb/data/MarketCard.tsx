@@ -27,6 +27,9 @@ export interface MarketCardProps {
   sparklineData: number[]
   grainColor?: MarketGrainColor
   className?: string
+  live?: boolean
+  lastSync?: string
+  stale?: boolean
 }
 
 export function MarketCard({
@@ -41,6 +44,9 @@ export function MarketCard({
   sparklineData,
   grainColor = 'soja',
   className,
+  live = false,
+  lastSync,
+  stale = false,
 }: MarketCardProps) {
   const color = grainTokenColor[grainColor]
   const grainBadgeVariant: GrainVariant = grainColor
@@ -52,6 +58,26 @@ export function MarketCard({
           <div className="flex items-center gap-2">
             <GrainBadge variant={grainBadgeVariant} />
             <span className="text-fg-1 text-body font-medium truncate">{symbol}</span>
+            {live ? (
+              <span
+                title={lastSync ? `Última atualização: ${lastSync}` : 'Ao vivo'}
+                className="flex items-center gap-1 ml-1"
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-pill"
+                  style={{
+                    background: stale ? 'var(--warn)' : 'var(--pos)',
+                    boxShadow: stale
+                      ? '0 0 0 0 var(--warn)'
+                      : '0 0 0 0 var(--pos)',
+                    animation: stale ? 'none' : 'phb-pulse 1.6s ease-in-out infinite',
+                  }}
+                />
+                <span className="eyebrow" style={{ color: stale ? 'var(--warn)' : 'var(--pos)' }}>
+                  {stale ? 'OFFLINE' : 'AO VIVO'}
+                </span>
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-2 text-fg-3">
             {ticker ? (

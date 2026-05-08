@@ -1,53 +1,48 @@
 /**
  * GET /api/cotacoes/live
- * Fetch live commodity prices from Investing.com
- * Returns: soja, milho, trigo prices in USD cents/bushel
- * Also returns exchange rate USD/BRL for conversion
+ * Live commodity quotes via Yahoo Finance (CBOT futures + USDBRL).
+ *
+ * Returns soja/milho/trigo/usdbrl with price, OHLC, prev close, change,
+ * currency, market state, and a daily-close sparkline (~30 days).
+ *
+ * Edge-cached for 30s with stale-while-revalidate.
  */
+import { NextResponse } from 'next/server'
+import { fetchAllLiveQuotes, YAHOO_SYMBOLS } from '@/lib/quotes/yahoo'
+import { fetchSparkline } from '@/lib/quotes/sparkline'
 
-import { NextRequest, NextResponse } from 'next/server'
-import {
-  getSoybeanPrice,
-  getCornPrice,
-  getWheatPrice,
-  getExchangeRate,
-  getGrainPrices,
-} from '@/lib/investing-client'
+export const dynamic = 'force-dynamic'
+export const revalidate = 30
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Check if user requested a specific grain
-    const { searchParams } = new URL(request.url)
-    const grain = searchParams.get('grain')?.toLowerCase()
+    const [quotes, sparks] = await Promise.all([
+      fetchAllLiveQuotes(),
+      Promise.all([
+        fetchSparkline(YAHOO_SYMBOLS.soja.symbol),
+        fetchSparkline(YAHOO_SYMBOLS.milho.symbol),
+        fetchSparkline(YAHOO_SYMBOLS.trigo.symbol),
+        fetchSparkline(YAHOO_SYMBOLS.usdbrl.symbol),
+      ]),
+    ])
 
-    let priceData: any = {}
-
-    if (grain === 'soja') {
-      priceData.soja = await getSoybeanPrice()
-    } else if (grain === 'milho') {
-      priceData.milho = await getCornPrice()
-    } else if (grain === 'trigo') {
-      priceData.trigo = await getWheatPrice()
-    } else if (grain === 'taxa-cambio') {
-      priceData.taxaCambio = await getExchangeRate()
-    } else {
-      // Get all prices if no specific grain requested
-      priceData = await getGrainPrices()
+    const payload = {
+      soja: { ...quotes.soja, sparkline: sparks[0] },
+      milho: { ...quotes.milho, sparkline: sparks[1] },
+      trigo: { ...quotes.trigo, sparkline: sparks[2] },
+      usdbrl: { ...quotes.usdbrl, sparkline: sparks[3] },
+      source: 'yahoo-finance',
+      fetchedAt: new Date().toISOString(),
     }
 
-    return NextResponse.json({
-      timestamp: new Date().toISOString(),
-      data: priceData,
-      note: 'Preços em USD cents/bushel (soja, milho, trigo). Taxa em USD/BRL.',
-      source: 'Investing.com web scraping',
-    })
-  } catch (error) {
-    console.error('Error fetching live prices:', error)
-    return NextResponse.json(
-      {
-        error: 'Erro ao buscar cotações ao vivo',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    return NextResponse.json(payload, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
       },
+    })
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || 'live quotes failed' },
       { status: 500 }
     )
   }

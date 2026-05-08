@@ -1,70 +1,42 @@
 /**
  * GET /api/whatsapp/connect
- * Initialize WhatsApp connection and return QR code for scanning
- *
- * Flow:
- * 1. Call this endpoint
- * 2. Get QR code (base64 or SVG)
- * 3. Scan with phone's WhatsApp
- * 4. Connection established
+ * Garante que a instance Evolution existe e devolve QR code (base64) + pairing code.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { initializeWhatsApp, getQRCode } from '@/lib/whatsapp-service'
-import { db } from '@/lib/db'
+import {
+  ensureInstance,
+  getQRCode,
+  EvolutionError,
+} from '@/lib/whatsapp/evolution'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    // Only admins can manage WhatsApp
     const session = await auth()
-
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Check if user is admin
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-    })
-
-    if (user?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Acesso restrito a admins' },
-        { status: 403 }
-      )
-    }
-
-    // Initialize connection
-    await initializeWhatsApp()
-
-    // Get QR code (will be generated shortly)
-    let qrCode = await getQRCode()
-
-    // If QR not ready yet, wait a bit
-    if (!qrCode) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      qrCode = await getQRCode()
-    }
+    const instance = await ensureInstance()
+    const qr = await getQRCode()
 
     return NextResponse.json({
-      message: 'Conectando ao WhatsApp...',
-      qr: qrCode || null,
-      instructions: [
-        '1. Escaneie o código QR com o WhatsApp do seu telefone',
-        '2. Confirme a conexão',
-        '3. O sistema enviará mensagens automaticamente',
-      ],
-      note: 'O QR code expira em 60 segundos. Atualize a página se expirar.',
+      status: instance.status,
+      qrCode: qr.base64,
+      pairingCode: qr.pairingCode ?? null,
+      alreadyConnected: qr.alreadyConnected || instance.status === 'open',
+      ownerJid: instance.ownerJid ?? null,
+      profileName: instance.profileName ?? null,
     })
   } catch (error) {
-    console.error('Error connecting WhatsApp:', error)
+    const status = error instanceof EvolutionError ? error.status : 500
+    const message =
+      error instanceof Error ? error.message : 'Erro ao conectar WhatsApp'
+    console.error('[whatsapp/connect] erro:', message)
     return NextResponse.json(
-      {
-        error: 'Erro ao conectar WhatsApp',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
+      { error: message, status },
+      { status: status >= 400 && status < 600 ? status : 500 }
     )
   }
 }

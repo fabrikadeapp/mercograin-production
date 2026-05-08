@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
       const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${verificationToken}`
       await sendEmail({
         to: email,
-        subject: '✉️ Verificar Email - MercoGrain',
+        subject: '✉️ Verificar Email - PHB Grain',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #333;">Bem-vindo ao MercoGrain, ${nome}!</h2>
+            <h2 style="color: #333;">Bem-vindo ao PHB Grain, ${nome}!</h2>
             <p style="color: #666; font-size: 16px;">
               Sua conta foi criada com sucesso. Clique no link abaixo para verificar seu email e ativar sua conta.
             </p>
@@ -101,11 +101,11 @@ export async function POST(request: NextRequest) {
 
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #999; font-size: 12px;">
-              MercoGrain © ${new Date().getFullYear()}
+              PHB Grain © ${new Date().getFullYear()}
             </p>
           </div>
         `,
-        text: `Bem-vindo ao MercoGrain, ${nome}!\n\nClique aqui para verificar seu email:\n${verificationUrl}\n\nEste link expira em 24 horas.`,
+        text: `Bem-vindo ao PHB Grain, ${nome}!\n\nClique aqui para verificar seu email:\n${verificationUrl}\n\nEste link expira em 24 horas.`,
       })
     } catch (emailError) {
       console.error('Error sending verification email:', emailError)

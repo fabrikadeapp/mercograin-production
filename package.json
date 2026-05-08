@@ -41,6 +41,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.0",
     "recharts": "^3.8.1",
+    "yahoo-finance2": "^3.14.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
