@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { Brand, Button, Input } from '@/components/ui/phb'
@@ -80,34 +81,28 @@ export function SecretAdminPortal() {
     }
   }
 
-  return (
-    <>
-      {/* Brand clicável (sem dica visual) */}
-      <button
-        type="button"
-        onClick={handleBrandClick}
-        aria-label="PHB Grain — Início"
-        className="cursor-pointer focus:outline-none"
-      >
-        <Brand />
-      </button>
+  // Render do modal — em <body> via portal pra escapar de sticky/overflow contexts
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => { setMounted(true) }, [])
 
-      {/* Portal modal */}
-      {open ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="secret-admin-title"
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false)
-          }}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-bg-0/85 backdrop-blur-md" />
+  const modal = open ? (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="secret-admin-title"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setOpen(false)
+      }}
+    >
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-bg-0/85 backdrop-blur-md"
+        onClick={() => setOpen(false)}
+      />
 
-          {/* Painel */}
-          <div className="relative z-10 w-full max-w-md rounded-lg border border-border-2 bg-bg-1 shadow-pop">
+      {/* Painel — centrado no viewport */}
+      <div className="relative z-10 w-full max-w-md my-auto rounded-lg border border-border-2 bg-bg-1 shadow-pop">
             <div className="flex items-start justify-between gap-4 border-b border-border-1 px-6 py-5">
               <div className="flex items-center gap-3">
                 <div
@@ -173,7 +168,22 @@ export function SecretAdminPortal() {
             </form>
           </div>
         </div>
-      ) : null}
+  ) : null
+
+  return (
+    <>
+      {/* Brand clicável (sem dica visual) */}
+      <button
+        type="button"
+        onClick={handleBrandClick}
+        aria-label="PHB Grain — Início"
+        className="cursor-pointer focus:outline-none"
+      >
+        <Brand />
+      </button>
+
+      {/* Renderiza modal no <body> via portal — escapa de sticky/overflow do nav */}
+      {mounted && modal ? createPortal(modal, document.body) : null}
     </>
   )
 }
