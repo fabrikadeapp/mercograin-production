@@ -1,20 +1,33 @@
+@import '../styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import '../styles/system.css';
 
 html {
   scroll-behavior: smooth;
 }
 
-body {
-  @apply bg-white text-gray-900;
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
-/* Customizações globais */
-button {
-  @apply transition-all duration-200;
+/* scrollbar dark sutil */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-3) transparent;
 }
-
-a {
-  @apply text-blue-600 hover:text-blue-800 transition-colors;
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }

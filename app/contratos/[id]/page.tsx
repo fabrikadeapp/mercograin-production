@@ -4,10 +4,28 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Pencil,
+  FileDown,
+  CheckCircle2,
+  XCircle,
+  Wallet,
+  Loader2,
+  Mail,
+} from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Badge,
+  type BadgeStatus,
+  DenseTable,
+  type DenseTableColumn,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
@@ -41,10 +59,16 @@ interface Contrato {
   }
 }
 
+const STATUS_TO_BADGE: Record<Contrato['statusAssinatura'], BadgeStatus> = {
+  pendente: 'pendente',
+  assinado: 'assinado',
+  cancelado: 'cancelado',
+}
+
 export default function ContratoDetalhesPage() {
   const { id } = useParams()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { success, error: showError } = useToast()
 
   const [contrato, setContrato] = useState<Contrato | null>(null)
@@ -56,10 +80,7 @@ export default function ContratoDetalhesPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchContrato()
-    }
+    if (status === 'authenticated') fetchContrato()
   }, [status, router])
 
   const fetchContrato = async () => {
@@ -123,218 +144,226 @@ export default function ContratoDetalhesPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando contrato..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando contrato…
+        </div>
+      </AppShell>
+    )
   }
 
   if (!contrato) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="py-8">
-            <p className="text-center text-gray-600 mb-4">Contrato não encontrado</p>
-            <Link href="/contratos" className="w-full">
-              <Button variant="primary" className="w-full">
-                Voltar para Contratos
-              </Button>
-            </Link>
-          </CardContent>
+      <AppShell>
+        <Card className="max-w-md mx-auto text-center space-y-4 my-12">
+          <p className="eyebrow text-neg">Não encontrado</p>
+          <h2 className="text-h2 font-sans tracking-tight text-fg-1">Contrato não encontrado</h2>
+          <Link href="/contratos">
+            <Button fullWidth>Voltar para contratos</Button>
+          </Link>
         </Card>
-      </div>
+      </AppShell>
     )
   }
 
+  const TipoIcon = contrato.proposta.tipo === 'venda' ? ArrowUpRight : ArrowDownLeft
+
+  const graoColumns: DenseTableColumn<GraoItem>[] = [
+    {
+      key: 'grao',
+      header: 'Grão',
+      accessor: (g) => <span className="text-fg-1 capitalize">{g.grao}</span>,
+    },
+    {
+      key: 'quantidade',
+      header: 'Qtd (t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => g.quantidade.toLocaleString('pt-BR'),
+    },
+    {
+      key: 'preco',
+      header: 'Preço (R$/t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => formatCurrency(g.preco),
+    },
+    {
+      key: 'subtotal',
+      header: 'Subtotal',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => (
+        <span className="text-fg-1 font-semibold">{formatCurrency(g.subtotal)}</span>
+      ),
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/contratos" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Contratos
-          </Link>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">CTR-{contrato.numero}</h1>
-              <p className="text-gray-600 mt-2">{contrato.cliente.nome}</p>
-            </div>
-            <StatusBadge status={contrato.statusAssinatura} />
-          </div>
-        </div>
+    <AppShell>
+      <PageHeader
+        eyebrow={`Contrato · #CTR-${contrato.numero}`}
+        title={contrato.cliente.nome}
+        subtitle={`Originado da PROP-${contrato.proposta.numero} · Criado em ${formatDate(contrato.criadoEm)}`}
+        search={false}
+        actions={
+          <>
+            <Link href="/contratos">
+              <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+                Voltar
+              </Button>
+            </Link>
+            <Button
+              variant="secondary"
+              leftIcon={<FileDown className="h-4 w-4" />}
+              onClick={handleDownloadPDF}
+            >
+              Exportar PDF
+            </Button>
+          </>
+        }
+      />
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Proposta Relacionada</p>
-              <p className="text-lg font-semibold">PROP-{contrato.proposta.numero}</p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Valor Total</p>
-              <p className="text-lg font-semibold text-green-600">{formatCurrency(Number(contrato.proposta.valorTotal))}</p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Tipo</p>
-              <p className="text-lg font-semibold">{contrato.proposta.tipo === 'venda' ? '📤 Venda' : '📥 Compra'}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Grãos */}
-        <Card variant="elevated" className="mb-8">
-          <CardHeader>
-            <CardTitle>Especificação de Grãos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold">Grão</th>
-                    <th className="text-right py-2 px-3 font-semibold">Quantidade (t)</th>
-                    <th className="text-right py-2 px-3 font-semibold">Preço (R$/t)</th>
-                    <th className="text-right py-2 px-3 font-semibold">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contrato.proposta.graos.map((grao, idx) => (
-                    <tr key={idx} className="border-b border-gray-100">
-                      <td className="py-2 px-3">{grao.grao}</td>
-                      <td className="text-right py-2 px-3">{grao.quantidade}</td>
-                      <td className="text-right py-2 px-3">{formatCurrency(grao.preco)}</td>
-                      <td className="text-right py-2 px-3 font-semibold">{formatCurrency(grao.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Detalhes */}
-        <Card variant="elevated" className="mb-8">
-          <CardHeader>
-            <CardTitle>Detalhes do Contrato</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 mb-1">Data de Início</p>
-                <p className="text-gray-900">{formatDate(contrato.dataInicio)}</p>
+                <p className="eyebrow">Status assinatura</p>
+                <div className="mt-2">
+                  <Badge variant={STATUS_TO_BADGE[contrato.statusAssinatura]} />
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="eyebrow">Tipo</p>
+                <p className="text-fg-1 text-small flex items-center gap-1.5 mt-2">
+                  <TipoIcon
+                    className={`h-3.5 w-3.5 ${
+                      contrato.proposta.tipo === 'venda' ? 'text-pos' : 'text-info'
+                    }`}
+                  />
+                  {contrato.proposta.tipo === 'venda' ? 'Venda' : 'Compra'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-1">
+              <div>
+                <p className="eyebrow">Início</p>
+                <p className="text-fg-1 t-num text-small mt-1">
+                  {formatDate(contrato.dataInicio)}
+                </p>
               </div>
               {contrato.dataFim && (
                 <div>
-                  <p className="text-gray-600 mb-1">Data de Fim</p>
-                  <p className="text-gray-900">{formatDate(contrato.dataFim)}</p>
+                  <p className="eyebrow">Fim</p>
+                  <p className="text-fg-1 t-num text-small mt-1">{formatDate(contrato.dataFim)}</p>
                 </div>
               )}
               {contrato.assinadoEm && (
                 <div>
-                  <p className="text-gray-600 mb-1">Assinado em</p>
-                  <p className="text-gray-900">{formatDate(contrato.assinadoEm)}</p>
+                  <p className="eyebrow">Assinado em</p>
+                  <p className="text-pos t-num text-small mt-1">
+                    {formatDate(contrato.assinadoEm)}
+                  </p>
                 </div>
               )}
               <div>
-                <p className="text-gray-600 mb-1">Criado em</p>
-                <p className="text-gray-900">{formatDate(contrato.criadoEm)}</p>
+                <p className="eyebrow">Criado em</p>
+                <p className="text-fg-2 t-num text-small mt-1">{formatDate(contrato.criadoEm)}</p>
               </div>
             </div>
+          </Card>
 
-            {contrato.cliente.cnpj && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1">CNPJ do Cliente</p>
-                <p className="text-gray-900">{contrato.cliente.cnpj}</p>
-              </div>
-            )}
+          <div>
+            <p className="eyebrow mb-3">Especificação de grãos</p>
+            <DenseTable
+              columns={graoColumns}
+              rows={contrato.proposta.graos}
+              rowKey={(g) => g.grao}
+            />
+          </div>
+        </div>
 
-            {contrato.cliente.email && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Email do Cliente</p>
-                <a href={`mailto:${contrato.cliente.email}`} className="text-blue-600 hover:underline">
+        <div className="space-y-6">
+          <Card>
+            <p className="eyebrow">Valor total</p>
+            <p className="t-num-lg text-accent mt-2">
+              {formatCurrency(Number(contrato.proposta.valorTotal))}
+            </p>
+            <p className="text-fg-3 text-small mt-1">
+              {contrato.proposta.graos.length} grão
+              {contrato.proposta.graos.length === 1 ? '' : 's'}
+            </p>
+          </Card>
+
+          <Card className="space-y-3">
+            <p className="eyebrow">Cliente</p>
+            <div>
+              <p className="text-fg-1 font-semibold">{contrato.cliente.nome}</p>
+              {contrato.cliente.cnpj && (
+                <p className="text-fg-2 font-mono text-small mt-1">{contrato.cliente.cnpj}</p>
+              )}
+              {contrato.cliente.email && (
+                <a
+                  href={`mailto:${contrato.cliente.email}`}
+                  className="text-accent text-small hover:underline flex items-center gap-1.5 mt-1"
+                >
+                  <Mail className="h-3 w-3" />
                   {contrato.cliente.email}
                 </a>
+              )}
+            </div>
+          </Card>
+
+          <Card className="space-y-3">
+            <p className="eyebrow">Ações</p>
+
+            {contrato.statusAssinatura === 'pendente' && (
+              <div className="space-y-2">
+                <Link href={`/contratos/${contrato.id}/editar`}>
+                  <Button variant="secondary" fullWidth leftIcon={<Pencil className="h-4 w-4" />}>
+                    Editar
+                  </Button>
+                </Link>
+                <Button
+                  fullWidth
+                  loading={saving}
+                  leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                  onClick={() => handleStatusUpdate('assinado')}
+                >
+                  Marcar como assinado
+                </Button>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  loading={saving}
+                  leftIcon={<XCircle className="h-4 w-4" />}
+                  onClick={() => handleStatusUpdate('cancelado')}
+                  className="text-neg hover:text-neg"
+                >
+                  Cancelar contrato
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Ações */}
-        {contrato.statusAssinatura === 'pendente' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Ações</CardTitle>
-              <CardDescription>Escolha a próxima ação para este contrato</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Link href={`/contratos/${contrato.id}/editar`}>
-                <Button variant="secondary">
-                  ✏️ Editar
-                </Button>
-              </Link>
-              <Button
-                variant="secondary"
-                onClick={handleDownloadPDF}
-              >
-                📄 Baixar PDF
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleStatusUpdate('assinado')}
-                isLoading={saving}
-              >
-                ✅ Marcar como Assinado
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => handleStatusUpdate('cancelado')}
-                isLoading={saving}
-              >
-                ❌ Cancelar Contrato
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {contrato.statusAssinatura === 'assinado' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Contrato Assinado</CardTitle>
-              <CardDescription>Este contrato foi assinado e está em vigor</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button
-                variant="secondary"
-                onClick={handleDownloadPDF}
-              >
-                📄 Baixar PDF
-              </Button>
+            {contrato.statusAssinatura === 'assinado' && (
               <Link href={`/boletos/novo?contratoId=${contrato.id}`}>
-                <Button variant="primary">
-                  💰 Criar Boleto
+                <Button fullWidth leftIcon={<Wallet className="h-4 w-4" />}>
+                  Criar boleto
                 </Button>
               </Link>
-            </CardContent>
-          </Card>
-        )}
+            )}
 
-        {contrato.statusAssinatura === 'cancelado' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Contrato Cancelado</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button
-                variant="secondary"
-                onClick={handleDownloadPDF}
-              >
-                📄 Baixar PDF
-              </Button>
-            </CardContent>
+            {contrato.statusAssinatura === 'cancelado' && (
+              <p className="text-fg-3 text-small">
+                Este contrato foi cancelado e está fechado para edição.
+              </p>
+            )}
           </Card>
-        )}
+        </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

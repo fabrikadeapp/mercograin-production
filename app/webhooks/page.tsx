@@ -2,11 +2,30 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  Copy,
+  ExternalLink,
+  CheckCircle2,
+  Wheat,
+  HelpCircle,
+  Webhook,
+} from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Chip,
+  GrainBadge,
+} from '@/components/ui/phb'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function WebhooksPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
+  const { success } = useToast()
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -14,201 +33,219 @@ export default function WebhooksPage() {
     }
   }, [status, router])
 
-  const webhookUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tradingview` : ''
+  const webhookUrl =
+    typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/tradingview` : ''
   const secret = process.env.NEXT_PUBLIC_TRADINGVIEW_WEBHOOK_SECRET || 'seu-secret-aqui'
+  const bodyJson = JSON.stringify(
+    {
+      symbol: '{{ticker}}',
+      close: '{{close}}',
+      high: '{{high}}',
+      low: '{{low}}',
+      volume: '{{volume}}',
+      time: '{{time}}',
+    },
+    null,
+    2
+  )
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text)
-    alert('Copiado para clipboard!')
+    setCopiedKey(key)
+    success('Copiado para a área de transferência')
+    setTimeout(() => setCopiedKey(null), 1500)
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">🔗 Configurar Webhooks</h1>
-          <p className="text-gray-600 mt-1">Integre TradingView para receber cotações em tempo real</p>
-        </div>
+  const Step = ({
+    n,
+    title,
+    children,
+  }: {
+    n: string
+    title: string
+    children: React.ReactNode
+  }) => (
+    <div className="border-l-2 border-l-accent pl-5 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="t-num text-accent text-small font-semibold">{n}</span>
+        <h3 className="text-fg-1 font-semibold text-body">{title}</h3>
       </div>
+      <div className="space-y-3 text-fg-2 text-small">{children}</div>
+    </div>
+  )
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Instrução Principal */}
-        <div className="bg-white rounded-lg shadow p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Passo a Passo: Configurar TradingView</h2>
+  const CopyField = ({
+    label,
+    value,
+    fieldKey,
+    monoBlock,
+  }: {
+    label: string
+    value: string
+    fieldKey: string
+    monoBlock?: boolean
+  }) => (
+    <div className="space-y-1.5">
+      <p className="eyebrow">{label}</p>
+      {monoBlock ? (
+        <div className="bg-bg-inset border border-border-1 rounded-md overflow-hidden">
+          <pre className="text-fg-1 font-mono text-small p-3 overflow-x-auto whitespace-pre">
+            {value}
+          </pre>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            readOnly
+            value={value}
+            className="flex-1 h-11 px-4 rounded-md bg-bg-2 border border-border-1 text-fg-1 font-mono text-small outline-none"
+          />
+        </div>
+      )}
+      <Button
+        variant="secondary"
+        size="sm"
+        leftIcon={
+          copiedKey === fieldKey ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-pos" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )
+        }
+        onClick={() => copyToClipboard(value, fieldKey)}
+      >
+        {copiedKey === fieldKey ? 'Copiado' : 'Copiar'}
+      </Button>
+    </div>
+  )
 
-          <div className="space-y-6">
-            {/* Passo 1 */}
-            <div className="border-l-4 border-blue-500 pl-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">1️⃣ Ir para TradingView</h3>
-              <p className="text-gray-600 mb-3">
-                Acesse sua conta TradingView e navigate para <code className="bg-gray-100 px-2 py-1 rounded">Alertas</code>
-              </p>
-              <a
-                href="https://www.tradingview.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline font-semibold"
-              >
-                → Ir para TradingView
-              </a>
-            </div>
+  return (
+    <AppShell>
+      <PageHeader
+        eyebrow="Integrações · TradingView"
+        title="Configurar webhooks"
+        subtitle="Receba cotações em tempo real via webhook do TradingView."
+        search={false}
+      />
 
-            {/* Passo 2 */}
-            <div className="border-l-4 border-blue-500 pl-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">2️⃣ Criar 3 Alertas</h3>
-              <p className="text-gray-600 mb-4">Crie alertas para cada commodity:</p>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-semibold">ZS</span>
-                  <span className="text-gray-700">Soja (Soybean Futures)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">ZC</span>
-                  <span className="text-gray-700">Milho (Corn Futures)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold">ZW</span>
-                  <span className="text-gray-700">Trigo (Wheat Futures)</span>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600">
-                💡 Dica: Use alertas de preço diário para receber uma atualização por dia
-              </p>
-            </div>
-
-            {/* Passo 3 */}
-            <div className="border-l-4 border-blue-500 pl-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">3️⃣ Configurar Webhook</h3>
-              <p className="text-gray-600 mb-4">Para cada alerta, vá em Notificações e adicione um webhook:</p>
-
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Webhook URL:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={webhookUrl}
-                      readOnly
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-mono text-sm"
-                    />
-                    <button
-                      onClick={() => copyToClipboard(webhookUrl)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition"
-                    >
-                      Copiar
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Header: Authorization
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={`Bearer ${secret}`}
-                      readOnly
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-mono text-sm"
-                    />
-                    <button
-                      onClick={() => copyToClipboard(`Bearer ${secret}`)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition"
-                    >
-                      Copiar
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Body (JSON):
-                  </label>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                    {JSON.stringify(
-                      {
-                        symbol: '{{ticker}}',
-                        close: '{{close}}',
-                        high: '{{high}}',
-                        low: '{{low}}',
-                        volume: '{{volume}}',
-                        time: '{{time}}',
-                      },
-                      null,
-                      2
-                    )}
-                  </pre>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(
-                        JSON.stringify({
-                          symbol: '{{ticker}}',
-                          close: '{{close}}',
-                          high: '{{high}}',
-                          low: '{{low}}',
-                          volume: '{{volume}}',
-                          time: '{{time}}',
-                        })
-                      )
-                    }
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition"
-                  >
-                    Copiar JSON
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Passo 4 */}
-            <div className="border-l-4 border-blue-500 pl-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">4️⃣ Testar Webhook</h3>
-              <p className="text-gray-600 mb-4">Após configurar, faça um teste:</p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-900 mb-3">
-                  Vá para <code className="bg-white px-2 py-1 rounded">Alertas → Seu Alerta → Teste</code>
-                </p>
-                <p className="text-sm text-blue-900">
-                  Você deve receber uma notificação. Se funcionar, verá os dados em{' '}
-                  <code className="bg-white px-2 py-1 rounded">/api/webhooks/tradingview</code>
-                </p>
-              </div>
-            </div>
-
-            {/* Passo 5 */}
-            <div className="border-l-4 border-green-500 pl-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-3">✅ Pronto!</h3>
-              <p className="text-gray-600">
-                As cotações começarão a aparecer em{' '}
-                <a href="/cotacoes" className="text-blue-600 hover:underline font-semibold">
-                  /cotacoes
-                </a>
-              </p>
-            </div>
+      <Card className="mb-6 space-y-6">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-md bg-bg-2 border border-border-1 flex items-center justify-center shrink-0">
+            <Webhook className="h-4 w-4 text-accent" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-h2 font-sans tracking-tight text-fg-1">
+              Setup TradingView
+            </h2>
+            <p className="text-fg-2 text-body">
+              Siga as etapas abaixo para integrar alertas de preço.
+            </p>
           </div>
         </div>
 
-        {/* Troubleshooting */}
-        <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-8">
-          <h3 className="text-lg font-bold text-yellow-900 mb-4">🆘 Dúvidas?</h3>
-          <ul className="space-y-3 text-yellow-900">
-            <li>
-              <strong>Webhook não dispara:</strong> Verifique se a URL está correta e acessível publicamente
-            </li>
-            <li>
-              <strong>Erro 401 (Unauthorized):</strong> Verifique se o Bearer token está no header correto
-            </li>
-            <li>
-              <strong>Cotações não aparecem:</strong> Verifique os logs em{' '}
-              <code className="bg-yellow-100 px-2 py-1 rounded">WebhookLog</code> table
-            </li>
-            <li>
-              <strong>Precisa de ajuda?:</strong> Leia{' '}
-              <code className="bg-yellow-100 px-2 py-1 rounded">TRADINGVIEW_SETUP.md</code> no repositório
-            </li>
-          </ul>
+        <Step n="1" title="Acesse sua conta TradingView">
+          <p>
+            Vá para{' '}
+            <span className="text-fg-1 font-mono text-small bg-bg-2 border border-border-1 rounded-sm px-1.5 py-0.5">
+              Alertas
+            </span>{' '}
+            no menu da direita.
+          </p>
+          <a
+            href="https://www.tradingview.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-accent text-small hover:underline"
+          >
+            Abrir TradingView <ExternalLink className="h-3 w-3" />
+          </a>
+        </Step>
+
+        <Step n="2" title="Crie 3 alertas">
+          <p>Configure um alerta para cada commodity:</p>
+          <div className="flex flex-wrap gap-2">
+            <GrainBadge variant="soja" label="ZS · Soja" />
+            <GrainBadge variant="milho" label="ZC · Milho" />
+            <GrainBadge variant="trigo" label="ZW · Trigo" />
+          </div>
+          <p className="text-fg-3">
+            Recomendação: alertas diários ao fechamento para receber 1 update por sessão.
+          </p>
+        </Step>
+
+        <Step n="3" title="Configure o webhook">
+          <p>Em cada alerta, na aba Notificações, cole os campos abaixo:</p>
+
+          <div className="space-y-4 pt-2">
+            <CopyField label="Webhook URL" value={webhookUrl} fieldKey="url" />
+            <CopyField
+              label="Header — Authorization"
+              value={`Bearer ${secret}`}
+              fieldKey="auth"
+            />
+            <CopyField label="Body (JSON)" value={bodyJson} fieldKey="body" monoBlock />
+          </div>
+        </Step>
+
+        <Step n="4" title="Teste o webhook">
+          <p>
+            Em{' '}
+            <span className="text-fg-1 font-mono text-small bg-bg-2 border border-border-1 rounded-sm px-1.5 py-0.5">
+              Alertas → Seu alerta → Teste
+            </span>
+            , dispare uma chamada de teste. Você deve receber a notificação no endpoint{' '}
+            <span className="text-fg-1 font-mono text-small bg-bg-2 border border-border-1 rounded-sm px-1.5 py-0.5">
+              /api/webhooks/tradingview
+            </span>
+            .
+          </p>
+        </Step>
+
+        <div className="border-l-2 border-l-pos pl-5 space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-pos" />
+            <h3 className="text-fg-1 font-semibold text-body">Pronto</h3>
+          </div>
+          <p className="text-fg-2 text-small">
+            As cotações aparecerão em{' '}
+            <a href="/cotacoes" className="text-accent hover:underline">
+              /cotacoes
+            </a>{' '}
+            assim que o primeiro webhook for processado.
+          </p>
         </div>
-      </div>
-    </div>
+      </Card>
+
+      <Card className="space-y-4">
+        <div className="flex items-center gap-2">
+          <HelpCircle className="h-4 w-4 text-warn" />
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">Troubleshooting</h3>
+        </div>
+        <ul className="space-y-3 text-fg-2 text-small">
+          <li className="flex gap-3">
+            <Chip variant="warn" className="shrink-0">Webhook não dispara</Chip>
+            <span>Verifique se a URL está correta e acessível publicamente.</span>
+          </li>
+          <li className="flex gap-3">
+            <Chip variant="neg" className="shrink-0">Erro 401</Chip>
+            <span>Confira se o Bearer token está no header Authorization.</span>
+          </li>
+          <li className="flex gap-3">
+            <Chip variant="info" className="shrink-0">Sem cotações</Chip>
+            <span>
+              Verifique a tabela{' '}
+              <span className="text-fg-1 font-mono">WebhookLog</span> para erros recentes.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <Chip variant="neutral" className="shrink-0">Documentação</Chip>
+            <span>
+              Leia{' '}
+              <span className="text-fg-1 font-mono">TRADINGVIEW_SETUP.md</span> no repositório.
+            </span>
+          </li>
+        </ul>
+      </Card>
+    </AppShell>
   )
 }

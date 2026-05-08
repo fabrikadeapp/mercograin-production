@@ -4,13 +4,27 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import {
+  Plus,
+  Filter,
+  Download,
+  ListChecks,
+  ArrowUpRight,
+  ArrowDownLeft,
+  X,
+} from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Chip,
+  Badge,
+  Select,
+  SearchField,
+  type BadgeStatus,
+} from '@/components/ui/phb'
 import { Pagination } from '@/components/ui/Pagination'
-import { SearchInput } from '@/components/ui/SearchInput'
-import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
@@ -36,8 +50,23 @@ interface PaginatedResponse {
   pages: number
 }
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'Todos os status' },
+  { value: 'rascunho', label: 'Rascunho' },
+  { value: 'enviada', label: 'Enviada' },
+  { value: 'aceita', label: 'Aceita' },
+  { value: 'rejeitada', label: 'Rejeitada' },
+]
+
+const STATUS_TO_BADGE: Record<Proposta['status'], BadgeStatus> = {
+  rascunho: 'rascunho',
+  enviada: 'em-negociacao',
+  aceita: 'assinado',
+  rejeitada: 'cancelado',
+}
+
 export default function PropostasPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { success, error: showError } = useToast()
@@ -49,7 +78,6 @@ export default function PropostasPage() {
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
-  const [showFilters, setShowFilters] = useState(false)
 
   const limit = 25
 
@@ -58,10 +86,7 @@ export default function PropostasPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchPropostas()
-    }
+    if (status === 'authenticated') fetchPropostas()
   }, [status, router])
 
   useEffect(() => {
@@ -69,7 +94,6 @@ export default function PropostasPage() {
     if (page) params.set('page', page.toString())
     if (search) params.set('search', search)
     if (statusFilter) params.set('status', statusFilter)
-
     router.push(`/propostas?${params.toString()}`, { scroll: false })
   }, [page, search, statusFilter, router])
 
@@ -102,7 +126,6 @@ export default function PropostasPage() {
       setPage(1)
       fetchPropostas()
     }, 300)
-
     return () => clearTimeout(timer)
   }, [search, statusFilter])
 
@@ -137,182 +160,162 @@ export default function PropostasPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">📋 Propostas</h1>
-              <p className="text-gray-600 mt-1">Gerencie suas propostas comerciais</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleExportExcel}
-                disabled={loading || propostas.length === 0}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
-              >
-                📊 Exportar Excel
-              </button>
-              <Link href="/propostas/nova">
-                <Button variant="primary">+ Nova Proposta</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search & Filters */}
-        <Card className="mb-6" variant="elevated">
-          <CardContent className="p-4 space-y-4">
-            <SearchInput
-              onSearch={setSearch}
-              placeholder="🔍 Buscar por número ou cliente..."
-            />
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden text-sm text-blue-600 font-medium hover:text-blue-700"
+    <AppShell>
+      <PageHeader
+        eyebrow={loading ? 'Comercial · Carregando…' : `Comercial · ${total} proposta${total === 1 ? '' : 's'}`}
+        title="Propostas"
+        subtitle="Acompanhe propostas comerciais em todos os estágios."
+        search={false}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              leftIcon={<Download className="h-4 w-4" />}
+              onClick={handleExportExcel}
+              disabled={loading || propostas.length === 0}
             >
-              {showFilters ? '✕ Fechar Filtros' : '⚙️ Mostrar Filtros'}
-            </button>
+              Exportar Excel
+            </Button>
+            <Link href="/propostas/nova">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Nova proposta</Button>
+            </Link>
+          </>
+        }
+      />
 
-            <div className={`${showFilters ? 'block' : 'hidden md:block'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value)
-                    setPage(1)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos os status</option>
-                  <option value="rascunho">Rascunho</option>
-                  <option value="enviada">Enviada</option>
-                  <option value="aceita">Aceita</option>
-                  <option value="rejeitada">Rejeitada</option>
-                </select>
-              </div>
-            </div>
+      <Card className="mb-6 space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <SearchField
+            placeholder="Buscar por número ou cliente…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            containerClassName="flex-1 min-w-[260px]"
+          />
+          <Select
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setPage(1)
+            }}
+            containerClassName="w-56"
+          />
+        </div>
 
-            {(search || statusFilter) && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-600">Filtros ativos:</span>
-                {search && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {search} ✕
-                  </span>
-                )}
-                {statusFilter && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {statusFilter} ✕
-                  </span>
-                )}
-              </div>
+        {(search || statusFilter) && (
+          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border-1">
+            <span className="eyebrow flex items-center gap-1.5">
+              <Filter className="h-3 w-3" /> Filtros ativos
+            </span>
+            {search && (
+              <Chip variant="info" className="cursor-pointer" onClick={() => setSearch('')}>
+                {search} <X className="h-3 w-3 ml-1" />
+              </Chip>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Results Info */}
-        {!loading && (
-          <div className="text-sm text-gray-600 mb-4">
-            {total > 0 ? (
-              <span>
-                Mostrando <strong>{propostas.length}</strong> de <strong>{total}</strong> propostas
-                {pages > 1 && ` • Página ${page} de ${pages}`}
-              </span>
-            ) : (
-              <span>Nenhuma proposta encontrada</span>
+            {statusFilter && (
+              <Chip variant="info" className="cursor-pointer" onClick={() => setStatusFilter('')}>
+                {statusFilter} <X className="h-3 w-3 ml-1" />
+              </Chip>
             )}
           </div>
         )}
+      </Card>
 
-        {/* Loading State */}
-        {loading ? (
-          <div className="space-y-3">
-            {Array(3).fill(0).map((_, i) => (
-              <Card key={i} variant="elevated">
-                <CardContent className="p-4">
-                  <Skeleton variant="text" className="mb-2 w-full" />
-                  <Skeleton variant="text" className="w-4/5" />
-                </CardContent>
-              </Card>
-            ))}
+      {!loading && total > 0 && (
+        <p className="text-fg-3 text-small mb-4">
+          Mostrando <span className="text-fg-1 t-num">{propostas.length}</span> de{' '}
+          <span className="text-fg-1 t-num">{total}</span> propostas
+          {pages > 1 && (
+            <>
+              {' '}
+              · Página <span className="text-fg-1 t-num">{page}</span> de{' '}
+              <span className="text-fg-1 t-num">{pages}</span>
+            </>
+          )}
+        </p>
+      )}
+
+      {loading ? (
+        <Card className="text-center py-16 text-fg-3 text-small">Carregando…</Card>
+      ) : propostas.length === 0 ? (
+        <Card className="text-center py-16 space-y-3">
+          <ListChecks className="h-8 w-8 text-fg-3 mx-auto" />
+          <p className="eyebrow">Vazio</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+            Nenhuma proposta encontrada
+          </h3>
+          <p className="text-fg-2 text-body">
+            {search || statusFilter
+              ? 'Tente ajustar seus filtros.'
+              : 'Comece criando sua primeira proposta.'}
+          </p>
+          <div className="pt-2">
+            <Link href="/propostas/nova">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Nova proposta</Button>
+            </Link>
           </div>
-        ) : propostas.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-12">
-              <EmptyState
-                icon="📋"
-                title="Nenhuma proposta encontrada"
-                description={search || statusFilter ? 'Tente ajustar seus filtros' : 'Comece criando sua primeira proposta'}
-                action={{
-                  label: 'Nova Proposta',
-                  onClick: () => router.push('/propostas/nova'),
-                }}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4">
-              {propostas.map((proposta) => (
+        </Card>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {propostas.map((proposta) => {
+              const TipoIcon = proposta.tipo === 'venda' ? ArrowUpRight : ArrowDownLeft
+              return (
                 <Link key={proposta.id} href={`/propostas/${proposta.id}`}>
-                  <Card variant="elevated" className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-bold text-gray-900">PROP-{proposta.numero}</h3>
-                          <p className="text-sm text-gray-600">{proposta.cliente.nome}</p>
+                  <Card className="hover:bg-bg-3 transition-colors cursor-pointer">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap">
+                          <h3 className="text-fg-1 font-semibold t-num">PROP-{proposta.numero}</h3>
+                          <Badge variant={STATUS_TO_BADGE[proposta.status]} />
                         </div>
-                        <div className="text-right">
-                          <StatusBadge status={proposta.status} />
-                        </div>
+                        <p className="text-fg-2 text-small truncate">{proposta.cliente.nome}</p>
                       </div>
+                      <div className="text-right shrink-0">
+                        <p className="t-num-lg text-fg-1">
+                          {formatCurrency(parseFloat(proposta.valorTotal))}
+                        </p>
+                      </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-3 border-t">
-                        <div>
-                          <p className="text-xs text-gray-600">Tipo</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {proposta.tipo === 'venda' ? '📤 Venda' : '📥 Compra'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Valor</p>
-                          <p className="text-sm font-bold text-green-600">{formatCurrency(parseFloat(proposta.valorTotal))}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Criada em</p>
-                          <p className="text-sm text-gray-600">{formatDate(proposta.criadaEm)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Validade</p>
-                          <p className="text-sm text-gray-600">{formatDate(proposta.validadeEm)}</p>
-                        </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-border-1">
+                      <div>
+                        <p className="eyebrow">Tipo</p>
+                        <p className="text-fg-1 text-small flex items-center gap-1.5 mt-1">
+                          <TipoIcon
+                            className={`h-3.5 w-3.5 ${
+                              proposta.tipo === 'venda' ? 'text-pos' : 'text-info'
+                            }`}
+                          />
+                          {proposta.tipo === 'venda' ? 'Venda' : 'Compra'}
+                        </p>
                       </div>
-                    </CardContent>
+                      <div>
+                        <p className="eyebrow">Criada em</p>
+                        <p className="text-fg-2 text-small t-num mt-1">
+                          {formatDate(proposta.criadaEm)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="eyebrow">Validade</p>
+                        <p className="text-fg-2 text-small t-num mt-1">
+                          {formatDate(proposta.validadeEm)}
+                        </p>
+                      </div>
+                    </div>
                   </Card>
                 </Link>
-              ))}
-            </div>
+              )
+            })}
+          </div>
 
-            {/* Pagination */}
-            {pages > 1 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination
-                  currentPage={page}
-                  totalPages={pages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          {pages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination currentPage={page} totalPages={pages} onPageChange={handlePageChange} />
+            </div>
+          )}
+        </>
+      )}
+    </AppShell>
   )
 }

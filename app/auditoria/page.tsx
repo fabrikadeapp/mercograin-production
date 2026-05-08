@@ -3,12 +3,27 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import {
+  Users,
+  FileText,
+  Handshake,
+  Wallet,
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Eye,
+  RefreshCw,
+  ScrollText,
+} from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Chip,
+  Select,
+} from '@/components/ui/phb'
 import { Pagination } from '@/components/ui/Pagination'
-import { SearchInput } from '@/components/ui/SearchInput'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { formatDate } from '@/lib/utils/formatters'
 
@@ -32,29 +47,45 @@ interface PaginatedResponse {
   pages: number
 }
 
-const acaoEmojis: Record<string, string> = {
-  criar: '✨',
-  atualizar: '📝',
-  deletar: '🗑️',
-  visualizar: '👁️',
+const ENTIDADE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  cliente: Users,
+  proposta: FileText,
+  contrato: Handshake,
+  boleto: Wallet,
 }
 
-const entidadeEmojis: Record<string, string> = {
-  cliente: '👥',
-  proposta: '📄',
-  contrato: '🤝',
-  boleto: '💰',
+const ACAO_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  criar: PlusCircle,
+  atualizar: Pencil,
+  deletar: Trash2,
+  visualizar: Eye,
 }
 
-const acaoCores: Record<string, string> = {
-  criar: 'bg-green-100 text-green-800',
-  atualizar: 'bg-blue-100 text-blue-800',
-  deletar: 'bg-red-100 text-red-800',
-  visualizar: 'bg-gray-100 text-gray-800',
+const ACAO_VARIANT: Record<string, 'pos' | 'info' | 'neg' | 'neutral'> = {
+  criar: 'pos',
+  atualizar: 'info',
+  deletar: 'neg',
+  visualizar: 'neutral',
 }
+
+const ENTIDADE_OPTIONS = [
+  { value: '', label: 'Todas as entidades' },
+  { value: 'cliente', label: 'Cliente' },
+  { value: 'proposta', label: 'Proposta' },
+  { value: 'contrato', label: 'Contrato' },
+  { value: 'boleto', label: 'Boleto' },
+]
+
+const ACAO_OPTIONS = [
+  { value: '', label: 'Todas as ações' },
+  { value: 'criar', label: 'Criar' },
+  { value: 'atualizar', label: 'Atualizar' },
+  { value: 'deletar', label: 'Deletar' },
+  { value: 'visualizar', label: 'Visualizar' },
+]
 
 export default function AuditoriaPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { error: showError } = useToast()
@@ -74,10 +105,7 @@ export default function AuditoriaPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchLogs()
-    }
+    if (status === 'authenticated') fetchLogs()
   }, [status, router])
 
   useEffect(() => {
@@ -85,7 +113,6 @@ export default function AuditoriaPage() {
     if (page) params.set('page', page.toString())
     if (entidadeFilter) params.set('entidade', entidadeFilter)
     if (acaoFilter) params.set('acao', acaoFilter)
-
     router.push(`/auditoria?${params.toString()}`, { scroll: false })
   }, [page, entidadeFilter, acaoFilter, router])
 
@@ -113,168 +140,124 @@ export default function AuditoriaPage() {
     }
   }
 
+  useEffect(() => {
+    setPage(1)
+    fetchLogs()
+  }, [entidadeFilter, acaoFilter])
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
+    fetchLogs()
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">📋 Log de Auditoria</h1>
-          <p className="text-gray-600 mt-2">Histórico de todas as ações realizadas no sistema</p>
+    <AppShell>
+      <PageHeader
+        eyebrow={loading ? 'Compliance · Carregando…' : `Compliance · ${total} registro${total === 1 ? '' : 's'}`}
+        title="Log de auditoria"
+        subtitle="Histórico imutável de todas as ações executadas no sistema."
+        search={false}
+        actions={
+          <Button
+            variant="secondary"
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            onClick={fetchLogs}
+          >
+            Atualizar
+          </Button>
+        }
+      />
+
+      <Card className="mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select
+            options={ENTIDADE_OPTIONS}
+            value={entidadeFilter}
+            onChange={(e) => setEntidadeFilter(e.target.value)}
+            containerClassName="w-56"
+            label="Entidade"
+          />
+          <Select
+            options={ACAO_OPTIONS}
+            value={acaoFilter}
+            onChange={(e) => setAcaoFilter(e.target.value)}
+            containerClassName="w-56"
+            label="Ação"
+          />
         </div>
+      </Card>
 
-        {/* Filters */}
-        <Card variant="elevated" className="mb-6">
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <button
-                onClick={() => setPage(1)}
-                className="text-sm text-blue-600 hover:underline mb-4"
-              >
-                🔄 Atualizar
-              </button>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Entidade</label>
-                  <select
-                    value={entidadeFilter}
-                    onChange={(e) => {
-                      setEntidadeFilter(e.target.value)
-                      setPage(1)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todas as entidades</option>
-                    <option value="cliente">👥 Cliente</option>
-                    <option value="proposta">📄 Proposta</option>
-                    <option value="contrato">🤝 Contrato</option>
-                    <option value="boleto">💰 Boleto</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ação</label>
-                  <select
-                    value={acaoFilter}
-                    onChange={(e) => {
-                      setAcaoFilter(e.target.value)
-                      setPage(1)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Todas as ações</option>
-                    <option value="criar">✨ Criar</option>
-                    <option value="atualizar">📝 Atualizar</option>
-                    <option value="deletar">🗑️ Deletar</option>
-                    <option value="visualizar">👁️ Visualizar</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </CardContent>
+      {loading ? (
+        <Card className="text-center py-16 text-fg-3 text-small">Carregando…</Card>
+      ) : logs.length === 0 ? (
+        <Card className="text-center py-16 space-y-3">
+          <ScrollText className="h-8 w-8 text-fg-3 mx-auto" />
+          <p className="eyebrow">Vazio</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+            Nenhum registro de auditoria
+          </h3>
+          <p className="text-fg-2 text-body">
+            Os eventos do sistema aparecerão aqui conforme forem gerados.
+          </p>
         </Card>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {logs.map((log) => {
+              const EntIcon = ENTIDADE_ICON[log.entidade] || ScrollText
+              const AcaoIcon = ACAO_ICON[log.acao] || Pencil
+              return (
+                <Card key={log.id} className="!p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 rounded-md bg-bg-2 border border-border-1 flex items-center justify-center shrink-0">
+                      <EntIcon className="h-4 w-4 text-fg-2" />
+                    </div>
 
-        {/* Results Info */}
-        {!loading && (
-          <div className="text-sm text-gray-600 mb-4">
-            {total > 0 ? (
-              <span>
-                Mostrando <strong>{logs.length}</strong> de <strong>{total}</strong> registros
-                {pages > 1 && ` • Página ${page} de ${pages}`}
-              </span>
-            ) : (
-              <span>Nenhum registro de auditoria encontrado</span>
-            )}
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading ? (
-          <div className="space-y-3">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <Card key={i} variant="elevated">
-                  <CardContent className="p-4">
-                    <Skeleton variant="text" className="mb-2 w-full" />
-                    <Skeleton variant="text" className="w-3/4" />
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        ) : logs.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-12">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Nenhum registro de auditoria encontrado</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {logs.map((log) => (
-                <Card key={log.id} variant="elevated">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {/* Emoji da entidade */}
-                      <div className="text-2xl">
-                        {entidadeEmojis[log.entidade] || '📌'}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="text-fg-1 font-medium text-small capitalize">
+                          {log.entidade}
+                        </span>
+                        <Chip variant={ACAO_VARIANT[log.acao] || 'neutral'} leftIcon={<AcaoIcon className="h-3 w-3" />}>
+                          {log.acao}
+                        </Chip>
+                        <span className="text-fg-3 text-micro uppercase tracking-wider t-num">
+                          ID: {log.entidadeId.substring(0, 8)}
+                        </span>
                       </div>
 
-                      {/* Conteúdo */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="font-semibold text-gray-900">
-                            {log.entidade.charAt(0).toUpperCase() + log.entidade.slice(1)}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${acaoCores[log.acao] || 'bg-gray-100'}`}>
-                            {acaoEmojis[log.acao]} {log.acao}
-                          </span>
-                          <span className="text-sm text-gray-500">ID: {log.entidadeId.substring(0, 8)}</span>
+                      {log.mudancas && Object.keys(log.mudancas).length > 0 && (
+                        <div className="bg-bg-2 border border-border-1 rounded-sm p-2 mb-2">
+                          <p className="eyebrow mb-1">Alterações</p>
+                          <ul className="space-y-0.5 text-small text-fg-2">
+                            {Object.entries(log.mudancas).map(([key, value]) => (
+                              <li key={key} className="t-num">
+                                <span className="text-fg-1 font-medium">{key}:</span>{' '}
+                                {JSON.stringify(value)}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
+                      )}
 
-                        {log.mudancas && Object.keys(log.mudancas).length > 0 && (
-                          <div className="bg-gray-50 rounded p-2 mb-2 text-xs text-gray-700">
-                            <p className="font-medium mb-1">Alterações:</p>
-                            <ul className="space-y-1">
-                              {Object.entries(log.mudancas).map(([key, value]) => (
-                                <li key={key}>
-                                  <strong>{key}:</strong> {JSON.stringify(value)}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{formatDate(new Date(log.criadoEm))}</span>
-                          {log.ipAddress && <span>IP: {log.ipAddress}</span>}
-                        </div>
+                      <div className="flex items-center justify-between gap-4 text-micro uppercase tracking-wider text-fg-3">
+                        <span className="t-num">{formatDate(new Date(log.criadoEm))}</span>
+                        {log.ipAddress && <span className="t-num">IP: {log.ipAddress}</span>}
                       </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
-              ))}
-            </div>
+              )
+            })}
+          </div>
 
-            {/* Pagination */}
-            {pages > 1 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination
-                  currentPage={page}
-                  totalPages={pages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          {pages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination currentPage={page} totalPages={pages} onPageChange={handlePageChange} />
+            </div>
+          )}
+        </>
+      )}
+    </AppShell>
   )
 }

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { Button, Card, Input, Brand } from '@/components/ui/phb'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -38,65 +40,65 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">MercoGrain</h1>
-        <p className="text-gray-600 mb-8">Sistema de Trading de Grãos</p>
+    <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
+      <div className="absolute top-8 left-8">
+        <Brand />
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
+      <div className="w-full max-w-md space-y-8">
+        <div className="space-y-2 text-center">
+          <p className="eyebrow">Acesso · Mesa de operações</p>
+          <h1 className="text-h1 font-sans tracking-tight text-fg-1">Bem-vindo de volta.</h1>
+          <p className="text-fg-2 text-body">Entre para acompanhar suas cotações em tempo real.</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              id="email"
+        <Card className="space-y-4">
+          {error && (
+            <div className="flex items-start gap-2 rounded-md border border-l-2 border-border-1 border-l-neg bg-bg-2 p-3 text-small text-fg-1">
+              <AlertCircle className="h-4 w-4 text-neg shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="E-mail"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="seu@email.com"
+              leftIcon={<Mail className="h-4 w-4 text-fg-3" />}
               required
             />
-          </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <Link href="/auth/forgot-password" className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-                Esqueci minha senha
-              </Link>
-            </div>
-            <input
-              id="password"
+            <Input
+              label="Senha"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
+              leftIcon={<Lock className="h-4 w-4 text-fg-3" />}
               required
             />
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Conectando...' : 'Entrar'}
-          </button>
-        </form>
+            <div className="flex justify-end -mt-1">
+              <Link
+                href="/auth/forgot-password"
+                className="text-fg-3 text-small hover:text-accent transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
 
-        <p className="text-center text-gray-600 mt-6">
-          Não tem conta?{' '}
-          <Link href="/auth/signup" className="text-blue-600 hover:underline font-semibold">
+            <Button type="submit" fullWidth loading={loading}>
+              {loading ? 'Conectando…' : 'Entrar'}
+            </Button>
+          </form>
+        </Card>
+
+        <p className="text-center text-fg-3 text-small">
+          Ainda não tem conta?{' '}
+          <Link href="/auth/signup" className="text-accent hover:underline">
             Criar conta
           </Link>
         </p>

@@ -3,6 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+} from '@/components/ui/phb'
 
 interface Cliente {
   id: string
@@ -16,6 +25,11 @@ interface Cliente {
   estado?: string
   tipo: 'comprador' | 'vendedor'
 }
+
+const TIPO_OPCOES = [
+  { value: 'comprador', label: 'Comprador' },
+  { value: 'vendedor', label: 'Vendedor' },
+]
 
 export default function EditarClientePage() {
   const router = useRouter()
@@ -44,9 +58,7 @@ export default function EditarClientePage() {
   const fetchCliente = async () => {
     try {
       const response = await fetch(`/api/clientes/${clienteId}`)
-      if (!response.ok) {
-        throw new Error('Cliente não encontrado')
-      }
+      if (!response.ok) throw new Error('Cliente não encontrado')
       const data = await response.json()
       setFormData(data)
       setError('')
@@ -58,7 +70,9 @@ export default function EditarClientePage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
@@ -89,194 +103,130 @@ export default function EditarClientePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Carregando cliente...</p>
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando cliente…
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/clientes" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Clientes
+    <AppShell>
+      <PageHeader
+        eyebrow="Cadastro · Edição"
+        title="Editar cliente"
+        subtitle={formData.nome || ''}
+        search={false}
+        actions={
+          <Link href="/clientes">
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Editar Cliente</h1>
-          <p className="text-gray-600 mt-2">Atualize as informações do cliente</p>
-        </div>
+        }
+      />
 
-        {/* Form */}
-        <div className="bg-white rounded-lg shadow p-8">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
+      <Card>
+        {error && (
+          <div className="mb-6 flex items-start gap-2 rounded-md border border-l-2 border-border-1 border-l-neg bg-bg-2 p-3 text-small text-fg-1">
+            <AlertCircle className="h-4 w-4 text-neg shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nome */}
-            <div>
-              <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
-                Nome Completo/Razão Social *
-              </label>
-              <input
-                id="nome"
-                name="nome"
-                type="text"
-                value={formData.nome || ''}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <section className="space-y-4">
+            <p className="eyebrow">Identificação</p>
+            <Input
+              label="Nome completo · Razão social *"
+              name="nome"
+              value={formData.nome || ''}
+              onChange={handleChange}
+              required
+            />
+            <Select
+              label="Tipo *"
+              name="tipo"
+              value={formData.tipo || 'comprador'}
+              onChange={handleChange}
+              options={TIPO_OPCOES}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="CPF"
+                name="cpf"
+                value={formData.cpf || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
+              />
+              <Input
+                label="CNPJ"
+                name="cnpj"
+                value={formData.cnpj || ''}
+                onChange={handleChange}
               />
             </div>
+          </section>
 
-            {/* Tipo */}
-            <div>
-              <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Cliente *
-              </label>
-              <select
-                id="tipo"
-                name="tipo"
-                value={formData.tipo || 'comprador'}
+          <section className="space-y-4">
+            <p className="eyebrow">Contato</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="E-mail"
+                name="email"
+                type="email"
+                value={formData.email || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="comprador">Comprador</option>
-                <option value="vendedor">Vendedor</option>
-              </select>
-            </div>
-
-            {/* Dados Pessoais/Empresa */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-2">
-                  CPF
-                </label>
-                <input
-                  id="cpf"
-                  name="cpf"
-                  type="text"
-                  value={formData.cpf || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700 mb-2">
-                  CNPJ
-                </label>
-                <input
-                  id="cnpj"
-                  name="cnpj"
-                  type="text"
-                  value={formData.cnpj || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Email e Telefone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefone
-                </label>
-                <input
-                  id="telefone"
-                  name="telefone"
-                  type="tel"
-                  value={formData.telefone || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Endereço */}
-            <div>
-              <label htmlFor="endereco" className="block text-sm font-medium text-gray-700 mb-2">
-                Endereço
-              </label>
-              <input
-                id="endereco"
-                name="endereco"
-                type="text"
-                value={formData.endereco || ''}
+              />
+              <Input
+                label="Telefone"
+                name="telefone"
+                type="tel"
+                value={formData.telefone || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </section>
 
-            {/* Cidade e Estado */}
+          <section className="space-y-4">
+            <p className="eyebrow">Endereço</p>
+            <Input
+              label="Endereço"
+              name="endereco"
+              value={formData.endereco || ''}
+              onChange={handleChange}
+            />
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
-                <label htmlFor="cidade" className="block text-sm font-medium text-gray-700 mb-2">
-                  Cidade
-                </label>
-                <input
-                  id="cidade"
+                <Input
+                  label="Cidade"
                   name="cidade"
-                  type="text"
                   value={formData.cidade || ''}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado
-                </label>
-                <input
-                  id="estado"
-                  name="estado"
-                  type="text"
-                  value={formData.estado || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  maxLength={2}
-                />
-              </div>
+              <Input
+                label="UF"
+                name="estado"
+                value={formData.estado || ''}
+                onChange={handleChange}
+                maxLength={2}
+              />
             </div>
+          </section>
 
-            {/* Botões */}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={updating}
-                className="flex-1 bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {updating ? 'Atualizando...' : 'Salvar Alterações'}
-              </button>
-              <Link
-                href="/clientes"
-                className="flex-1 bg-gray-300 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-400 transition text-center"
-              >
+          <div className="flex justify-end gap-3 pt-6 border-t border-border-1">
+            <Link href="/clientes">
+              <Button type="button" variant="ghost">
                 Cancelar
-              </Link>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+              </Button>
+            </Link>
+            <Button type="submit" loading={updating}>
+              {updating ? 'Salvando…' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </AppShell>
   )
 }

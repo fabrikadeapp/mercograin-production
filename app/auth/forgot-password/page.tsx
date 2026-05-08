@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Mail, CheckCircle2 } from 'lucide-react'
+import { Button, Card, Input, Brand } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 
 export default function ForgotPasswordPage() {
@@ -43,81 +43,76 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md" variant="elevated">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">🔑 Recuperar Senha</CardTitle>
-        </CardHeader>
+    <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
+      <div className="absolute top-8 left-8">
+        <Brand />
+      </div>
 
-        <CardContent>
+      <div className="w-full max-w-md space-y-8">
+        <div className="space-y-2 text-center">
+          <p className="eyebrow">Recuperação de acesso</p>
+          <h1 className="text-h1 font-sans tracking-tight text-fg-1">
+            Recuperar senha
+          </h1>
+          <p className="text-fg-2 text-body">
+            Informe seu e-mail e enviaremos um link para criar uma nova senha.
+          </p>
+        </div>
+
+        <Card className="space-y-4">
           {sent ? (
-            <div className="text-center space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-800 font-medium">✅ Email Enviado!</p>
-                <p className="text-green-700 text-sm mt-2">
-                  Verifique sua caixa de entrada para o link de recuperação.
-                </p>
-                <p className="text-green-600 text-xs mt-3">
-                  O link expira em 1 hora.
-                </p>
+            <div className="space-y-4 text-center">
+              <div className="rounded-md border border-l-2 border-border-1 border-l-pos bg-bg-2 p-4 text-left flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-pos shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-small font-semibold text-fg-1">E-mail enviado</p>
+                  <p className="text-small text-fg-2">
+                    Verifique sua caixa de entrada para o link de recuperação.
+                  </p>
+                  <p className="text-micro text-fg-3 uppercase tracking-wider pt-1">
+                    O link expira em 1 hora.
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-gray-600 text-sm">Não recebeu o email?</p>
-                <button
-                  onClick={() => setSent(false)}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Tentar novamente
-                </button>
-              </div>
+              <button
+                onClick={() => setSent(false)}
+                className="text-accent text-small hover:underline"
+              >
+                Tentar novamente
+              </button>
 
-              <Link href="/auth/login" className="block mt-6">
-                <Button variant="secondary" className="w-full">
-                  Voltar ao Login
+              <Link href="/auth/login" className="block">
+                <Button variant="secondary" fullWidth>
+                  Voltar ao login
                 </Button>
               </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <Input
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                leftIcon={<Mail className="h-4 w-4 text-fg-3" />}
+              />
 
-              <p className="text-xs text-gray-600">
-                Informe o email associado à sua conta. Enviaremos um link para recuperar sua senha.
-              </p>
-
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? '⏳ Enviando...' : '✉️ Enviar Link'}
+              <Button type="submit" fullWidth loading={loading}>
+                {loading ? 'Enviando…' : 'Enviar link de recuperação'}
               </Button>
 
-              <Link href="/auth/login" className="block text-center">
-                <button
-                  type="button"
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Voltar ao Login
-                </button>
+              <Link
+                href="/auth/login"
+                className="block text-center text-fg-3 text-small hover:text-accent transition-colors"
+              >
+                Voltar ao login
               </Link>
             </form>
           )}
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }

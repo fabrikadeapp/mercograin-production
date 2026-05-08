@@ -5,10 +5,15 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { ArrowLeft } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { schemas } from '@/lib/utils/validators'
 
@@ -39,16 +44,11 @@ export default function NovoClientePage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
-    defaultValues: {
-      tipo: 'comprador',
-    },
+    defaultValues: { tipo: 'comprador' },
   })
-
-  const tipo = watch('tipo')
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
@@ -79,133 +79,111 @@ export default function NovoClientePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/clientes" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Clientes
+    <AppShell>
+      <PageHeader
+        eyebrow="Cadastro · Novo registro"
+        title="Novo cliente"
+        subtitle="Preencha os dados básicos do cliente ou contraparte comercial."
+        search={false}
+        actions={
+          <Link href="/clientes">
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Novo Cliente</h1>
-          <p className="text-gray-600 mt-2">Cadastre um novo cliente ou parceiro comercial</p>
-        </div>
+        }
+      />
 
-        {/* Form */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle>Informações do Cliente</CardTitle>
-            <CardDescription>Preencha os dados básicos do cliente</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Nome */}
+      <Card>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <section className="space-y-4">
+            <p className="eyebrow">Identificação</p>
+            <Input
+              label="Nome completo · Razão social *"
+              placeholder="João Silva ou Empresa LTDA"
+              {...register('nome')}
+              error={errors.nome?.message}
+            />
+            <Select
+              label="Tipo de cliente *"
+              options={TIPO_OPCOES}
+              {...register('tipo')}
+              error={errors.tipo?.message}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Nome Completo / Razão Social *"
-                placeholder="João Silva ou Empresa LTDA"
-                {...register('nome')}
-                error={errors.nome?.message}
+                label="CPF"
+                placeholder="000.000.000-00"
+                {...register('cpf')}
+                error={errors.cpf?.message}
               />
-
-              {/* Email e Telefone */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="email@example.com"
-                  {...register('email')}
-                  error={errors.email?.message}
-                />
-
-                <Input
-                  label="Telefone"
-                  placeholder="(11) 98765-4321"
-                  mask="phone"
-                  {...register('telefone')}
-                  error={errors.telefone?.message}
-                />
-              </div>
-
-              {/* Tipo */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Cliente *</label>
-                <select
-                  {...register('tipo')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {TIPO_OPCOES.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* CPF ou CNPJ */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="CPF (opcional)"
-                  placeholder="000.000.000-00"
-                  mask="cpf"
-                  {...register('cpf')}
-                  error={errors.cpf?.message}
-                />
-
-                <Input
-                  label="CNPJ (opcional)"
-                  placeholder="00.000.000/0000-00"
-                  mask="cnpj"
-                  {...register('cnpj')}
-                  error={errors.cnpj?.message}
-                />
-              </div>
-
-              {/* Endereço */}
               <Input
-                label="Endereço (opcional)"
-                placeholder="Rua, número, complemento"
-                {...register('endereco')}
-                error={errors.endereco?.message}
+                label="CNPJ"
+                placeholder="00.000.000/0000-00"
+                {...register('cnpj')}
+                error={errors.cnpj?.message}
               />
+            </div>
+          </section>
 
-              {/* Cidade e Estado */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section className="space-y-4">
+            <p className="eyebrow">Contato</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="E-mail"
+                type="email"
+                placeholder="email@example.com"
+                {...register('email')}
+                error={errors.email?.message}
+              />
+              <Input
+                label="Telefone"
+                placeholder="(11) 98765-4321"
+                {...register('telefone')}
+                error={errors.telefone?.message}
+              />
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <p className="eyebrow">Endereço</p>
+            <Input
+              label="Endereço"
+              placeholder="Rua, número, complemento"
+              {...register('endereco')}
+              error={errors.endereco?.message}
+            />
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
                 <Input
-                  label="Cidade (opcional)"
+                  label="Cidade"
                   placeholder="São Paulo"
                   {...register('cidade')}
                   error={errors.cidade?.message}
                 />
-
-                <Input
-                  label="Estado (opcional)"
-                  placeholder="SP"
-                  maxLength={2}
-                  {...register('estado')}
-                  error={errors.estado?.message}
-                />
               </div>
+              <Input
+                label="UF"
+                placeholder="SP"
+                maxLength={2}
+                {...register('estado')}
+                error={errors.estado?.message}
+              />
+            </div>
+          </section>
 
-              {/* Botões */}
-              <div className="flex gap-4 pt-4 border-t">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  className="flex-1"
-                  isLoading={isSubmitting}
-                >
-                  {isSubmitting ? 'Criando...' : 'Criar Cliente'}
-                </Button>
-                <Link href="/clientes" className="flex-1">
-                  <Button variant="secondary" className="w-full">
-                    Cancelar
-                  </Button>
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          <div className="flex justify-end gap-3 pt-6 border-t border-border-1">
+            <Link href="/clientes">
+              <Button type="button" variant="ghost">
+                Cancelar
+              </Button>
+            </Link>
+            <Button type="submit" loading={isSubmitting}>
+              {isSubmitting ? 'Criando…' : 'Criar cliente'}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </AppShell>
   )
 }

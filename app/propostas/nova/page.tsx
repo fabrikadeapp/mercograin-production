@@ -6,11 +6,15 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ArrowLeft, Plus, Trash2, Wheat, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency } from '@/lib/utils/formatters'
 
@@ -45,6 +49,11 @@ const GRAOS_DISPONIVEIS = [
   { value: 'arroz', label: 'Arroz' },
 ]
 
+const TIPO_OPCOES = [
+  { value: 'venda', label: 'Venda' },
+  { value: 'compra', label: 'Compra' },
+]
+
 export default function NovaPropostaPage() {
   const router = useRouter()
   const { success, error: showError } = useToast()
@@ -57,16 +66,11 @@ export default function NovaPropostaPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<PropostaFormData>({
     resolver: zodResolver(propostaSchema),
-    defaultValues: {
-      tipo: 'venda',
-    },
+    defaultValues: { tipo: 'venda' },
   })
-
-  const tipo = watch('tipo')
 
   useEffect(() => {
     fetchClientes()
@@ -87,17 +91,18 @@ export default function NovaPropostaPage() {
   }
 
   const handleAddGrao = () => {
-    setGraos((prev) => [
-      ...prev,
-      { grao: 'soja', quantidade: 0, preco: 0, subtotal: 0 },
-    ])
+    setGraos((prev) => [...prev, { grao: 'soja', quantidade: 0, preco: 0, subtotal: 0 }])
   }
 
   const handleRemoveGrao = (index: number) => {
     setGraos((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleGraoChange = (index: number, field: keyof GraoItem, value: string | number) => {
+  const handleGraoChange = (
+    index: number,
+    field: keyof GraoItem,
+    value: string | number
+  ) => {
     setGraos((prev) => {
       const updated = [...prev]
       const grao = updated[index]
@@ -105,7 +110,6 @@ export default function NovaPropostaPage() {
       if (field === 'quantidade' || field === 'preco') {
         const quantidade = field === 'quantidade' ? (value as number) : grao.quantidade
         const preco = field === 'preco' ? (value as number) : grao.preco
-
         grao[field] = value as never
         grao.subtotal = Math.round(quantidade * preco * 100) / 100
       } else {
@@ -127,11 +131,7 @@ export default function NovaPropostaPage() {
     setSaving(true)
 
     try {
-      const payload = {
-        ...data,
-        graos,
-        valor: valorTotal,
-      }
+      const payload = { ...data, graos, valor: valorTotal }
 
       const response = await fetch('/api/propostas', {
         method: 'POST',
@@ -154,227 +154,196 @@ export default function NovaPropostaPage() {
   }
 
   if (loadingClientes) {
-    return <LoadingSpinner fullScreen text="Carregando..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+        </div>
+      </AppShell>
+    )
   }
 
+  const clienteOptions = [
+    { value: '', label: 'Selecione um cliente' },
+    ...clientes.map((c) => ({ value: c.id, label: c.nome })),
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/propostas" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Propostas
+    <AppShell>
+      <PageHeader
+        eyebrow="Comercial · Nova proposta"
+        title="Nova proposta"
+        subtitle="Crie uma proposta comercial com especificação de grãos e validade."
+        search={false}
+        actions={
+          <Link href="/propostas">
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Nova Proposta</h1>
-          <p className="text-gray-600 mt-2">Crie uma nova proposta comercial com especificação de grãos</p>
-        </div>
+        }
+      />
 
-        {clientes.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-8 text-center">
-              <p className="text-gray-600 mb-4">
-                Você precisa criar pelo menos um cliente antes de criar uma proposta
-              </p>
-              <Link href="/clientes/novo">
-                <Button variant="primary">Criar Cliente</Button>
-              </Link>
-            </CardContent>
+      {clientes.length === 0 ? (
+        <Card className="text-center py-16 space-y-3">
+          <p className="eyebrow">Pré-requisito</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+            Cadastre um cliente primeiro
+          </h3>
+          <p className="text-fg-2 text-body">
+            Você precisa de pelo menos um cliente para criar uma proposta.
+          </p>
+          <div className="pt-2">
+            <Link href="/clientes/novo">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Criar cliente</Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="space-y-6">
+            <section className="space-y-4">
+              <p className="eyebrow">Dados da proposta</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Cliente *"
+                  options={clienteOptions}
+                  {...register('clienteId')}
+                  error={errors.clienteId?.message}
+                />
+                <Input
+                  label="Número da proposta *"
+                  placeholder="EX: PROP-2024-001"
+                  {...register('numero')}
+                  error={errors.numero?.message}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Tipo *"
+                  options={TIPO_OPCOES}
+                  {...register('tipo')}
+                  error={errors.tipo?.message}
+                />
+                <Input
+                  label="Válida até *"
+                  type="date"
+                  {...register('validadeEm')}
+                  error={errors.validadeEm?.message}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="eyebrow">Descrição · Observações</label>
+                <textarea
+                  {...register('descricao')}
+                  rows={3}
+                  placeholder="Detalhes adicionais da proposta"
+                  className="w-full px-4 py-3 rounded-md bg-bg-2 border border-border-1 hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-accent text-fg-1 text-body placeholder:text-fg-3 resize-y"
+                />
+              </div>
+            </section>
           </Card>
-        ) : (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Detalhes da Proposta</CardTitle>
-              <CardDescription>Preencha os dados da proposta</CardDescription>
-            </CardHeader>
 
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Row 1: Cliente e Número */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cliente *
-                    </label>
-                    <select
-                      {...register('clienteId')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Selecione um cliente</option>
-                      {clientes.map((cliente) => (
-                        <option key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.clienteId && (
-                      <p className="text-red-600 text-xs mt-1">{errors.clienteId.message}</p>
-                    )}
-                  </div>
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wheat className="h-4 w-4 text-accent" />
+                <h3 className="text-fg-1 font-semibold">Especificação de grãos</h3>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                leftIcon={<Plus className="h-4 w-4" />}
+                onClick={handleAddGrao}
+              >
+                Adicionar grão
+              </Button>
+            </div>
 
-                  <Input
-                    label="Número da Proposta *"
-                    placeholder="EX: PROP-2024-001"
-                    {...register('numero')}
-                    error={errors.numero?.message}
-                  />
-                </div>
-
-                {/* Row 2: Tipo e Validade */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo *
-                    </label>
-                    <select
-                      {...register('tipo')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="venda">Venda</option>
-                      <option value="compra">Compra</option>
-                    </select>
-                    {errors.tipo && <p className="text-red-600 text-xs mt-1">{errors.tipo.message}</p>}
-                  </div>
-
-                  <Input
-                    label="Válida até *"
-                    type="date"
-                    {...register('validadeEm')}
-                    error={errors.validadeEm?.message}
-                  />
-                </div>
-
-                {/* Descrição */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descrição / Observações
-                  </label>
-                  <textarea
-                    {...register('descricao')}
-                    rows={3}
-                    placeholder="Detalhes adicionais da proposta"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Grãos */}
-                <div className="border-t pt-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Especificação de Grãos</h3>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleAddGrao}
-                    >
-                      + Adicionar Grão
-                    </Button>
-                  </div>
-
-                  {graos.length === 0 ? (
-                    <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-600">
-                      Clique em "Adicionar Grão" para começar
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {graos.map((grao, index) => (
-                        <div key={index} className="border rounded-lg p-4 bg-gray-50 space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {/* Grão */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Grão
-                              </label>
-                              <select
-                                value={grao.grao}
-                                onChange={(e) => handleGraoChange(index, 'grao', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                {GRAOS_DISPONIVEIS.map((g) => (
-                                  <option key={g.value} value={g.value}>
-                                    {g.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {/* Quantidade */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Quantidade (t)
-                              </label>
-                              <input
-                                type="number"
-                                step="0.1"
-                                value={grao.quantidade || ''}
-                                onChange={(e) => handleGraoChange(index, 'quantidade', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-
-                            {/* Preço */}
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Preço (R$/t)
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={grao.preco || ''}
-                                onChange={(e) => handleGraoChange(index, 'preco', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-xs text-gray-600">Subtotal:</p>
-                              <p className="font-semibold text-gray-900">{formatCurrency(grao.subtotal)}</p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleRemoveGrao(index)}
-                            >
-                              Remover
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Total */}
-                <div className="border-t pt-4 bg-blue-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">Valor Total:</span>
-                    <span className="text-2xl font-bold text-blue-600">{formatCurrency(valorTotal)}</span>
-                  </div>
-                </div>
-
-                {/* Botões */}
-                <div className="flex gap-4 pt-4 border-t">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    className="flex-1"
-                    isLoading={saving}
+            {graos.length === 0 ? (
+              <div className="rounded-md bg-bg-2 border border-border-1 border-dashed p-6 text-center text-fg-3 text-small">
+                Adicione pelo menos um grão para esta proposta.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {graos.map((grao, index) => (
+                  <div
+                    key={index}
+                    className="rounded-md bg-bg-2 border border-border-1 p-4 space-y-3"
                   >
-                    {saving ? 'Criando...' : 'Criar Proposta'}
-                  </Button>
-                  <Link href="/propostas" className="flex-1">
-                    <Button variant="secondary" className="w-full">
-                      Cancelar
-                    </Button>
-                  </Link>
-                </div>
-              </form>
-            </CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Select
+                        label="Grão"
+                        options={GRAOS_DISPONIVEIS}
+                        value={grao.grao}
+                        onChange={(e) => handleGraoChange(index, 'grao', e.target.value)}
+                      />
+                      <Input
+                        label="Quantidade (t)"
+                        type="number"
+                        step="0.1"
+                        value={grao.quantidade || ''}
+                        onChange={(e) =>
+                          handleGraoChange(index, 'quantidade', parseFloat(e.target.value) || 0)
+                        }
+                      />
+                      <Input
+                        label="Preço (R$/t)"
+                        type="number"
+                        step="0.01"
+                        value={grao.preco || ''}
+                        onChange={(e) =>
+                          handleGraoChange(index, 'preco', parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-border-1">
+                      <div>
+                        <p className="eyebrow">Subtotal</p>
+                        <p className="t-num text-fg-1 font-semibold">
+                          {formatCurrency(grao.subtotal)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                        onClick={() => handleRemoveGrao(index)}
+                        className="text-neg hover:text-neg"
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
-        )}
-      </div>
-    </div>
+
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="eyebrow">Valor total</p>
+                <p className="text-fg-3 text-small">Soma dos subtotais</p>
+              </div>
+              <p className="t-num-lg text-accent">{formatCurrency(valorTotal)}</p>
+            </div>
+          </Card>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Link href="/propostas">
+              <Button type="button" variant="ghost">
+                Cancelar
+              </Button>
+            </Link>
+            <Button type="submit" loading={saving}>
+              {saving ? 'Criando…' : 'Criar proposta'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </AppShell>
   )
 }

@@ -1,16 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Table, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from '@/components/ui/Table'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Activity, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Tabs,
+  Chip,
+  Pill,
+  KPICard,
+  DenseTable,
+  type DenseTableColumn,
+  type ChipVariant,
+} from '@/components/ui/phb'
 import { Pagination } from '@/components/ui/Pagination'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/contexts/ToastContext'
-import { formatDate, formatDateTime } from '@/lib/utils/formatters'
+import { formatDateTime } from '@/lib/utils/formatters'
 
 interface WebhookLog {
   id: string
@@ -37,16 +46,37 @@ interface PaginatedResponse {
 }
 
 const TIPO_OPCOES = [
+  { value: '', label: 'Todos' },
   { value: 'tradingview', label: 'TradingView' },
   { value: 'braspag', label: 'Braspag' },
   { value: 'signaturely', label: 'Signaturely' },
 ]
 
 const STATUS_OPCOES = [
+  { value: '', label: 'Todos' },
   { value: 'recebido', label: 'Recebido' },
   { value: 'processado', label: 'Processado' },
   { value: 'erro', label: 'Erro' },
 ]
+
+function statusToChipVariant(status: string): ChipVariant {
+  switch (status) {
+    case 'processado':
+      return 'pos'
+    case 'erro':
+      return 'neg'
+    case 'recebido':
+      return 'info'
+    case 'pendente':
+      return 'warn'
+    default:
+      return 'neutral'
+  }
+}
+
+function tipoLabel(tipo: string): string {
+  return TIPO_OPCOES.find((o) => o.value === tipo)?.label || tipo
+}
 
 export default function WebhookLogsPage() {
   const { error: showError } = useToast()
@@ -60,13 +90,13 @@ export default function WebhookLogsPage() {
   const [filters, setFilters] = useState({
     tipo: '',
     status: '',
-    search: '',
     dateFrom: '',
     dateTo: '',
   })
 
   useEffect(() => {
     fetchLogs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filters])
 
   const fetchLogs = async () => {
@@ -98,184 +128,188 @@ export default function WebhookLogsPage() {
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
-    setPage(1) // Resetar para primeira página
+    setPage(1)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'processado':
-        return 'aceita'
-      case 'erro':
-        return 'rejeitada'
-      case 'recebido':
-        return 'enviada'
-      default:
-        return 'info'
+  const stats = useMemo(() => {
+    const byStatus: Record<string, number> = {}
+    const byTipo: Record<string, number> = {}
+    for (const log of logs) {
+      byStatus[log.status] = (byStatus[log.status] ?? 0) + 1
+      byTipo[log.tipo] = (byTipo[log.tipo] ?? 0) + 1
     }
-  }
+    return { byStatus, byTipo }
+  }, [logs])
 
-  const getTipoLabel = (tipo: string) => {
-    return TIPO_OPCOES.find((o) => o.value === tipo)?.label || tipo
-  }
+  const columns: DenseTableColumn<WebhookLog>[] = [
+    {
+      key: 'criadoEm',
+      header: 'Timestamp',
+      isNumeric: true,
+      width: '200px',
+      accessor: (row) => (
+        <span className="font-mono tabular-nums text-fg-2 text-small whitespace-nowrap">
+          {formatDateTime(new Date(row.criadoEm))}
+        </span>
+      ),
+    },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      accessor: (row) => <Pill>{tipoLabel(row.tipo)}</Pill>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      accessor: (row) => (
+        <Chip variant={statusToChipVariant(row.status)}>
+          {row.status[0]?.toUpperCase()}
+          {row.status.slice(1)}
+        </Chip>
+      ),
+    },
+    {
+      key: 'mensagem',
+      header: 'Mensagem',
+      accessor: (row) => {
+        if (row.mensagem) {
+          return <span className="text-fg-2 truncate block max-w-md">{row.mensagem}</span>
+        }
+        if (row.status === 'processado') {
+          return (
+            <span className="inline-flex items-center gap-1.5 text-fg-2">
+              <CheckCircle2 className="h-3.5 w-3.5 text-pos" />
+              Sucesso
+            </span>
+          )
+        }
+        return (
+          <span className="inline-flex items-center gap-1.5 text-fg-3">
+            <AlertTriangle className="h-3.5 w-3.5 text-warn" />
+            Sem mensagem
+          </span>
+        )
+      },
+    },
+    {
+      key: 'ipOrigem',
+      header: 'IP origem',
+      accessor: (row) => (
+        <span className="font-mono tabular-nums text-fg-3 text-small">
+          {row.ipOrigem || '—'}
+        </span>
+      ),
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">🔔 Logs de Webhooks</h1>
-              <p className="text-gray-600 mt-1">Auditoria de webhooks recebidos</p>
+    <AppShell>
+      <PageHeader
+        eyebrow="Integrações · Auditoria"
+        title="Logs de Webhooks"
+        subtitle={`${total} eventos · streaming ativo`}
+        search={false}
+        actions={
+          <Link href="/api/webhooks/health">
+            <Button variant="secondary" leftIcon={<Activity className="h-4 w-4" />}>
+              Health Check
+            </Button>
+          </Link>
+        }
+      />
+
+      <div className="space-y-6">
+        {/* KPIs */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KPICard
+            eyebrow="Total"
+            value={total.toLocaleString('pt-BR')}
+            subtitle={`Página ${page} de ${Math.max(totalPages, 1)}`}
+          />
+          <KPICard
+            eyebrow="Processados (página)"
+            value={(stats.byStatus['processado'] ?? 0).toString()}
+            highlightValue
+          />
+          <KPICard
+            eyebrow="Erros (página)"
+            value={(stats.byStatus['erro'] ?? 0).toString()}
+          />
+          <Card className="p-5 space-y-3">
+            <p className="eyebrow">Health</p>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-pos" />
+              <span className="text-fg-1 font-medium">Operacional</span>
             </div>
-            <Link href="/api/webhooks/health">
-              <Button variant="secondary">📊 Health Check</Button>
-            </Link>
-          </div>
+            <p className="text-fg-3 text-small">Últimos 30 dias sem incidentes</p>
+          </Card>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtros */}
-        <Card variant="elevated" className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                <select
-                  value={filters.tipo}
-                  onChange={(e) => handleFilterChange('tipo', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos</option>
-                  {TIPO_OPCOES.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos</option>
-                  {STATUS_OPCOES.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data (De)</label>
-                <Input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data (Até)</label>
-              <Input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                className="max-w-xs"
+        <Card className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-1.5">
+              <p className="eyebrow">Tipo</p>
+              <Tabs
+                size="sm"
+                options={TIPO_OPCOES.map((o) => ({ value: o.value, label: o.label }))}
+                value={filters.tipo}
+                onChange={(v) => handleFilterChange('tipo', v)}
               />
             </div>
-          </CardContent>
+            <div className="space-y-1.5">
+              <p className="eyebrow">Status</p>
+              <Tabs
+                size="sm"
+                options={STATUS_OPCOES.map((o) => ({ value: o.value, label: o.label }))}
+                value={filters.status}
+                onChange={(v) => handleFilterChange('status', v)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              type="date"
+              label="Data (de)"
+              value={filters.dateFrom}
+              onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+            />
+            <Input
+              type="date"
+              label="Data (até)"
+              value={filters.dateTo}
+              onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+            />
+          </div>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-sm text-gray-600 mb-1">Total de Webhooks</p>
-              <p className="text-3xl font-bold text-gray-900">{total}</p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-sm text-gray-600 mb-1">Página</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {page} / {totalPages}
-              </p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-sm text-gray-600 mb-1">Status</p>
-              <p className="text-3xl font-bold text-green-600">✅ Operacional</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Logs Table */}
+        {/* Tabela */}
         {loading ? (
-          <LoadingSpinner text="Carregando logs..." />
-        ) : logs.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-12 text-center">
-              <p className="text-gray-600">Nenhum log encontrado com os filtros aplicados</p>
-            </CardContent>
+          <Card className="flex items-center justify-center py-16 gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            <span className="text-fg-2 text-small">Carregando logs…</span>
           </Card>
         ) : (
           <>
-            <Card variant="elevated" className="mb-8">
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHead>
-                    <TableRow isHeader>
-                      <TableHeaderCell>Tipo</TableHeaderCell>
-                      <TableHeaderCell>Status</TableHeaderCell>
-                      <TableHeaderCell>Mensagem</TableHeaderCell>
-                      <TableHeaderCell>IP Origem</TableHeaderCell>
-                      <TableHeaderCell>Timestamp</TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-semibold">{getTipoLabel(log.tipo)}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={getStatusColor(log.status)} />
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {log.mensagem || (log.status === 'processado' ? '✅ Sucesso' : '⚠️ Sem mensagem')}
-                        </TableCell>
-                        <TableCell className="text-xs text-gray-500">{log.ipOrigem || '-'}</TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">
-                          {formatDateTime(new Date(log.criadoEm))}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              isLoading={loading}
+            <DenseTable
+              columns={columns}
+              rows={logs}
+              rowKey={(row) => row.id}
+              empty="Nenhum log encontrado com os filtros aplicados"
             />
+
+            {totalPages > 1 ? (
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                isLoading={loading}
+              />
+            ) : null}
           </>
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

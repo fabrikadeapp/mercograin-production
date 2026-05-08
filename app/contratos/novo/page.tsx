@@ -7,13 +7,19 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { FormInput } from '@/components/forms/FormInput'
-import { FormSelect } from '@/components/forms/FormSelect'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ArrowLeft, Info, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+  DenseTable,
+  type DenseTableColumn,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
-import { formatCurrency, formatDate } from '@/lib/utils/formatters'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 const contratoFormSchema = z.object({
   proposIdFk: z.string().min(1, 'Selecione uma proposta'),
@@ -23,25 +29,24 @@ const contratoFormSchema = z.object({
 
 type ContratoFormData = z.infer<typeof contratoFormSchema>
 
+interface Grao {
+  grao: string
+  quantidade: number
+  preco: number
+  subtotal: number
+}
+
 interface Proposta {
   id: string
   numero: string
-  cliente: {
-    id: string
-    nome: string
-  }
+  cliente: { id: string; nome: string }
   status: string
-  graos: Array<{
-    grao: string
-    quantidade: number
-    preco: number
-    subtotal: number
-  }>
+  graos: Grao[]
   valorTotal: number
 }
 
 export default function NovoContratoPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { success, error: showError } = useToast()
@@ -54,7 +59,7 @@ export default function NovoContratoPage() {
   const proposIdFromUrl = searchParams.get('proposIdFk')
 
   const {
-    control,
+    register,
     handleSubmit,
     formState: { errors },
     watch,
@@ -74,10 +79,7 @@ export default function NovoContratoPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchPropostas()
-    }
+    if (status === 'authenticated') fetchPropostas()
   }, [status, router])
 
   useEffect(() => {
@@ -91,11 +93,8 @@ export default function NovoContratoPage() {
 
   const fetchPropostas = async () => {
     try {
-      // Buscar apenas propostas aceitas
       const response = await fetch('/api/propostas?status=aceita&limit=100')
-      if (!response.ok) {
-        throw new Error('Erro ao buscar propostas')
-      }
+      if (!response.ok) throw new Error('Erro ao buscar propostas')
       const data = await response.json()
       setPropostas(data.data || [])
     } catch (err) {
@@ -145,144 +144,162 @@ export default function NovoContratoPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando propostas..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando propostas…
+        </div>
+      </AppShell>
+    )
   }
 
-  const propostaOptions = propostas.map((p) => ({
-    value: p.id,
-    label: `PROP-${p.numero} - ${p.cliente.nome}`,
-  }))
+  const propostaOptions = [
+    { value: '', label: 'Selecione uma proposta aceita' },
+    ...propostas.map((p) => ({
+      value: p.id,
+      label: `PROP-${p.numero} · ${p.cliente.nome}`,
+    })),
+  ]
+
+  const graoColumns: DenseTableColumn<Grao>[] = [
+    {
+      key: 'grao',
+      header: 'Grão',
+      accessor: (g) => <span className="text-fg-1 capitalize">{g.grao}</span>,
+    },
+    {
+      key: 'quantidade',
+      header: 'Qtd (t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => g.quantidade.toLocaleString('pt-BR'),
+    },
+    {
+      key: 'preco',
+      header: 'Preço (R$/t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => formatCurrency(g.preco),
+    },
+    {
+      key: 'subtotal',
+      header: 'Subtotal',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => (
+        <span className="text-fg-1 font-semibold">{formatCurrency(g.subtotal)}</span>
+      ),
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/contratos" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Contratos
+    <AppShell>
+      <PageHeader
+        eyebrow="Comercial · Novo contrato"
+        title="Novo contrato"
+        subtitle="Formalize uma proposta aceita em um contrato comercial."
+        search={false}
+        actions={
+          <Link href="/contratos">
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Novo Contrato</h1>
-          <p className="text-gray-600 mt-2">Criar contrato a partir de uma proposta aceita</p>
-        </div>
+        }
+      />
 
-        {propostas.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-12">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Nenhuma proposta aceita encontrada</p>
-                <Link href="/propostas">
-                  <Button variant="primary">
-                    Ver Propostas
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Proposta Selection */}
-            <Card variant="elevated" className="mb-6">
-              <CardHeader>
-                <CardTitle>Selecione a Proposta</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormSelect
-                  control={control}
-                  name="proposIdFk"
-                  label="Proposta"
-                  options={propostaOptions}
-                  required
-                />
+      {propostas.length === 0 ? (
+        <Card className="text-center py-16 space-y-3">
+          <p className="eyebrow">Pré-requisito</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+            Nenhuma proposta aceita
+          </h3>
+          <p className="text-fg-2 text-body">
+            É necessário ter ao menos uma proposta com status &ldquo;aceita&rdquo;.
+          </p>
+          <div className="pt-2">
+            <Link href="/propostas">
+              <Button>Ver propostas</Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="space-y-4">
+            <p className="eyebrow">Proposta de origem</p>
+            <Select
+              label="Proposta *"
+              options={propostaOptions}
+              {...register('proposIdFk')}
+              error={errors.proposIdFk?.message}
+            />
 
-                {selectedProposta && (
-                  <div className="mt-6 pt-6 border-t space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Cliente</p>
-                        <p className="font-semibold text-gray-900">{selectedProposta.cliente.nome}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Valor Total</p>
-                        <p className="font-semibold text-green-600">{formatCurrency(selectedProposta.valorTotal)}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 mb-3">Especificação de Grãos</p>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-200">
-                              <th className="text-left py-2 px-2 font-semibold">Grão</th>
-                              <th className="text-right py-2 px-2 font-semibold">Qtd (t)</th>
-                              <th className="text-right py-2 px-2 font-semibold">Preço (R$/t)</th>
-                              <th className="text-right py-2 px-2 font-semibold">Subtotal</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectedProposta.graos.map((grao, idx) => (
-                              <tr key={idx} className="border-b border-gray-100">
-                                <td className="py-2 px-2">{grao.grao}</td>
-                                <td className="text-right py-2 px-2">{grao.quantidade}</td>
-                                <td className="text-right py-2 px-2">{formatCurrency(grao.preco)}</td>
-                                <td className="text-right py-2 px-2 font-semibold">{formatCurrency(grao.subtotal)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+            {selectedProposta && (
+              <div className="space-y-4 pt-4 border-t border-border-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="eyebrow">Cliente</p>
+                    <p className="text-fg-1 font-semibold mt-1">
+                      {selectedProposta.cliente.nome}
+                    </p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div className="text-right">
+                    <p className="eyebrow">Valor total</p>
+                    <p className="t-num-lg text-accent mt-1">
+                      {formatCurrency(selectedProposta.valorTotal)}
+                    </p>
+                  </div>
+                </div>
 
-            {/* Contract Details */}
-            <Card variant="elevated" className="mb-6">
-              <CardHeader>
-                <CardTitle>Datas do Contrato</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormInput
-                  control={control}
-                  name="dataInicio"
-                  label="Data de Início"
-                  type="date"
-                  required
-                />
+                <div>
+                  <p className="eyebrow mb-2">Especificação de grãos</p>
+                  <DenseTable
+                    columns={graoColumns}
+                    rows={selectedProposta.graos}
+                    rowKey={(g) => g.grao}
+                  />
+                </div>
+              </div>
+            )}
+          </Card>
 
-                <FormInput
-                  control={control}
-                  name="dataFim"
-                  label="Data de Término (opcional)"
-                  type="date"
-                />
-
-                <p className="text-sm text-gray-600">
-                  ℹ️ As datas definem o período de vigência do contrato. A data de término é opcional.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={submitting}
-                disabled={!selectedProposta}
-              >
-                ✅ Criar Contrato
-              </Button>
-              <Link href="/contratos">
-                <Button variant="secondary">
-                  Cancelar
-                </Button>
-              </Link>
+          <Card className="space-y-4">
+            <p className="eyebrow">Vigência</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Data de início *"
+                type="date"
+                {...register('dataInicio')}
+                error={errors.dataInicio?.message}
+              />
+              <Input
+                label="Data de fim (opcional)"
+                type="date"
+                {...register('dataFim')}
+                error={errors.dataFim?.message}
+              />
             </div>
-          </form>
-        )}
-      </div>
-    </div>
+            <div className="flex items-start gap-2 text-fg-3 text-small">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                As datas definem o período de vigência do contrato. A data de fim é opcional para
+                contratos sem prazo definido.
+              </span>
+            </div>
+          </Card>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Link href="/contratos">
+              <Button type="button" variant="ghost">
+                Cancelar
+              </Button>
+            </Link>
+            <Button type="submit" loading={submitting} disabled={!selectedProposta}>
+              {submitting ? 'Criando…' : 'Criar contrato'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </AppShell>
   )
 }

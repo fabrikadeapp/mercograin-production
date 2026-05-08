@@ -1,30 +1,25 @@
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/Card'
 import Link from 'next/link'
+import { Compass } from 'lucide-react'
+import { Button, Card, Brand } from '@/components/ui/phb'
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="max-w-md w-full" variant="elevated">
-        <CardTitle className="text-4xl">404</CardTitle>
-        <CardDescription>Página não encontrada</CardDescription>
+    <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
+      <div className="absolute top-8 left-8">
+        <Brand />
+      </div>
 
-        <CardContent>
-          <p className="text-gray-600 mt-4 mb-6">
-            Desculpe, a página que você está procurando não existe ou foi movida.
-          </p>
+      <Card className="max-w-md w-full text-center space-y-4">
+        <Compass className="h-8 w-8 text-fg-3 mx-auto" />
+        <p className="eyebrow text-neg">Erro 404</p>
+        <h1 className="text-h1 font-sans tracking-tight text-fg-1 t-num">404</h1>
+        <p className="text-fg-2 text-body">
+          A rota solicitada não existe ou foi movida.
+        </p>
 
-          <div className="flex flex-col gap-3">
-            <Link href="/">
-              <Button variant="primary" className="w-full">
-                Voltar para home
-              </Button>
-            </Link>
-            <Button variant="secondary" onClick={() => window.history.back()} className="w-full">
-              Voltar página anterior
-            </Button>
-          </div>
-        </CardContent>
+        <Link href="/" className="block pt-2">
+          <Button fullWidth>Voltar ao dashboard</Button>
+        </Link>
       </Card>
     </div>
   )

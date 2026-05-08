@@ -3,18 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { FormInput } from '@/components/forms/FormInput'
-import { FormSelect } from '@/components/forms/FormSelect'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
-import { formatCurrency, formatDate } from '@/lib/utils/formatters'
+import { formatDate } from '@/lib/utils/formatters'
 
 const BANCOS = [
+  { value: '', label: 'Selecione um banco' },
   { value: 'Itaú', label: 'Itaú' },
   { value: 'Bradesco', label: 'Bradesco' },
   { value: 'Santander', label: 'Santander' },
@@ -36,16 +42,13 @@ type BoletoFormData = z.infer<typeof boletoFormSchema>
 interface Contrato {
   id: string
   numero: string
-  cliente: {
-    id: string
-    nome: string
-  }
+  cliente: { id: string; nome: string }
   dataInicio: string
   dataFim?: string
 }
 
 export default function NovoBoletoPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { success, error: showError } = useToast()
@@ -57,17 +60,12 @@ export default function NovoBoletoPage() {
   const contratoId = searchParams.get('contratoId')
 
   const {
-    control,
+    register,
     handleSubmit,
     formState: { errors },
   } = useForm<BoletoFormData>({
     resolver: zodResolver(boletoFormSchema),
-    defaultValues: {
-      numero: '',
-      banco: '',
-      valor: '',
-      vencimento: '',
-    },
+    defaultValues: { numero: '', banco: '', valor: '', vencimento: '' },
   })
 
   useEffect(() => {
@@ -75,18 +73,13 @@ export default function NovoBoletoPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated' && contratoId) {
-      fetchContrato()
-    }
+    if (status === 'authenticated' && contratoId) fetchContrato()
   }, [status, contratoId, router])
 
   const fetchContrato = async () => {
     try {
       const response = await fetch(`/api/contratos/${contratoId}`)
-      if (!response.ok) {
-        throw new Error('Contrato não encontrado')
-      }
+      if (!response.ok) throw new Error('Contrato não encontrado')
       const data = await response.json()
       setContrato(data)
     } catch (err) {
@@ -135,130 +128,117 @@ export default function NovoBoletoPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando contrato..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando contrato…
+        </div>
+      </AppShell>
+    )
   }
 
   if (!contrato) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Contrato não encontrado</p>
-                <Button variant="primary" onClick={() => router.push('/boletos')}>
-                  Voltar para Boletos
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AppShell>
+        <Card className="max-w-md mx-auto text-center space-y-4 my-12">
+          <p className="eyebrow text-neg">Não encontrado</p>
+          <h2 className="text-h2 font-sans tracking-tight text-fg-1">Contrato não encontrado</h2>
+          <Link href="/boletos">
+            <Button fullWidth>Voltar para boletos</Button>
+          </Link>
+        </Card>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">💰 Novo Boleto</h1>
-          <p className="text-gray-600 mt-1">Crie um boleto para cobrança</p>
-        </div>
-      </div>
+    <AppShell>
+      <PageHeader
+        eyebrow="Financeiro · Novo boleto"
+        title="Novo boleto"
+        subtitle="Gere uma cobrança a partir de um contrato existente."
+        search={false}
+        actions={
+          <Link href="/boletos">
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Contrato Info */}
-        <Card className="mb-6" variant="elevated">
-          <CardHeader>
-            <CardTitle className="text-lg">📋 Contrato de Origem</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-gray-600">Número</p>
-                <p className="text-lg font-bold text-gray-900">CTR-{contrato.numero}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Cliente</p>
-                <p className="text-lg font-bold text-gray-900">{contrato.cliente.nome}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Início</p>
-                <p className="text-sm text-gray-900">{formatDate(contrato.dataInicio)}</p>
-              </div>
-              {contrato.dataFim && (
-                <div>
-                  <p className="text-xs text-gray-600">Fim</p>
-                  <p className="text-sm text-gray-900">{formatDate(contrato.dataFim)}</p>
-                </div>
-              )}
+      <div className="space-y-6">
+        <Card className="space-y-4">
+          <p className="eyebrow">Contrato de origem</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-fg-3 text-micro uppercase tracking-wider">Número</p>
+              <p className="text-fg-1 font-semibold t-num mt-1">CTR-{contrato.numero}</p>
             </div>
-          </CardContent>
+            <div>
+              <p className="text-fg-3 text-micro uppercase tracking-wider">Cliente</p>
+              <p className="text-fg-1 font-semibold mt-1">{contrato.cliente.nome}</p>
+            </div>
+            <div>
+              <p className="text-fg-3 text-micro uppercase tracking-wider">Início</p>
+              <p className="text-fg-1 t-num text-small mt-1">{formatDate(contrato.dataInicio)}</p>
+            </div>
+            {contrato.dataFim && (
+              <div>
+                <p className="text-fg-3 text-micro uppercase tracking-wider">Fim</p>
+                <p className="text-fg-1 t-num text-small mt-1">{formatDate(contrato.dataFim)}</p>
+              </div>
+            )}
+          </div>
         </Card>
 
-        {/* Boleto Form */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="text-lg">Informações do Boleto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormInput
-                  control={control}
-                  name="numero"
-                  label="Número do Boleto"
+        <Card>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <section className="space-y-4">
+              <p className="eyebrow">Dados do boleto</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Número do boleto"
                   placeholder="Ex: BOL-001"
+                  {...register('numero')}
+                  error={errors.numero?.message}
                 />
-                <FormSelect
-                  control={control}
-                  name="banco"
+                <Select
                   label="Banco"
                   options={BANCOS}
+                  {...register('banco')}
+                  error={errors.banco?.message}
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormInput
-                  control={control}
-                  name="valor"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
                   label="Valor (R$)"
-                  placeholder="0,00"
                   type="number"
                   step="0.01"
+                  placeholder="0,00"
+                  {...register('valor')}
+                  error={errors.valor?.message}
                 />
-                <FormInput
-                  control={control}
-                  name="vencimento"
-                  label="Data de Vencimento"
+                <Input
+                  label="Vencimento"
                   type="date"
+                  {...register('vencimento')}
+                  error={errors.vencimento?.message}
                 />
               </div>
+            </section>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={submitting}
-                  className="flex-1"
-                >
-                  {submitting ? '⏳ Criando...' : '✅ Criar Boleto'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => router.back()}
-                  disabled={submitting}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
+            <div className="flex justify-end gap-3 pt-6 border-t border-border-1">
+              <Button type="button" variant="ghost" onClick={() => router.back()}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={submitting}>
+                {submitting ? 'Criando…' : 'Criar boleto'}
+              </Button>
+            </div>
+          </form>
         </Card>
       </div>
-    </div>
+    </AppShell>
   )
 }

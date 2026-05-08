@@ -4,10 +4,29 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Send,
+  Pencil,
+  FileDown,
+  CheckCircle2,
+  XCircle,
+  Handshake,
+  Loader2,
+  Mail,
+} from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Badge,
+  type BadgeStatus,
+  DenseTable,
+  type DenseTableColumn,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
@@ -37,10 +56,17 @@ interface Proposta {
   }
 }
 
+const STATUS_TO_BADGE: Record<Proposta['status'], BadgeStatus> = {
+  rascunho: 'rascunho',
+  enviada: 'em-negociacao',
+  aceita: 'assinado',
+  rejeitada: 'cancelado',
+}
+
 export default function PropostaDetalhesPage() {
   const { id } = useParams()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { success, error: showError } = useToast()
 
   const [proposta, setProposta] = useState<Proposta | null>(null)
@@ -52,10 +78,7 @@ export default function PropostaDetalhesPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchProposta()
-    }
+    if (status === 'authenticated') fetchProposta()
   }, [status, router])
 
   const fetchProposta = async () => {
@@ -93,6 +116,7 @@ export default function PropostaDetalhesPage() {
       setSaving(false)
     }
   }
+
   const handleDownloadPDF = async () => {
     if (!proposta) return
 
@@ -117,208 +141,237 @@ export default function PropostaDetalhesPage() {
     }
   }
 
-
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando proposta..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando proposta…
+        </div>
+      </AppShell>
+    )
   }
 
   if (!proposta) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="py-8">
-            <p className="text-center text-gray-600 mb-4">Proposta não encontrada</p>
-            <Link href="/propostas" className="w-full">
-              <Button variant="primary" className="w-full">
-                Voltar para Propostas
-              </Button>
-            </Link>
-          </CardContent>
+      <AppShell>
+        <Card className="max-w-md mx-auto text-center space-y-4 my-12">
+          <p className="eyebrow text-neg">Não encontrada</p>
+          <h2 className="text-h2 font-sans tracking-tight text-fg-1">
+            Proposta não encontrada
+          </h2>
+          <Link href="/propostas">
+            <Button fullWidth>Voltar para propostas</Button>
+          </Link>
         </Card>
-      </div>
+      </AppShell>
     )
   }
 
+  const TipoIcon = proposta.tipo === 'venda' ? ArrowUpRight : ArrowDownLeft
+
+  const graoColumns: DenseTableColumn<GraoItem>[] = [
+    {
+      key: 'grao',
+      header: 'Grão',
+      accessor: (g) => <span className="text-fg-1 capitalize">{g.grao}</span>,
+    },
+    {
+      key: 'quantidade',
+      header: 'Qtd (t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => g.quantidade.toLocaleString('pt-BR'),
+    },
+    {
+      key: 'preco',
+      header: 'Preço (R$/t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => formatCurrency(g.preco),
+    },
+    {
+      key: 'subtotal',
+      header: 'Subtotal',
+      align: 'right',
+      isNumeric: true,
+      accessor: (g) => <span className="text-fg-1 font-semibold">{formatCurrency(g.subtotal)}</span>,
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/propostas" className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Propostas
-          </Link>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">PROP-{proposta.numero}</h1>
-              <p className="text-gray-600 mt-2">{proposta.cliente.nome}</p>
-            </div>
-            <StatusBadge status={proposta.status} />
-          </div>
-        </div>
+    <AppShell>
+      <PageHeader
+        eyebrow={`Proposta · #PROP-${proposta.numero}`}
+        title={proposta.cliente.nome}
+        subtitle={`${proposta.tipo === 'venda' ? 'Venda' : 'Compra'} · Criada em ${formatDate(proposta.criadaEm)}`}
+        search={false}
+        actions={
+          <>
+            <Link href="/propostas">
+              <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+                Voltar
+              </Button>
+            </Link>
+            <Button
+              variant="secondary"
+              leftIcon={<FileDown className="h-4 w-4" />}
+              onClick={handleDownloadPDF}
+            >
+              Exportar PDF
+            </Button>
+          </>
+        }
+      />
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Tipo</p>
-              <p className="text-lg font-semibold">{proposta.tipo === 'venda' ? '📤 Venda' : '📥 Compra'}</p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Valor Total</p>
-              <p className="text-lg font-semibold text-green-600">{formatCurrency(proposta.valorTotal)}</p>
-            </CardContent>
-          </Card>
-          <Card variant="elevated">
-            <CardContent className="py-4">
-              <p className="text-xs text-gray-600 mb-1">Válida até</p>
-              <p className="text-lg font-semibold">{formatDate(proposta.validadeEm)}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Grãos */}
-        <Card variant="elevated" className="mb-8">
-          <CardHeader>
-            <CardTitle>Especificação de Grãos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold">Grão</th>
-                    <th className="text-right py-2 px-3 font-semibold">Quantidade (t)</th>
-                    <th className="text-right py-2 px-3 font-semibold">Preço (R$/t)</th>
-                    <th className="text-right py-2 px-3 font-semibold">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {proposta.graos.map((grao, idx) => (
-                    <tr key={idx} className="border-b border-gray-100">
-                      <td className="py-2 px-3">{grao.grao}</td>
-                      <td className="text-right py-2 px-3">{grao.quantidade}</td>
-                      <td className="text-right py-2 px-3">{formatCurrency(grao.preco)}</td>
-                      <td className="text-right py-2 px-3 font-semibold">{formatCurrency(grao.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Detalhes */}
-        <Card variant="elevated" className="mb-8">
-          <CardHeader>
-            <CardTitle>Detalhes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {proposta.descricao && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Descrição</p>
-                <p className="text-gray-900">{proposta.descricao}</p>
+                <p className="eyebrow">Status</p>
+                <div className="mt-2">
+                  <Badge variant={STATUS_TO_BADGE[proposta.status]} />
+                </div>
               </div>
-            )}
+              <div className="text-right">
+                <p className="eyebrow">Tipo</p>
+                <p className="text-fg-1 text-small flex items-center gap-1.5 mt-2">
+                  <TipoIcon
+                    className={`h-3.5 w-3.5 ${
+                      proposta.tipo === 'venda' ? 'text-pos' : 'text-info'
+                    }`}
+                  />
+                  {proposta.tipo === 'venda' ? 'Venda' : 'Compra'}
+                </p>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-1">
               <div>
-                <p className="text-gray-600 mb-1">Criada em</p>
-                <p className="text-gray-900">{formatDate(proposta.criadaEm)}</p>
+                <p className="eyebrow">Criada em</p>
+                <p className="text-fg-1 text-small t-num mt-1">{formatDate(proposta.criadaEm)}</p>
+              </div>
+              <div>
+                <p className="eyebrow">Validade</p>
+                <p className="text-fg-1 text-small t-num mt-1">
+                  {formatDate(proposta.validadeEm)}
+                </p>
               </div>
               {proposta.enviadaEm && (
                 <div>
-                  <p className="text-gray-600 mb-1">Enviada em</p>
-                  <p className="text-gray-900">{formatDate(proposta.enviadaEm)}</p>
+                  <p className="eyebrow">Enviada em</p>
+                  <p className="text-fg-1 text-small t-num mt-1">
+                    {formatDate(proposta.enviadaEm)}
+                  </p>
                 </div>
               )}
             </div>
 
-            {proposta.cliente.email && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Email do Cliente</p>
-                <a href={`mailto:${proposta.cliente.email}`} className="text-blue-600 hover:underline">
-                  {proposta.cliente.email}
-                </a>
+            {proposta.descricao && (
+              <div className="pt-4 mt-4 border-t border-border-1">
+                <p className="eyebrow">Descrição</p>
+                <p className="text-fg-1 text-body mt-2 whitespace-pre-wrap">
+                  {proposta.descricao}
+                </p>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Ações */}
-        {proposta.status === 'rascunho' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Ações</CardTitle>
-              <CardDescription>Escolha a próxima ação para esta proposta</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button
-                variant="primary"
-                onClick={() => handleStatusUpdate('enviada')}
-                isLoading={saving}
-              >
-                ✉️ Enviar Proposta
-              </Button>
-              <Link href={`/propostas/${proposta.id}/editar`}>
-                <Button variant="secondary">✏️ Editar</Button>
-              </Link>
-            </CardContent>
           </Card>
-        )}
 
-        {proposta.status === 'enviada' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Ações</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button
-                variant="secondary"
-                onClick={handleDownloadPDF}
-              >
-                📄 Baixar PDF
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleStatusUpdate('aceita')}
-                isLoading={saving}
-              >
-                ✅ Marcar como Aceita
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => handleStatusUpdate('rejeitada')}
-                isLoading={saving}
-              >
-                ❌ Marcar como Rejeitada
-              </Button>
-            </CardContent>
+          <div>
+            <p className="eyebrow mb-3">Especificação de grãos</p>
+            <DenseTable columns={graoColumns} rows={proposta.graos} rowKey={(g) => g.grao} />
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <p className="eyebrow">Valor total</p>
+            <p className="t-num-lg text-accent mt-2">{formatCurrency(proposta.valorTotal)}</p>
+            <p className="text-fg-3 text-small mt-1">
+              {proposta.graos.length} grão{proposta.graos.length === 1 ? '' : 's'} listado
+              {proposta.graos.length === 1 ? '' : 's'}
+            </p>
           </Card>
-        )}
 
-        {proposta.status === 'aceita' && (
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>Proposta Aceita</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-wrap">
-              <Button
-                variant="secondary"
-                onClick={handleDownloadPDF}
-              >
-                📄 Baixar PDF
-              </Button>
+          <Card className="space-y-3">
+            <p className="eyebrow">Cliente</p>
+            <div>
+              <p className="text-fg-1 font-semibold">{proposta.cliente.nome}</p>
+              {proposta.cliente.email && (
+                <a
+                  href={`mailto:${proposta.cliente.email}`}
+                  className="text-accent text-small hover:underline flex items-center gap-1.5 mt-1"
+                >
+                  <Mail className="h-3 w-3" />
+                  {proposta.cliente.email}
+                </a>
+              )}
+              {proposta.cliente.telefone && (
+                <p className="text-fg-2 text-small t-num mt-1">{proposta.cliente.telefone}</p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="space-y-3">
+            <p className="eyebrow">Ações</p>
+
+            {proposta.status === 'rascunho' && (
+              <div className="space-y-2">
+                <Button
+                  fullWidth
+                  loading={saving}
+                  leftIcon={<Send className="h-4 w-4" />}
+                  onClick={() => handleStatusUpdate('enviada')}
+                >
+                  Enviar proposta
+                </Button>
+                <Link href={`/propostas/${proposta.id}/editar`}>
+                  <Button variant="secondary" fullWidth leftIcon={<Pencil className="h-4 w-4" />}>
+                    Editar
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {proposta.status === 'enviada' && (
+              <div className="space-y-2">
+                <Button
+                  fullWidth
+                  loading={saving}
+                  leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                  onClick={() => handleStatusUpdate('aceita')}
+                >
+                  Marcar como aceita
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  loading={saving}
+                  leftIcon={<XCircle className="h-4 w-4" />}
+                  onClick={() => handleStatusUpdate('rejeitada')}
+                  className="text-neg hover:text-neg"
+                >
+                  Marcar como rejeitada
+                </Button>
+              </div>
+            )}
+
+            {proposta.status === 'aceita' && (
               <Link href={`/contratos/novo?proposIdFk=${proposta.id}`}>
-                <Button variant="primary">
-                  🤝 Criar Contrato
+                <Button fullWidth leftIcon={<Handshake className="h-4 w-4" />}>
+                  Criar contrato
                 </Button>
               </Link>
-            </CardContent>
+            )}
+
+            {proposta.status === 'rejeitada' && (
+              <p className="text-fg-3 text-small">
+                Esta proposta foi rejeitada e está fechada para edição.
+              </p>
+            )}
           </Card>
-        )}
+        </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

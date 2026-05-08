@@ -4,10 +4,16 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import {
+  ArrowLeft,
+  RefreshCw,
+  ExternalLink,
+  Mail,
+  Loader2,
+  CheckCircle2,
+  Clock,
+} from 'lucide-react'
+import { AppShell, PageHeader, Card, Button, Chip } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
@@ -34,8 +40,21 @@ interface Boleto {
   }
 }
 
+const STATUS_VARIANT: Record<Boleto['status'], 'pos' | 'warn' | 'neg' | 'neutral'> = {
+  pago: 'pos',
+  aberto: 'warn',
+  vencido: 'neg',
+  cancelado: 'neutral',
+}
+const STATUS_LABEL: Record<Boleto['status'], string> = {
+  pago: 'Pago',
+  aberto: 'Aberto',
+  vencido: 'Vencido',
+  cancelado: 'Cancelado',
+}
+
 export default function DetalheBoletoPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const params = useParams()
   const { success, error: showError, info } = useToast()
@@ -51,18 +70,13 @@ export default function DetalheBoletoPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchBoleto()
-    }
+    if (status === 'authenticated') fetchBoleto()
   }, [status, boletoId, router])
 
   const fetchBoleto = async () => {
     try {
       const response = await fetch(`/api/boletos/${boletoId}`)
-      if (!response.ok) {
-        throw new Error('Boleto não encontrado')
-      }
+      if (!response.ok) throw new Error('Boleto não encontrado')
       const data = await response.json()
       setBoleto(data)
     } catch (err) {
@@ -86,9 +100,7 @@ export default function DetalheBoletoPage() {
         method: 'PATCH',
       })
 
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar status')
-      }
+      if (!response.ok) throw new Error('Erro ao atualizar status')
 
       const updatedBoleto = await response.json()
       setBoleto(updatedBoleto)
@@ -101,195 +113,189 @@ export default function DetalheBoletoPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando boleto..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando boleto…
+        </div>
+      </AppShell>
+    )
   }
 
   if (!boleto) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Boleto não encontrado</p>
-                <Button variant="primary" onClick={() => router.push('/boletos')}>
-                  Voltar para Boletos
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AppShell>
+        <Card className="max-w-md mx-auto text-center space-y-4 my-12">
+          <p className="eyebrow text-neg">Não encontrado</p>
+          <h2 className="text-h2 font-sans tracking-tight text-fg-1">Boleto não encontrado</h2>
+          <Link href="/boletos">
+            <Button fullWidth>Voltar para boletos</Button>
+          </Link>
+        </Card>
+      </AppShell>
     )
   }
 
   const valorDecimal = parseFloat(boleto.valor)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">💰 Boleto {boleto.numero}</h1>
-              <p className="text-gray-600 mt-1">Detalhes de cobrança</p>
-            </div>
-            <StatusBadge status={boleto.status} />
-          </div>
-        </div>
-      </div>
+    <AppShell>
+      <PageHeader
+        eyebrow={`Boleto · BOL-${boleto.numero}`}
+        title={boleto.cliente.nome}
+        subtitle={`Banco ${boleto.banco} · Vencimento ${formatDate(boleto.vencimento)}`}
+        search={false}
+        actions={
+          <>
+            <Link href="/boletos">
+              <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+                Voltar
+              </Button>
+            </Link>
+            {boleto.linkBoleto && (
+              <a
+                href={boleto.linkBoleto}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button leftIcon={<ExternalLink className="h-4 w-4" />}>Abrir boleto</Button>
+              </a>
+            )}
+          </>
+        }
+      />
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Valor Principal */}
-        <Card className="mb-6 border-2 border-green-200" variant="elevated">
-          <CardContent className="py-8">
-            <div className="text-center">
-              <p className="text-gray-600 mb-2">Valor Total</p>
-              <p className="text-5xl font-bold text-green-600">{formatCurrency(valorDecimal)}</p>
-              <p className="text-sm text-gray-500 mt-2">Banco: {boleto.banco}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Informações Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Info Boleto */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">📄 Informações do Boleto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-gray-600">Número</p>
-                <p className="text-sm font-mono text-gray-900">{boleto.numero}</p>
+                <p className="eyebrow">Valor cobrado</p>
+                <p className="t-num-lg text-accent mt-2">{formatCurrency(valorDecimal)}</p>
+              </div>
+              <Chip variant={STATUS_VARIANT[boleto.status]}>{STATUS_LABEL[boleto.status]}</Chip>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 mt-4 border-t border-border-1">
+              <div>
+                <p className="eyebrow">Número</p>
+                <p className="text-fg-1 t-num text-small mt-1">{boleto.numero}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-600">Vencimento</p>
-                <p className="text-sm font-bold text-gray-900">{formatDate(boleto.vencimento)}</p>
+                <p className="eyebrow">Banco</p>
+                <p className="text-fg-1 text-small mt-1">{boleto.banco}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-600">Criado em</p>
-                <p className="text-sm text-gray-600">{formatDate(boleto.criadoEm)}</p>
+                <p className="eyebrow">Vencimento</p>
+                <p className="text-fg-1 t-num text-small mt-1">
+                  {formatDate(boleto.vencimento)}
+                </p>
+              </div>
+              <div>
+                <p className="eyebrow">Criado em</p>
+                <p className="text-fg-2 t-num text-small mt-1">{formatDate(boleto.criadoEm)}</p>
               </div>
               {boleto.confirmadoEm && (
                 <div>
-                  <p className="text-xs text-gray-600">✅ Pago em</p>
-                  <p className="text-sm text-green-600 font-bold">{formatDate(boleto.confirmadoEm)}</p>
+                  <p className="eyebrow">Pago em</p>
+                  <p className="text-pos t-num text-small mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {formatDate(boleto.confirmadoEm)}
+                  </p>
                 </div>
               )}
               {boleto.braspagId && (
                 <div>
-                  <p className="text-xs text-gray-600">ID Braspag</p>
-                  <p className="text-xs font-mono text-gray-500">{boleto.braspagId}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Info Cliente */}
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="text-lg">👤 Cliente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs text-gray-600">Nome</p>
-                <p className="text-sm font-bold text-gray-900">{boleto.cliente.nome}</p>
-              </div>
-              {boleto.cliente.cnpj && (
-                <div>
-                  <p className="text-xs text-gray-600">CNPJ</p>
-                  <p className="text-sm font-mono text-gray-600">{boleto.cliente.cnpj}</p>
-                </div>
-              )}
-              {boleto.cliente.email && (
-                <div>
-                  <p className="text-xs text-gray-600">Email</p>
-                  <p className="text-sm text-blue-600">
-                    <a href={`mailto:${boleto.cliente.email}`}>{boleto.cliente.email}</a>
+                  <p className="eyebrow">ID Braspag</p>
+                  <p className="text-fg-3 font-mono text-small mt-1 truncate">
+                    {boleto.braspagId}
                   </p>
                 </div>
               )}
-              {boleto.contrato && (
-                <div>
-                  <p className="text-xs text-gray-600">Contrato de Origem</p>
-                  <Link href={`/contratos/${boleto.contrato.id}`}>
-                    <p className="text-sm text-blue-600 hover:underline">CTR-{boleto.contrato.numero}</p>
-                  </Link>
+            </div>
+          </Card>
+
+          <Card>
+            <p className="eyebrow mb-4">Link do boleto</p>
+            {boleto.linkBoleto ? (
+              <div className="flex items-center justify-between gap-4 p-4 rounded-md bg-bg-2 border border-l-2 border-border-1 border-l-pos">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-pos shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-fg-1 font-semibold text-small">Boleto disponível</p>
+                    <p className="text-fg-3 text-small">Clique para baixar ou imprimir.</p>
+                  </div>
                 </div>
-              )}
-            </CardContent>
+                <a href={boleto.linkBoleto} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>
+                    Abrir
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-4 rounded-md bg-bg-2 border border-l-2 border-border-1 border-l-warn">
+                <Clock className="h-5 w-5 text-warn shrink-0" />
+                <div>
+                  <p className="text-fg-1 font-semibold text-small">Boleto pendente</p>
+                  <p className="text-fg-3 text-small">
+                    O link será gerado em alguns instantes.
+                  </p>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
-        {/* Links de Ação */}
-        <Card className="mb-6" variant="elevated">
-          <CardHeader>
-            <CardTitle className="text-lg">🔗 Links</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {boleto.linkBoleto ? (
-                <div className="flex items-center justify-between bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">📥 Boleto Disponível</p>
-                    <p className="text-xs text-gray-600">Clique para baixar ou imprimir</p>
-                  </div>
-                  <a href={boleto.linkBoleto} target="_blank" rel="noopener noreferrer">
-                    <Button variant="primary" size="sm">
-                      Abrir Boleto
-                    </Button>
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">⏳ Boleto Pendente</p>
-                    <p className="text-xs text-gray-600">Link do boleto será gerado em breve</p>
-                  </div>
-                </div>
+        <div className="space-y-6">
+          <Card className="space-y-3">
+            <p className="eyebrow">Cliente</p>
+            <div>
+              <p className="text-fg-1 font-semibold">{boleto.cliente.nome}</p>
+              {boleto.cliente.cnpj && (
+                <p className="text-fg-2 font-mono text-small mt-1">{boleto.cliente.cnpj}</p>
+              )}
+              {boleto.cliente.email && (
+                <a
+                  href={`mailto:${boleto.cliente.email}`}
+                  className="text-accent text-small hover:underline flex items-center gap-1.5 mt-1"
+                >
+                  <Mail className="h-3 w-3" />
+                  {boleto.cliente.email}
+                </a>
               )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Ações */}
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="text-lg">⚡ Ações</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Button
-                variant="secondary"
-                onClick={handleRefreshStatus}
-                disabled={refreshing || !boleto.braspagId}
-                className="w-full sm:w-auto"
-              >
-                {refreshing ? '⏳ Atualizando...' : '🔄 Atualizar Status'}
-              </Button>
-              <div className="text-xs text-gray-500 mt-2">
-                O status é atualizado automaticamente via webhook quando o boleto é pago.
-                Clique aqui para verificar manualmente no Braspag.
+            {boleto.contrato && (
+              <div className="pt-3 border-t border-border-1">
+                <p className="eyebrow">Contrato de origem</p>
+                <Link
+                  href={`/contratos/${boleto.contrato.id}`}
+                  className="text-accent text-small hover:underline t-num block mt-1"
+                >
+                  CTR-{boleto.contrato.numero}
+                </Link>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </Card>
 
-        {/* Navigation */}
-        <div className="mt-8 flex gap-3">
-          <Button variant="secondary" onClick={() => router.back()}>
-            ← Voltar
-          </Button>
-          <Link href="/boletos">
-            <Button variant="secondary">
-              Ver Todos os Boletos
+          <Card className="space-y-3">
+            <p className="eyebrow">Ações</p>
+            <Button
+              variant="secondary"
+              fullWidth
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              loading={refreshing}
+              disabled={refreshing || !boleto.braspagId}
+              onClick={handleRefreshStatus}
+            >
+              {refreshing ? 'Atualizando…' : 'Atualizar status'}
             </Button>
-          </Link>
+            <p className="text-fg-3 text-small">
+              O status é atualizado automaticamente via webhook quando o boleto é pago. Esta ação
+              força uma checagem manual no Braspag.
+            </p>
+          </Card>
         </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

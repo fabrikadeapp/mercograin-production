@@ -3,14 +3,23 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { FormInput } from '@/components/forms/FormInput'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Select,
+  DenseTable,
+  GrainBadge,
+  type DenseTableColumn,
+  type GrainVariant,
+} from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatDate } from '@/lib/utils/formatters'
 
@@ -21,6 +30,13 @@ const contratoFormSchema = z.object({
 })
 
 type ContratoFormData = z.infer<typeof contratoFormSchema>
+
+interface GraoItem {
+  grao: string
+  quantidade: number
+  preco: number
+  subtotal: number
+}
 
 interface Contrato {
   id: string
@@ -35,21 +51,34 @@ interface Contrato {
   }
   proposta: {
     numero: string
-    graos: Array<{
-      grao: string
-      quantidade: number
-      preco: number
-      subtotal: number
-    }>
+    graos: GraoItem[]
     valorTotal: number
     tipo: 'venda' | 'compra'
   }
 }
 
+const STATUS_OPTIONS = [
+  { value: 'pendente', label: 'Pendente' },
+  { value: 'assinado', label: 'Assinado' },
+  { value: 'cancelado', label: 'Cancelado' },
+]
+
+const KNOWN_GRAINS: GrainVariant[] = ['soja', 'milho', 'trigo', 'sorgo', 'usd']
+
+function toGrainVariant(value: string): GrainVariant {
+  const normalized = value.toLowerCase() as GrainVariant
+  return KNOWN_GRAINS.includes(normalized) ? normalized : 'soja'
+}
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+})
+
 export default function EditarContratoPage() {
   const { id } = useParams()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { success, error: showError } = useToast()
 
   const [contrato, setContrato] = useState<Contrato | null>(null)
@@ -59,6 +88,7 @@ export default function EditarContratoPage() {
   const {
     control,
     handleSubmit,
+    register,
     formState: { errors },
     reset,
   } = useForm<ContratoFormData>({
@@ -74,6 +104,7 @@ export default function EditarContratoPage() {
     if (status === 'authenticated') {
       fetchContrato()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   const fetchContrato = async () => {
@@ -85,7 +116,6 @@ export default function EditarContratoPage() {
       const data: Contrato = await response.json()
       setContrato(data)
 
-      // Converter datas para formato ISO (YYYY-MM-DD)
       const dataInicioISO = data.dataInicio.split('T')[0]
       const dataFimISO = data.dataFim ? data.dataFim.split('T')[0] : ''
 
@@ -138,152 +168,176 @@ export default function EditarContratoPage() {
   }
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Carregando contrato..." />
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-24">
+          <Card className="px-8 py-10 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            <span className="text-fg-2 text-small">Carregando contrato…</span>
+          </Card>
+        </div>
+      </AppShell>
+    )
   }
 
   if (!contrato) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="py-8">
-            <p className="text-center text-gray-600 mb-4">Contrato não encontrado</p>
-            <Link href="/contratos" className="w-full">
-              <Button variant="primary" className="w-full">
+      <AppShell>
+        <div className="flex items-center justify-center py-24">
+          <Card className="max-w-md w-full text-center space-y-4">
+            <p className="text-fg-2">Contrato não encontrado</p>
+            <Link href="/contratos">
+              <Button variant="primary" fullWidth>
                 Voltar para Contratos
               </Button>
             </Link>
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
+      </AppShell>
     )
   }
 
+  const graoColumns: DenseTableColumn<GraoItem>[] = [
+    {
+      key: 'grao',
+      header: 'Grão',
+      accessor: (row) => <GrainBadge variant={toGrainVariant(row.grao)} label={row.grao} />,
+    },
+    {
+      key: 'quantidade',
+      header: 'Qtd (t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (row) => row.quantidade,
+    },
+    {
+      key: 'preco',
+      header: 'Preço (R$/t)',
+      align: 'right',
+      isNumeric: true,
+      accessor: (row) => currencyFormatter.format(row.preco),
+    },
+    {
+      key: 'subtotal',
+      header: 'Subtotal',
+      align: 'right',
+      isNumeric: true,
+      accessor: (row) => (
+        <span className="text-fg-1 font-medium">{currencyFormatter.format(row.subtotal)}</span>
+      ),
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href={`/contratos/${contrato.id}`} className="text-blue-600 hover:underline mb-4 inline-block">
-            ← Voltar para Contrato
+    <AppShell>
+      <PageHeader
+        eyebrow={`#CTR-${contrato.numero}`}
+        title="Editar contrato"
+        subtitle={contrato.cliente.nome}
+        search={false}
+        showBell={false}
+        actions={
+          <Link href={`/contratos/${contrato.id}`}>
+            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+              Voltar
+            </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Editar Contrato</h1>
-          <p className="text-gray-600 mt-2">CTR-{contrato.numero}</p>
+        }
+      />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
+        <Card className="space-y-5">
+          <div className="space-y-1">
+            <p className="eyebrow">Informações</p>
+            <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+              Dados de origem
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="space-y-1">
+              <p className="eyebrow">Cliente</p>
+              <p className="text-fg-1 font-medium">{contrato.cliente.nome}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="eyebrow">Proposta</p>
+              <p className="text-fg-1 font-medium font-mono tabular-nums">
+                PROP-{contrato.proposta.numero}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="eyebrow">Criado em</p>
+              <p className="text-fg-1 font-medium font-mono tabular-nums">
+                {formatDate(contrato.criadoEm)}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <div className="space-y-3">
+          <p className="eyebrow">Especificação de grãos</p>
+          <DenseTable
+            columns={graoColumns}
+            rows={contrato.proposta.graos}
+            rowKey={(row) => `${row.grao}-${row.quantidade}-${row.preco}`}
+          />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Informações do Contrato */}
-          <Card variant="elevated" className="mb-6">
-            <CardHeader>
-              <CardTitle>Informações do Contrato</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Cliente</p>
-                  <p className="font-semibold text-gray-900">{contrato.cliente.nome}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Proposta</p>
-                  <p className="font-semibold text-gray-900">PROP-{contrato.proposta.numero}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-gray-900 mb-3">Especificação de Grãos</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-2 font-semibold">Grão</th>
-                        <th className="text-right py-2 px-2 font-semibold">Qtd (t)</th>
-                        <th className="text-right py-2 px-2 font-semibold">Preço (R$/t)</th>
-                        <th className="text-right py-2 px-2 font-semibold">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {contrato.proposta.graos.map((grao, idx) => (
-                        <tr key={idx} className="border-b border-gray-100">
-                          <td className="py-2 px-2">{grao.grao}</td>
-                          <td className="text-right py-2 px-2">{grao.quantidade}</td>
-                          <td className="text-right py-2 px-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grao.preco)}</td>
-                          <td className="text-right py-2 px-2 font-semibold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grao.subtotal)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-600 mt-4 pt-4 border-t">
-                Criado em: {formatDate(contrato.criadoEm)}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Detalhes para Edição */}
-          <Card variant="elevated" className="mb-6">
-            <CardHeader>
-              <CardTitle>Detalhes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormInput
-                control={control}
-                name="dataInicio"
-                label="Data de Início"
-                type="date"
-                required
-              />
-
-              <FormInput
-                control={control}
-                name="dataFim"
-                label="Data de Término (opcional)"
-                type="date"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status de Assinatura
-                </label>
-                <select
-                  {...control.register('statusAssinatura')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="pendente">Pendente</option>
-                  <option value="assinado">Assinado</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
-
-              {errors.dataInicio && (
-                <p className="text-red-600 text-sm">{errors.dataInicio.message}</p>
-              )}
-              {errors.dataFim && (
-                <p className="text-red-600 text-sm">{errors.dataFim.message}</p>
-              )}
-              {errors.statusAssinatura && (
-                <p className="text-red-600 text-sm">{errors.statusAssinatura.message}</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={submitting}
-            >
-              ✅ Salvar Alterações
-            </Button>
-            <Link href={`/contratos/${contrato.id}`}>
-              <Button variant="secondary">
-                Cancelar
-              </Button>
-            </Link>
+        <Card className="space-y-5">
+          <div className="space-y-1">
+            <p className="eyebrow">Datas e status</p>
+            <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+              Detalhes editáveis
+            </h3>
           </div>
-        </form>
-      </div>
-    </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Controller
+              control={control}
+              name="dataInicio"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="date"
+                  label="Data de início"
+                  error={errors.dataInicio?.message}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="dataFim"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  type="date"
+                  label="Data de término (opcional)"
+                  error={errors.dataFim?.message}
+                />
+              )}
+            />
+          </div>
+
+          <Select
+            label="Status de assinatura"
+            options={STATUS_OPTIONS}
+            error={errors.statusAssinatura?.message}
+            {...register('statusAssinatura')}
+          />
+        </Card>
+
+        <div className="flex items-center justify-end gap-3">
+          <Link href={`/contratos/${contrato.id}`}>
+            <Button type="button" variant="ghost">
+              Cancelar
+            </Button>
+          </Link>
+          <Button type="submit" variant="primary" loading={submitting}>
+            Salvar
+          </Button>
+        </div>
+      </form>
+    </AppShell>
   )
 }

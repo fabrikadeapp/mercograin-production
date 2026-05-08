@@ -4,13 +4,17 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
-import { StatusBadge } from '@/components/ui/StatusBadge'
+import { Plus, Filter, Download, Wallet, ExternalLink, X } from 'lucide-react'
+import {
+  AppShell,
+  PageHeader,
+  Card,
+  Button,
+  Chip,
+  Select,
+  SearchField,
+} from '@/components/ui/phb'
 import { Pagination } from '@/components/ui/Pagination'
-import { SearchInput } from '@/components/ui/SearchInput'
-import { Skeleton } from '@/components/ui/Skeleton'
-import { EmptyState } from '@/components/EmptyState'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
@@ -37,8 +41,41 @@ interface PaginatedResponse {
   pages: number
 }
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'Todos os status' },
+  { value: 'aberto', label: 'Aberto' },
+  { value: 'pago', label: 'Pago' },
+  { value: 'vencido', label: 'Vencido' },
+  { value: 'cancelado', label: 'Cancelado' },
+]
+
+const BANCOS_OPTIONS = [
+  { value: '', label: 'Todos os bancos' },
+  { value: 'Itaú', label: 'Itaú' },
+  { value: 'Bradesco', label: 'Bradesco' },
+  { value: 'Santander', label: 'Santander' },
+  { value: 'Caixa', label: 'Caixa' },
+  { value: 'Sicredi', label: 'Sicredi' },
+  { value: 'Nu Bank', label: 'Nu Bank' },
+  { value: 'C6 Bank', label: 'C6 Bank' },
+]
+
+const STATUS_VARIANT: Record<Boleto['status'], 'pos' | 'warn' | 'neg' | 'neutral'> = {
+  pago: 'pos',
+  aberto: 'warn',
+  vencido: 'neg',
+  cancelado: 'neutral',
+}
+
+const STATUS_LABEL: Record<Boleto['status'], string> = {
+  pago: 'Pago',
+  aberto: 'Aberto',
+  vencido: 'Vencido',
+  cancelado: 'Cancelado',
+}
+
 export default function BoletosPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { success, error: showError } = useToast()
@@ -51,7 +88,6 @@ export default function BoletosPage() {
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
-  const [showFilters, setShowFilters] = useState(false)
 
   const limit = 25
 
@@ -60,10 +96,7 @@ export default function BoletosPage() {
       router.push('/auth/login')
       return
     }
-
-    if (status === 'authenticated') {
-      fetchBoletos()
-    }
+    if (status === 'authenticated') fetchBoletos()
   }, [status, router])
 
   useEffect(() => {
@@ -72,7 +105,6 @@ export default function BoletosPage() {
     if (search) params.set('search', search)
     if (statusFilter) params.set('status', statusFilter)
     if (banco) params.set('banco', banco)
-
     router.push(`/boletos?${params.toString()}`, { scroll: false })
   }, [page, search, statusFilter, banco, router])
 
@@ -106,7 +138,6 @@ export default function BoletosPage() {
       setPage(1)
       fetchBoletos()
     }, 300)
-
     return () => clearTimeout(timer)
   }, [search, statusFilter, banco])
 
@@ -141,202 +172,179 @@ export default function BoletosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">💰 Boletos</h1>
-              <p className="text-gray-600 mt-1">Gerencie cobranças e boletos de clientes</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleExportExcel}
-                disabled={loading || boletos.length === 0}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
-              >
-                📊 Exportar Excel
-              </button>
-              <Link href="/boletos/novo">
-                <Button variant="primary">+ Novo Boleto</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search & Filters */}
-        <Card className="mb-6" variant="elevated">
-          <CardContent className="p-4 space-y-4">
-            <SearchInput
-              onSearch={setSearch}
-              placeholder="🔍 Buscar por número ou cliente..."
-            />
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:hidden text-sm text-blue-600 font-medium hover:text-blue-700"
+    <AppShell>
+      <PageHeader
+        eyebrow={loading ? 'Financeiro · Carregando…' : `Financeiro · ${total} boleto${total === 1 ? '' : 's'}`}
+        title="Boletos"
+        subtitle="Cobranças, pagamentos e conciliação bancária."
+        search={false}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              leftIcon={<Download className="h-4 w-4" />}
+              onClick={handleExportExcel}
+              disabled={loading || boletos.length === 0}
             >
-              {showFilters ? '✕ Fechar Filtros' : '⚙️ Mostrar Filtros'}
-            </button>
+              Exportar Excel
+            </Button>
+            <Link href="/boletos/novo">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Novo boleto</Button>
+            </Link>
+          </>
+        }
+      />
 
-            <div className={`${showFilters ? 'block' : 'hidden md:block'} grid grid-cols-1 sm:grid-cols-2 gap-4`}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value)
-                    setPage(1)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos os status</option>
-                  <option value="aberto">Aberto</option>
-                  <option value="pago">Pago</option>
-                  <option value="vencido">Vencido</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
+      <Card className="mb-6 space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <SearchField
+            placeholder="Buscar por número ou cliente…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            containerClassName="flex-1 min-w-[260px]"
+          />
+          <Select
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setPage(1)
+            }}
+            containerClassName="w-48"
+          />
+          <Select
+            options={BANCOS_OPTIONS}
+            value={banco}
+            onChange={(e) => {
+              setBanco(e.target.value)
+              setPage(1)
+            }}
+            containerClassName="w-48"
+          />
+        </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Banco</label>
-                <select
-                  value={banco}
-                  onChange={(e) => {
-                    setBanco(e.target.value)
-                    setPage(1)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos os bancos</option>
-                  <option value="Itaú">Itaú</option>
-                  <option value="Bradesco">Bradesco</option>
-                  <option value="Santander">Santander</option>
-                  <option value="Caixa">Caixa</option>
-                  <option value="Sicredi">Sicredi</option>
-                  <option value="Nu Bank">Nu Bank</option>
-                  <option value="C6 Bank">C6 Bank</option>
-                </select>
-              </div>
-            </div>
-
-            {(search || statusFilter || banco) && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-600">Filtros ativos:</span>
-                {search && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {search} ✕
-                  </span>
-                )}
-                {statusFilter && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {statusFilter} ✕
-                  </span>
-                )}
-                {banco && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {banco} ✕
-                  </span>
-                )}
-              </div>
+        {(search || statusFilter || banco) && (
+          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border-1">
+            <span className="eyebrow flex items-center gap-1.5">
+              <Filter className="h-3 w-3" /> Filtros ativos
+            </span>
+            {search && (
+              <Chip variant="info" className="cursor-pointer" onClick={() => setSearch('')}>
+                {search} <X className="h-3 w-3 ml-1" />
+              </Chip>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Results Info */}
-        {!loading && (
-          <div className="text-sm text-gray-600 mb-4">
-            {total > 0 ? (
-              <span>
-                Mostrando <strong>{boletos.length}</strong> de <strong>{total}</strong> boletos
-                {pages > 1 && ` • Página ${page} de ${pages}`}
-              </span>
-            ) : (
-              <span>Nenhum boleto encontrado</span>
+            {statusFilter && (
+              <Chip variant="info" className="cursor-pointer" onClick={() => setStatusFilter('')}>
+                {statusFilter} <X className="h-3 w-3 ml-1" />
+              </Chip>
+            )}
+            {banco && (
+              <Chip variant="info" className="cursor-pointer" onClick={() => setBanco('')}>
+                {banco} <X className="h-3 w-3 ml-1" />
+              </Chip>
             )}
           </div>
         )}
+      </Card>
 
-        {/* Loading State */}
-        {loading ? (
+      {!loading && total > 0 && (
+        <p className="text-fg-3 text-small mb-4">
+          Mostrando <span className="text-fg-1 t-num">{boletos.length}</span> de{' '}
+          <span className="text-fg-1 t-num">{total}</span> boletos
+          {pages > 1 && (
+            <>
+              {' '}
+              · Página <span className="text-fg-1 t-num">{page}</span> de{' '}
+              <span className="text-fg-1 t-num">{pages}</span>
+            </>
+          )}
+        </p>
+      )}
+
+      {loading ? (
+        <Card className="text-center py-16 text-fg-3 text-small">Carregando…</Card>
+      ) : boletos.length === 0 ? (
+        <Card className="text-center py-16 space-y-3">
+          <Wallet className="h-8 w-8 text-fg-3 mx-auto" />
+          <p className="eyebrow">Vazio</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">Nenhum boleto criado</h3>
+          <p className="text-fg-2 text-body">
+            {search || statusFilter || banco
+              ? 'Tente ajustar seus filtros.'
+              : 'Comece criando seu primeiro boleto a partir de um contrato.'}
+          </p>
+          <div className="pt-2">
+            <Link href="/boletos/novo">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Novo boleto</Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <>
           <div className="space-y-3">
-            {Array(3).fill(0).map((_, i) => (
-              <Card key={i} variant="elevated">
-                <CardContent className="p-4">
-                  <Skeleton variant="text" className="mb-2 w-full" />
-                  <Skeleton variant="text" className="w-4/5" />
-                </CardContent>
-              </Card>
+            {boletos.map((boleto) => (
+              <Link key={boleto.id} href={`/boletos/${boleto.id}`}>
+                <Card className="hover:bg-bg-3 transition-colors cursor-pointer">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <h3 className="text-fg-1 font-semibold t-num">BOL-{boleto.numero}</h3>
+                        <Chip variant={STATUS_VARIANT[boleto.status]}>
+                          {STATUS_LABEL[boleto.status]}
+                        </Chip>
+                      </div>
+                      <p className="text-fg-2 text-small truncate">{boleto.cliente.nome}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="t-num-lg text-fg-1">
+                        {formatCurrency(parseFloat(boleto.valor))}
+                      </p>
+                      <p className="text-fg-3 text-micro uppercase tracking-wider mt-0.5">
+                        {boleto.banco}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-border-1 text-small">
+                    <div className="flex gap-6">
+                      <div>
+                        <span className="text-fg-3 text-micro uppercase tracking-wider">
+                          Criado
+                        </span>
+                        <p className="text-fg-2 t-num">{formatDate(boleto.criadoEm)}</p>
+                      </div>
+                      <div>
+                        <span className="text-fg-3 text-micro uppercase tracking-wider">
+                          Vencimento
+                        </span>
+                        <p className="text-fg-2 t-num">{formatDate(boleto.vencimento)}</p>
+                      </div>
+                    </div>
+
+                    {boleto.linkBoleto && (
+                      <a
+                        href={boleto.linkBoleto}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-accent text-small hover:underline flex items-center gap-1"
+                      >
+                        Baixar boleto <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </Card>
+              </Link>
             ))}
           </div>
-        ) : boletos.length === 0 ? (
-          <Card variant="elevated">
-            <CardContent className="py-12">
-              <EmptyState
-                icon="💰"
-                title="Nenhum boleto criado"
-                description={search || statusFilter || banco ? 'Tente ajustar seus filtros' : 'Comece criando seu primeiro boleto a partir de um contrato'}
-                action={{
-                  label: 'Novo Boleto',
-                  onClick: () => router.push('/boletos/novo'),
-                }}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4">
-              {boletos.map((boleto) => (
-                <Link key={boleto.id} href={`/boletos/${boleto.id}`}>
-                  <Card variant="elevated" className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-lg font-bold text-gray-900">BOL-{boleto.numero}</h3>
-                            <StatusBadge status={boleto.status} />
-                          </div>
-                          <p className="text-sm text-gray-600">{boleto.cliente.nome}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-green-600">{formatCurrency(parseFloat(boleto.valor))}</p>
-                          <p className="text-xs text-gray-500">Banco: {boleto.banco}</p>
-                        </div>
-                      </div>
 
-                      <div className="border-t pt-3 flex justify-between text-xs text-gray-600 mb-3">
-                        <span>Criado em: {formatDate(boleto.criadoEm)}</span>
-                        <span>Vencimento: {formatDate(boleto.vencimento)}</span>
-                      </div>
-
-                      {boleto.linkBoleto && (
-                        <a href={boleto.linkBoleto} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs font-medium hover:underline">
-                          📥 Baixar Boleto
-                        </a>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+          {pages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination currentPage={page} totalPages={pages} onPageChange={handlePageChange} />
             </div>
-
-            {/* Pagination */}
-            {pages > 1 && (
-              <div className="mt-6 flex justify-center">
-                <Pagination
-                  currentPage={page}
-                  totalPages={pages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          )}
+        </>
+      )}
+    </AppShell>
   )
 }

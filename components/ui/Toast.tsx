@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import clsx from 'clsx'
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -14,11 +15,30 @@ interface ToastProps extends Toast {
   onClose: (id: string) => void
 }
 
-const toastConfig = {
-  success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: '✅' },
-  error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: '❌' },
-  warning: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', icon: '⚠️' },
-  info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'ℹ️' },
+const toastConfig: Record<
+  ToastType,
+  { iconColor: string; borderL: string; Icon: React.ComponentType<{ className?: string }> }
+> = {
+  success: {
+    iconColor: 'text-pos',
+    borderL: 'border-l-pos',
+    Icon: CheckCircle2,
+  },
+  error: {
+    iconColor: 'text-neg',
+    borderL: 'border-l-neg',
+    Icon: AlertCircle,
+  },
+  warning: {
+    iconColor: 'text-warn',
+    borderL: 'border-l-warn',
+    Icon: AlertTriangle,
+  },
+  info: {
+    iconColor: 'text-info',
+    borderL: 'border-l-info',
+    Icon: Info,
+  },
 }
 
 function Toast({ id, message, type, duration = 4000, onClose }: ToastProps) {
@@ -28,27 +48,26 @@ function Toast({ id, message, type, duration = 4000, onClose }: ToastProps) {
   }, [id, duration, onClose])
 
   const config = toastConfig[type]
+  const { Icon } = config
 
   return (
     <div
       className={clsx(
-        'flex items-start gap-3 px-4 py-3 rounded-lg border animate-in fade-in slide-in-from-top-2 duration-300',
-        config.bg,
-        config.border,
-        config.text
+        'flex items-start gap-3 px-4 py-3 rounded-md border border-border-1 border-l-2 bg-bg-2 text-fg-1 shadow-pop animate-in fade-in slide-in-from-top-2 duration-300',
+        config.borderL
       )}
       role="alert"
     >
-      <span className="text-xl">{config.icon}</span>
-      <div className="flex-1">
-        <p className="font-medium">{message}</p>
+      <Icon className={clsx('h-5 w-5 shrink-0 mt-0.5', config.iconColor)} />
+      <div className="flex-1 min-w-0">
+        <p className="text-small font-medium text-fg-1">{message}</p>
       </div>
       <button
         onClick={() => onClose(id)}
-        className="opacity-50 hover:opacity-100 transition-opacity"
+        className="text-fg-3 hover:text-fg-1 transition-colors"
         aria-label="Fechar notificação"
       >
-        ✕
+        <X className="h-4 w-4" />
       </button>
     </div>
   )

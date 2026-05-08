@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { validatePasswordStrength, getPasswordStrengthColor, getPasswordStrengthBarColor } from '@/lib/password-validator'
+import { User, Mail, Lock, AlertCircle } from 'lucide-react'
+import { Button, Card, Input, Brand } from '@/components/ui/phb'
+import {
+  validatePasswordStrength,
+  getPasswordStrengthColor,
+  getPasswordStrengthBarColor,
+} from '@/lib/password-validator'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -15,16 +21,16 @@ export default function SignupPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [passwordStrength, setPasswordStrength] = useState<ReturnType<typeof validatePasswordStrength> | null>(null)
+  const [passwordStrength, setPasswordStrength] = useState<ReturnType<
+    typeof validatePasswordStrength
+  > | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
 
-    // Update password strength when password changes
     if (name === 'senha') {
-      const strength = validatePasswordStrength(value)
-      setPasswordStrength(strength)
+      setPasswordStrength(validatePasswordStrength(value))
     }
   }
 
@@ -37,7 +43,6 @@ export default function SignupPage() {
       return
     }
 
-    // Validate password strength
     const strength = validatePasswordStrength(formData.senha)
     if (!strength.isValid) {
       setError('Senha não atende aos critérios mínimos de segurança')
@@ -73,125 +78,115 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Criar Conta</h1>
-        <p className="text-gray-600 mb-8">MercoGrain - Sistema de Trading de Grãos</p>
+    <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
+      <div className="absolute top-8 left-8">
+        <Brand />
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
+      <div className="w-full max-w-md space-y-8 my-12">
+        <div className="space-y-2 text-center">
+          <p className="eyebrow">Onboarding · Trader</p>
+          <h1 className="text-h1 font-sans tracking-tight text-fg-1">Crie sua conta.</h1>
+          <p className="text-fg-2 text-body">Acesso a cotações, contratos e fluxo de caixa.</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
-              Nome Completo
-            </label>
-            <input
-              id="nome"
+        <Card className="space-y-4">
+          {error && (
+            <div className="flex items-start gap-2 rounded-md border border-l-2 border-border-1 border-l-neg bg-bg-2 p-3 text-small text-fg-1">
+              <AlertCircle className="h-4 w-4 text-neg shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Nome completo"
               name="nome"
-              type="text"
               value={formData.nome}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Seu Nome"
+              placeholder="Seu nome"
+              leftIcon={<User className="h-4 w-4 text-fg-3" />}
               required
             />
-          </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              id="email"
+            <Input
+              label="E-mail"
               name="email"
               type="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="seu@email.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="senha" className="block text-sm font-medium text-gray-700 mb-2">
-              Senha
-            </label>
-            <input
-              id="senha"
-              name="senha"
-              type="password"
-              value={formData.senha}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
+              leftIcon={<Mail className="h-4 w-4 text-fg-3" />}
               required
             />
 
-            {formData.senha && passwordStrength && (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${getPasswordStrengthBarColor(passwordStrength.strength)}`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
-                    />
+            <div className="space-y-2">
+              <Input
+                label="Senha"
+                name="senha"
+                type="password"
+                value={formData.senha}
+                onChange={handleChange}
+                placeholder="••••••••"
+                leftIcon={<Lock className="h-4 w-4 text-fg-3" />}
+                required
+              />
+
+              {formData.senha && passwordStrength && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-bg-3 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${getPasswordStrengthBarColor(passwordStrength.strength)}`}
+                        style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`text-micro uppercase tracking-wider font-semibold ${getPasswordStrengthColor(
+                        passwordStrength.strength
+                      )}`}
+                    >
+                      {passwordStrength.strength.replace('-', ' ')}
+                    </span>
                   </div>
-                  <span className={`text-xs font-semibold ${getPasswordStrengthColor(passwordStrength.strength)}`}>
-                    {passwordStrength.strength.replace('-', ' ').toUpperCase()}
-                  </span>
+
+                  {passwordStrength.feedback.length > 0 && (
+                    <ul className="text-small text-fg-3 space-y-0.5">
+                      {passwordStrength.feedback.map((item, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <span className="text-fg-4">·</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+              )}
+              <p className="text-small text-fg-3">
+                Mínimo 8 caracteres com maiúsculas, minúsculas, números e símbolos.
+              </p>
+            </div>
 
-                {passwordStrength.feedback.length > 0 && (
-                  <ul className="text-xs text-gray-600 space-y-1">
-                    {passwordStrength.feedback.map((item, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <span>•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            <p className="text-xs text-gray-500 mt-2">
-              Mínimo 8 caracteres com letras maiúsculas, minúsculas, números e caracteres especiais
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="senhaConfirm" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirmar Senha
-            </label>
-            <input
-              id="senhaConfirm"
+            <Input
+              label="Confirmar senha"
               name="senhaConfirm"
               type="password"
               value={formData.senhaConfirm}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
+              leftIcon={<Lock className="h-4 w-4 text-fg-3" />}
               required
             />
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Criando conta...' : 'Criar Conta'}
-          </button>
-        </form>
+            <Button type="submit" fullWidth loading={loading}>
+              {loading ? 'Criando conta…' : 'Criar conta'}
+            </Button>
+          </form>
+        </Card>
 
-        <p className="text-center text-gray-600 mt-6">
+        <p className="text-center text-fg-3 text-small">
           Já tem conta?{' '}
-          <Link href="/auth/login" className="text-blue-600 hover:underline font-semibold">
+          <Link href="/auth/login" className="text-accent hover:underline">
             Entrar
           </Link>
         </p>
