@@ -1,14 +1,21 @@
 import { auth } from '@/auth'
 import { db as prisma } from '@/lib/db'
+import { headers } from 'next/headers'
 
 export interface ScopeCtx {
   userId: string
+  workspaceId: string
+  /** Role no workspace: owner | admin | member | viewer */
+  workspaceRole: string
+  /** Superadmin global (User.role === 'admin') */
   isAdmin: boolean
-  /** When the caller is admin and `?scope=all` was passed, this returns no ownership filter (just the extra filters). Otherwise it injects `{ usuarioId }`. */
+  /** É owner do workspace ativo */
+  isWorkspaceOwner: boolean
+  /** Filtro de ownership por workspace. Em scope=all (admin), retorna apenas extras. */
   whereOwn<T extends Record<string, any> = Record<string, any>>(
     extra?: T
-  ): T & { usuarioId?: string }
-  /** Same idea, but for relations where the owner sits on a parent (e.g. Proposta.cliente.usuarioId). */
+  ): T & { workspaceId?: string }
+  /** Filtro via path de relação (ex.: 'cliente'). */
   whereOwnVia<T extends Record<string, any> = Record<string, any>>(
     relationPath: string,
     extra?: T
@@ -16,8 +23,67 @@ export interface ScopeCtx {
 }
 
 /**
- * Loads the session, re-fetches the user to get an up-to-date role and
- * returns the multi-tenant scope context. Returns null if there is no session.
+ * Resolve o workspace ativo do user.
+ * Ordem: header X-Workspace-Id (validado) → primeiro owned → primeira membership ativa.
+ * Cria workspace owned automaticamente se o user não tiver nenhum (auto-onboarding mínimo).
+ */
+export async function getActiveWorkspace(userId: string): Promise<{
+  workspaceId: string
+  role: string
+  isOwner: boolean
+} | null> {
+  // 1. Header opcional
+  let requestedWsId: string | null = null
+  try {
+    const h = await headers()
+    requestedWsId = h.get('x-workspace-id')
+  } catch {
+    // headers() pode falhar fora de request — ignora
+  }
+
+  if (requestedWsId) {
+    const member = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: requestedWsId, userId, status: 'active' },
+      include: { workspace: true },
+    })
+    if (member) {
+      return {
+        workspaceId: member.workspaceId,
+        role: member.role,
+        isOwner: member.workspace.ownerId === userId,
+      }
+    }
+  }
+
+  // 2. Workspace owned
+  const owned = await prisma.workspace.findFirst({
+    where: { ownerId: userId },
+    orderBy: { createdAt: 'asc' },
+  })
+  if (owned) {
+    return { workspaceId: owned.id, role: 'owner', isOwner: true }
+  }
+
+  // 3. Qualquer membership ativa
+  const member = await prisma.workspaceMember.findFirst({
+    where: { userId, status: 'active' },
+    include: { workspace: true },
+    orderBy: { createdAt: 'asc' },
+  })
+  if (member) {
+    return {
+      workspaceId: member.workspaceId,
+      role: member.role,
+      isOwner: member.workspace.ownerId === userId,
+    }
+  }
+
+  return null
+}
+
+/**
+ * Carrega sessão, role atualizada e workspace ativo. Retorna null se sem sessão
+ * ou sem workspace acessível.
  */
 export async function getScope(
   searchParams?: URLSearchParams
@@ -34,18 +100,23 @@ export async function getScope(
   const isAdmin = user.role === 'admin'
   const wantAllScope = isAdmin && searchParams?.get('scope') === 'all'
 
+  const ws = await getActiveWorkspace(user.id)
+  if (!ws) return null
+
   return {
     userId: user.id,
+    workspaceId: ws.workspaceId,
+    workspaceRole: ws.role,
     isAdmin,
+    isWorkspaceOwner: ws.isOwner,
     whereOwn(extra?: any) {
       if (wantAllScope) return { ...(extra || {}) }
-      return { usuarioId: user.id, ...(extra || {}) }
+      return { workspaceId: ws.workspaceId, ...(extra || {}) }
     },
     whereOwnVia(relationPath: string, extra?: any) {
       if (wantAllScope) return { ...(extra || {}) }
-      // Build nested object e.g. { cliente: { usuarioId: user.id } }
       const parts = relationPath.split('.')
-      let nested: any = { usuarioId: user.id }
+      let nested: any = { workspaceId: ws.workspaceId }
       for (let i = parts.length - 1; i >= 0; i--) {
         nested = { [parts[i]]: nested }
       }
@@ -55,7 +126,7 @@ export async function getScope(
 }
 
 /**
- * Throws if there is no session — caller should translate into a 401.
+ * Throws if there is no session/workspace — caller should translate into 401/403.
  */
 export async function requireScope(
   searchParams?: URLSearchParams

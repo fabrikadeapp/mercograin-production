@@ -8,9 +8,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: { id: string } })
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
   const existing = await db.alertaPreco.findFirst({
-    where: scope.isAdmin
-      ? { id: ctx.params.id }
-      : { id: ctx.params.id, userId: scope.userId },
+    where: scope.whereOwn({ id: ctx.params.id }),
   })
   if (!existing) {
     return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })

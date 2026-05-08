@@ -25,19 +25,35 @@ export const authConfig = {
         token.email = user.email
       }
       // Refresh role e subscription status em cada chamada (simples; otimizar depois)
+      // Subscription agora pertence ao Workspace owned pelo user.
       if (token.id) {
         try {
           const u = await db.user.findUnique({
             where: { id: token.id as string },
             select: {
               role: true,
-              subscription: { select: { status: true, trialEnd: true } },
+              workspacesOwned: {
+                select: {
+                  id: true,
+                  subscription: { select: { status: true, trialEnd: true } },
+                },
+                orderBy: { createdAt: 'asc' },
+                take: 1,
+              },
+              workspaceMemberships: {
+                where: { status: 'active' },
+                select: { id: true },
+                take: 1,
+              },
             },
           })
           if (u) {
+            const sub = u.workspacesOwned[0]?.subscription
             token.role = u.role
-            token.subscriptionStatus = u.subscription?.status || 'none'
-            token.trialEnd = u.subscription?.trialEnd?.toISOString() || null
+            token.subscriptionStatus = sub?.status || 'none'
+            token.trialEnd = sub?.trialEnd?.toISOString() || null
+            token.hasWorkspace =
+              u.workspacesOwned.length > 0 || u.workspaceMemberships.length > 0
           }
         } catch (e) {
           // não bloqueia auth se DB falhar
@@ -52,6 +68,7 @@ export const authConfig = {
         ;(session.user as any).role = token.role as string | undefined
         ;(session.user as any).subscriptionStatus = token.subscriptionStatus as string | undefined
         ;(session.user as any).trialEnd = token.trialEnd as string | null | undefined
+        ;(session.user as any).hasWorkspace = (token as any).hasWorkspace as boolean | undefined
       }
       return session
     },

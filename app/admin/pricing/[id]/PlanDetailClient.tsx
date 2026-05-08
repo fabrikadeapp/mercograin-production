@@ -55,6 +55,8 @@ export function PlanDetailClient({
     ctaHref: plan.ctaHref || '',
     sortOrder: plan.sortOrder,
     active: plan.active,
+    includedMembers: plan.includedMembers,
+    extraMemberPriceCents: plan.extraMemberPriceCents,
   }
 
   return (

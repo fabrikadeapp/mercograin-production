@@ -11,9 +11,13 @@ export async function POST(
 ) {
   try {
     const admin = await requireAdmin()
-    const sub = await db.subscription.findUnique({
-      where: { userId: params.id },
+    const ws = await db.workspace.findFirst({
+      where: { ownerId: params.id },
+      orderBy: { createdAt: 'asc' },
     })
+    const sub = ws
+      ? await db.subscription.findUnique({ where: { workspaceId: ws.id } })
+      : null
     if (!sub) {
       return NextResponse.json(
         { error: 'no_subscription' },

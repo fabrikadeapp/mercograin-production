@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Multi-tenancy via Contrato.usuarioId
+    // Multi-tenancy via Contrato.workspaceId
     const where: any = scope.whereOwn()
 
     if (search) {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         proposIdFk: data.proposIdFk,
         clienteId: data.clienteId,
         numero: data.numero,
-        usuarioId: scope.userId,
+        workspaceId: scope.workspaceId,
         dataInicio: new Date(),
         statusAssinatura: 'pendente',
       },

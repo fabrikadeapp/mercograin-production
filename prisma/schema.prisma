@@ -13,28 +13,137 @@ datasource db {
 // ============================================
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  senha     String   // Hash bcrypt
-  nome      String
-  role      String   @default("user") // 'admin' | 'user' | 'viewer'
-  emailVerificado Boolean @default(false)
-  stripeCustomerId String? @unique
-  criadoEm  DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  senha            String // Hash bcrypt
+  nome             String
+  role             String   @default("user") // 'admin' | 'user' | 'viewer'
+  emailVerificado  Boolean  @default(false)
+  stripeCustomerId String?  @unique
+  criadoEm         DateTime @default(now())
+  atualizadoEm     DateTime @updatedAt
 
-  subscription Subscription?
-  clientes  Cliente[]
   emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens PasswordResetToken[]
-  classificados Classificado[] @relation("ClassificadoAutor")
-  alertasPreco  AlertaPreco[]
-  propostas Proposta[]
-  contratos Contrato[]
-  boletos   Boleto[]
-  contratosFuturos ContratoFuturo[]
+  passwordResetTokens     PasswordResetToken[]
+  classificados           Classificado[]           @relation("ClassificadoAutor")
+
+  // Workspaces
+  workspacesOwned      Workspace[]       @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
 
   @@index([email])
+}
+
+// ============================================
+// WORKSPACES (Multi-tenancy v2)
+// ============================================
+
+model Workspace {
+  id      String @id @default(cuid())
+  name    String
+  slug    String @unique
+  ownerId String
+  owner   User   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members      WorkspaceMember[]
+  empresa      DadosEmpresa?
+  subscription Subscription?
+
+  // Relações migradas de usuarioId → workspaceId
+  clientes          Cliente[]
+  propostas         Proposta[]
+  contratos         Contrato[]
+  boletos           Boleto[]
+  classificados     Classificado[]
+  alertasPreco      AlertaPreco[]
+  contratosFuturos  ContratoFuturo[]
+  fornecedores      Fornecedor[]
+  templatesContrato ContratoTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email       String
+  role        String // 'owner' | 'admin' | 'member' | 'viewer'
+  status      String    @default("active") // 'active' | 'invited' | 'suspended'
+  inviteToken String?   @unique
+  invitedAt   DateTime?
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, status])
+  @@index([userId])
+}
+
+model DadosEmpresa {
+  id                String    @id @default(cuid())
+  workspaceId       String    @unique
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  razaoSocial       String
+  nomeFantasia      String?
+  cnpj              String?
+  inscricaoEstadual String?
+  endereco          String?
+  cidade            String?
+  uf                String?
+  cep               String?
+  telefone          String?
+  email             String?
+  logoUrl           String?
+  dadosBancarios    Json?
+  certificadoPath   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Fornecedor {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tipo         String // 'transportadora' | 'armazem' | 'insumos' | 'certificadora' | 'outros'
+  razaoSocial  String
+  nomeFantasia String?
+  cnpj         String?
+  contato      String?
+  telefone     String?
+  email        String?
+  endereco     String?
+  cidade       String?
+  uf           String?
+  observacao   String?
+  ativo        Boolean   @default(true)
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([workspaceId, tipo, ativo])
+}
+
+model ContratoTemplate {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome        String
+  tipo        String // 'venda' | 'compra' | 'intermediacao' | 'outros'
+  descricao   String?
+  contentJson Json
+  variaveis   Json?
+  ativo       Boolean   @default(true)
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, tipo, ativo])
 }
 
 // ============================================
@@ -42,22 +151,29 @@ model User {
 // ============================================
 
 model Subscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String    @unique
+  id                   String     @id @default(cuid())
+  workspaceId          String    @unique
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String     @unique
   stripeCustomerId     String
   stripePriceId        String
-  plan                 String    // 'starter' | 'pro' | 'enterprise'
-  status               String    // 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid'
+  plan                 String // 'starter' | 'pro' | 'enterprise'
+  status               String
   trialStart           DateTime?
   trialEnd             DateTime?
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
+  cancelAtPeriodEnd    Boolean    @default(false)
   canceledAt           DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+
+  // Membros (cobrança extra)
+  memberCount       Int     @default(1)
+  extraSeatsCount   Int     @default(0)
+  stripeBaseItemId  String?
+  stripeSeatsItemId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([stripeCustomerId])
@@ -68,26 +184,29 @@ model Subscription {
 // ============================================
 
 model Classificado {
-  id            String    @id @default(cuid())
-  tipo          String    // 'venda' | 'compra'
-  grao          String    // 'soja' | 'milho' | 'trigo' | 'sorgo'
-  variedade     String?
-  safra         String?
-  volumeSc      Int
-  precoSc       Decimal   @db.Decimal(10, 2)
-  modal         String    // 'FOB' | 'CIF'
-  cidade        String
-  uf            String
-  deltaPct      Decimal?  @db.Decimal(5, 2)
-  status        String    @default("ativo") // 'ativo' | 'pausado' | 'fechado'
-  expiraEm      DateTime?
-  autorId       String
-  autor         User      @relation("ClassificadoAutor", fields: [autorId], references: [id], onDelete: Cascade)
-  criadoEm      DateTime  @default(now())
-  atualizadoEm  DateTime  @updatedAt
+  id           String     @id @default(cuid())
+  tipo         String // 'venda' | 'compra'
+  grao         String // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  variedade    String?
+  safra        String?
+  volumeSc     Int
+  precoSc      Decimal    @db.Decimal(10, 2)
+  modal        String // 'FOB' | 'CIF'
+  cidade       String
+  uf           String
+  deltaPct     Decimal?   @db.Decimal(5, 2)
+  status       String     @default("ativo") // 'ativo' | 'pausado' | 'fechado'
+  expiraEm     DateTime?
+  autorId      String
+  autor        User       @relation("ClassificadoAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  criadoEm     DateTime   @default(now())
+  atualizadoEm DateTime   @updatedAt
 
   @@index([grao, tipo, status])
   @@index([criadoEm])
+  @@index([workspaceId])
 }
 
 // ============================================
@@ -95,18 +214,18 @@ model Classificado {
 // ============================================
 
 model AlertaPreco {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  symbol        String    // ex: 'ZS=F'
-  graoLabel     String    // ex: 'soja'
-  operador      String    // '>' | '<'
-  preco         Decimal   @db.Decimal(10, 2)
-  status        String    @default("ativo") // 'ativo' | 'disparado' | 'inativo'
+  id            String     @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  symbol        String // ex: 'ZS=F'
+  graoLabel     String // ex: 'soja'
+  operador      String // '>' | '<'
+  preco         Decimal    @db.Decimal(10, 2)
+  status        String     @default("ativo") // 'ativo' | 'disparado' | 'inativo'
   ultimoDisparo DateTime?
-  criadoEm      DateTime  @default(now())
+  criadoEm      DateTime   @default(now())
 
-  @@index([userId])
+  @@index([workspaceId])
   @@index([status])
 }
 
@@ -115,28 +234,29 @@ model AlertaPreco {
 // ============================================
 
 model Cliente {
-  id        String   @id @default(cuid())
-  usuarioId String
-  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  nome      String   @db.VarChar(255)
-  tipo      String   @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
-  email     String?  @db.VarChar(255)
-  whatsapp  String?  @db.VarChar(20)
-  cnpj      String?  @unique @db.VarChar(18)
-  endereco  String?  @db.Text
-  telefone  String?  @db.VarChar(20)
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String     @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome        String     @db.VarChar(255)
+  tipo        String     @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
+  email       String?    @db.VarChar(255)
+  whatsapp    String?    @db.VarChar(20)
+  cnpj        String?    @unique @db.VarChar(18)
+  endereco    String?    @db.Text
+  telefone    String?    @db.VarChar(20)
+  ativo       Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  propostas Proposta[]
-  contratos Contrato[]
-  boletos   Boleto[]
+  propostas        Proposta[]
+  contratos        Contrato[]
+  boletos          Boleto[]
   contratosFuturos ContratoFuturo[]
 
   @@index([email])
   @@index([cnpj])
   @@index([tipo])
+  @@index([workspaceId])
 }
 
 // ============================================
@@ -144,14 +264,14 @@ model Cliente {
 // ============================================
 
 model Cotacao {
-  id         String   @id @default(cuid())
-  grao       String   // 'soja' | 'milho' | 'trigo'
-  preco      Decimal  @db.Decimal(10, 2) // cents/bushel
-  simbolo    String   @db.VarChar(10) // 'ZS' | 'ZC' | 'ZW'
-  fonte      String   @default("TradingView") // TradingView | Investing.com
-  dolarReal  Decimal? @db.Decimal(10, 4) // Taxa USD/BRL nessa hora
-  volume     Int?     // volume negociado
-  data       DateTime @default(now())
+  id        String   @id @default(cuid())
+  grao      String // 'soja' | 'milho' | 'trigo'
+  preco     Decimal  @db.Decimal(10, 2) // cents/bushel
+  simbolo   String   @db.VarChar(10) // 'ZS' | 'ZC' | 'ZW'
+  fonte     String   @default("TradingView") // TradingView | Investing.com
+  dolarReal Decimal? @db.Decimal(10, 4) // Taxa USD/BRL nessa hora
+  volume    Int? // volume negociado
+  data      DateTime @default(now())
 
   @@index([grao])
   @@index([data])
@@ -159,12 +279,12 @@ model Cotacao {
 }
 
 model TaxaCambio {
-  id        String   @id @default(cuid())
-  origem    String   @default("USD")
-  destino   String   @default("BRL")
-  taxa      Decimal  @db.Decimal(10, 4)
-  fonte     String   @default("Investing.com")
-  data      DateTime @default(now())
+  id      String   @id @default(cuid())
+  origem  String   @default("USD")
+  destino String   @default("BRL")
+  taxa    Decimal  @db.Decimal(10, 4)
+  fonte   String   @default("Investing.com")
+  data    DateTime @default(now())
 
   @@unique([origem, destino, data])
   @@index([data])
@@ -175,30 +295,30 @@ model TaxaCambio {
 // ============================================
 
 model Proposta {
-  id          String   @id @default(cuid())
-  numero      String   @unique @db.VarChar(50)
-  clienteId   String
-  cliente     Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  tipo        String   // 'venda' | 'compra'
-  graos       Json     // [{grao: 'soja', quantidade: 100, preco: 65.50, subtotal: 6550}, ...]
-  valorTotal  Decimal  @db.Decimal(15, 2)
-  status      String   @default("rascunho") // 'rascunho' | 'enviada' | 'aceita' | 'rejeitada'
-  descricao   String?  @db.Text
-  observacoes String?  @db.Text
-  criadaEm    DateTime @default(now())
-  enviadaEm   DateTime?
-  validadeEm  DateTime
-  atualizadaEm DateTime @updatedAt
+  id           String    @id @default(cuid())
+  numero       String    @unique @db.VarChar(50)
+  clienteId    String
+  cliente      Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipo         String // 'venda' | 'compra'
+  graos        Json
+  valorTotal   Decimal   @db.Decimal(15, 2)
+  status       String    @default("rascunho")
+  descricao    String?   @db.Text
+  observacoes  String?   @db.Text
+  criadaEm     DateTime  @default(now())
+  enviadaEm    DateTime?
+  validadeEm   DateTime
+  atualizadaEm DateTime  @updatedAt
 
   contratos Contrato[]
 
-  usuarioId String
-  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([status])
   @@index([validadeEm])
-  @@index([usuarioId])
+  @@index([workspaceId])
 }
 
 // ============================================
@@ -206,29 +326,29 @@ model Proposta {
 // ============================================
 
 model Contrato {
-  id            String   @id @default(cuid())
-  numero        String   @unique @db.VarChar(50)
-  proposIdFk    String
-  proposta      Proposta @relation(fields: [proposIdFk], references: [id], onDelete: Cascade)
-  clienteId     String
-  cliente       Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  dataInicio    DateTime
-  dataFim       DateTime?
-  pdfUrl        String?  @db.Text
-  assinadoEm    DateTime?
-  statusAssinatura String @default("pendente") // 'pendente' | 'assinado' | 'rejeitado'
-  criadoEm      DateTime @default(now())
-  atualizadoEm  DateTime @updatedAt
+  id               String    @id @default(cuid())
+  numero           String    @unique @db.VarChar(50)
+  proposIdFk       String
+  proposta         Proposta  @relation(fields: [proposIdFk], references: [id], onDelete: Cascade)
+  clienteId        String
+  cliente          Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  dataInicio       DateTime
+  dataFim          DateTime?
+  pdfUrl           String?   @db.Text
+  assinadoEm       DateTime?
+  statusAssinatura String    @default("pendente")
+  criadoEm         DateTime  @default(now())
+  atualizadoEm     DateTime  @updatedAt
 
   boletos Boleto[]
 
-  usuarioId String
-  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([proposIdFk])
   @@index([assinadoEm])
-  @@index([usuarioId])
+  @@index([workspaceId])
 }
 
 // ============================================
@@ -236,30 +356,30 @@ model Contrato {
 // ============================================
 
 model Boleto {
-  id             String   @id @default(cuid())
-  numero         String   @unique @db.VarChar(50)
-  contratoIdFk   String?
-  contrato       Contrato? @relation(fields: [contratoIdFk], references: [id], onDelete: SetNull)
-  clienteId      String
-  cliente        Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  banco          String   @db.VarChar(20) // 'itau' | 'sicredi' | 'nubank' | 'c6' | 'bradesco' | 'santander' | 'caixa'
-  valor          Decimal  @db.Decimal(15, 2)
-  vencimento     DateTime
-  status         String   @default("aberto") // 'aberto' | 'pago' | 'vencido' | 'cancelado'
-  linkBoleto     String?  @db.Text
-  braspagId      String?  @db.VarChar(100) // ID Braspag para rastreamento
-  confirmadoEm   DateTime?
-  criadoEm       DateTime @default(now())
-  atualizadoEm   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  numero       String    @unique @db.VarChar(50)
+  contratoIdFk String?
+  contrato     Contrato? @relation(fields: [contratoIdFk], references: [id], onDelete: SetNull)
+  clienteId    String
+  cliente      Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  banco        String    @db.VarChar(20)
+  valor        Decimal   @db.Decimal(15, 2)
+  vencimento   DateTime
+  status       String    @default("aberto")
+  linkBoleto   String?   @db.Text
+  braspagId    String?   @db.VarChar(100)
+  confirmadoEm DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
 
-  usuarioId      String
-  usuario        User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([status])
   @@index([vencimento])
   @@index([braspagId])
-  @@index([usuarioId])
+  @@index([workspaceId])
 }
 
 // ============================================
@@ -267,15 +387,15 @@ model Boleto {
 // ============================================
 
 model WebhookLog {
-  id          String   @id @default(cuid())
-  tipo        String   // 'tradingview' | 'braspag' | 'signaturely'
-  payload     Json
-  status      String   @default("recebido") // 'recebido' | 'processado' | 'erro'
-  mensagem    String?  @db.Text
-  codigoErro  String?  @db.VarChar(50)
-  ipOrigem    String?  @db.VarChar(50)
-  timestamp   DateTime @default(now())
-  criadoEm    DateTime @default(now())
+  id         String   @id @default(cuid())
+  tipo       String
+  payload    Json
+  status     String   @default("recebido")
+  mensagem   String?  @db.Text
+  codigoErro String?  @db.VarChar(50)
+  ipOrigem   String?  @db.VarChar(50)
+  timestamp  DateTime @default(now())
+  criadoEm   DateTime @default(now())
 
   @@index([tipo])
   @@index([status])
@@ -316,15 +436,15 @@ model PasswordResetToken {
 // ============================================
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String
-  acao      String   // 'criar', 'atualizar', 'deletar', 'visualizar'
-  entidade  String   // 'cliente', 'proposta', 'contrato', 'boleto'
+  id         String   @id @default(cuid())
+  userId     String
+  acao       String
+  entidade   String
   entidadeId String
-  mudancas  Json?    // Quais campos foram alterados
-  ipAddress String?
-  userAgent String?
-  criadoEm  DateTime @default(now())
+  mudancas   Json?
+  ipAddress  String?
+  userAgent  String?
+  criadoEm   DateTime @default(now())
 
   @@index([userId])
   @@index([entidade])
@@ -336,11 +456,11 @@ model AuditLog {
 // ============================================
 
 model CacheData {
-  id        String   @id @default(cuid())
-  chave     String   @unique @db.VarChar(255)
-  valor     Json
+  id          String   @id @default(cuid())
+  chave       String   @unique @db.VarChar(255)
+  valor       Json
   expiracaoEm DateTime
-  criadoEm  DateTime @default(now())
+  criadoEm    DateTime @default(now())
 
   @@index([expiracaoEm])
 }
@@ -350,49 +470,55 @@ model CacheData {
 // ============================================
 
 model Plan {
-  id                String         @id @default(cuid())
-  slug              String         @unique
-  name              String
-  description       String?
-  badge             String?
-  highlight         Boolean        @default(false)
-  priceCents        Int
-  currency          String         @default("BRL")
-  billingInterval   String         @default("month")
-  intervalCount     Int            @default(1)
-  trialDays         Int            @default(10)
-  ctaLabel          String         @default("Iniciar trial")
-  ctaHref           String?
-  tagline           String?
-  sortOrder         Int            @default(0)
-  active            Boolean        @default(true)
-  stripeProductId   String?        @unique
-  stripePriceId     String?
-  legacyPriceIds    String[]       @default([])
-  features          PlanFeature[]
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  description     String?
+  badge           String?
+  highlight       Boolean  @default(false)
+  priceCents      Int
+  currency        String   @default("BRL")
+  billingInterval String   @default("month")
+  intervalCount   Int      @default(1)
+  trialDays       Int      @default(10)
+  ctaLabel        String   @default("Iniciar trial")
+  ctaHref         String?
+  tagline         String?
+  sortOrder       Int      @default(0)
+  active          Boolean  @default(true)
+  stripeProductId String?  @unique
+  stripePriceId   String?
+  legacyPriceIds  String[] @default([])
+
+  // Membros
+  includedMembers        Int     @default(1)
+  extraMemberPriceCents  Int     @default(15000)
+  stripeExtraSeatPriceId String?
+
+  features  PlanFeature[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([active, sortOrder])
 }
 
 model PlanFeature {
-  id          String   @id @default(cuid())
-  planId      String
-  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  label       String
-  included    Boolean  @default(true)
-  emphasis    Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  label     String
+  included  Boolean  @default(true)
+  emphasis  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
   @@index([planId, sortOrder])
 }
 
 model PricingRevision {
-  id         Int      @id @default(1)
-  revision   Int      @default(1)
-  updatedAt  DateTime @updatedAt
+  id        Int      @id @default(1)
+  revision  Int      @default(1)
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================
@@ -400,24 +526,26 @@ model PricingRevision {
 // ============================================
 
 model ContratoFuturo {
-  id            String    @id @default(cuid())
-  usuarioId     String
-  usuario       User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  grao          String    // 'soja' | 'milho' | 'trigo' | 'sorgo'
-  lado          String    // 'compra' (bid) | 'venda' (ask)
-  vencimento    DateTime  @db.Date
-  precoSc       Decimal   @db.Decimal(10, 2) // R$/sc 60kg
-  volumeSc      Int                          // sacas
+  id           String     @id @default(cuid())
+  /// LEGADO — será removido após backfill
+  usuarioId    String?
+  workspaceId  String
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  grao         String // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  lado         String // 'compra' (bid) | 'venda' (ask)
+  vencimento   DateTime   @db.Date
+  precoSc      Decimal    @db.Decimal(10, 2)
+  volumeSc     Int
   /// Codigo de vencimento estilo B3: K26 (mai/26), N26 (jul/26), X26 (nov/26)
-  codigoVenc    String?   @db.VarChar(10)
-  praca         String?   @db.VarChar(100)
-  observacao    String?   @db.Text
-  status        String    @default("ativo")  // 'ativo' | 'executado' | 'cancelado'
-  clienteId     String?
-  cliente       Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  criadoEm      DateTime  @default(now())
-  atualizadoEm  DateTime  @updatedAt
+  codigoVenc   String?    @db.VarChar(10)
+  praca        String?    @db.VarChar(100)
+  observacao   String?    @db.Text
+  status       String     @default("ativo") // 'ativo' | 'executado' | 'cancelado'
+  clienteId    String?
+  cliente      Cliente?   @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  criadoEm     DateTime   @default(now())
+  atualizadoEm DateTime   @updatedAt
 
-  @@index([usuarioId, grao, status])
+  @@index([workspaceId, grao, status])
   @@index([vencimento])
 }

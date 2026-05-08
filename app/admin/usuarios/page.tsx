@@ -47,22 +47,33 @@ export default async function UsuariosPage({ searchParams }: SP) {
     where.OR = [
       { nome: { contains: q, mode: 'insensitive' } },
       { email: { contains: q, mode: 'insensitive' } },
-      { clientes: { some: { cnpj: { contains: q, mode: 'insensitive' } } } },
+      {
+        workspacesOwned: {
+          some: { clientes: { some: { cnpj: { contains: q, mode: 'insensitive' } } } },
+        },
+      },
     ]
   }
+  // Filtros de subscription via workspacesOwned.subscription
+  const subFilter: any = {}
+  if (status !== 'all' && status !== 'none') subFilter.status = status
+  if (plan !== 'all') subFilter.plan = plan
   if (status === 'none') {
-    where.subscription = null
-  } else if (status !== 'all') {
-    where.subscription = { status }
-  }
-  if (plan !== 'all') {
-    where.subscription = { ...(where.subscription as object), plan }
+    where.workspacesOwned = { every: { subscription: null } }
+  } else if (Object.keys(subFilter).length) {
+    where.workspacesOwned = { some: { subscription: subFilter } }
   }
 
-  const [users, total, maps] = await Promise.all([
+  const [usersRaw, total, maps] = await Promise.all([
     db.user.findMany({
       where,
-      include: { subscription: true },
+      include: {
+        workspacesOwned: {
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+          include: { subscription: true },
+        },
+      },
       orderBy: { criadoEm: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -70,6 +81,10 @@ export default async function UsuariosPage({ searchParams }: SP) {
     db.user.count({ where }),
     loadPlanMaps(),
   ])
+  const users = usersRaw.map((u) => ({
+    ...u,
+    subscription: u.workspacesOwned[0]?.subscription ?? null,
+  }))
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 

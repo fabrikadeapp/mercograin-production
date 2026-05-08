@@ -46,11 +46,15 @@ export default async function FinanceiroPage() {
         status: true,
         createdAt: true,
         canceledAt: true,
-        user: { select: { email: true } },
+        workspace: { select: { owner: { select: { email: true } } } },
       },
     }),
     db.user.count({
-      where: { subscription: { status: { in: ['active', 'trialing'] } } },
+      where: {
+        workspacesOwned: {
+          some: { subscription: { status: { in: ['active', 'trialing'] } } },
+        },
+      },
     }),
     db.webhookLog.findMany({
       where: { tipo: 'stripe' },

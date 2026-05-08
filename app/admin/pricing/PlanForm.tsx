@@ -21,6 +21,8 @@ export interface PlanFormValues {
   ctaHref: string
   sortOrder: number
   active: boolean
+  includedMembers: number
+  extraMemberPriceCents: number
 }
 
 interface Props {
@@ -47,6 +49,8 @@ const DEFAULTS: PlanFormValues = {
   ctaHref: '',
   sortOrder: 0,
   active: true,
+  includedMembers: 1,
+  extraMemberPriceCents: 15000, // R$ 150,00
 }
 
 function slugify(input: string): string {
@@ -65,6 +69,9 @@ export function PlanForm({ initial, mode, planId, onSaved }: Props) {
   const [priceInput, setPriceInput] = React.useState<string>(
     initial?.priceCents != null ? formatBRL(initial.priceCents) : ''
   )
+  const [seatPriceInput, setSeatPriceInput] = React.useState<string>(
+    initial?.extraMemberPriceCents != null ? formatBRL(initial.extraMemberPriceCents) : 'R$ 150,00'
+  )
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [stripeWarn, setStripeWarn] = React.useState<string | null>(null)
@@ -80,12 +87,21 @@ export function PlanForm({ initial, mode, planId, onSaved }: Props) {
     setStripeWarn(null)
 
     const cents = parseBRLToCents(priceInput) || v.priceCents
+    const seatCents = parseBRLToCents(seatPriceInput) || v.extraMemberPriceCents
     if (!v.slug || !v.name) {
       setError('slug e nome são obrigatórios.')
       return
     }
     if (cents <= 0) {
       setError('Informe um preço válido.')
+      return
+    }
+    if (seatCents < 0) {
+      setError('Preço por membro extra inválido.')
+      return
+    }
+    if (v.includedMembers < 1) {
+      setError('Membros inclusos deve ser ≥ 1.')
       return
     }
 
@@ -105,6 +121,8 @@ export function PlanForm({ initial, mode, planId, onSaved }: Props) {
       ctaHref: v.ctaHref || null,
       sortOrder: v.sortOrder,
       active: v.active,
+      includedMembers: v.includedMembers,
+      extraMemberPriceCents: seatCents,
     }
 
     setBusy(true)
@@ -268,6 +286,48 @@ export function PlanForm({ initial, mode, planId, onSaved }: Props) {
             onChange={(e) => update('sortOrder', Number(e.target.value) || 0)}
             helperText="Use o drag & drop pra ordenar; este campo só refina."
           />
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="eyebrow">Membros & assentos extras</h3>
+        <p className="text-fg-3 text-small">
+          Cada workspace pode ter até <strong className="text-fg-1">{v.includedMembers}</strong> {v.includedMembers === 1 ? 'membro' : 'membros'} sem custo adicional.
+          Membros além disso são cobrados a <strong className="text-fg-1">{seatPriceInput || 'R$ 0,00'}</strong>/mês cada via Stripe Subscription Items.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Membros inclusos no plano"
+            type="number"
+            min={1}
+            value={v.includedMembers}
+            onChange={(e) => update('includedMembers', Math.max(1, Number(e.target.value) || 1))}
+            helperText="Use 999 para 'ilimitado' (sem cobrança extra)."
+            required
+          />
+          <Input
+            label="Preço por membro extra (mensal)"
+            value={seatPriceInput}
+            onChange={(e) => setSeatPriceInput(e.target.value)}
+            onBlur={(e) => {
+              const c = parseBRLToCents(e.target.value)
+              if (c >= 0) {
+                update('extraMemberPriceCents', c)
+                setSeatPriceInput(formatBRL(c, v.currency))
+              }
+            }}
+            placeholder="R$ 150,00"
+            leftIcon={<span className="text-fg-3 text-small">R$</span>}
+            helperText="Aplicado por membro acima do limite incluso. Mudanças refletem nas próximas faturas."
+            required
+          />
+        </div>
+
+        <div className="text-micro text-fg-4 leading-relaxed border-l-2 border-warn/40 pl-3 italic">
+          Ao alterar o preço, o Stripe cria um Price NOVO (preços são imutáveis). Subscriptions
+          existentes pagam o novo valor a partir do próximo ciclo (com prorate).
+          O Price antigo é arquivado automaticamente.
         </div>
       </Card>
 

@@ -33,7 +33,7 @@ export async function POST(
     const body = await request.json().catch(() => ({}))
     const { phoneNumber: providedPhone } = sendWhatsAppSchema.parse(body)
 
-    // Get proposta (multi-tenancy via Proposta.usuarioId)
+    // Get proposta (multi-tenancy via Proposta.workspaceId)
     const proposta = await db.proposta.findFirst({
       where: { id: params.id, ...scope.whereOwn() },
       include: {
@@ -42,7 +42,7 @@ export async function POST(
             id: true,
             nome: true,
             whatsapp: true,
-            usuarioId: true,
+            workspaceId: true,
           },
         },
       },

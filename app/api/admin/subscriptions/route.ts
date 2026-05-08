@@ -26,15 +26,21 @@ export async function GET(req: Request) {
       where.OR = [
         { stripeCustomerId: { contains: q } },
         { stripeSubscriptionId: { contains: q } },
-        { user: { email: { contains: q, mode: 'insensitive' } } },
-        { user: { nome: { contains: q, mode: 'insensitive' } } },
+        { workspace: { owner: { email: { contains: q, mode: 'insensitive' } } } },
+        { workspace: { owner: { nome: { contains: q, mode: 'insensitive' } } } },
       ]
     }
 
     const [subs, total, maps] = await Promise.all([
       db.subscription.findMany({
         where,
-        include: { user: { select: { id: true, nome: true, email: true } } },
+        include: {
+          workspace: {
+            include: {
+              owner: { select: { id: true, nome: true, email: true } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,

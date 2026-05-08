@@ -40,6 +40,9 @@ export interface SerializedPlan {
   legacyPriceIds: string[]
   features: SerializedFeature[]
   includedFeatures: SerializedFeature[]
+  includedMembers: number
+  extraMemberPriceCents: number
+  extraMemberPriceFormatted: string
 }
 
 function toShortName(name: string): string {
@@ -89,6 +92,9 @@ export function serializePlan(
     legacyPriceIds: plan.legacyPriceIds,
     features,
     includedFeatures: features.filter((f) => f.included),
+    includedMembers: plan.includedMembers,
+    extraMemberPriceCents: plan.extraMemberPriceCents,
+    extraMemberPriceFormatted: formatBRL(plan.extraMemberPriceCents, plan.currency),
   }
 }
 

@@ -38,7 +38,7 @@ export default async function AssinaturasPage({
     where.OR = [
       { stripeCustomerId: { contains: q } },
       { stripeSubscriptionId: { contains: q } },
-      { user: { email: { contains: q, mode: 'insensitive' } } },
+      { workspace: { owner: { email: { contains: q, mode: 'insensitive' } } } },
     ]
   }
 
@@ -53,7 +53,13 @@ export default async function AssinaturasPage({
   ] = await Promise.all([
     db.subscription.findMany({
       where,
-      include: { user: { select: { id: true, nome: true, email: true } } },
+      include: {
+        workspace: {
+          include: {
+            owner: { select: { id: true, nome: true, email: true } },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -160,12 +166,12 @@ export default async function AssinaturasPage({
             header: 'Customer',
             accessor: (s) => (
               <Link
-                href={`/admin/usuarios/${s.user.id}`}
+                href={`/admin/usuarios/${s.workspace?.owner.id}`}
                 className="hover:text-accent"
               >
-                <div className="text-fg-1 font-medium">{s.user.nome}</div>
+                <div className="text-fg-1 font-medium">{s.workspace?.owner.nome}</div>
                 <div className="text-fg-3 text-micro truncate max-w-[260px]">
-                  {s.user.email}
+                  {s.workspace?.owner.email}
                 </div>
               </Link>
             ),

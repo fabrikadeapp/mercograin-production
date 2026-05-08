@@ -13,19 +13,28 @@ export async function GET(
     const u = await db.user.findUnique({
       where: { id: params.id },
       include: {
-        subscription: true,
-        _count: {
-          select: {
-            clientes: true,
-            propostas: true,
-            contratos: true,
-            boletos: true,
-          },
+        workspacesOwned: {
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+          include: { subscription: true },
         },
       },
     })
     if (!u) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    return NextResponse.json({ user: u })
+    const wsIds = u.workspacesOwned.map((w) => w.id)
+    const [clientes, propostas, contratos, boletos] = await Promise.all([
+      db.cliente.count({ where: { workspaceId: { in: wsIds } } }),
+      db.proposta.count({ where: { workspaceId: { in: wsIds } } }),
+      db.contrato.count({ where: { workspaceId: { in: wsIds } } }),
+      db.boleto.count({ where: { workspaceId: { in: wsIds } } }),
+    ])
+    return NextResponse.json({
+      user: {
+        ...u,
+        subscription: u.workspacesOwned[0]?.subscription ?? null,
+        _count: { clientes, propostas, contratos, boletos },
+      },
+    })
   } catch (e) {
     return adminErrorResponse(e)
   }

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { requireScope } from '@/lib/auth/scope'
 import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
 import { db } from '@/lib/db'
 
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    const scope = await requireScope()
 
     const body = await request.json().catch(() => null)
     const parsed = notifySchema.safeParse(body)
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
     let resolvedNumber = number ?? ''
     if (targetType === 'cliente' && targetId) {
       const cliente = await db.cliente.findFirst({
-        where: { id: targetId, usuarioId: session.user.id },
+        where: { id: targetId, workspaceId: scope.workspaceId },
         select: { whatsapp: true, telefone: true, nome: true },
       })
       if (!cliente) {

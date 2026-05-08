@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         ...data,
         expiraEm: data.expiraEm ? new Date(data.expiraEm) : null,
         autorId: scope.userId,
+        workspaceId: scope.workspaceId,
       },
     })
 

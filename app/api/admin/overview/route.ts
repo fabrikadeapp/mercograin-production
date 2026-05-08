@@ -11,11 +11,19 @@ export async function GET() {
     const [activeUsers, trialing, totalUsers, paying, subs, maps] =
       await Promise.all([
         db.user.count({
-          where: { subscription: { status: { in: ['active', 'trialing'] } } },
+          where: {
+            workspacesOwned: {
+              some: { subscription: { status: { in: ['active', 'trialing'] } } },
+            },
+          },
         }),
         db.subscription.count({ where: { status: 'trialing' } }),
         db.user.count(),
-        db.user.count({ where: { subscription: { status: 'active' } } }),
+        db.user.count({
+          where: {
+            workspacesOwned: { some: { subscription: { status: 'active' } } },
+          },
+        }),
         db.subscription.findMany({
           where: { status: 'active' },
           select: { plan: true },

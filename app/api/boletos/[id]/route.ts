@@ -22,7 +22,7 @@ export async function GET(
             nome: true,
             cnpj: true,
             email: true,
-            usuarioId: true,
+            workspaceId: true,
           },
         },
         contrato: {

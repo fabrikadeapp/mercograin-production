@@ -107,10 +107,12 @@ export default async function AdminOverview() {
     )
   })
 
-  // ----- Active users (active or trialing subscription) -----
+  // ----- Active users (active or trialing subscription via owned workspace) -----
   const activeUsers = await db.user.count({
     where: {
-      subscription: { status: { in: ['active', 'trialing'] } },
+      workspacesOwned: {
+        some: { subscription: { status: { in: ['active', 'trialing'] } } },
+      },
     },
   })
 
@@ -193,10 +195,10 @@ export default async function AdminOverview() {
   // ----- Funil de conversão -----
   const totalUsers = await db.user.count()
   const usersTrialing = await db.user.count({
-    where: { subscription: { status: 'trialing' } },
+    where: { workspacesOwned: { some: { subscription: { status: 'trialing' } } } },
   })
   const usersPaying = await db.user.count({
-    where: { subscription: { status: 'active' } },
+    where: { workspacesOwned: { some: { subscription: { status: 'active' } } } },
   })
 
   const funnelData = [
@@ -206,11 +208,21 @@ export default async function AdminOverview() {
   ]
 
   // ----- Últimos 10 signups -----
-  const signups = await db.user.findMany({
+  const signupsRaw = await db.user.findMany({
     orderBy: { criadoEm: 'desc' },
     take: 10,
-    include: { subscription: true },
+    include: {
+      workspacesOwned: {
+        orderBy: { createdAt: 'asc' },
+        take: 1,
+        include: { subscription: true },
+      },
+    },
   })
+  const signups = signupsRaw.map((u) => ({
+    ...u,
+    subscription: u.workspacesOwned[0]?.subscription ?? null,
+  }))
 
   // ----- Últimas 10 transações Stripe (via WebhookLog tipo='stripe' ou 'braspag') -----
   const transactions = await db.webhookLog.findMany({

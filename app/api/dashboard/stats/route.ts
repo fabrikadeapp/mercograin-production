@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
     if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
-    // Helper "where own" for client-table (uses Cliente.usuarioId)
+    // Helper "where own" for client-table (uses Cliente.workspaceId)
     const whereCliente: any = scope.whereOwn()
-    // For Proposta/Contrato/Boleto we filter by their own usuarioId (Multi-tenancy direct).
+    // For Proposta/Contrato/Boleto we filter by their own workspaceId (Multi-tenancy direct).
     const whereOwn: any = scope.whereOwn()
 
     // Buscar todas as estatísticas em paralelo

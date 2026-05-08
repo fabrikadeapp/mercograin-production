@@ -44,7 +44,11 @@ export async function GET() {
     })
 
     const activeUsers = await db.user.count({
-      where: { subscription: { status: { in: ['active', 'trialing'] } } },
+      where: {
+        workspacesOwned: {
+          some: { subscription: { status: { in: ['active', 'trialing'] } } },
+        },
+      },
     })
 
     const mrrCents = subs

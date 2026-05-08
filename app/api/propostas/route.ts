@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Construir where clause com filtros (multi-tenancy via Proposta.usuarioId)
+    // Construir where clause com filtros (multi-tenancy via Proposta.workspaceId)
     const where: any = scope.whereOwn()
 
     if (search) {
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       data: {
         numero: data.numero,
         clienteId: data.clienteId,
-        usuarioId: scope.userId,
+        workspaceId: scope.workspaceId,
         tipo: data.tipo,
         graos: data.graos,
         valorTotal: String(data.valor),

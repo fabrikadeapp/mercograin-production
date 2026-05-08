@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { loadPlanBySlug } from '@/lib/pricing/serialize'
+import { getActiveWorkspace } from '@/lib/auth/scope'
 import { AssinaturaClient } from './AssinaturaClient'
 
 export const dynamic = 'force-dynamic'
@@ -17,9 +18,10 @@ export default async function AssinaturaPage({ searchParams }: PageProps) {
   }
 
   const sp = await searchParams
-  const sub = await db.subscription.findUnique({
-    where: { userId: session.user.id },
-  })
+  const ws = await getActiveWorkspace(session.user.id)
+  const sub = ws
+    ? await db.subscription.findUnique({ where: { workspaceId: ws.workspaceId } })
+    : null
 
   const planRow = sub?.plan ? await loadPlanBySlug(sub.plan) : null
 

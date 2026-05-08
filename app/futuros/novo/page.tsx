@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { db } from '@/lib/db'
+import { requireScope } from '@/lib/auth/scope'
 import { NovoFuturoForm } from './NovoFuturoForm'
 
 export const dynamic = 'force-dynamic'
@@ -11,9 +12,10 @@ export const dynamic = 'force-dynamic'
 export default async function Page() {
   const session = await auth()
   if (!session?.user?.id) redirect('/auth/login')
+  const scope = await requireScope()
 
   const clientes = await db.cliente.findMany({
-    where: { usuarioId: session.user.id, ativo: true },
+    where: { workspaceId: scope.workspaceId, ativo: true },
     select: { id: true, nome: true },
     orderBy: { nome: 'asc' },
     take: 200,

@@ -15,7 +15,13 @@ export default async function AlertasAdmin() {
   const last24h = new Date(Date.now() - 24 * 3600 * 1000)
   const [alertas, totalAtivos, dispared24h, byGrao] = await Promise.all([
     db.alertaPreco.findMany({
-      include: { user: { select: { id: true, nome: true, email: true } } },
+      include: {
+        workspace: {
+          include: {
+            owner: { select: { id: true, nome: true, email: true } },
+          },
+        },
+      },
       orderBy: { criadoEm: 'desc' },
       take: 100,
     }),
@@ -117,10 +123,10 @@ export default async function AlertasAdmin() {
             header: 'Usuário',
             accessor: (a) => (
               <Link
-                href={`/admin/usuarios/${a.user.id}`}
+                href={`/admin/usuarios/${a.workspace?.owner.id}`}
                 className="hover:text-accent text-small"
               >
-                {a.user.nome}
+                {a.workspace?.owner.nome ?? '—'}
               </Link>
             ),
           },

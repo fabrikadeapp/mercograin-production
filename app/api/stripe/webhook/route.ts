@@ -12,13 +12,34 @@ function toDate(unix: number | null | undefined): Date | null {
   return new Date(unix * 1000)
 }
 
+async function resolveWorkspaceForCustomer(customerId: string): Promise<string | null> {
+  const user = await db.user.findUnique({ where: { stripeCustomerId: customerId } })
+  if (!user) return null
+  const ws = await db.workspace.findFirst({
+    where: { ownerId: user.id },
+    orderBy: { createdAt: 'asc' },
+  })
+  return ws?.id ?? null
+}
+
+async function recountWorkspaceMembers(workspaceId: string) {
+  const memberCount = await db.workspaceMember.count({
+    where: { workspaceId, status: 'active' },
+  })
+  await db.subscription
+    .update({
+      where: { workspaceId },
+      data: { memberCount },
+    })
+    .catch(() => undefined)
+}
+
 async function upsertSubscription(sub: Stripe.Subscription) {
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id
 
-  // Acha user pelo stripeCustomerId
-  const user = await db.user.findUnique({ where: { stripeCustomerId: customerId } })
-  if (!user) {
-    console.warn('[stripe/webhook] user not found for customer', customerId)
+  const workspaceId = await resolveWorkspaceForCustomer(customerId)
+  if (!workspaceId) {
+    console.warn('[stripe/webhook] workspace not found for customer', customerId)
     return
   }
 
@@ -29,9 +50,20 @@ async function upsertSubscription(sub: Stripe.Subscription) {
     (sub.metadata?.plan as string | undefined) ||
     'pro'
 
-  // Em versões recentes da API, current_period_start/end ficam no item.
   const periodStart = (item as any)?.current_period_start ?? (sub as any).current_period_start
   const periodEnd = (item as any)?.current_period_end ?? (sub as any).current_period_end
+
+  // Detecta os items: base e seats (assentos extras)
+  let stripeBaseItemId: string | null = null
+  let stripeSeatsItemId: string | null = null
+  for (const it of sub.items.data) {
+    const meta = it.price?.metadata?.kind
+    if (meta === 'seat' || it.price?.lookup_key === 'phbgrain_seat_extra_monthly') {
+      stripeSeatsItemId = it.id
+    } else {
+      stripeBaseItemId ||= it.id
+    }
+  }
 
   const data = {
     stripeSubscriptionId: sub.id,
@@ -45,13 +77,17 @@ async function upsertSubscription(sub: Stripe.Subscription) {
     currentPeriodEnd: toDate(periodEnd),
     cancelAtPeriodEnd: sub.cancel_at_period_end,
     canceledAt: toDate(sub.canceled_at),
+    stripeBaseItemId,
+    stripeSeatsItemId,
   }
 
   await db.subscription.upsert({
-    where: { userId: user.id },
-    create: { userId: user.id, ...data },
+    where: { workspaceId },
+    create: { workspaceId, ...data },
     update: data,
   })
+
+  await recountWorkspaceMembers(workspaceId)
 }
 
 export async function POST(req: Request) {
@@ -102,15 +138,10 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription
         const customerId =
           typeof sub.customer === 'string' ? sub.customer : sub.customer.id
-        const user = await db.user.findUnique({
+        await db.subscription.updateMany({
           where: { stripeCustomerId: customerId },
+          data: { status: 'canceled', canceledAt: new Date() },
         })
-        if (user) {
-          await db.subscription.updateMany({
-            where: { userId: user.id },
-            data: { status: 'canceled', canceledAt: new Date() },
-          })
-        }
         break
       }
       case 'invoice.payment_succeeded': {
@@ -133,15 +164,10 @@ export async function POST(req: Request) {
             ? invoice.customer
             : invoice.customer?.id
         if (customerId) {
-          const user = await db.user.findUnique({
+          await db.subscription.updateMany({
             where: { stripeCustomerId: customerId },
+            data: { status: 'past_due' },
           })
-          if (user) {
-            await db.subscription.updateMany({
-              where: { userId: user.id },
-              data: { status: 'past_due' },
-            })
-          }
         }
         break
       }

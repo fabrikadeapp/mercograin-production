@@ -28,6 +28,8 @@ const PLANS = [
     ctaHref: '/auth/signup?plan=starter',
     stripeProductId: 'prod_UTiSWTBhCp2ztC',
     stripePriceId: 'price_1TUl1NJmV6kiRaUFqibsOBCS',
+    includedMembers: 1,
+    extraMemberPriceCents: 15000,
     features: [
       '1 usuário',
       'Até 50 contratos / mês',
@@ -57,6 +59,8 @@ const PLANS = [
     ctaHref: '/auth/signup?plan=pro',
     stripeProductId: 'prod_UTiSd3TUlmFQGu',
     stripePriceId: 'price_1TUl1OJmV6kiRaUFdQngRHxO',
+    includedMembers: 5,
+    extraMemberPriceCents: 15000,
     features: [
       '5 usuários',
       'Contratos ilimitados',
@@ -86,6 +90,8 @@ const PLANS = [
     ctaHref: '/contato',
     stripeProductId: 'prod_UTiSuq4vTgFqBq',
     stripePriceId: 'price_1TUl1PJmV6kiRaUFbMPhD3EJ',
+    includedMembers: 999,
+    extraMemberPriceCents: 15000,
     features: [
       'Usuários ilimitados',
       'Contratos ilimitados',
@@ -138,6 +144,8 @@ async function main() {
         trialDays: planData.trialDays,
         ctaLabel: planData.ctaLabel,
         ctaHref: planData.ctaHref,
+        includedMembers: planData.includedMembers,
+        extraMemberPriceCents: planData.extraMemberPriceCents,
       },
     })
 

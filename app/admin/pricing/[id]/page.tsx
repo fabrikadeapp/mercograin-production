@@ -42,14 +42,16 @@ export default async function PlanDetailPage({
         where: { stripePriceId: { in: priceIds } },
         orderBy: { createdAt: 'desc' },
         take: 10,
-        include: { user: { select: { email: true } } },
+        include: {
+          workspace: { include: { owner: { select: { email: true } } } },
+        },
       }),
     ])
     subscribersCount = count
     subscribers = rows.map((r) => ({
       id: r.id,
       status: r.status,
-      userEmail: r.user?.email ?? '—',
+      userEmail: r.workspace?.owner.email ?? '—',
       createdAt: r.createdAt.toISOString(),
     }))
   }

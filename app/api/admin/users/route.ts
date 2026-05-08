@@ -26,16 +26,25 @@ export async function GET(req: Request) {
         { email: { contains: q, mode: 'insensitive' } },
       ]
     }
-    if (status === 'none') where.subscription = null
-    else if (status !== 'all') where.subscription = { status }
-    if (plan !== 'all') {
-      where.subscription = { ...(where.subscription as object), plan }
+    const subFilter: any = {}
+    if (status !== 'all' && status !== 'none') subFilter.status = status
+    if (plan !== 'all') subFilter.plan = plan
+    if (status === 'none') {
+      where.workspacesOwned = { every: { subscription: null } }
+    } else if (Object.keys(subFilter).length) {
+      where.workspacesOwned = { some: { subscription: subFilter } }
     }
 
     const [users, total, maps] = await Promise.all([
       db.user.findMany({
         where,
-        include: { subscription: true },
+        include: {
+          workspacesOwned: {
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            include: { subscription: true },
+          },
+        },
         orderBy: { criadoEm: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -44,25 +53,28 @@ export async function GET(req: Request) {
       loadPlanMaps(),
     ])
 
-    const data = users.map((u) => ({
-      id: u.id,
-      nome: u.nome,
-      email: u.email,
-      role: u.role,
-      criadoEm: u.criadoEm,
-      subscription: u.subscription
-        ? {
-            plan: u.subscription.plan,
-            status: u.subscription.status,
-            trialEnd: u.subscription.trialEnd,
-            currentPeriodEnd: u.subscription.currentPeriodEnd,
-            mrrCents:
-              u.subscription.status === 'active'
-                ? maps.priceCents[u.subscription.plan] ?? 0
-                : 0,
-          }
-        : null,
-    }))
+    const data = users.map((u) => {
+      const sub = u.workspacesOwned[0]?.subscription ?? null
+      return {
+        id: u.id,
+        nome: u.nome,
+        email: u.email,
+        role: u.role,
+        criadoEm: u.criadoEm,
+        subscription: sub
+          ? {
+              plan: sub.plan,
+              status: sub.status,
+              trialEnd: sub.trialEnd,
+              currentPeriodEnd: sub.currentPeriodEnd,
+              mrrCents:
+                sub.status === 'active'
+                  ? maps.priceCents[sub.plan] ?? 0
+                  : 0,
+            }
+          : null,
+      }
+    })
 
     return NextResponse.json({ data, total, page, limit })
   } catch (e) {

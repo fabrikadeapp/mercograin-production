@@ -25,42 +25,55 @@ export default async function UserDetailPage({
 }: {
   params: { id: string }
 }) {
-  const user = await db.user.findUnique({
+  const userRaw = await db.user.findUnique({
     where: { id: params.id },
-    include: {
-      subscription: true,
-      _count: {
-        select: {
-          clientes: true,
-          propostas: true,
-          contratos: true,
-          boletos: true,
-        },
-      },
-    },
   })
-  if (!user) return notFound()
+  if (!userRaw) return notFound()
 
-  // Métricas pessoais
-  const [auditLogs, propostas, contratos, boletosSum, classCount, alertasCount] =
+  // Workspaces do user (owned) — métricas agregadas
+  const ownedWs = await db.workspace.findMany({
+    where: { ownerId: userRaw.id },
+    include: { subscription: true },
+  })
+  const wsIds = ownedWs.map((w) => w.id)
+  const subscription = ownedWs.find((w) => w.subscription)?.subscription ?? null
+
+  const [counts, auditLogs, propostas, contratos, boletosSum, classCount, alertasCount] =
     await Promise.all([
+      Promise.all([
+        db.cliente.count({ where: { workspaceId: { in: wsIds } } }),
+        db.proposta.count({ where: { workspaceId: { in: wsIds } } }),
+        db.contrato.count({ where: { workspaceId: { in: wsIds } } }),
+        db.boleto.count({ where: { workspaceId: { in: wsIds } } }),
+      ]),
       db.auditLog.findMany({
-        where: { userId: user.id },
+        where: { userId: userRaw.id },
         orderBy: { criadoEm: 'desc' },
         take: 50,
       }),
       db.proposta.aggregate({
-        where: { usuarioId: user.id },
+        where: { workspaceId: { in: wsIds } },
         _sum: { valorTotal: true },
       }),
-      db.contrato.count({ where: { usuarioId: user.id } }),
+      db.contrato.count({ where: { workspaceId: { in: wsIds } } }),
       db.boleto.aggregate({
-        where: { usuarioId: user.id, status: 'pago' },
+        where: { workspaceId: { in: wsIds }, status: 'pago' },
         _sum: { valor: true },
       }),
-      db.classificado.count({ where: { autorId: user.id } }),
-      db.alertaPreco.count({ where: { userId: user.id } }),
+      db.classificado.count({ where: { autorId: userRaw.id } }),
+      db.alertaPreco.count({ where: { workspaceId: { in: wsIds } } }),
     ])
+
+  const user = {
+    ...userRaw,
+    subscription,
+    _count: {
+      clientes: counts[0],
+      propostas: counts[1],
+      contratos: counts[2],
+      boletos: counts[3],
+    },
+  }
 
   // LTV: meses ativo × preço plano (proxy simples)
   const monthsActive = user.subscription?.createdAt

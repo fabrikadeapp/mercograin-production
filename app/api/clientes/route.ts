@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const cliente = await db.cliente.create({
       data: {
         ...data,
-        usuarioId: scope.userId,
+        workspaceId: scope.workspaceId,
       },
     })
 

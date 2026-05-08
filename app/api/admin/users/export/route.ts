@@ -27,20 +27,33 @@ export async function GET(req: Request) {
         { email: { contains: q, mode: 'insensitive' } },
       ]
     }
-    if (status === 'none') where.subscription = null
-    else if (status !== 'all') where.subscription = { status }
-    if (plan !== 'all') {
-      where.subscription = { ...(where.subscription as object), plan }
+    const subFilter: any = {}
+    if (status !== 'all' && status !== 'none') subFilter.status = status
+    if (plan !== 'all') subFilter.plan = plan
+    if (status === 'none') {
+      where.workspacesOwned = { every: { subscription: null } }
+    } else if (Object.keys(subFilter).length) {
+      where.workspacesOwned = { some: { subscription: subFilter } }
     }
 
-    const [users, maps] = await Promise.all([
+    const [usersRaw, maps] = await Promise.all([
       db.user.findMany({
         where,
-        include: { subscription: true },
+        include: {
+          workspacesOwned: {
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            include: { subscription: true },
+          },
+        },
         orderBy: { criadoEm: 'desc' },
       }),
       loadPlanMaps(),
     ])
+    const users = usersRaw.map((u) => ({
+      ...u,
+      subscription: u.workspacesOwned[0]?.subscription ?? null,
+    }))
 
     const rows = [
       [

@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     const created = await db.contratoFuturo.create({
       data: {
-        usuarioId: scope.userId,
+        workspaceId: scope.workspaceId,
         grao: data.grao,
         lado: data.lado,
         vencimento: venc,

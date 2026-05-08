@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Multi-tenancy via Boleto.usuarioId
+    // Multi-tenancy via Boleto.workspaceId
     const where: any = scope.whereOwn()
 
     if (search) {
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         numero: data.numero,
         clienteId: data.clienteId,
         contratoIdFk: data.contratoId,
-        usuarioId: scope.userId,
+        workspaceId: scope.workspaceId,
         banco: data.banco,
         valor: new Decimal(data.valor),
         vencimento: new Date(data.vencimento),

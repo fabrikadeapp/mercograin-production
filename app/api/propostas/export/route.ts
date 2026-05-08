@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
               nome: true,
               cnpj: true,
               email: true,
-              usuarioId: true,
+              workspaceId: true,
             },
           },
         },

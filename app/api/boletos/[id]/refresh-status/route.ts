@@ -13,7 +13,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Buscar boleto (multi-tenancy via Boleto.usuarioId)
+    // Buscar boleto (multi-tenancy via Boleto.workspaceId)
     const boleto = await db.boleto.findFirst({
       where: { id: params.id, ...scope.whereOwn() },
       include: {

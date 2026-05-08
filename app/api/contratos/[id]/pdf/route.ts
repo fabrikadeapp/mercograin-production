@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Fetch contrato with proposta and cliente info (multi-tenancy via Contrato.usuarioId)
+    // Fetch contrato with proposta and cliente info (multi-tenancy via Contrato.workspaceId)
     const contrato = await db.contrato.findFirst({
       where: { id: params.id, ...scope.whereOwn() },
       include: {
@@ -35,7 +35,7 @@ export async function GET(
             nome: true,
             cnpj: true,
             email: true,
-            usuarioId: true,
+            workspaceId: true,
           },
         },
       },

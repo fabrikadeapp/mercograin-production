@@ -30,6 +30,8 @@ const createSchema = z.object({
   ctaHref: z.string().optional().nullable(),
   sortOrder: z.number().int().default(0),
   active: z.boolean().default(true),
+  includedMembers: z.number().int().min(1).default(1),
+  extraMemberPriceCents: z.number().int().nonnegative().default(15000),
 })
 
 export async function GET() {
@@ -74,6 +76,8 @@ export async function POST(req: NextRequest) {
         ctaHref: data.ctaHref ?? null,
         sortOrder: data.sortOrder,
         active: data.active,
+        includedMembers: data.includedMembers,
+        extraMemberPriceCents: data.extraMemberPriceCents,
       },
       include: { features: true },
     })

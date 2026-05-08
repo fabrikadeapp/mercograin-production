@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { stripe } from '@/lib/stripe/server'
+import { requireScope } from '@/lib/auth/scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,9 +11,10 @@ export async function POST() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
+  const scope = await requireScope()
 
   const sub = await db.subscription.findUnique({
-    where: { userId: session.user.id },
+    where: { workspaceId: scope.workspaceId },
   })
   if (!sub) {
     return NextResponse.json({ error: 'sem assinatura' }, { status: 404 })
@@ -24,7 +26,7 @@ export async function POST() {
     })
 
     await db.subscription.update({
-      where: { userId: session.user.id },
+      where: { workspaceId: scope.workspaceId },
       data: {
         cancelAtPeriodEnd: true,
         canceledAt: updated.canceled_at ? new Date(updated.canceled_at * 1000) : new Date(),

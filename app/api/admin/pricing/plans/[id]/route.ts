@@ -28,6 +28,8 @@ const updateSchema = z.object({
   ctaHref: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
   active: z.boolean().optional(),
+  includedMembers: z.number().int().min(1).optional(),
+  extraMemberPriceCents: z.number().int().nonnegative().optional(),
 })
 
 export async function GET(
@@ -66,12 +68,14 @@ export async function GET(
         where: { stripePriceId: { in: priceIds } },
         orderBy: { createdAt: 'desc' },
         take: 10,
-        include: { user: { select: { email: true } } },
+        include: {
+          workspace: { include: { owner: { select: { email: true } } } },
+        },
       })
       subscribers = rows.map((r) => ({
         id: r.id,
         status: r.status,
-        userEmail: r.user?.email ?? '—',
+        userEmail: r.workspace?.owner.email ?? '—',
         createdAt: r.createdAt,
       }))
     }

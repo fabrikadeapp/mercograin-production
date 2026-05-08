@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
   if (!scope) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  // AlertaPreco já tem userId (escopo direto)
-  const where: any = scope.isAdmin && searchParams.get('scope') === 'all' ? {} : { userId: scope.userId }
+  const where: any = scope.whereOwn()
   const data = await db.alertaPreco.findMany({
     where,
     orderBy: { criadoEm: 'desc' },
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = schema.parse(body)
     const created = await db.alertaPreco.create({
-      data: { ...data, userId: scope.userId },
+      data: { ...data, workspaceId: scope.workspaceId },
     })
     return NextResponse.json(created, { status: 201 })
   } catch (e: any) {
