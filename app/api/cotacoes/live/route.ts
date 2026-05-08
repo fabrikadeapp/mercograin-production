@@ -18,6 +18,7 @@ import {
   fetchSparkline as fetchTwelveSparkline,
 } from '@/lib/quotes/twelvedata'
 import { fetchFxBidAsk } from '@/lib/quotes/awesomeapi'
+import { fetchBcbDolar } from '@/lib/quotes/bcb'
 import { db as prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -57,13 +58,35 @@ async function getUsdbrlCached() {
   // Cache fresco — retorna direto
   if (usdbrlCache.data && now - usdbrlCache.at < TTL_USDBRL) return usdbrlCache.data
 
-  // 1) PRIMÁRIA: AwesomeAPI (sem rate limit, dá bid/ask reais BRL)
+  // 1) PRIMÁRIA: BCB PTAX (oficial brasileira, sem rate limit pra IPs cloud)
+  const bcb = await fetchBcbDolar()
+  if (bcb.cotacaoCompra !== null && bcb.cotacaoVenda !== null) {
+    const mid = (bcb.cotacaoCompra + bcb.cotacaoVenda) / 2
+    const fresh = {
+      symbol: 'USD/BRL',
+      label: 'usdbrl' as const,
+      price: mid,
+      open: null,
+      high: bcb.cotacaoVenda,
+      low: bcb.cotacaoCompra,
+      previousClose: null,
+      changeAbs: null,
+      changePct: null,
+      currency: 'BRL',
+      exchangeName: 'BCB · PTAX',
+      marketState: 'open' as const,
+      fetchedAt: bcb.fetchedAt,
+    }
+    usdbrlCache.data = fresh as any
+    usdbrlCache.at = now
+    return fresh as any
+  }
+
+  // 2) FALLBACK: AwesomeAPI (caso BCB caia)
   const fx = await fetchFxBidAsk('USD-BRL')
   if (fx.bid !== null && fx.ask !== null) {
     const mid = (fx.bid + fx.ask) / 2
-    const prevMid = fx.bid && fx.varBid !== null
-      ? mid - fx.varBid
-      : null
+    const prevMid = fx.bid && fx.varBid !== null ? mid - fx.varBid : null
     const fresh = {
       symbol: 'USD/BRL',
       label: 'usdbrl' as const,
@@ -84,7 +107,7 @@ async function getUsdbrlCached() {
     return fresh as any
   }
 
-  // 2) FALLBACK: Twelve Data
+  // 3) FALLBACK Twelve Data
   const td = await fetchTwelveQuote('usdbrl')
   if (td.price !== null) {
     usdbrlCache.data = td
@@ -92,10 +115,10 @@ async function getUsdbrlCached() {
     return td
   }
 
-  // 3) Sem fontes online — retorna cache antigo se houver
+  // 4) Cache stale
   if (usdbrlCache.data) return usdbrlCache.data
 
-  // 4) Tudo vazio — retorna empty (NÃO fabrica número errado)
+  // 5) Tudo vazio — retorna empty (NÃO fabrica número errado)
   return td
 }
 
