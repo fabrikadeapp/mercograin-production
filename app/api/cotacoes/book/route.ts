@@ -19,6 +19,7 @@ import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { fetchFxBidAsk } from '@/lib/quotes/awesomeapi'
 import { fetchCepeaQuote, type CepeaLabel } from '@/lib/quotes/cepea'
+import { fetchLiveQuote as fetchTwelveQuote } from '@/lib/quotes/twelvedata'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,26 +83,40 @@ export async function GET(req: NextRequest) {
     }
     const fetchedAt = new Date().toISOString()
 
-    // === USDBRL via AwesomeAPI ===
+    // === USDBRL: AwesomeAPI primeiro, fallback Twelve Data com spread sintético
     if (symbol === 'usdbrl') {
       const fx = await fetchFxBidAsk('USD-BRL')
+      let bid = fx.bid
+      let ask = fx.ask
+      let bidSource = 'AwesomeAPI · interbancário'
+      let askSource = 'AwesomeAPI · interbancário'
+      let bidReal = bid !== null
+      let askReal = ask !== null
+
+      if (bid === null || ask === null) {
+        // Fallback: Twelve Data spot price + spread interbancário típico
+        const td = await fetchTwelveQuote('usdbrl')
+        if (td.price !== null) {
+          // Spread interbancário USD/BRL ~0.06% (varia ao longo do dia)
+          const spread = td.price * 0.0006
+          bid = Math.round((td.price - spread / 2) * 10000) / 10000
+          ask = Math.round((td.price + spread / 2) * 10000) / 10000
+          bidSource = 'Twelve Data (estimativa)'
+          askSource = 'Twelve Data (estimativa)'
+          bidReal = false
+          askReal = false
+        }
+      }
+
       const out: BookResponse = {
         symbol,
-        bid: {
-          price: fx.bid,
-          source: 'AwesomeAPI · interbancário',
-          real: fx.bid !== null,
-        },
-        ask: {
-          price: fx.ask,
-          source: 'AwesomeAPI · interbancário',
-          real: fx.ask !== null,
-        },
-        mid: fx.bid !== null && fx.ask !== null ? (fx.bid + fx.ask) / 2 : null,
-        spread: fx.spread,
-        spreadPct: fx.spreadPct,
+        bid: { price: bid, source: bidSource, real: bidReal },
+        ask: { price: ask, source: askSource, real: askReal },
+        mid: bid !== null && ask !== null ? (bid + ask) / 2 : null,
+        spread: bid !== null && ask !== null ? ask - bid : null,
+        spreadPct: bid !== null && ask !== null && bid > 0 ? ((ask - bid) / bid) * 100 : null,
         unidade: 'BRL/USD',
-        fonte: 'AwesomeAPI',
+        fonte: bidReal ? 'AwesomeAPI' : 'Twelve Data',
         fetchedAt,
       }
       return NextResponse.json(out, {

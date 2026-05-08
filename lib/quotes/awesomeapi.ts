@@ -20,7 +20,9 @@ export interface FxBidAsk {
 }
 
 interface CacheEntry { data: FxBidAsk | null; at: number }
-const TTL = 30_000  // 30s
+// AwesomeAPI rate limit: subiu pra 5min pra evitar 429.
+// Forex move pouco mesmo - 5min é aceitável pra book.
+const TTL = 300_000  // 5 min
 const cache = new Map<string, CacheEntry>()
 
 function n(v: unknown): number | null {
