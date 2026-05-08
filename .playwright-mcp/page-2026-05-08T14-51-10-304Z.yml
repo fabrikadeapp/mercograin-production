@@ -1,0 +1,165 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e9]: PHBGrain
+        - paragraph [ref=e10]: Grain Intelligence
+      - generic [ref=e11]:
+        - generic [ref=e12]: ·
+        - generic [ref=e13]:
+          - generic [ref=e14]: Convidado
+          - generic [ref=e15]: Sem sessão
+      - navigation [ref=e16]:
+        - link "Dashboard" [ref=e17] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e18]
+          - generic [ref=e23]: Dashboard
+        - link "Cotações" [ref=e24] [cursor=pointer]:
+          - /url: /cotacoes
+          - img [ref=e25]
+          - generic [ref=e28]: Cotações
+        - link "Contratos" [ref=e29] [cursor=pointer]:
+          - /url: /contratos
+          - img [ref=e30]
+          - generic [ref=e33]: Contratos
+        - link "Classificados" [ref=e34] [cursor=pointer]:
+          - /url: /classificados
+          - img [ref=e35]
+          - generic [ref=e39]: Classificados
+        - link "Fluxo de Caixa" [ref=e40] [cursor=pointer]:
+          - /url: /fluxo-de-caixa
+          - img [ref=e41]
+          - generic [ref=e46]: Fluxo de Caixa
+        - link "Relatórios" [ref=e47] [cursor=pointer]:
+          - /url: /relatorios
+          - img [ref=e48]
+          - generic [ref=e50]: Relatórios
+        - link "Clientes & CRM" [ref=e51] [cursor=pointer]:
+          - /url: /clientes
+          - img [ref=e52]
+          - generic [ref=e57]: Clientes & CRM
+        - link "Propostas" [ref=e58] [cursor=pointer]:
+          - /url: /propostas
+          - img [ref=e59]
+          - generic [ref=e62]: Propostas
+        - link "Boletos" [ref=e63] [cursor=pointer]:
+          - /url: /boletos
+          - img [ref=e64]
+          - generic [ref=e67]: Boletos
+        - link "Logística" [ref=e68] [cursor=pointer]:
+          - /url: /logistica
+          - img [ref=e69]
+          - generic [ref=e74]: Logística
+        - link "WhatsApp Bot" [ref=e75] [cursor=pointer]:
+          - /url: /whatsapp
+          - img [ref=e76]
+          - generic [ref=e78]: WhatsApp Bot
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - img [ref=e82]
+          - generic [ref=e85]: PHB Grain Pro
+        - paragraph [ref=e86]: Cotações em tempo real, integração CEPEA + B3 e bot WhatsApp ilimitado.
+        - button "Fazer upgrade" [ref=e87] [cursor=pointer]
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]: Paleta
+          - radiogroup "Trocar paleta" [ref=e91]:
+            - radio "Verde Pulse" [checked] [ref=e92] [cursor=pointer]
+            - radio "Floresta" [ref=e94] [cursor=pointer]
+            - radio "Oliva" [ref=e96] [cursor=pointer]
+            - radio "Mar" [ref=e98] [cursor=pointer]
+            - radio "Sage" [ref=e100] [cursor=pointer]
+            - radio "Mono" [ref=e102] [cursor=pointer]
+        - link "Assinatura" [ref=e104] [cursor=pointer]:
+          - /url: /assinatura
+          - img [ref=e105]
+          - generic [ref=e107]: Assinatura
+        - link "Configurações" [ref=e108] [cursor=pointer]:
+          - /url: /configuracoes
+          - img [ref=e109]
+          - generic [ref=e112]: Configurações
+        - button "Sair" [ref=e113] [cursor=pointer]:
+          - img [ref=e114]
+          - generic [ref=e117]: Sair
+    - main [ref=e118]:
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - paragraph [ref=e123]: Mesa de operações · Tempo real
+              - heading "Dashboard" [level=1] [ref=e124]
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - img [ref=e127]
+                - searchbox "Buscar contratos, clientes, lotes…" [ref=e130]
+                - generic [ref=e131]: ⌘K
+              - generic [ref=e132]:
+                - button "Notificações" [ref=e133] [cursor=pointer]
+                - generic [ref=e134]: "3"
+              - button "Novo contrato" [ref=e135] [cursor=pointer]:
+                - img [ref=e136]
+                - text: Novo contrato
+          - paragraph [ref=e137]: Cotações ao vivo · CEPEA/ESALQ + Twelve Data
+        - generic [ref=e138]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - paragraph [ref=e148]: MERCADO · COMPARATIVO
+                  - heading "Curva de Mercado · Soja" [level=3] [ref=e149]
+                - generic [ref=e150]:
+                  - tablist [ref=e151]:
+                    - tab "Físico" [selected] [ref=e152] [cursor=pointer]:
+                      - generic [ref=e153]: Físico
+                    - tab "Futuro (B3)" [ref=e154] [cursor=pointer]:
+                      - generic [ref=e155]: Futuro (B3)
+                    - tab "FOB Paranaguá" [ref=e156] [cursor=pointer]:
+                      - generic [ref=e157]: FOB Paranaguá
+                  - generic [ref=e158]: Últimos 8 meses
+                  - button "Mais opções" [ref=e160] [cursor=pointer]
+              - paragraph [ref=e161]: Comparativo CEPEA × B3 × FOB
+            - generic [ref=e163]:
+              - generic [ref=e165]:
+                - paragraph [ref=e166]: META · MENSAL
+                - heading "Batimento de Meta · Mês" [level=3] [ref=e167]
+              - paragraph [ref=e168]: vs orçamento da safra 24/25
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - generic [ref=e185]:
+                - paragraph [ref=e186]: EXPORTAÇÃO · 7 DIAS
+                - heading "Demanda Global" [level=3] [ref=e187]
+                - paragraph [ref=e188]: +6,9% · 142.380 t embarcadas — últimos 7 dias
+              - generic [ref=e189]:
+                - generic [ref=e190]:
+                  - generic [ref=e192]:
+                    - generic [ref=e194]: China
+                    - generic [ref=e195]: 58.420 t
+                  - generic [ref=e199]:
+                    - generic [ref=e201]: União Europeia
+                    - generic [ref=e202]: 24.180 t
+                  - generic [ref=e206]:
+                    - generic [ref=e208]: Argentina
+                    - generic [ref=e209]: 18.950 t
+                  - generic [ref=e213]:
+                    - generic [ref=e215]: Estados Unidos
+                    - generic [ref=e216]: 12.430 t
+                  - generic [ref=e220]:
+                    - generic [ref=e222]: Índia
+                    - generic [ref=e223]: 8.610 t
+                - generic [ref=e226]:
+                  - img [ref=e228]
+                  - generic [ref=e233]:
+                    - button "Aproximar" [ref=e235] [cursor=pointer]
+                    - button "Afastar" [ref=e237] [cursor=pointer]
+              - link "Ver todos os destinos →" [ref=e238] [cursor=pointer]:
+                - /url: "#"
+            - generic [ref=e239]:
+              - generic [ref=e240]:
+                - generic [ref=e241]:
+                  - paragraph [ref=e242]: MAIORES TICKETS
+                  - heading "Top Contratos do Mês" [level=3] [ref=e243]
+                - button "Mais opções" [ref=e245] [cursor=pointer]
+              - paragraph [ref=e246]: Por valor total negociado
+  - alert [ref=e253]

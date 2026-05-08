@@ -79,7 +79,9 @@ export function MarketCard({
   const isOpen = marketState === 'open' && !stale
   const isClosed = marketState === 'closed' || stale
   const dotColor = isOpen ? 'var(--pos)' : isClosed ? 'var(--neg)' : 'var(--fg-3)'
-  const stateLabel = isOpen ? 'MERCADO ABERTO' : isClosed ? 'MERCADO FECHADO' : '—'
+  // Label compacto pra caber em cards estreitos
+  const stateLabel = isOpen ? 'ABERTO' : isClosed ? 'FECHADO' : '—'
+  const stateLabelLong = isOpen ? 'MERCADO ABERTO' : isClosed ? 'MERCADO FECHADO' : '—'
   const animation = isOpen ? 'phb-pulse 1.6s ease-in-out infinite' : 'none'
 
   const since = relativeTime(lastSync, Date.now() + tick * 0)  // tick força re-render
@@ -137,7 +139,10 @@ export function MarketCard({
       {/* Footer: status mercado + última atualização */}
       <div
         className="pt-2 mt-1 border-t border-border-1 flex items-center justify-between gap-2"
-        title={lastSync ? `Última atualização: ${new Date(lastSync).toLocaleString('pt-BR')}` : undefined}
+        title={
+          (lastSync ? `Última atualização: ${new Date(lastSync).toLocaleString('pt-BR')}\n` : '') +
+          stateLabelLong
+        }
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <span
@@ -152,7 +157,7 @@ export function MarketCard({
             }}
           />
           <span
-            className="eyebrow truncate"
+            className="eyebrow"
             style={{ color: dotColor }}
           >
             {stateLabel}

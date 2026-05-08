@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - generic [ref=e8]: PHBGrain
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - paragraph [ref=e11]: Acesso · Mesa de operações
+        - heading "Bem-vindo de volta." [level=1] [ref=e12]
+        - paragraph [ref=e13]: Entre para acompanhar suas cotações em tempo real.
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]: E-mail
+          - generic [ref=e18]:
+            - img [ref=e20]
+            - textbox "E-mail" [ref=e23]:
+              - /placeholder: seu@email.com
+        - generic [ref=e24]:
+          - generic [ref=e25]: Senha
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - textbox "Senha" [ref=e31]:
+              - /placeholder: ••••••••
+        - link "Esqueci minha senha" [ref=e33] [cursor=pointer]:
+          - /url: /auth/forgot-password
+        - button "Entrar" [ref=e34] [cursor=pointer]
+      - paragraph [ref=e35]:
+        - text: Ainda não tem conta?
+        - link "Criar conta" [ref=e36] [cursor=pointer]:
+          - /url: /auth/signup
+  - alert [ref=e37]
