@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { db as prisma } from '@/lib/db'
-import { fetchAllLiveQuotes } from '@/lib/quotes/yahoo'
+import { fetchAllLiveQuotes } from '@/lib/quotes/twelvedata'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
           grao: grain,
           preco: new Prisma.Decimal(q.price),
           simbolo: SIMBOLOS[grain],
-          fonte: 'yahoo',
+          fonte: 'twelve-data',
           dolarReal: usdbrl !== null ? new Prisma.Decimal(usdbrl) : null,
         },
       })
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
           origem: 'USD',
           destino: 'BRL',
           taxa: new Prisma.Decimal(usdbrl),
-          fonte: 'yahoo',
+          fonte: 'twelve-data',
         },
       })
       persisted++

@@ -1,6 +1,6 @@
 /**
  * GET /api/cotacoes/live
- * Live commodity quotes via Yahoo Finance (CBOT futures + USDBRL).
+ * Live commodity quotes via Twelve Data (ETFs proxy CBOT + USD/BRL).
  *
  * Returns soja/milho/trigo/usdbrl with price, OHLC, prev close, change,
  * currency, market state, and a daily-close sparkline (~30 days).
@@ -8,8 +8,7 @@
  * Edge-cached for 30s with stale-while-revalidate.
  */
 import { NextResponse } from 'next/server'
-import { fetchAllLiveQuotes, YAHOO_SYMBOLS } from '@/lib/quotes/yahoo'
-import { fetchSparkline } from '@/lib/quotes/sparkline'
+import { fetchAllLiveQuotes, fetchSparkline } from '@/lib/quotes/twelvedata'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 30
@@ -19,10 +18,10 @@ export async function GET() {
     const [quotes, sparks] = await Promise.all([
       fetchAllLiveQuotes(),
       Promise.all([
-        fetchSparkline(YAHOO_SYMBOLS.soja.symbol),
-        fetchSparkline(YAHOO_SYMBOLS.milho.symbol),
-        fetchSparkline(YAHOO_SYMBOLS.trigo.symbol),
-        fetchSparkline(YAHOO_SYMBOLS.usdbrl.symbol),
+        fetchSparkline('soja'),
+        fetchSparkline('milho'),
+        fetchSparkline('trigo'),
+        fetchSparkline('usdbrl'),
       ]),
     ])
 
@@ -31,7 +30,7 @@ export async function GET() {
       milho: { ...quotes.milho, sparkline: sparks[1] },
       trigo: { ...quotes.trigo, sparkline: sparks[2] },
       usdbrl: { ...quotes.usdbrl, sparkline: sparks[3] },
-      source: 'yahoo-finance',
+      source: 'twelve-data',
       fetchedAt: new Date().toISOString(),
     }
 
