@@ -25,12 +25,31 @@ export const fetchCache = 'force-no-store'
 const TON_TO_SC60 = 1000 / 60
 const GRAINS: CepeaLabel[] = ['soja', 'milho', 'trigo']
 
-// Cache em memória para Twelve Data (rate limit free 8 req/min)
+// Cache em memória — frequência máxima permitida pelas fontes gratuitas:
+//   Twelve Data: 8 req/min free (USDBRL atualiza ~tempo-real durante pregão)
+//   CEPEA: 1 atualização/dia oficial (após fechamento ~14h-15h Brasília)
 interface MemCache<T> { data: T | null; at: number }
-const TTL_USDBRL = 60_000   // 1 min
-const TTL_SPARK  = 3600_000 // 1 hora
+const TTL_USDBRL = 30_000   // 30s — Twelve Data USDBRL (mais frescor)
+const TTL_CEPEA  = 300_000  // 5min — CEPEA atualiza só 1x/dia, mas refresh evita widget timeout
+const TTL_SPARK  = 3600_000 // 1h
 const usdbrlCache: MemCache<Awaited<ReturnType<typeof fetchTwelveQuote>>> = { data: null, at: 0 }
 const sparkCache: MemCache<number[]> = { data: null, at: 0 }
+const cepeaCache: MemCache<Awaited<ReturnType<typeof fetchCepeaQuotes>>> = { data: null, at: 0 }
+
+async function getCepeaCached() {
+  const now = Date.now()
+  if (cepeaCache.data && now - cepeaCache.at < TTL_CEPEA) return cepeaCache.data
+  const fresh = await fetchCepeaQuotes(GRAINS)
+  // Só cacheia se pelo menos 1 grão veio com preço — evita cachear vazio
+  const anyPrice = Object.values(fresh).some((q) => q.precoSc60 !== null)
+  if (anyPrice) {
+    cepeaCache.data = fresh
+    cepeaCache.at = now
+    return fresh
+  }
+  if (cepeaCache.data) return cepeaCache.data  // serve stale se temos
+  return fresh  // tudo vazio
+}
 
 async function getUsdbrlCached() {
   const now = Date.now()
@@ -105,7 +124,7 @@ export async function GET() {
   try {
     const [cepea, usdbrlTD, sparkSoja, sparkMilho, sparkTrigo, sparkUsdbrl] =
       await Promise.all([
-        fetchCepeaQuotes(GRAINS),
+        getCepeaCached(),
         getUsdbrlCached(),
         // Sparkline em R$/sc. Se DB ainda não tem histórico, retorna vazio.
         getCepeaSparkline('soja'),

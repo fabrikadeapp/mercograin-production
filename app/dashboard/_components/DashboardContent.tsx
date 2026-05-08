@@ -91,6 +91,14 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
   const minVal = q?.low ?? sparkMin
   const maxVal = q?.high ?? sparkMax
 
+  // Estado do mercado: 'open' | 'closed' | 'unknown'
+  // Para CEPEA: usa marketState do payload (sempre 'open' nos dias úteis quando há ref do dia)
+  // Para Twelve Data USDBRL: 'open' / 'closed' baseado no is_market_open
+  const marketState: 'open' | 'closed' | 'unknown' =
+    q?.marketState === 'open' ? 'open' :
+    q?.marketState === 'closed' ? 'closed' :
+    'unknown'
+
   return {
     symbol: m.display,
     ticker: m.ticker,
@@ -104,6 +112,9 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
     sell: maxVal !== null && maxVal !== undefined ? fmtBRL(maxVal, m.fractionDigits) : '—',
     sparklineData: sparkline,
     grainColor: m.grainColor,
+    marketState,
+    lastSync: q?.fetchedAt,
+    stale: isStale,
   }
 }
 
@@ -111,7 +122,7 @@ export function DashboardContent() {
   const [curve, setCurve] = React.useState('fisico')
   const [data, setData] = React.useState<DashState>({})
   const [error, setError] = React.useState<string | null>(null)
-  const { data: live, loading: liveLoading } = useLiveQuotes(60_000)
+  const { data: live, loading: liveLoading } = useLiveQuotes()  // 20s default
 
   React.useEffect(() => {
     let cancel = false

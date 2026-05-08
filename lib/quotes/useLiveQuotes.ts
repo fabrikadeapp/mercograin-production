@@ -27,7 +27,12 @@ export interface LiveQuotesResponse {
   fetchedAt: string
 }
 
-export function useLiveQuotes(intervalMs = 60_000) {
+/**
+ * Polling padrão 20s. Backend já cacheia (60s USDBRL via Twelve Data,
+ * 5min CEPEA via widget), então 3-4 hits do client em 60s consomem
+ * no máximo 1 chamada real upstream. Não estoura rate limits.
+ */
+export function useLiveQuotes(intervalMs = 20_000) {
   const [data, setData] = useState<LiveQuotesResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

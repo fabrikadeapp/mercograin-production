@@ -7,6 +7,7 @@ import { Sparkline } from './Sparkline'
 import { cn } from '@/lib/utils/cn'
 
 export type MarketGrainColor = 'soja' | 'milho' | 'trigo' | 'usd'
+export type MarketState = 'open' | 'closed' | 'unknown'
 
 const grainTokenColor: Record<MarketGrainColor, string> = {
   soja: 'var(--grain-soja)',
@@ -27,9 +28,25 @@ export interface MarketCardProps {
   sparklineData: number[]
   grainColor?: MarketGrainColor
   className?: string
-  live?: boolean
+  /** Estado do mercado: open|closed|unknown — controla bolinha verde/vermelha */
+  marketState?: MarketState
+  /** ISO string da última atualização da fonte */
   lastSync?: string
+  /** Stale: dados antigos servidos por fallback (ex: cache miss) */
   stale?: boolean
+}
+
+/** Formata "há Xs / Xmin / Xh / Xd" a partir de um ISO em pt-BR */
+function relativeTime(iso?: string, now: number = Date.now()): string {
+  if (!iso) return '—'
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return '—'
+  const diff = Math.max(0, Math.floor((now - t) / 1000))
+  if (diff < 5) return 'agora'
+  if (diff < 60) return `há ${diff}s`
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`
+  return `há ${Math.floor(diff / 86400)}d`
 }
 
 export function MarketCard({
@@ -44,12 +61,28 @@ export function MarketCard({
   sparklineData,
   grainColor = 'soja',
   className,
-  live = false,
+  marketState = 'unknown',
   lastSync,
   stale = false,
 }: MarketCardProps) {
   const color = grainTokenColor[grainColor]
   const grainBadgeVariant: GrainVariant = grainColor
+
+  // Re-renderiza a cada 15s para atualizar o "há Xs" sem precisar de novo fetch
+  const [tick, setTick] = React.useState(0)
+  React.useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 15_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Status do mercado
+  const isOpen = marketState === 'open' && !stale
+  const isClosed = marketState === 'closed' || stale
+  const dotColor = isOpen ? 'var(--pos)' : isClosed ? 'var(--neg)' : 'var(--fg-3)'
+  const stateLabel = isOpen ? 'MERCADO ABERTO' : isClosed ? 'MERCADO FECHADO' : '—'
+  const animation = isOpen ? 'phb-pulse 1.6s ease-in-out infinite' : 'none'
+
+  const since = relativeTime(lastSync, Date.now() + tick * 0)  // tick força re-render
 
   return (
     <Card className={cn('p-5 space-y-3', className)}>
@@ -58,26 +91,6 @@ export function MarketCard({
           <div className="flex items-center gap-2">
             <GrainBadge variant={grainBadgeVariant} />
             <span className="text-fg-1 text-body font-medium truncate">{symbol}</span>
-            {live ? (
-              <span
-                title={lastSync ? `Última atualização: ${lastSync}` : 'Ao vivo'}
-                className="flex items-center gap-1 ml-1"
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-pill"
-                  style={{
-                    background: stale ? 'var(--warn)' : 'var(--pos)',
-                    boxShadow: stale
-                      ? '0 0 0 0 var(--warn)'
-                      : '0 0 0 0 var(--pos)',
-                    animation: stale ? 'none' : 'phb-pulse 1.6s ease-in-out infinite',
-                  }}
-                />
-                <span className="eyebrow" style={{ color: stale ? 'var(--warn)' : 'var(--pos)' }}>
-                  {stale ? 'OFFLINE' : 'AO VIVO'}
-                </span>
-              </span>
-            ) : null}
           </div>
           <div className="flex items-center gap-2 text-fg-3">
             {ticker ? (
@@ -119,6 +132,35 @@ export function MarketCard({
 
       <div className="-mx-1">
         <Sparkline data={sparklineData} color={color} height={48} />
+      </div>
+
+      {/* Footer: status mercado + última atualização */}
+      <div
+        className="pt-2 mt-1 border-t border-border-1 flex items-center justify-between gap-2"
+        title={lastSync ? `Última atualização: ${new Date(lastSync).toLocaleString('pt-BR')}` : undefined}
+      >
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            aria-hidden="true"
+            className="inline-block h-2 w-2 rounded-pill shrink-0"
+            style={{
+              background: dotColor,
+              boxShadow: isOpen
+                ? `0 0 6px ${dotColor}`
+                : 'none',
+              animation,
+            }}
+          />
+          <span
+            className="eyebrow truncate"
+            style={{ color: dotColor }}
+          >
+            {stateLabel}
+          </span>
+        </div>
+        <span className="text-micro text-fg-3 t-num shrink-0">
+          {since}
+        </span>
       </div>
     </Card>
   )
