@@ -42,3 +42,7 @@ Thumbs.db
 # Prisma
 prisma/*.db
 prisma/*.db-journal
+
+# Playwright MCP artifacts
+.playwright-mcp/
+phb-*.png
