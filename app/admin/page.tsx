@@ -7,7 +7,7 @@ import {
   Donut,
   DenseTable,
 } from '@/components/ui/phb'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import { StatusBadge, MoneyValue, RelativeTime, PlanBadge } from './_components/atoms'
 import Link from 'next/link'
 
@@ -54,7 +54,7 @@ export default async function AdminOverview() {
   const prev30 = new Date(Date.now() - 60 * 24 * 3600 * 1000)
 
   // ----- MRR (active subscriptions × plan price) -----
-  const [activeSubs, allSubsForChart] = await Promise.all([
+  const [activeSubs, allSubsForChart, maps] = await Promise.all([
     db.subscription.findMany({ where: { status: 'active' }, select: { plan: true } }),
     db.subscription.findMany({
       select: {
@@ -65,12 +65,13 @@ export default async function AdminOverview() {
         canceledAt: true,
       },
     }),
+    loadPlanMaps(),
   ])
 
-  const mrrCents = activeSubs.reduce((acc, s) => {
-    const cfg = PLANS[s.plan as keyof typeof PLANS]
-    return acc + (cfg?.price ?? 0)
-  }, 0)
+  const mrrCents = activeSubs.reduce(
+    (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
+    0,
+  )
 
   // MRR previous month (subs that were active before start of current month)
   const prevActiveSubs = allSubsForChart.filter(
@@ -79,10 +80,10 @@ export default async function AdminOverview() {
       (s.status === 'active' || s.status === 'past_due') &&
       (!s.canceledAt || s.canceledAt >= startOfMonth),
   )
-  const mrrPrevCents = prevActiveSubs.reduce((acc, s) => {
-    const cfg = PLANS[s.plan as keyof typeof PLANS]
-    return acc + (cfg?.price ?? 0)
-  }, 0)
+  const mrrPrevCents = prevActiveSubs.reduce(
+    (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
+    0,
+  )
 
   const mrrDelta = mrrPrevCents
     ? ((mrrCents - mrrPrevCents) / mrrPrevCents) * 100
@@ -100,7 +101,7 @@ export default async function AdminOverview() {
     )
     return (
       subs.reduce(
-        (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+        (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
         0,
       ) / 100
     )
@@ -183,7 +184,7 @@ export default async function AdminOverview() {
       value:
         subsInMonth.reduce(
           (acc, s) =>
-            acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+            acc + (maps.priceCents[s.plan] ?? 0),
           0,
         ) / 100,
     }

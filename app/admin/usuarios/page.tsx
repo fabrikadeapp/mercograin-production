@@ -9,7 +9,7 @@ import {
   Button,
 } from '@/components/ui/phb'
 import Link from 'next/link'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import { StatusBadge, MoneyValue, RelativeTime, PlanBadge } from '../_components/atoms'
 import { Download } from 'lucide-react'
 
@@ -59,7 +59,7 @@ export default async function UsuariosPage({ searchParams }: SP) {
     where.subscription = { ...(where.subscription as object), plan }
   }
 
-  const [users, total] = await Promise.all([
+  const [users, total, maps] = await Promise.all([
     db.user.findMany({
       where,
       include: { subscription: true },
@@ -68,6 +68,7 @@ export default async function UsuariosPage({ searchParams }: SP) {
       take: pageSize,
     }),
     db.user.count({ where }),
+    loadPlanMaps(),
   ])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -196,7 +197,7 @@ export default async function UsuariosPage({ searchParams }: SP) {
             accessor: (u) => {
               const cents =
                 u.subscription?.status === 'active'
-                  ? PLANS[u.subscription.plan as keyof typeof PLANS]?.price ?? 0
+                  ? maps.priceCents[u.subscription.plan] ?? 0
                   : 0
               return cents ? <MoneyValue cents={cents} /> : <span className="text-fg-3">—</span>
             },

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps, sumMrrCents } from '@/lib/pricing/maps'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
 
 export const dynamic = 'force-dynamic'
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     await requireAdmin()
-    const [activeUsers, trialing, totalUsers, paying, subs] =
+    const [activeUsers, trialing, totalUsers, paying, subs, maps] =
       await Promise.all([
         db.user.count({
           where: { subscription: { status: { in: ['active', 'trialing'] } } },
@@ -20,11 +20,9 @@ export async function GET() {
           where: { status: 'active' },
           select: { plan: true },
         }),
+        loadPlanMaps(),
       ])
-    const mrrCents = subs.reduce(
-      (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
-      0,
-    )
+    const mrrCents = sumMrrCents(subs, maps)
     return NextResponse.json({
       activeUsers,
       trialing,

@@ -8,7 +8,7 @@ import {
   Button,
   EmptyState,
 } from '@/components/ui/phb'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import {
   StatusBadge,
   MoneyValue,
@@ -72,8 +72,10 @@ export default async function UserDetailPage({
         ),
       )
     : 0
-  const planPriceCents =
-    PLANS[user.subscription?.plan as keyof typeof PLANS]?.price ?? 0
+  const maps = await loadPlanMaps()
+  const planPriceCents = user.subscription?.plan
+    ? maps.priceCents[user.subscription.plan] ?? 0
+    : 0
   const ltvCents = monthsActive * planPriceCents
 
   const volumeCents = Math.round(

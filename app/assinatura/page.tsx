@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
-import { PLANS, PLAN_LABELS } from '@/lib/stripe/server'
+import { loadPlanBySlug } from '@/lib/pricing/serialize'
 import { AssinaturaClient } from './AssinaturaClient'
 
 export const dynamic = 'force-dynamic'
@@ -21,14 +21,7 @@ export default async function AssinaturaPage({ searchParams }: PageProps) {
     where: { userId: session.user.id },
   })
 
-  const plan = (sub?.plan as 'starter' | 'pro' | 'enterprise' | undefined) || null
-  const planCfg = plan ? PLANS[plan] : null
-  const priceFormatted = planCfg
-    ? (planCfg.price / 100).toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-      })
-    : null
+  const planRow = sub?.plan ? await loadPlanBySlug(sub.plan) : null
 
   return (
     <AssinaturaClient
@@ -37,8 +30,8 @@ export default async function AssinaturaPage({ searchParams }: PageProps) {
         sub
           ? {
               plan: sub.plan,
-              planLabel: plan ? PLAN_LABELS[plan] : sub.plan,
-              priceFormatted: priceFormatted || '—',
+              planLabel: planRow?.shortName ?? sub.plan,
+              priceFormatted: planRow?.priceFormatted ?? '—',
               status: sub.status,
               trialEnd: sub.trialEnd?.toISOString() || null,
               currentPeriodEnd: sub.currentPeriodEnd?.toISOString() || null,

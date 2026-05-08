@@ -342,3 +342,53 @@ model CacheData {
 
   @@index([expiracaoEm])
 }
+
+// ============================================
+// PRICING CMS (planos dinâmicos editáveis)
+// ============================================
+
+model Plan {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  name              String
+  description       String?
+  badge             String?
+  highlight         Boolean        @default(false)
+  priceCents        Int
+  currency          String         @default("BRL")
+  billingInterval   String         @default("month")
+  intervalCount     Int            @default(1)
+  trialDays         Int            @default(10)
+  ctaLabel          String         @default("Iniciar trial")
+  ctaHref           String?
+  tagline           String?
+  sortOrder         Int            @default(0)
+  active            Boolean        @default(true)
+  stripeProductId   String?        @unique
+  stripePriceId     String?
+  legacyPriceIds    String[]       @default([])
+  features          PlanFeature[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+model PlanFeature {
+  id          String   @id @default(cuid())
+  planId      String
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  label       String
+  included    Boolean  @default(true)
+  emphasis    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([planId, sortOrder])
+}
+
+model PricingRevision {
+  id         Int      @id @default(1)
+  revision   Int      @default(1)
+  updatedAt  DateTime @updatedAt
+}

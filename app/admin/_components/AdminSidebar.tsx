@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   LogOut,
   ShieldAlert,
+  Tags,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -27,6 +28,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
   { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
   { href: '/admin/assinaturas', icon: CreditCard, label: 'Assinaturas' },
+  { href: '/admin/pricing', icon: Tags, label: 'Pricing CMS' },
   { href: '/admin/financeiro', icon: TrendingUp, label: 'Financeiro' },
   {
     href: '/admin/conteudo/classificados',

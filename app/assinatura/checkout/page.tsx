@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 import { auth } from '@/auth'
-import { PLANS, PLAN_LABELS, type Plan } from '@/lib/stripe/server'
+import { loadPlanBySlug, loadActivePlans } from '@/lib/pricing/serialize'
 import { CheckoutClient } from './CheckoutClient'
 
 export const dynamic = 'force-dynamic'
@@ -16,25 +16,23 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   }
 
   const sp = await searchParams
-  const planParam = sp.plan
-  const plan: Plan =
-    planParam === 'starter' || planParam === 'pro' || planParam === 'enterprise'
-      ? planParam
-      : 'pro'
+  let slug = sp.plan
 
-  const cfg = PLANS[plan]
-  const priceFormatted = (cfg.price / 100).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
+  // Fallback: pega o plano "highlight" ou primeiro ativo
+  let plan = slug ? await loadPlanBySlug(slug) : null
+  if (!plan || !plan.active) {
+    const all = await loadActivePlans()
+    plan = all.find((p) => p.highlight) ?? all[0] ?? null
+  }
+  if (!plan) return notFound()
 
   return (
     <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
       <CheckoutClient
-        plan={plan}
-        planLabel={PLAN_LABELS[plan]}
-        planName={cfg.name}
-        priceFormatted={priceFormatted}
+        plan={plan.slug}
+        planLabel={plan.shortName}
+        planName={plan.name}
+        priceFormatted={plan.priceFormatted}
         canceled={sp.status === 'cancel'}
       />
     </div>

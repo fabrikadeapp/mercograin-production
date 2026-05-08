@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps, sumMrrCents } from '@/lib/pricing/maps'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
 
 export const dynamic = 'force-dynamic'
@@ -32,6 +32,7 @@ function lastNMonths(n: number): MonthBucket[] {
 export async function GET() {
   try {
     await requireAdmin()
+    const maps = await loadPlanMaps()
     const subs = await db.subscription.findMany({
       select: {
         id: true,
@@ -49,7 +50,7 @@ export async function GET() {
     const mrrCents = subs
       .filter((s) => s.status === 'active')
       .reduce(
-        (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+        (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
         0,
       )
     const arrCents = mrrCents * 12
@@ -92,34 +93,32 @@ export async function GET() {
         ymd: m.ym,
         mrrCents: subsInMonth.reduce(
           (acc, s) =>
-            acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+            acc + (maps.priceCents[s.plan] ?? 0),
           0,
         ),
         newMrrCents: newSubs.reduce(
           (acc, s) =>
-            acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+            acc + (maps.priceCents[s.plan] ?? 0),
           0,
         ),
         churnedMrrCents: churned.reduce(
           (acc, s) =>
-            acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+            acc + (maps.priceCents[s.plan] ?? 0),
           0,
         ),
       }
     })
 
     // Receita por plano
-    const byPlan = (Object.keys(PLANS) as Array<keyof typeof PLANS>).map(
-      (p) => {
-        const count = subs.filter((s) => s.plan === p && s.status === 'active')
-          .length
-        return {
-          plan: p,
-          count,
-          mrrCents: count * PLANS[p].price,
-        }
-      },
-    )
+    const byPlan = maps.slugs.map((p) => {
+      const count = subs.filter((s) => s.plan === p && s.status === 'active')
+        .length
+      return {
+        plan: p,
+        count,
+        mrrCents: count * (maps.priceCents[p] ?? 0),
+      }
+    })
 
     return NextResponse.json({
       mrrCents,

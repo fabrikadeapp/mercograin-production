@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
 
 export const dynamic = 'force-dynamic'
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
       ]
     }
 
-    const [subs, total] = await Promise.all([
+    const [subs, total, maps] = await Promise.all([
       db.subscription.findMany({
         where,
         include: { user: { select: { id: true, nome: true, email: true } } },
@@ -40,15 +40,14 @@ export async function GET(req: Request) {
         take: limit,
       }),
       db.subscription.count({ where }),
+      loadPlanMaps(),
     ])
 
     return NextResponse.json({
       data: subs.map((s) => ({
         ...s,
         mrrCents:
-          s.status === 'active'
-            ? PLANS[s.plan as keyof typeof PLANS]?.price ?? 0
-            : 0,
+          s.status === 'active' ? maps.priceCents[s.plan] ?? 0 : 0,
       })),
       total,
       page,

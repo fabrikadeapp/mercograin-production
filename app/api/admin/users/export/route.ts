@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
 
 export const dynamic = 'force-dynamic'
@@ -33,11 +33,14 @@ export async function GET(req: Request) {
       where.subscription = { ...(where.subscription as object), plan }
     }
 
-    const users = await db.user.findMany({
-      where,
-      include: { subscription: true },
-      orderBy: { criadoEm: 'desc' },
-    })
+    const [users, maps] = await Promise.all([
+      db.user.findMany({
+        where,
+        include: { subscription: true },
+        orderBy: { criadoEm: 'desc' },
+      }),
+      loadPlanMaps(),
+    ])
 
     const rows = [
       [
@@ -62,7 +65,7 @@ export async function GET(req: Request) {
         u.subscription?.plan ?? '',
         u.subscription?.status ?? '',
         u.subscription?.status === 'active'
-          ? PLANS[u.subscription.plan as keyof typeof PLANS]?.price ?? 0
+          ? maps.priceCents[u.subscription.plan] ?? 0
           : 0,
         u.subscription?.trialEnd?.toISOString() ?? '',
         u.subscription?.currentPeriodEnd?.toISOString() ?? '',

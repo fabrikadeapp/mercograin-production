@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
-import { stripe, ensurePrice, type Plan } from '@/lib/stripe/server'
+import { stripe, getPriceIdForPlan } from '@/lib/stripe/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,8 +25,14 @@ export async function POST(req: NextRequest) {
   } catch {
     body = {}
   }
-  const plan = body.plan as Plan | undefined
-  if (!plan || !['starter', 'pro', 'enterprise'].includes(plan)) {
+  const plan = body.plan
+  if (!plan || typeof plan !== 'string') {
+    return NextResponse.json({ error: 'invalid plan' }, { status: 400 })
+  }
+
+  // Valida plano contra o CMS (banco), não mais lista hardcoded.
+  const planRow = await db.plan.findUnique({ where: { slug: plan } })
+  if (!planRow || !planRow.active) {
     return NextResponse.json({ error: 'invalid plan' }, { status: 400 })
   }
 
@@ -36,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const priceId = await ensurePrice(plan)
+    const priceId = await getPriceIdForPlan(plan)
     const customerId = await ensureCustomer(user.id, user.email, user.nome)
 
     const origin =
@@ -49,7 +55,7 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       payment_method_collection: 'always',
       subscription_data: {
-        trial_period_days: 10,
+        trial_period_days: planRow.trialDays,
         trial_settings: {
           end_behavior: { missing_payment_method: 'cancel' },
         },

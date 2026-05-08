@@ -25,8 +25,8 @@ async function upsertSubscription(sub: Stripe.Subscription) {
   const item = sub.items.data[0]
   const price = item?.price
   const plan =
-    planFromPriceMetadata(price) ||
-    (sub.metadata?.plan as 'starter' | 'pro' | 'enterprise' | undefined) ||
+    (await planFromPriceMetadata(price)) ||
+    (sub.metadata?.plan as string | undefined) ||
     'pro'
 
   // Em versões recentes da API, current_period_start/end ficam no item.

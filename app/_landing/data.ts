@@ -64,76 +64,11 @@ export const FEATURES: Feature[] = [
   },
 ]
 
-export interface PricingPlan {
-  id: 'starter' | 'pro' | 'enterprise'
-  name: string
-  price: string
-  priceSuffix: string
-  tagline: string
-  features: string[]
-  ctaLabel: string
-  ctaHref: string
-  ctaVariant: 'primary' | 'ghost' | 'secondary'
-  highlighted?: boolean
-}
-
-export const PRICING: PricingPlan[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 'R$ 197',
-    priceSuffix: '/mês',
-    tagline: 'Para trading individual',
-    features: [
-      '1 usuário',
-      'Até 50 contratos/mês',
-      'Cotações CEPEA ao vivo',
-      'Relatórios básicos',
-      'Suporte por email',
-    ],
-    ctaLabel: 'Iniciar trial · Starter',
-    ctaHref: '/auth/signup?plan=starter',
-    ctaVariant: 'secondary',
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 'R$ 497',
-    priceSuffix: '/mês',
-    tagline: 'Para mesas com até 5 traders',
-    features: [
-      '5 usuários',
-      'Contratos ilimitados',
-      'WhatsApp Bot',
-      'Alertas customizados',
-      'Relatórios avançados',
-      'Multi-empresa',
-      'Suporte prioritário',
-    ],
-    ctaLabel: 'Iniciar trial · Pro',
-    ctaHref: '/auth/signup?plan=pro',
-    ctaVariant: 'primary',
-    highlighted: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'R$ 1.497',
-    priceSuffix: '/mês',
-    tagline: 'Para grupos com múltiplas tradings',
-    features: [
-      'Usuários ilimitados',
-      'API REST',
-      'White-label',
-      'Onboarding dedicado',
-      'SLA 99.9%',
-      'Suporte 24/7',
-    ],
-    ctaLabel: 'Falar com vendas',
-    ctaHref: '/contato',
-    ctaVariant: 'ghost',
-  },
-]
+/**
+ * Os planos de preço NÃO ficam mais hardcoded aqui — vivem no CMS
+ * (model Plan, editado em /admin/pricing). Para consumir use:
+ *   import { loadActivePlans } from '@/lib/pricing/serialize'
+ */
 
 export interface FaqItem {
   question: string

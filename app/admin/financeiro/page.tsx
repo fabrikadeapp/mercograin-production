@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { PLANS, PLAN_LABELS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import {
   PageHeader,
   KPICard,
@@ -39,7 +39,7 @@ function lastNMonths(n: number): MonthBucket[] {
 }
 
 export default async function FinanceiroPage() {
-  const [subs, activeUsers, recentTransactions] = await Promise.all([
+  const [subs, activeUsers, recentTransactions, maps] = await Promise.all([
     db.subscription.findMany({
       select: {
         plan: true,
@@ -57,12 +57,13 @@ export default async function FinanceiroPage() {
       orderBy: { criadoEm: 'desc' },
       take: 25,
     }),
+    loadPlanMaps(),
   ])
 
   const mrrCents = subs
     .filter((s) => s.status === 'active')
     .reduce(
-      (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+      (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
       0,
     )
   const arrCents = mrrCents * 12
@@ -98,7 +99,7 @@ export default async function FinanceiroPage() {
       value:
         subsInMonth.reduce(
           (acc, s) =>
-            acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+            acc + (maps.priceCents[s.plan] ?? 0),
           0,
         ) / 100,
     }
@@ -114,11 +115,11 @@ export default async function FinanceiroPage() {
         s.canceledAt && s.canceledAt >= m.start && s.canceledAt < m.end,
     )
     const newCents = newSubs.reduce(
-      (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+      (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
       0,
     )
     const churnCents = churned.reduce(
-      (acc, s) => acc + (PLANS[s.plan as keyof typeof PLANS]?.price ?? 0),
+      (acc, s) => acc + (maps.priceCents[s.plan] ?? 0),
       0,
     )
     return {
@@ -128,15 +129,16 @@ export default async function FinanceiroPage() {
   })
 
   // Por plano
-  const byPlan = (Object.keys(PLANS) as Array<keyof typeof PLANS>).map((p) => {
+  const byPlan = maps.slugs.map((p) => {
     const count = subs.filter((s) => s.plan === p && s.status === 'active')
       .length
+    const planPrice = maps.priceCents[p] ?? 0
     return {
       plan: p,
-      label: PLAN_LABELS[p],
+      label: maps.label[p] ?? p,
       count,
-      mrrCents: count * PLANS[p].price,
-      pct: mrrCents ? ((count * PLANS[p].price) / mrrCents) * 100 : 0,
+      mrrCents: count * planPrice,
+      pct: mrrCents ? ((count * planPrice) / mrrCents) * 100 : 0,
     }
   })
 

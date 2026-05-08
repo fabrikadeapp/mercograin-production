@@ -6,7 +6,7 @@ import { CreditCard, Check, AlertCircle } from 'lucide-react'
 import { Button, Card, Brand } from '@/components/ui/phb'
 
 interface Props {
-  plan: 'starter' | 'pro' | 'enterprise'
+  plan: string
   planLabel: string
   planName: string
   priceFormatted: string

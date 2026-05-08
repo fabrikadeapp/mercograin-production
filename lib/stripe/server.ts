@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { db } from '@/lib/db'
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.warn('[stripe] STRIPE_SECRET_KEY não configurada')
@@ -9,97 +10,65 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy
   typescript: true,
 })
 
-export type Plan = 'starter' | 'pro' | 'enterprise'
-
-interface PlanConfig {
-  name: string
-  price: number // em centavos BRL
-  productLookupKey: string
-  priceLookupKey: string
-}
-
-export const PLANS: Record<Plan, PlanConfig> = {
-  starter: {
-    name: 'PHB Grain · Starter',
-    price: 19700,
-    productLookupKey: 'phbgrain_starter',
-    priceLookupKey: 'phbgrain_starter_monthly',
-  },
-  pro: {
-    name: 'PHB Grain · Pro',
-    price: 49700,
-    productLookupKey: 'phbgrain_pro',
-    priceLookupKey: 'phbgrain_pro_monthly',
-  },
-  enterprise: {
-    name: 'PHB Grain · Enterprise',
-    price: 149700,
-    productLookupKey: 'phbgrain_enterprise',
-    priceLookupKey: 'phbgrain_enterprise_monthly',
-  },
-}
-
-export const PLAN_LABELS: Record<Plan, string> = {
-  starter: 'Starter',
-  pro: 'Pro',
-  enterprise: 'Enterprise',
-}
-
-const priceIdCache: Partial<Record<Plan, string>> = {}
+/**
+ * @deprecated O conjunto de planos não é mais fixo — leia do model Plan.
+ * Mantido como string genérica para compatibilidade com Subscription.plan.
+ */
+export type Plan = string
 
 /**
- * Garante que o produto e o price existem no Stripe (idempotente via lookup_key).
- * Retorna o priceId (Stripe id `price_...`).
+ * Resolve o priceId Stripe ATIVO de um plano pelo slug (lendo do CMS).
+ * Substitui o antigo `ensurePrice()` — agora os planos vivem no banco.
  */
-export async function ensurePrice(plan: Plan): Promise<string> {
-  if (priceIdCache[plan]) return priceIdCache[plan]!
-
-  const cfg = PLANS[plan]
-
-  const existing = await stripe.prices.list({
-    lookup_keys: [cfg.priceLookupKey],
-    expand: ['data.product'],
-    limit: 1,
-  })
-
-  if (existing.data[0]) {
-    priceIdCache[plan] = existing.data[0].id
-    return existing.data[0].id
+export async function getPriceIdForPlan(slug: string): Promise<string> {
+  const plan = await db.plan.findUnique({ where: { slug } })
+  if (!plan) throw new Error(`plano "${slug}" não encontrado`)
+  if (!plan.active) throw new Error(`plano "${slug}" está inativo`)
+  if (!plan.stripePriceId) {
+    throw new Error(
+      `plano "${slug}" sem stripePriceId — sincronize via /admin/pricing`
+    )
   }
-
-  let product: Stripe.Product
-  const products = await stripe.products.list({ limit: 100 })
-  const found = products.data.find(
-    (p) => (p as any).metadata?.lookup_key === cfg.productLookupKey
-  )
-  if (found) {
-    product = found
-  } else {
-    product = await stripe.products.create({
-      name: cfg.name,
-      metadata: { lookup_key: cfg.productLookupKey, plan },
-    })
-  }
-
-  const price = await stripe.prices.create({
-    unit_amount: cfg.price,
-    currency: 'brl',
-    recurring: { interval: 'month', interval_count: 1 },
-    product: product.id,
-    lookup_key: cfg.priceLookupKey,
-    metadata: { plan },
-  })
-
-  priceIdCache[plan] = price.id
-  return price.id
+  return plan.stripePriceId
 }
 
-export function planFromPriceMetadata(price: Stripe.Price | null | undefined): Plan | null {
+/**
+ * @deprecated Use `getPriceIdForPlan(slug)`. Mantido por compatibilidade
+ * com chamadas legadas; encaminha para o novo helper.
+ */
+export async function ensurePrice(slug: string): Promise<string> {
+  return getPriceIdForPlan(slug)
+}
+
+/**
+ * Resolve o slug do plano a partir de um Stripe.Price (current ou legacy).
+ * Usa metadata.plan; cai pra match em legacyPriceIds/stripePriceId no banco.
+ */
+export async function planFromPriceMetadata(
+  price: Stripe.Price | null | undefined
+): Promise<string | null> {
+  if (!price) return null
   const meta = price?.metadata?.plan
-  if (meta === 'starter' || meta === 'pro' || meta === 'enterprise') return meta
-  const lookup = price?.lookup_key
-  if (lookup === 'phbgrain_starter_monthly') return 'starter'
-  if (lookup === 'phbgrain_pro_monthly') return 'pro'
-  if (lookup === 'phbgrain_enterprise_monthly') return 'enterprise'
-  return null
+  if (meta) return meta
+
+  const found = await db.plan.findFirst({
+    where: {
+      OR: [
+        { stripePriceId: price.id },
+        { legacyPriceIds: { has: price.id } },
+      ],
+    },
+    select: { slug: true },
+  })
+  return found?.slug ?? null
+}
+
+/**
+ * Helper sync para webhooks que não querem fazer query async (raríssimo).
+ * Tenta apenas via metadata; se ausente, devolve null.
+ */
+export function planFromPriceMetadataSync(
+  price: Stripe.Price | null | undefined
+): string | null {
+  return price?.metadata?.plan || null
 }

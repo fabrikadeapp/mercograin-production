@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       where.subscription = { ...(where.subscription as object), plan }
     }
 
-    const [users, total] = await Promise.all([
+    const [users, total, maps] = await Promise.all([
       db.user.findMany({
         where,
         include: { subscription: true },
@@ -41,6 +41,7 @@ export async function GET(req: Request) {
         take: limit,
       }),
       db.user.count({ where }),
+      loadPlanMaps(),
     ])
 
     const data = users.map((u) => ({
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
             currentPeriodEnd: u.subscription.currentPeriodEnd,
             mrrCents:
               u.subscription.status === 'active'
-                ? PLANS[u.subscription.plan as keyof typeof PLANS]?.price ?? 0
+                ? maps.priceCents[u.subscription.plan] ?? 0
                 : 0,
           }
         : null,

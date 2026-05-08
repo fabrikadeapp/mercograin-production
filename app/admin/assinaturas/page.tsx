@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { PageHeader, DenseTable, Card, Button } from '@/components/ui/phb'
 import Link from 'next/link'
-import { PLANS } from '@/lib/stripe/server'
+import { loadPlanMaps } from '@/lib/pricing/maps'
 import {
   StatusBadge,
   MoneyValue,
@@ -42,21 +42,29 @@ export default async function AssinaturasPage({
     ]
   }
 
-  const [subs, total, statsActive, statsTrialing, statsPastDue, statsCanceled] =
-    await Promise.all([
-      db.subscription.findMany({
-        where,
-        include: { user: { select: { id: true, nome: true, email: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      db.subscription.count({ where }),
-      db.subscription.count({ where: { status: 'active' } }),
-      db.subscription.count({ where: { status: 'trialing' } }),
-      db.subscription.count({ where: { status: 'past_due' } }),
-      db.subscription.count({ where: { status: 'canceled' } }),
-    ])
+  const [
+    subs,
+    total,
+    statsActive,
+    statsTrialing,
+    statsPastDue,
+    statsCanceled,
+    maps,
+  ] = await Promise.all([
+    db.subscription.findMany({
+      where,
+      include: { user: { select: { id: true, nome: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    db.subscription.count({ where }),
+    db.subscription.count({ where: { status: 'active' } }),
+    db.subscription.count({ where: { status: 'trialing' } }),
+    db.subscription.count({ where: { status: 'past_due' } }),
+    db.subscription.count({ where: { status: 'canceled' } }),
+    loadPlanMaps(),
+  ])
 
   function buildHref(p: { status?: string; plan?: string; q?: string; page?: number }) {
     const sp = new URLSearchParams()
@@ -176,7 +184,7 @@ export default async function AssinaturasPage({
               <MoneyValue
                 cents={
                   s.status === 'active'
-                    ? PLANS[s.plan as keyof typeof PLANS]?.price ?? 0
+                    ? maps.priceCents[s.plan] ?? 0
                     : 0
                 }
               />
