@@ -72,14 +72,24 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
   const m = meta[label]
   const trend: 'pos' | 'neg' = (q?.changePct ?? 0) >= 0 ? 'pos' : 'neg'
   const sparkline = (q?.sparkline?.length ?? 0) >= 2 ? q!.sparkline : fallbackSparkline
+
+  // Para grãos (CEPEA): só temos 1 preço (não há bid/ask separados).
+  //   Mostramos: "Mínima" (low ou previousClose ou min do sparkline)
+  //              "Máxima" (high ou max do sparkline)
+  // Para USDBRL (Twelve Data): bid/ask = previousClose/high (proxy)
+  const sparkMin = sparkline.length ? Math.min(...sparkline) : null
+  const sparkMax = sparkline.length ? Math.max(...sparkline) : null
+  const minVal = q?.low ?? sparkMin
+  const maxVal = q?.high ?? sparkMax
+
   return {
     symbol: m.display,
     ticker: m.ticker,
     unit: m.unit,
     price: q?.price !== null && q?.price !== undefined ? `R$ ${fmtBRL(q.price, m.fractionDigits)}` : '—',
     delta: { value: fmtPct(q?.changePct ?? null), trend },
-    buy: q?.previousClose !== null && q?.previousClose !== undefined ? fmtBRL(q.previousClose, m.fractionDigits) : '—',
-    sell: q?.high !== null && q?.high !== undefined ? fmtBRL(q.high, m.fractionDigits) : '—',
+    buy: minVal !== null && minVal !== undefined ? fmtBRL(minVal, m.fractionDigits) : '—',
+    sell: maxVal !== null && maxVal !== undefined ? fmtBRL(maxVal, m.fractionDigits) : '—',
     sparklineData: sparkline,
     grainColor: m.grainColor,
   }

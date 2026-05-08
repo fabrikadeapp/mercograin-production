@@ -76,7 +76,7 @@ function SidebarBrand() {
         </div>
         <div className="text-body font-semibold leading-none">
           <span className="text-fg-1">PHB</span>
-          <span className="text-accent ml-1">Green</span>
+          <span className="text-accent ml-1">Grain</span>
         </div>
       </div>
       <p className="eyebrow">Grain Intelligence</p>

@@ -104,13 +104,13 @@ export function MarketCard({
         <div className="flex gap-8">
           {buy ? (
             <div className="space-y-0.5">
-              <p className="eyebrow">Compra</p>
+              <p className="eyebrow">Mínima</p>
               <p className="t-num text-fg-2 text-body">{buy}</p>
             </div>
           ) : null}
           {sell ? (
             <div className="space-y-0.5">
-              <p className="eyebrow">Venda</p>
+              <p className="eyebrow">Máxima</p>
               <p className="t-num text-fg-2 text-body">{sell}</p>
             </div>
           ) : null}
