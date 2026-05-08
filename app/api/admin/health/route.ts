@@ -69,8 +69,8 @@ export async function GET() {
       timed(
         'Twelve Data',
         async () => {
-          const key = process.env.TWELVE_DATA_API_KEY
-          if (!key) throw new Error('TWELVE_DATA_API_KEY ausente')
+          const key = process.env.TWELVEDATA_API_KEY
+          if (!key) throw new Error('TWELVEDATA_API_KEY ausente')
           const r = await fetch(
             `https://api.twelvedata.com/quote?symbol=USD/BRL&apikey=${key}`,
             { signal: AbortSignal.timeout(5000) },
