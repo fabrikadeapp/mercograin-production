@@ -30,7 +30,9 @@ const TIMEFRAMES = [
   { value: 'tudo', label: 'Tudo' },
 ]
 
-const FX_SYMBOLS = ['USDBRL=X', 'EURBRL=X', 'CNYBRL=X', 'ARSBRL=X']
+// Twelve Data usa formato "USD/BRL" (não "USDBRL=X"). encodeURI é
+// crítico aqui porque "/" e "=" precisam ser escapados na query string.
+const FX_SYMBOLS = ['USD/BRL', 'EUR/BRL', 'CNY/BRL', 'ARS/BRL']
 
 async function safeJson(url: string) {
   const r = await fetch(url, { cache: 'no-store' })
@@ -54,7 +56,8 @@ export function CotacoesContent() {
 
   React.useEffect(() => {
     let cancel = false
-    safeJson(`/api/cotacoes/historico?symbol=ZS=F&periodo=${tf}`)
+    setHistorico(null)  // mostra skeleton durante reload por troca de timeframe
+    safeJson(`/api/cotacoes/historico?symbol=SOYB&periodo=${tf}`)
       .then((d) => !cancel && setHistorico(d))
       .catch(() => !cancel && setHistorico({ data: SOJA_DETAIL_CURVE }))
     return () => { cancel = true }
@@ -66,7 +69,7 @@ export function CotacoesContent() {
       safeJson('/api/cotacoes/watchlist').catch(() => null),
       safeJson('/api/cotacoes/noticias').catch(() => null),
       safeJson('/api/alertas').catch(() => null),
-      safeJson(`/api/cotacoes/watchlist?symbols=${FX_SYMBOLS.join(',')}`).catch(() => null),
+      safeJson(`/api/cotacoes/watchlist?symbols=${FX_SYMBOLS.map(encodeURIComponent).join(',')}`).catch(() => null),
     ])
       .then(([wl, ns, al, fxd]) => {
         if (cancel) return
@@ -81,8 +84,9 @@ export function CotacoesContent() {
 
   if (error) return <ErrorBanner message={error} />
 
-  const sojaItem = watchlist?.find((w: any) => w.symbol === 'ZS=F')
-  const sojaPrice = sojaItem?.price ?? null
+  // Watchlist agora usa SOYB (ETF Teucrium proxy de soja CBOT)
+  const sojaItem = watchlist?.find((w: any) => w.symbol === 'SOYB')
+  const sojaPrice = sojaItem?.price ?? sojaItem?.previousClose ?? null
   const sojaChange = sojaItem?.changePct ?? null
   const trend: 'pos' | 'neg' = (sojaChange ?? 0) >= 0 ? 'pos' : 'neg'
 
@@ -107,9 +111,11 @@ export function CotacoesContent() {
   }))
 
   const fxRows: FxRow[] = (fx || []).map((it: any) => ({
-    par: it.symbol.replace('=X', '').replace(/(.{3})(.{3})/, '$1/$2'),
-    preco: fmtBRL(it.price),
-    delta: it.changePct !== null ? `${it.changePct >= 0 ? '+' : ''}${it.changePct.toFixed(2)}%` : '—',
+    par: it.symbol,  // Twelve Data já entrega "USD/BRL"
+    preco: fmtBRL(it.price ?? it.previousClose),
+    delta: it.changePct !== null && it.changePct !== undefined
+      ? `${it.changePct >= 0 ? '+' : ''}${it.changePct.toFixed(2)}%`
+      : '—',
     trend: (it.changePct ?? 0) >= 0 ? 'pos' : 'neg',
   }))
 

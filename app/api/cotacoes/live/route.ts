@@ -34,13 +34,19 @@ const sparkCache: MemCache<number[]> = { data: null, at: 0 }
 
 async function getUsdbrlCached() {
   const now = Date.now()
+  // Cache fresco — retorna direto
   if (usdbrlCache.data && now - usdbrlCache.at < TTL_USDBRL) return usdbrlCache.data
+  // Cache miss/stale → tenta refresh
   const fresh = await fetchTwelveQuote('usdbrl')
   if (fresh.price !== null) {
     usdbrlCache.data = fresh
     usdbrlCache.at = now
+    return fresh
   }
-  return fresh
+  // Falhou (rate limit / market closed). Se temos cache antigo, retorna ele
+  // (mercado fechado: melhor mostrar último valor conhecido que "—").
+  if (usdbrlCache.data) return usdbrlCache.data
+  return fresh  // empty quote — frontend resolve via fallback no spark
 }
 
 async function getUsdbrlSparkCached(): Promise<number[]> {

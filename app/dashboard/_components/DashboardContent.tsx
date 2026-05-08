@@ -70,13 +70,22 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
     usdbrl: { display: 'Dólar', ticker: 'USDBRL',        unit: 'Comercial',     grainColor: 'usd',   fractionDigits: 4 },
   }
   const m = meta[label]
-  const trend: 'pos' | 'neg' = (q?.changePct ?? 0) >= 0 ? 'pos' : 'neg'
   const sparkline = (q?.sparkline?.length ?? 0) >= 2 ? q!.sparkline : fallbackSparkline
 
-  // Para grãos (CEPEA): só temos 1 preço (não há bid/ask separados).
-  //   Mostramos: "Mínima" (low ou previousClose ou min do sparkline)
-  //              "Máxima" (high ou max do sparkline)
-  // Para USDBRL (Twelve Data): bid/ask = previousClose/high (proxy)
+  // Fallback para preço: se mercado fechado / rate-limit / API offline,
+  // usa o último valor conhecido (previousClose → último ponto do sparkline).
+  // Assim Dólar/Soja/Milho/Trigo nunca aparecem "—" se já tivemos um preço.
+  const lastSparkPrice = sparkline.length > 0 ? sparkline[sparkline.length - 1] : null
+  const effectivePrice =
+    (q?.price !== null && q?.price !== undefined ? q.price : null) ??
+    q?.previousClose ??
+    lastSparkPrice
+
+  // Δ% só faz sentido quando temos o preço atual; senão indicamos "fechado"
+  const isStale = (q?.price === null || q?.price === undefined) && effectivePrice !== null
+  const trend: 'pos' | 'neg' = (q?.changePct ?? 0) >= 0 ? 'pos' : 'neg'
+
+  // Min/Max do dia. Se nada disponível, usa min/max do sparkline (intervalo recente).
   const sparkMin = sparkline.length ? Math.min(...sparkline) : null
   const sparkMax = sparkline.length ? Math.max(...sparkline) : null
   const minVal = q?.low ?? sparkMin
@@ -86,8 +95,11 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
     symbol: m.display,
     ticker: m.ticker,
     unit: m.unit,
-    price: q?.price !== null && q?.price !== undefined ? `R$ ${fmtBRL(q.price, m.fractionDigits)}` : '—',
-    delta: { value: fmtPct(q?.changePct ?? null), trend },
+    price: effectivePrice !== null ? `R$ ${fmtBRL(effectivePrice, m.fractionDigits)}` : '—',
+    delta: {
+      value: isStale ? 'Fechado' : fmtPct(q?.changePct ?? null),
+      trend,
+    },
     buy: minVal !== null && minVal !== undefined ? fmtBRL(minVal, m.fractionDigits) : '—',
     sell: maxVal !== null && maxVal !== undefined ? fmtBRL(maxVal, m.fractionDigits) : '—',
     sparklineData: sparkline,
