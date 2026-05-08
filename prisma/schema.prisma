@@ -59,6 +59,9 @@ model Workspace {
   contratosFuturos  ContratoFuturo[]
   fornecedores      Fornecedor[]
   templatesContrato ContratoTemplate[]
+  armazens          Armazem[]
+  motoristas        Motorista[]
+  ordensCarga       OrdemCarga[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,6 +128,11 @@ model Fornecedor {
   metadata     Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  // Relações com Logística
+  armazens                  Armazem[]
+  transportadoraMotoristas  Motorista[]   @relation("TransportadoraMotoristas")
+  ordensTransporte          OrdemCarga[]  @relation("TransportadoraOrdens")
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -252,6 +260,7 @@ model Cliente {
   contratos        Contrato[]
   boletos          Boleto[]
   contratosFuturos ContratoFuturo[]
+  cargas           OrdemCarga[]      @relation("ClienteCargas")
 
   @@index([email])
   @@index([cnpj])
@@ -340,7 +349,8 @@ model Contrato {
   criadoEm         DateTime  @default(now())
   atualizadoEm     DateTime  @updatedAt
 
-  boletos Boleto[]
+  boletos     Boleto[]
+  ordensCarga OrdemCarga[]
 
   workspaceId String
   workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -548,4 +558,105 @@ model ContratoFuturo {
 
   @@index([workspaceId, grao, status])
   @@index([vencimento])
+}
+
+// ============================================
+// LOGÍSTICA — Armazéns, Motoristas, Ordens de Carga
+// ============================================
+
+model Armazem {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome            String
+  tipo            String      // 'silo' | 'granel' | 'horizontal' | 'misto'
+  capacidadeSc    Int         // capacidade em sacas 60kg
+  endereco        String?
+  cidade          String?
+  uf              String?     @db.VarChar(2)
+  cep             String?     @db.VarChar(10)
+  contato         String?
+  telefone        String?
+  observacao      String?     @db.Text
+  ativo           Boolean     @default(true)
+  /// Próprio (galpão da empresa) ou terceirizado (Fornecedor)
+  proprio         Boolean     @default(true)
+  fornecedorId    String?
+  fornecedor      Fornecedor? @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  ordensOrigem    OrdemCarga[] @relation("ArmazemOrigem")
+  ordensDestino   OrdemCarga[] @relation("ArmazemDestino")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([workspaceId, ativo])
+  @@index([fornecedorId])
+}
+
+model Motorista {
+  id               String      @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome             String
+  cpf              String?     @db.VarChar(14)
+  cnh              String?     @db.VarChar(20)
+  cnhCategoria     String?     @db.VarChar(5)
+  telefone         String?
+  whatsapp         String?
+  email            String?
+  /// Veículo padrão
+  placa            String?     @db.VarChar(10)
+  veiculo          String?
+  capacidadeSc     Int?
+  /// Vinculado a uma transportadora (Fornecedor)
+  transportadoraId String?
+  transportadora   Fornecedor? @relation("TransportadoraMotoristas", fields: [transportadoraId], references: [id], onDelete: SetNull)
+  observacao       String?     @db.Text
+  ativo            Boolean     @default(true)
+  ordens           OrdemCarga[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([workspaceId, ativo])
+  @@index([transportadoraId])
+}
+
+model OrdemCarga {
+  id                String      @id @default(cuid())
+  numero            String      @unique
+  workspaceId       String
+  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contratoId        String?
+  contrato          Contrato?   @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+  clienteId         String?
+  cliente           Cliente?    @relation("ClienteCargas", fields: [clienteId], references: [id], onDelete: SetNull)
+  motoristaId       String?
+  motorista         Motorista?  @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
+  transportadoraId  String?
+  transportadora    Fornecedor? @relation("TransportadoraOrdens", fields: [transportadoraId], references: [id], onDelete: SetNull)
+  armazemOrigemId   String?
+  armazemOrigem     Armazem?    @relation("ArmazemOrigem", fields: [armazemOrigemId], references: [id], onDelete: SetNull)
+  armazemDestinoId  String?
+  armazemDestino    Armazem?    @relation("ArmazemDestino", fields: [armazemDestinoId], references: [id], onDelete: SetNull)
+  grao              String      // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  quantidadeSc      Int
+  pesoToneladas     Decimal?    @db.Decimal(10, 2)
+  /// Datas
+  dataAgendada      DateTime
+  dataCarregamento  DateTime?
+  dataDescarga      DateTime?
+  /// CT-e
+  ctEnumero         String?     @db.VarChar(50)
+  ctEpdfUrl         String?     @db.Text
+  ctEdataEmissao    DateTime?
+  /// Status
+  status            String      @default("agendada")
+  observacao        String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([dataAgendada])
+  @@index([motoristaId])
+  @@index([transportadoraId])
+  @@index([contratoId])
 }

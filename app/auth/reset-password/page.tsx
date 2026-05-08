@@ -18,13 +18,27 @@ export default function ResetPasswordPage() {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null)
+  const [tokenEmail, setTokenEmail] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) {
-      showError('Link inválido ou expirado')
-      router.push('/auth/login')
+      setTokenValid(false)
+      return
     }
-  }, [token, router, showError])
+    // Validar token sem consumi-lo
+    fetch(`/api/auth/reset-password?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.valid) {
+          setTokenValid(true)
+          setTokenEmail(data.email || null)
+        } else {
+          setTokenValid(false)
+        }
+      })
+      .catch(() => setTokenValid(false))
+  }, [token])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -66,7 +80,7 @@ export default function ResetPasswordPage() {
       }
 
       success('Senha alterada com sucesso!')
-      setTimeout(() => router.push('/auth/login'), 1500)
+      setTimeout(() => router.push('/auth/login?reset=ok'), 1500)
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Erro ao resetar senha')
     } finally {
@@ -74,7 +88,7 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (!token) {
+  if (tokenValid === false) {
     return (
       <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
         <div className="absolute top-8 left-8">
@@ -84,9 +98,22 @@ export default function ResetPasswordPage() {
           <AlertCircle className="h-8 w-8 text-neg mx-auto" />
           <p className="eyebrow text-neg">Link inválido</p>
           <h2 className="text-h2 font-sans tracking-tight text-fg-1">Link inválido ou expirado</h2>
+          <p className="text-fg-2 text-body">
+            Solicite um novo link de redefinição de senha.
+          </p>
           <Link href="/auth/forgot-password" className="block">
             <Button fullWidth>Solicitar novo link</Button>
           </Link>
+        </Card>
+      </div>
+    )
+  }
+
+  if (tokenValid === null) {
+    return (
+      <div className="min-h-screen bg-bg-0 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md text-center space-y-2">
+          <p className="text-fg-2 text-body">Validando link…</p>
         </Card>
       </div>
     )
@@ -102,7 +129,9 @@ export default function ResetPasswordPage() {
         <div className="space-y-2 text-center">
           <p className="eyebrow">Recuperação de acesso</p>
           <h1 className="text-h1 font-sans tracking-tight text-fg-1">Nova senha</h1>
-          <p className="text-fg-2 text-body">Defina uma nova senha para sua conta.</p>
+          <p className="text-fg-2 text-body">
+            {tokenEmail ? `Defina uma nova senha para ${tokenEmail}.` : 'Defina uma nova senha para sua conta.'}
+          </p>
         </div>
 
         <Card className="space-y-4">

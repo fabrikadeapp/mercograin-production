@@ -1,6 +1,7 @@
 'use client'
 import * as React from 'react'
-import { MoreHorizontal, Plus, Minus, Inbox } from 'lucide-react'
+import { MoreHorizontal, Plus, Minus, Inbox, Truck } from 'lucide-react'
+import Link from 'next/link'
 import {
   Card,
   CardHeader,
@@ -181,6 +182,7 @@ export function DashboardContent() {
   const [data, setData] = React.useState<DashState>({})
   const [error, setError] = React.useState<string | null>(null)
   const [books, setBooks] = React.useState<Record<string, BookData | null>>({})
+  const [logStats, setLogStats] = React.useState<{ agendadas: number; emTransito: number; entregues30d: number } | null>(null)
   const { data: live, loading: liveLoading } = useLiveQuotes()  // 20s default
 
   // Fetch book bid/ask para os 4 símbolos. Refetch a cada 30s.
@@ -219,6 +221,15 @@ export function DashboardContent() {
         setData({ stats, batimento, demanda, topContratos: contratos?.data || [] })
       })
       .catch((e) => !cancel && setError(String(e)))
+    return () => { cancel = true }
+  }, [])
+
+  // Logística stats
+  React.useEffect(() => {
+    let cancel = false
+    safeJson('/api/logistica/stats')
+      .then((j) => { if (!cancel) setLogStats({ agendadas: j.agendadas, emTransito: j.emTransito, entregues30d: j.entregues30d }) })
+      .catch(() => {})
     return () => { cancel = true }
   }, [])
 
@@ -349,6 +360,34 @@ export function DashboardContent() {
           ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={120} />)
           : kpis.map((k: any) => <KPICard key={k.eyebrow} {...k} />)}
       </div>
+
+      {/* Logística — resumo */}
+      <Link href="/logistica" className="block">
+        <Card className="p-5 flex items-center justify-between hover:border-accent transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 rounded-full bg-bg-2 flex items-center justify-center text-accent">
+              <Truck className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="eyebrow">LOGÍSTICA · CARGAS</p>
+              <h3 className="text-h3 text-fg-1 mt-0.5">
+                {logStats ? logStats.emTransito : '—'} <span className="text-fg-3 text-body font-normal">em trânsito</span>
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-small">
+            <div className="text-right">
+              <p className="text-fg-3">Agendadas</p>
+              <p className="t-num text-fg-1">{logStats?.agendadas ?? '—'}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-fg-3">Entregues (30d)</p>
+              <p className="t-num text-fg-1">{logStats?.entregues30d ?? '—'}</p>
+            </div>
+            <span className="text-accent text-small">Ver módulo →</span>
+          </div>
+        </Card>
+      </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">

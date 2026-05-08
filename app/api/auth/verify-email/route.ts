@@ -1,11 +1,21 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyTokenHash, isTokenExpired } from '@/lib/token-service'
+import { verifyTokenHash, generateToken, getTokenExpiry, hashToken } from '@/lib/token-service'
 import { checkRateLimit, getRemainingAttempts, getResetTime } from '@/lib/rate-limiter'
+import { sendEmail } from '@/lib/email-service'
+import { verifyEmailEmail, welcomeEmail } from '@/lib/email/templates'
+
+function getIp(request: NextRequest): string | null {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    null
+  )
+}
 
 /**
  * GET /api/auth/verify-email?token=xxx
- * Verify email token and activate user account
+ * Valida o token de verificação e ativa a conta.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -13,34 +23,16 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token')
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token de verificação ausente' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Token de verificação ausente' }, { status: 400 })
     }
 
-    // Buscar token no banco
-    const verificationTokenRecord = await db.emailVerificationToken.findFirst({
-      where: {
-        // Estamos procurando por um token que corresponda (verificamos o hash)
-        // Como não podemos query por hash direto de forma segura, buscamos todos
-        // e depois verificamos (em produção, seria melhor ter um índice)
-      },
-    })
-
-    // Strategy: Buscar todos os tokens não expirados e verificar
+    // Tokens são armazenados como hash sha256. Buscamos os ativos e comparamos.
     const allTokens = await db.emailVerificationToken.findMany({
-      where: {
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-      include: {
-        user: true,
-      },
+      where: { expiresAt: { gt: new Date() } },
+      include: { user: true },
     })
 
-    let foundToken = null
+    let foundToken: (typeof allTokens)[number] | null = null
     for (const t of allTokens) {
       if (verifyTokenHash(token, t.token)) {
         foundToken = t
@@ -55,43 +47,62 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verificar se token já foi usado
     if (foundToken.user.emailVerificado) {
-      return NextResponse.json(
-        { error: 'Email já foi verificado' },
-        { status: 400 }
-      )
+      // Garante limpeza
+      await db.emailVerificationToken.delete({ where: { id: foundToken.id } }).catch(() => {})
+      return NextResponse.json({ error: 'Email já foi verificado' }, { status: 400 })
     }
 
-    // Atualizar usuário e marcar como verificado
     await db.user.update({
       where: { id: foundToken.userId },
-      data: {
-        emailVerificado: true,
-      },
+      data: { emailVerificado: true },
     })
 
-    // Deletar token usado
-    await db.emailVerificationToken.delete({
-      where: { id: foundToken.id },
-    })
+    await db.emailVerificationToken.deleteMany({ where: { userId: foundToken.userId } })
+
+    // Audit
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: foundToken.userId,
+          acao: 'email.verified',
+          entidade: 'User',
+          entidadeId: foundToken.userId,
+          ipAddress: getIp(request),
+          userAgent: request.headers.get('user-agent') || null,
+        },
+      })
+    } catch (e) {
+      console.error('[auth] auditLog falhou (verify-email):', e)
+    }
+
+    // Welcome email (best-effort, não bloqueia resposta em caso de erro)
+    try {
+      const tpl = welcomeEmail({ name: foundToken.user.nome })
+      await sendEmail({
+        to: foundToken.user.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+      })
+    } catch (e) {
+      console.error('[auth] welcome email falhou:', e)
+    }
 
     return NextResponse.json({
+      ok: true,
       message: 'Email verificado com sucesso! Você pode fazer login.',
-      redirect: '/auth/login',
+      redirect: '/auth/login?verified=1',
     })
   } catch (error) {
     console.error('Email verification error:', error)
-    return NextResponse.json(
-      { error: 'Erro ao verificar email' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro ao verificar email' }, { status: 500 })
   }
 }
 
 /**
- * POST /api/auth/resend-verification
- * Resend verification email for unverified accounts
+ * POST /api/auth/verify-email
+ * Reenviar email de verificação. Body: { email }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -99,112 +110,74 @@ export async function POST(request: NextRequest) {
     const { email } = body
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email é obrigatório' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Email é obrigatório' }, { status: 400 })
     }
 
-    // Rate limit: 3 attempts per hour per email
     const rateLimitKey = `resend-verification:${email}`
     if (!checkRateLimit(rateLimitKey, 3, 3600000)) {
       const remaining = getRemainingAttempts(rateLimitKey, 3, 3600000)
       const resetSeconds = getResetTime(rateLimitKey)
-
       return NextResponse.json(
         {
           error: `Muitas tentativas. Tente novamente em ${resetSeconds} segundo(s).`,
           remainingAttempts: remaining,
           resetIn: resetSeconds,
         },
-        { status: 429 } // Too Many Requests
+        { status: 429 }
       )
     }
 
-    // Buscar usuário
-    const user = await db.user.findUnique({
-      where: { email },
+    const user = await db.user.findUnique({ where: { email } })
+
+    // Resposta genérica em todos os casos não-positivos
+    const generic = NextResponse.json({
+      message: 'Se o email estiver registrado, um email de verificação foi enviado.',
     })
-
-    if (!user) {
-      // Não revelar se email existe
-      return NextResponse.json({
-        message: 'Se o email estiver registrado, um email de verificação foi enviado.',
-      })
-    }
-
+    if (!user) return generic
     if (user.emailVerificado) {
-      return NextResponse.json({
-        message: 'Email já foi verificado.',
-      })
+      return NextResponse.json({ message: 'Email já foi verificado.' })
     }
 
-    // Deletar tokens antigos
-    await db.emailVerificationToken.deleteMany({
-      where: { userId: user.id },
-    })
+    await db.emailVerificationToken.deleteMany({ where: { userId: user.id } })
 
-    // Gerar novo token
-    const { generateToken, getTokenExpiry, hashToken } = await import('@/lib/token-service')
     const verificationToken = generateToken()
     const hashedToken = hashToken(verificationToken)
     const tokenExpiry = getTokenExpiry(24)
 
-    // Criar novo token
     await db.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: hashedToken,
-        expiresAt: tokenExpiry,
-      },
+      data: { userId: user.id, token: hashedToken, expiresAt: tokenExpiry },
     })
 
-    // Enviar email
-    const { sendEmail } = await import('@/lib/email-service')
-    const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${verificationToken}`
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
+    const verifyUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`
 
-    await sendEmail({
+    const tpl = verifyEmailEmail({ name: user.nome, verifyUrl })
+    const result = await sendEmail({
       to: email,
-      subject: '✉️ Verificar Email - PHB Grain',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333;">Verificar seu Email</h2>
-          <p style="color: #666; font-size: 16px;">
-            Clique no link abaixo para verificar seu email e ativar sua conta.
-          </p>
-
-          <a href="${verificationUrl}"
-             style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 20px 0; font-weight: bold;">
-            Verificar Email
-          </a>
-
-          <p style="color: #999; font-size: 14px;">
-            Ou copie e cole este link no navegador:<br/>
-            <code style="background: #f0f0f0; padding: 8px; display: block; margin: 10px 0; word-break: break-all;">
-              ${verificationUrl}
-            </code>
-          </p>
-
-          <p style="color: #999; font-size: 14px;">
-            Este link expira em 24 horas.
-          </p>
-
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-          <p style="color: #999; font-size: 12px;">
-            PHB Grain © ${new Date().getFullYear()}
-          </p>
-        </div>
-      `,
+      subject: tpl.subject,
+      html: tpl.html,
+      text: tpl.text,
     })
 
-    return NextResponse.json({
-      message: 'Email de verificação enviado com sucesso.',
-    })
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          acao: 'email.verification_resent',
+          entidade: 'User',
+          entidadeId: user.id,
+          mudancas: { provider: result.provider, ok: result.ok, skipped: result.skipped ?? false },
+          ipAddress: getIp(request),
+          userAgent: request.headers.get('user-agent') || null,
+        },
+      })
+    } catch (e) {
+      console.error('[auth] auditLog falhou (resend-verification):', e)
+    }
+
+    return NextResponse.json({ message: 'Email de verificação enviado com sucesso.' })
   } catch (error) {
     console.error('Resend verification error:', error)
-    return NextResponse.json(
-      { error: 'Erro ao enviar email de verificação' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro ao enviar email de verificação' }, { status: 500 })
   }
 }

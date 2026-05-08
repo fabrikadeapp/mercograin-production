@@ -3,7 +3,8 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateToken, getTokenExpiry, hashToken } from '@/lib/token-service'
-import { sendEmail, emailTemplates } from '@/lib/email-service'
+import { sendEmail } from '@/lib/email-service'
+import { verifyEmailEmail } from '@/lib/email/templates'
 import { validatePasswordStrength } from '@/lib/password-validator'
 
 const signupSchema = z.object({
@@ -66,50 +67,20 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Enviar email de verificação
+    // Enviar email de verificação (best-effort)
     try {
-      const verificationUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${verificationToken}`
+      const baseUrl = process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
+      const verifyUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`
+      const tpl = verifyEmailEmail({ name: nome, verifyUrl })
       await sendEmail({
         to: email,
-        subject: '✉️ Verificar Email - PHB Grain',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #333;">Bem-vindo ao PHB Grain, ${nome}!</h2>
-            <p style="color: #666; font-size: 16px;">
-              Sua conta foi criada com sucesso. Clique no link abaixo para verificar seu email e ativar sua conta.
-            </p>
-
-            <a href="${verificationUrl}"
-               style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin: 20px 0; font-weight: bold;">
-              Verificar Email
-            </a>
-
-            <p style="color: #999; font-size: 14px;">
-              Ou copie e cole este link no navegador:<br/>
-              <code style="background: #f0f0f0; padding: 8px; display: block; margin: 10px 0; word-break: break-all;">
-                ${verificationUrl}
-              </code>
-            </p>
-
-            <p style="color: #999; font-size: 14px;">
-              Este link expira em 24 horas.
-            </p>
-
-            <p style="color: #999; font-size: 14px;">
-              Se você não criou esta conta, ignore este email.
-            </p>
-
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="color: #999; font-size: 12px;">
-              PHB Grain © ${new Date().getFullYear()}
-            </p>
-          </div>
-        `,
-        text: `Bem-vindo ao PHB Grain, ${nome}!\n\nClique aqui para verificar seu email:\n${verificationUrl}\n\nEste link expira em 24 horas.`,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
       })
     } catch (emailError) {
       console.error('Error sending verification email:', emailError)
-      // Continue mesmo se o email falhar - usuário pode tentar reenviar depois
+      // Continua mesmo com falha — usuário pode reenviar via /auth/resend-verification
     }
 
     return NextResponse.json(
