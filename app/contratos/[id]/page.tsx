@@ -74,14 +74,66 @@ export default function ContratoDetalhesPage() {
   const [contrato, setContrato] = useState<Contrato | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [templates, setTemplates] = useState<Array<{ id: string; nome: string; tipo: string; isDefault: boolean }>>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [generatingTpl, setGeneratingTpl] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login')
       return
     }
-    if (status === 'authenticated') fetchContrato()
+    if (status === 'authenticated') {
+      fetchContrato()
+      fetchTemplates()
+    }
   }, [status, router])
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch('/api/contratos/templates?ativo=true')
+      const data = await res.json()
+      const list = (data.templates || []) as Array<{ id: string; nome: string; tipo: string; isDefault: boolean }>
+      setTemplates(list)
+      const def = list.find((t) => t.isDefault) || list[0]
+      if (def) setSelectedTemplateId(def.id)
+    } catch (err) {
+      console.error('Erro ao carregar templates:', err)
+    }
+  }
+
+  const handleGenerateFromTemplate = async () => {
+    if (!contrato || !selectedTemplateId) {
+      showError('Selecione um template')
+      return
+    }
+    setGeneratingTpl(true)
+    try {
+      const res = await fetch(`/api/contratos/${contrato.id}/render-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: selectedTemplateId }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Erro ao gerar PDF')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Contrato-${contrato.numero}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      success('PDF gerado a partir do template!')
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Erro ao gerar PDF')
+    } finally {
+      setGeneratingTpl(false)
+    }
+  }
 
   const fetchContrato = async () => {
     try {
@@ -221,6 +273,30 @@ export default function ContratoDetalhesPage() {
             >
               Exportar PDF
             </Button>
+            {templates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="bg-bg-2 border border-border-1 text-fg-1 text-small rounded-md px-2 py-1.5 focus:outline-none focus:border-accent"
+                  aria-label="Template"
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nome}
+                      {t.isDefault ? ' ★' : ''}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  leftIcon={<FileDown className="h-4 w-4" />}
+                  onClick={handleGenerateFromTemplate}
+                  disabled={generatingTpl || !selectedTemplateId}
+                >
+                  {generatingTpl ? 'Gerando…' : 'Gerar do template'}
+                </Button>
+              </div>
+            )}
           </>
         }
       />

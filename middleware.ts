@@ -29,11 +29,17 @@ export default auth((req) => {
     const role = u.role
     const subStatus = u.subscriptionStatus
     const hasWorkspace = u.hasWorkspace !== false
+    const onboardingCompleted = u.onboardingCompleted === true
     const isAdmin = role === 'admin'
 
     const isOnboardingPath = path === '/onboarding' || path.startsWith('/onboarding/')
 
     if (!hasWorkspace && !isOnboardingPath && !isPublic) {
+      return NextResponse.redirect(new URL('/onboarding', req.url))
+    }
+
+    // Tem workspace mas não completou onboarding
+    if (hasWorkspace && !onboardingCompleted && !isAdmin && !isOnboardingPath && !isPublic) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 

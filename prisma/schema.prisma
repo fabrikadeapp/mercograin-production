@@ -63,6 +63,8 @@ model Workspace {
   motoristas        Motorista[]
   ordensCarga       OrdemCarga[]
 
+  onboardingCompletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -35,6 +35,7 @@ export const authConfig = {
               workspacesOwned: {
                 select: {
                   id: true,
+                  onboardingCompletedAt: true,
                   subscription: { select: { status: true, trialEnd: true } },
                 },
                 orderBy: { createdAt: 'asc' },
@@ -48,12 +49,14 @@ export const authConfig = {
             },
           })
           if (u) {
-            const sub = u.workspacesOwned[0]?.subscription
+            const ownedWs = u.workspacesOwned[0]
+            const sub = ownedWs?.subscription
             token.role = u.role
             token.subscriptionStatus = sub?.status || 'none'
             token.trialEnd = sub?.trialEnd?.toISOString() || null
             token.hasWorkspace =
               u.workspacesOwned.length > 0 || u.workspaceMemberships.length > 0
+            token.onboardingCompleted = !!ownedWs?.onboardingCompletedAt
           }
         } catch (e) {
           // não bloqueia auth se DB falhar
@@ -69,6 +72,7 @@ export const authConfig = {
         ;(session.user as any).subscriptionStatus = token.subscriptionStatus as string | undefined
         ;(session.user as any).trialEnd = token.trialEnd as string | null | undefined
         ;(session.user as any).hasWorkspace = (token as any).hasWorkspace as boolean | undefined
+        ;(session.user as any).onboardingCompleted = (token as any).onboardingCompleted as boolean | undefined
       }
       return session
     },

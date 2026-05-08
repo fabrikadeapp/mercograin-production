@@ -1,6 +1,7 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { Filter, Plus } from 'lucide-react'
+import Link from 'next/link'
+import { Filter, Plus, FileText } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { ContratosContent } from './_components/ContratosContent'
 
@@ -18,6 +19,11 @@ export default async function Page() {
         subtitle="312 ativos · R$ 18,4M em negociação"
         actions={
           <>
+            <Link href="/contratos/templates">
+              <Button variant="ghost" leftIcon={<FileText className="h-4 w-4" />}>
+                Templates
+              </Button>
+            </Link>
             <Button variant="secondary" leftIcon={<Filter className="h-4 w-4" />}>
               Filtros (3)
             </Button>
