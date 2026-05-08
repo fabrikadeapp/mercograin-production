@@ -32,6 +32,7 @@ model User {
   propostas Proposta[]
   contratos Contrato[]
   boletos   Boleto[]
+  contratosFuturos ContratoFuturo[]
 
   @@index([email])
 }
@@ -131,6 +132,7 @@ model Cliente {
   propostas Proposta[]
   contratos Contrato[]
   boletos   Boleto[]
+  contratosFuturos ContratoFuturo[]
 
   @@index([email])
   @@index([cnpj])
@@ -391,4 +393,31 @@ model PricingRevision {
   id         Int      @id @default(1)
   revision   Int      @default(1)
   updatedAt  DateTime @updatedAt
+}
+
+// ============================================
+// CONTRATOS FUTUROS (Book B3 próprio)
+// ============================================
+
+model ContratoFuturo {
+  id            String    @id @default(cuid())
+  usuarioId     String
+  usuario       User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  grao          String    // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  lado          String    // 'compra' (bid) | 'venda' (ask)
+  vencimento    DateTime  @db.Date
+  precoSc       Decimal   @db.Decimal(10, 2) // R$/sc 60kg
+  volumeSc      Int                          // sacas
+  /// Codigo de vencimento estilo B3: K26 (mai/26), N26 (jul/26), X26 (nov/26)
+  codigoVenc    String?   @db.VarChar(10)
+  praca         String?   @db.VarChar(100)
+  observacao    String?   @db.Text
+  status        String    @default("ativo")  // 'ativo' | 'executado' | 'cancelado'
+  clienteId     String?
+  cliente       Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  criadoEm      DateTime  @default(now())
+  atualizadoEm  DateTime  @updatedAt
+
+  @@index([usuarioId, grao, status])
+  @@index([vencimento])
 }

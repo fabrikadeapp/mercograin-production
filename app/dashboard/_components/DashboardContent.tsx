@@ -30,6 +30,7 @@ import {
   type TopContractRow,
 } from '@/lib/mocks/phb'
 import { useLiveQuotes, type LiveQuotePayload } from '@/lib/quotes/useLiveQuotes'
+import { FuturosBook } from './FuturosBook'
 
 const CURVE_TABS = [
   { value: 'fisico', label: 'À Vista' },
@@ -294,6 +295,9 @@ export function DashboardContent() {
           return <MarketCard key={label} {...cardProps} />
         })}
       </div>
+
+      {/* Book de Futuros (B3 próprio + CBOT proxy) */}
+      <FuturosBook />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 p-6">
