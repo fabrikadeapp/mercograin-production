@@ -14,6 +14,8 @@ export interface LiveQuotePayload {
   currency: string
   exchangeName: string | null
   marketState: string | null
+  marketReason?: string | null
+  nextOpen?: string | null
   fetchedAt: string
   sparkline: number[]
 }

@@ -19,6 +19,7 @@ import {
 } from '@/lib/quotes/twelvedata'
 import { fetchFxBidAsk } from '@/lib/quotes/awesomeapi'
 import { fetchBcbDolar } from '@/lib/quotes/bcb'
+import { marketStatus } from '@/lib/quotes/market-hours'
 import { db as prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -197,9 +198,14 @@ export async function GET() {
       const c = cepea[label]
       if (c.precoSc60 !== null) {
         const prev = sparkline.length >= 2 ? sparkline[sparkline.length - 2] : null
-        const changeAbs = prev !== null ? c.precoSc60 - prev : null
+        const cepeaStatus = marketStatus('cepea')
+        // Δ% só faz sentido durante pregão. Mercado fechado → mostra preço de
+        // fechamento sem variação intraday (que ficaria zerada/errada).
+        const changeAbs = cepeaStatus.open && prev !== null ? c.precoSc60 - prev : null
         const changePct =
-          prev !== null && prev !== 0 ? ((c.precoSc60 - prev) / prev) * 100 : null
+          cepeaStatus.open && prev !== null && prev !== 0
+            ? ((c.precoSc60 - prev) / prev) * 100
+            : null
         return {
           symbol: symbolDisplay,
           label,
@@ -212,7 +218,9 @@ export async function GET() {
           changePct,
           currency: 'BRL',
           exchangeName: 'CEPEA · ESALQ',
-          marketState: 'open',
+          marketState: cepeaStatus.state,
+          marketReason: cepeaStatus.reason || null,
+          nextOpen: cepeaStatus.nextOpen || null,
           fetchedAt: c.fetchedAt,
           sparkline,
           // metadados extras (consumidos opcionalmente pelo card)
@@ -233,20 +241,25 @@ export async function GET() {
     const milho = buildGrain('milho', 'CEPEA · ZC', sparkMilho)
     const trigo = buildGrain('trigo', 'CEPEA · ZW', sparkTrigo)
 
-    // USD/BRL via Twelve Data
+    // USD/BRL — usa BCB PTAX como primário (já dentro de getUsdbrlCached)
+    // Fim de semana / fora de horário: zera changePct (não há variação intraday)
+    const ptaxStatus = marketStatus('ptax')
     const usdbrl = {
       symbol: 'USD/BRL',
       label: 'usdbrl' as const,
       price: usdbrlTD.price,
-      open: usdbrlTD.open,
+      open: ptaxStatus.open ? usdbrlTD.open : null,
       high: usdbrlTD.high,
       low: usdbrlTD.low,
       previousClose: usdbrlTD.previousClose,
-      changeAbs: usdbrlTD.changeAbs,
-      changePct: usdbrlTD.changePct,
+      // Δ só faz sentido durante pregão. Fora dele, mostra fechamento estável.
+      changeAbs: ptaxStatus.open ? usdbrlTD.changeAbs : null,
+      changePct: ptaxStatus.open ? usdbrlTD.changePct : null,
       currency: usdbrlTD.currency || 'BRL',
       exchangeName: usdbrlTD.exchangeName,
-      marketState: usdbrlTD.marketState,
+      marketState: ptaxStatus.state,
+      marketReason: ptaxStatus.reason || null,
+      nextOpen: ptaxStatus.nextOpen || null,
       fetchedAt: usdbrlTD.fetchedAt,
       sparkline: sparkUsdbrl,
     }

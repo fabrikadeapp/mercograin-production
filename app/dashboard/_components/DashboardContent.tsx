@@ -156,6 +156,8 @@ function liveToCard(
     marketState,
     lastSync: q?.fetchedAt,
     stale: isStale,
+    marketReason: (q as any)?.marketReason ?? null,
+    nextOpen: (q as any)?.nextOpen ?? null,
   }
 }
 

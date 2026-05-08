@@ -47,6 +47,10 @@ export interface MarketCardProps {
   lastSync?: string
   /** Stale: dados antigos servidos por fallback (ex: cache miss) */
   stale?: boolean
+  /** Razão do fechamento: 'fim_de_semana' | 'feriado' | 'fora_horario' */
+  marketReason?: string | null
+  /** ISO da próxima abertura quando fechado */
+  nextOpen?: string | null
 }
 
 /** Formata "há Xs / Xmin / Xh / Xd" a partir de um ISO em pt-BR */
@@ -79,6 +83,8 @@ export function MarketCard({
   marketState = 'unknown',
   lastSync,
   stale = false,
+  marketReason,
+  nextOpen,
 }: MarketCardProps) {
   const color = grainTokenColor[grainColor]
   const grainBadgeVariant: GrainVariant = grainColor
@@ -100,6 +106,24 @@ export function MarketCard({
   const animation = isOpen ? 'phb-pulse 1.6s ease-in-out infinite' : 'none'
 
   const since = relativeTime(lastSync, Date.now() + tick * 0)  // tick força re-render
+
+  // Mensagem extra quando fechado: motivo + próxima abertura
+  let closedHint: string | null = null
+  if (isClosed) {
+    if (marketReason === 'fim_de_semana') closedHint = 'Fim de semana'
+    else if (marketReason === 'feriado') closedHint = 'Feriado'
+    else if (marketReason === 'fora_horario') closedHint = 'Fora do horário'
+    if (nextOpen) {
+      const d = new Date(nextOpen)
+      if (Number.isFinite(d.getTime())) {
+        const dia = String(d.getDate()).padStart(2, '0')
+        const mes = String(d.getMonth() + 1).padStart(2, '0')
+        const hr = String(d.getHours()).padStart(2, '0')
+        const min = String(d.getMinutes()).padStart(2, '0')
+        closedHint = `${closedHint || 'Fechado'} · abre ${dia}/${mes} ${hr}:${min}`
+      }
+    }
+  }
 
   return (
     <Card className={cn('p-5 space-y-3', className)}>
@@ -178,34 +202,39 @@ export function MarketCard({
 
       {/* Footer: status mercado + última atualização */}
       <div
-        className="pt-2 mt-1 border-t border-border-1 flex items-center justify-between gap-2"
+        className="pt-2 mt-1 border-t border-border-1 space-y-1"
         title={
           (lastSync ? `Última atualização: ${new Date(lastSync).toLocaleString('pt-BR')}\n` : '') +
           stateLabelLong
         }
       >
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span
-            aria-hidden="true"
-            className="inline-block h-2 w-2 rounded-pill shrink-0"
-            style={{
-              background: dotColor,
-              boxShadow: isOpen
-                ? `0 0 6px ${dotColor}`
-                : 'none',
-              animation,
-            }}
-          />
-          <span
-            className="eyebrow"
-            style={{ color: dotColor }}
-          >
-            {stateLabel}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span
+              aria-hidden="true"
+              className="inline-block h-2 w-2 rounded-pill shrink-0"
+              style={{
+                background: dotColor,
+                boxShadow: isOpen
+                  ? `0 0 6px ${dotColor}`
+                  : 'none',
+                animation,
+              }}
+            />
+            <span
+              className="eyebrow"
+              style={{ color: dotColor }}
+            >
+              {stateLabel}
+            </span>
+          </div>
+          <span className="text-micro text-fg-3 t-num shrink-0">
+            {since}
           </span>
         </div>
-        <span className="text-micro text-fg-3 t-num shrink-0">
-          {since}
-        </span>
+        {closedHint ? (
+          <p className="text-micro text-fg-4 leading-tight">{closedHint}</p>
+        ) : null}
       </div>
     </Card>
   )
