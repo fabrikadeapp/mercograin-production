@@ -16,6 +16,15 @@ const grainTokenColor: Record<MarketGrainColor, string> = {
   usd: 'var(--grain-usd)',
 }
 
+export interface BookSideInfo {
+  /** Preço já formatado (ex: "127,80") */
+  value: string
+  /** Tooltip explicando origem (ex: "PROP-2841 · Cooperativa Vale Verde") */
+  source?: string
+  /** Se true, dado real (proposta sua); false = estimativa */
+  real?: boolean
+}
+
 export interface MarketCardProps {
   symbol: string
   ticker?: string
@@ -23,8 +32,12 @@ export interface MarketCardProps {
   price: string
   currency?: string
   delta: { value: string; trend: 'pos' | 'neg' }
+  /** Mínima do dia ou Bid (depende do contexto) — fallback simples como string */
   buy?: string
   sell?: string
+  /** Book bid/ask estruturado — quando presente, substitui buy/sell */
+  bid?: BookSideInfo | null
+  ask?: BookSideInfo | null
   sparklineData: number[]
   grainColor?: MarketGrainColor
   className?: string
@@ -58,6 +71,8 @@ export function MarketCard({
   delta,
   buy,
   sell,
+  bid,
+  ask,
   sparklineData,
   grainColor = 'soja',
   className,
@@ -115,7 +130,32 @@ export function MarketCard({
         </span>
       </div>
 
-      {(buy || sell) ? (
+      {(bid || ask) ? (
+        <div className="flex gap-6">
+          {bid ? (
+            <div className="space-y-0.5 min-w-0" title={bid.source ? `Compra: ${bid.source}` : undefined}>
+              <p className="eyebrow flex items-center gap-1" style={{ color: 'var(--pos)' }}>
+                COMPRA
+                {bid.real === false ? (
+                  <span className="text-fg-4 normal-case tracking-normal">· est.</span>
+                ) : null}
+              </p>
+              <p className="t-num text-fg-1 text-body font-medium">{bid.value}</p>
+            </div>
+          ) : null}
+          {ask ? (
+            <div className="space-y-0.5 min-w-0" title={ask.source ? `Venda: ${ask.source}` : undefined}>
+              <p className="eyebrow flex items-center gap-1" style={{ color: 'var(--neg)' }}>
+                VENDA
+                {ask.real === false ? (
+                  <span className="text-fg-4 normal-case tracking-normal">· est.</span>
+                ) : null}
+              </p>
+              <p className="t-num text-fg-1 text-body font-medium">{ask.value}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : (buy || sell) ? (
         <div className="flex gap-8">
           {buy ? (
             <div className="space-y-0.5">

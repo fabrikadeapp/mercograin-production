@@ -75,7 +75,12 @@ function fmtPct(v: number | null): string {
   return `${sign}${v.toFixed(2).replace('.', ',')}%`
 }
 
-function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePayload | undefined, fallbackSparkline: number[]) {
+function liveToCard(
+  label: 'soja' | 'milho' | 'trigo' | 'usdbrl',
+  q: LiveQuotePayload | undefined,
+  fallbackSparkline: number[],
+  book: BookData | null = null,
+) {
   const meta: Record<typeof label, { display: string; ticker: string; unit: string; grainColor: 'soja' | 'milho' | 'trigo' | 'usd'; fractionDigits: number }> = {
     soja:   { display: 'Soja',  ticker: 'ZS · CBOT',     unit: 'R$/sc 60kg',    grainColor: 'soja',  fractionDigits: 2 },
     milho:  { display: 'Milho', ticker: 'ZC · CBOT',     unit: 'R$/sc 60kg',    grainColor: 'milho', fractionDigits: 2 },
@@ -112,6 +117,24 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
     q?.marketState === 'closed' ? 'closed' :
     'unknown'
 
+  // Bid/Ask vindo do endpoint /api/cotacoes/book
+  // Para grãos: best bid/ask das suas propostas + fallback estimado
+  // Para usdbrl: AwesomeAPI bid/ask reais (interbancário)
+  const bidObj = book?.bid?.price !== null && book?.bid?.price !== undefined
+    ? {
+        value: fmtBRL(book.bid.price, m.fractionDigits),
+        source: book.bid.source,
+        real: book.bid.real,
+      }
+    : null
+  const askObj = book?.ask?.price !== null && book?.ask?.price !== undefined
+    ? {
+        value: fmtBRL(book.ask.price, m.fractionDigits),
+        source: book.ask.source,
+        real: book.ask.real,
+      }
+    : null
+
   return {
     symbol: m.display,
     ticker: m.ticker,
@@ -121,8 +144,11 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
       value: isStale ? 'Fechado' : fmtPct(q?.changePct ?? null),
       trend,
     },
-    buy: minVal !== null && minVal !== undefined ? fmtBRL(minVal, m.fractionDigits) : '—',
-    sell: maxVal !== null && maxVal !== undefined ? fmtBRL(maxVal, m.fractionDigits) : '—',
+    bid: bidObj,
+    ask: askObj,
+    // Mantém min/max como fallback caso book não chegue
+    buy: bidObj ? undefined : (minVal !== null && minVal !== undefined ? fmtBRL(minVal, m.fractionDigits) : undefined),
+    sell: askObj ? undefined : (maxVal !== null && maxVal !== undefined ? fmtBRL(maxVal, m.fractionDigits) : undefined),
     sparklineData: sparkline,
     grainColor: m.grainColor,
     marketState,
@@ -131,13 +157,53 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
   }
 }
 
+interface BookSide {
+  price: number | null
+  source: string
+  real: boolean
+}
+interface BookData {
+  symbol: string
+  bid: BookSide
+  ask: BookSide
+  mid: number | null
+  spread: number | null
+  spreadPct: number | null
+  unidade: string
+  fonte: string
+}
+
 export function DashboardContent() {
   const [curve, setCurve] = React.useState<CurveModo>('fisico')
   const [curva, setCurva] = React.useState<CurvaResponse | null>(null)
   const [curvaLoading, setCurvaLoading] = React.useState(true)
   const [data, setData] = React.useState<DashState>({})
   const [error, setError] = React.useState<string | null>(null)
+  const [books, setBooks] = React.useState<Record<string, BookData | null>>({})
   const { data: live, loading: liveLoading } = useLiveQuotes()  // 20s default
+
+  // Fetch book bid/ask para os 4 símbolos. Refetch a cada 30s.
+  React.useEffect(() => {
+    let cancel = false
+    const symbols = ['soja', 'milho', 'trigo', 'usdbrl'] as const
+    async function tick() {
+      const results = await Promise.all(
+        symbols.map((s) =>
+          safeJson(`/api/cotacoes/book?grao=${s}`).catch(() => null) as Promise<BookData | null>
+        )
+      )
+      if (cancel) return
+      setBooks({
+        soja: results[0],
+        milho: results[1],
+        trigo: results[2],
+        usdbrl: results[3],
+      })
+    }
+    tick()
+    const id = setInterval(tick, 30_000)
+    return () => { cancel = true; clearInterval(id) }
+  }, [])
 
   React.useEffect(() => {
     let cancel = false
@@ -224,7 +290,7 @@ export function DashboardContent() {
           const fallback = MARKETS[i]
           const q = live?.[label]
           if (liveLoading && !live) return <Skeleton key={label} height={260} />
-          const cardProps = liveToCard(label, q, fallback.sparklineData)
+          const cardProps = liveToCard(label, q, fallback.sparklineData, books[label] ?? null)
           return <MarketCard key={label} {...cardProps} />
         })}
       </div>
