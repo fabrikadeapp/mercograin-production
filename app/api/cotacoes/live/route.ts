@@ -17,6 +17,7 @@ import {
   fetchLiveQuote as fetchTwelveQuote,
   fetchSparkline as fetchTwelveSparkline,
 } from '@/lib/quotes/twelvedata'
+import { fetchFxBidAsk } from '@/lib/quotes/awesomeapi'
 import { db as prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -55,17 +56,47 @@ async function getUsdbrlCached() {
   const now = Date.now()
   // Cache fresco — retorna direto
   if (usdbrlCache.data && now - usdbrlCache.at < TTL_USDBRL) return usdbrlCache.data
-  // Cache miss/stale → tenta refresh
-  const fresh = await fetchTwelveQuote('usdbrl')
-  if (fresh.price !== null) {
-    usdbrlCache.data = fresh
+
+  // 1) PRIMÁRIA: AwesomeAPI (sem rate limit, dá bid/ask reais BRL)
+  const fx = await fetchFxBidAsk('USD-BRL')
+  if (fx.bid !== null && fx.ask !== null) {
+    const mid = (fx.bid + fx.ask) / 2
+    const prevMid = fx.bid && fx.varBid !== null
+      ? mid - fx.varBid
+      : null
+    const fresh = {
+      symbol: 'USD/BRL',
+      label: 'usdbrl' as const,
+      price: mid,
+      open: prevMid,
+      high: fx.high,
+      low: fx.low,
+      previousClose: prevMid,
+      changeAbs: fx.varBid,
+      changePct: fx.pctChange,
+      currency: 'BRL',
+      exchangeName: 'AwesomeAPI · interbancário',
+      marketState: 'open' as const,
+      fetchedAt: fx.fetchedAt,
+    }
+    usdbrlCache.data = fresh as any
     usdbrlCache.at = now
-    return fresh
+    return fresh as any
   }
-  // Falhou (rate limit / market closed). Se temos cache antigo, retorna ele
-  // (mercado fechado: melhor mostrar último valor conhecido que "—").
+
+  // 2) FALLBACK: Twelve Data
+  const td = await fetchTwelveQuote('usdbrl')
+  if (td.price !== null) {
+    usdbrlCache.data = td
+    usdbrlCache.at = now
+    return td
+  }
+
+  // 3) Sem fontes online — retorna cache antigo se houver
   if (usdbrlCache.data) return usdbrlCache.data
-  return fresh  // empty quote — frontend resolve via fallback no spark
+
+  // 4) Tudo vazio — retorna empty (NÃO fabrica número errado)
+  return td
 }
 
 async function getUsdbrlSparkCached(): Promise<number[]> {

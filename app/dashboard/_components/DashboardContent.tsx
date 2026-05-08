@@ -93,23 +93,23 @@ function liveToCard(
   const sparkline = (q?.sparkline?.length ?? 0) >= 2 ? q!.sparkline : fallbackSparkline
 
   // Fallback para preço: se mercado fechado / rate-limit / API offline,
-  // usa o último valor conhecido (previousClose → último ponto do sparkline).
-  // Assim Dólar/Soja/Milho/Trigo nunca aparecem "—" se já tivemos um preço.
-  const lastSparkPrice = sparkline.length > 0 ? sparkline[sparkline.length - 1] : null
+  // usa o último valor conhecido (previousClose).
+  // CUIDADO: NÃO usar sparkline como fallback de preço pois pode estar
+  // numa escala/moeda diferente (ex: cache antigo de USD ETF aparecendo
+  // como se fosse R$ 22 quando USDBRL real é R$ 4,90).
   const effectivePrice =
     (q?.price !== null && q?.price !== undefined ? q.price : null) ??
     q?.previousClose ??
-    lastSparkPrice
+    null
 
   // Δ% só faz sentido quando temos o preço atual; senão indicamos "fechado"
   const isStale = (q?.price === null || q?.price === undefined) && effectivePrice !== null
   const trend: 'pos' | 'neg' = (q?.changePct ?? 0) >= 0 ? 'pos' : 'neg'
 
-  // Min/Max do dia. Se nada disponível, usa min/max do sparkline (intervalo recente).
-  const sparkMin = sparkline.length ? Math.min(...sparkline) : null
-  const sparkMax = sparkline.length ? Math.max(...sparkline) : null
-  const minVal = q?.low ?? sparkMin
-  const maxVal = q?.high ?? sparkMax
+  // Min/Max do dia. Só usa do quote real, não do sparkline (que pode ter
+  // valores em outra escala — ETF USD vs câmbio BRL).
+  const minVal = q?.low ?? null
+  const maxVal = q?.high ?? null
 
   // Estado do mercado: 'open' | 'closed' | 'unknown'
   // Para CEPEA: usa marketState do payload (sempre 'open' nos dias úteis quando há ref do dia)

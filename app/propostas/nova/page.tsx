@@ -78,10 +78,12 @@ export default function NovaPropostaPage() {
 
   const fetchClientes = async () => {
     try {
-      const response = await fetch('/api/clientes')
+      const response = await fetch('/api/clientes?limit=200')
       if (!response.ok) throw new Error('Erro ao buscar clientes')
-      const data = await response.json()
-      setClientes(data)
+      const json = await response.json()
+      // API retorna { data: [...], pagination } ou array direto (compat)
+      const list = Array.isArray(json) ? json : (json.data ?? [])
+      setClientes(list)
     } catch (err) {
       showError('Erro ao carregar clientes')
       console.error(err)
