@@ -32,16 +32,29 @@ import {
 import { useLiveQuotes, type LiveQuotePayload } from '@/lib/quotes/useLiveQuotes'
 
 const CURVE_TABS = [
-  { value: 'fisico', label: 'Físico' },
-  { value: 'futuro', label: 'Futuro (B3)' },
-  { value: 'fob', label: 'FOB Paranaguá' },
-]
+  { value: 'fisico', label: 'À Vista' },
+  { value: 'fob', label: 'FOB' },
+  { value: 'b3', label: 'Futuro (B3)' },
+  { value: 'cbot', label: 'Futuro (CBOT)' },
+] as const
+
+type CurveModo = (typeof CURVE_TABS)[number]['value']
+
+interface CurvaResponse {
+  data: { label: string; value: number }[]
+  empty: boolean
+  modo: CurveModo
+  fonte: string
+  unidade: string
+  moeda: string
+  ticker?: string
+  observacao?: string
+}
 
 interface DashState {
   stats?: any
   batimento?: { itens: { label: string; value: number; color: string }[] }
   demanda?: { items: typeof DEMAND_GLOBAL }
-  curva?: { data: { label: string; value: number }[]; empty: boolean }
   topContratos?: any[]
 }
 
@@ -119,7 +132,9 @@ function liveToCard(label: 'soja' | 'milho' | 'trigo' | 'usdbrl', q: LiveQuotePa
 }
 
 export function DashboardContent() {
-  const [curve, setCurve] = React.useState('fisico')
+  const [curve, setCurve] = React.useState<CurveModo>('fisico')
+  const [curva, setCurva] = React.useState<CurvaResponse | null>(null)
+  const [curvaLoading, setCurvaLoading] = React.useState(true)
   const [data, setData] = React.useState<DashState>({})
   const [error, setError] = React.useState<string | null>(null)
   const { data: live, loading: liveLoading } = useLiveQuotes()  // 20s default
@@ -130,16 +145,25 @@ export function DashboardContent() {
       safeJson('/api/dashboard/stats').catch(() => null),
       safeJson('/api/dashboard/batimento').catch(() => null),
       safeJson('/api/dashboard/demanda-exportacao').catch(() => null),
-      safeJson('/api/cotacoes/historia?grao=soja&dias=240').catch(() => null),
       safeJson('/api/contratos?limit=5').catch(() => null),
     ])
-      .then(([stats, batimento, demanda, curva, contratos]) => {
+      .then(([stats, batimento, demanda, contratos]) => {
         if (cancel) return
-        setData({ stats, batimento, demanda, curva, topContratos: contratos?.data || [] })
+        setData({ stats, batimento, demanda, topContratos: contratos?.data || [] })
       })
       .catch((e) => !cancel && setError(String(e)))
     return () => { cancel = true }
   }, [])
+
+  // Curva de mercado — refetch quando trocar modo
+  React.useEffect(() => {
+    let cancel = false
+    setCurvaLoading(true)
+    safeJson(`/api/cotacoes/historia?grao=soja&modo=${curve}&dias=240`)
+      .then((j: CurvaResponse) => { if (!cancel) { setCurva(j); setCurvaLoading(false) } })
+      .catch(() => { if (!cancel) { setCurva(null); setCurvaLoading(false) } })
+    return () => { cancel = true }
+  }, [curve])
 
   if (error) return <ErrorBanner message={error} />
 
@@ -159,9 +183,13 @@ export function DashboardContent() {
   const meta = data.batimento?.itens?.length ? data.batimento.itens : META_PROGRESS
   const demand = data.demanda?.items?.length ? data.demanda.items : DEMAND_GLOBAL
   const curvaData =
-    data.curva && !data.curva.empty && data.curva.data.length > 0
-      ? data.curva.data
-      : SOJA_CURVE
+    curva && !curva.empty && curva.data.length > 0
+      ? curva.data
+      : null
+  const curvaSubtitulo = curva
+    ? `${curva.fonte}${curva.unidade ? ' · ' + curva.unidade : ''}${curva.observacao ? ' · ' + curva.observacao : ''}`
+    : 'Carregando...'
+  const curvaColor = curve === 'cbot' ? 'var(--info)' : 'var(--accent)'
 
   const topContratosRows: TopContractRow[] = (data.topContratos || []).map((c: any) => ({
     cliente: c?.cliente?.nome || '—',
@@ -206,18 +234,26 @@ export function DashboardContent() {
           <CardHeader>
             <CardTitle eyebrow="MERCADO · COMPARATIVO">Curva de Mercado · Soja</CardTitle>
             <div className="flex items-center gap-3">
-              <Tabs options={CURVE_TABS} value={curve} onChange={setCurve} size="sm" />
-              <Pill>Últimos 8 meses</Pill>
+              <Tabs
+                options={CURVE_TABS as any}
+                value={curve}
+                onChange={(v) => setCurve(v as CurveModo)}
+                size="sm"
+              />
               <IconButton aria-label="Mais opções"><MoreHorizontal className="h-4 w-4" /></IconButton>
             </div>
           </CardHeader>
-          <p className="text-fg-3 text-small mb-4">Comparativo CEPEA × B3 × FOB</p>
-          {!loaded ? (
+          <p className="text-fg-3 text-small mb-4">{curvaSubtitulo}</p>
+          {curvaLoading ? (
             <Skeleton height={240} />
-          ) : data.curva?.empty ? (
-            <EmptyState icon={Inbox} title="Sem histórico ainda" description="Cotações começarão a aparecer assim que houver dados sincronizados." />
+          ) : !curvaData ? (
+            <EmptyState
+              icon={Inbox}
+              title={curve === 'b3' ? 'Integração B3 disponível no Enterprise' : 'Sem histórico para este mercado'}
+              description={curva?.observacao || 'Cotações vão aparecer conforme a sync diária.'}
+            />
           ) : (
-            <AreaChart data={curvaData} height={240} showAxis showGrid />
+            <AreaChart data={curvaData} height={240} showAxis showGrid color={curvaColor} />
           )}
         </Card>
 
