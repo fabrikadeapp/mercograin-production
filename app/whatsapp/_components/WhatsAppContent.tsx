@@ -304,23 +304,9 @@ export function WhatsAppContent() {
                     />
                   </div>
                 ) : (
-                  <div className="rounded-md border border-warn/40 bg-warn/5 p-5 mx-auto max-w-md text-left space-y-3">
-                    <div className="flex items-center gap-2">
-                      <WifiOff className="h-4 w-4 text-warn" />
-                      <p className="eyebrow text-warn">Em manutenção</p>
-                    </div>
-                    <p className="text-fg-1 text-small font-medium">
-                      O serviço de WhatsApp está temporariamente indisponível.
-                    </p>
-                    <p className="text-fg-3 text-small leading-relaxed">
-                      Nosso provedor (Baileys/Evolution API) está em processo de
-                      atualização para alinhar com a versão mais recente do
-                      protocolo WhatsApp. Os <strong className="text-fg-2">templates de notificação</strong>{' '}
-                      e o histórico continuam disponíveis para configuração.
-                    </p>
-                    <p className="text-fg-4 text-micro">
-                      Previsão de retorno: 24-48h. Estamos trabalhando nisso.
-                    </p>
+                  <div className="h-56 w-56 mx-auto rounded-md border border-dashed border-border-2 bg-bg-2 flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="h-5 w-5 text-fg-3 animate-spin" />
+                    <p className="text-fg-3 text-small">Gerando QR Code...</p>
                   </div>
                 )}
                 <div>
