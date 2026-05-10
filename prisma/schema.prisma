@@ -85,6 +85,11 @@ model Workspace {
   posicoesHedge        PosicaoHedge[]
   ndfs                 NDF[]
   marcacoesMercado     MarcacaoMercado[]
+  // Fiscal (Epic 3)
+  configuracaoFiscal   ConfiguracaoFiscal?
+  notasFiscais         NotaFiscal[]
+  cartasCorrecao       CartaCorrecao[]
+  spedExports          SpedExport[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -412,6 +417,8 @@ model Contrato {
   washouts      Washout[]
   // Hedge (Epic 4): hedge financeiro vinculado a este contrato físico
   posicoesHedge PosicaoHedge[]   @relation("HedgeContrato")
+  // Fiscal (Epic 3)
+  notasFiscais  NotaFiscal[]
 
   @@index([clienteId])
   @@index([proposIdFk])
@@ -872,6 +879,7 @@ model Romaneio {
   updatedAt DateTime @updatedAt
 
   ticketsBalanca TicketBalanca[]
+  notasFiscais   NotaFiscal[]
 
   @@unique([workspaceId, numero])
   @@index([workspaceId, status])
@@ -1403,4 +1411,197 @@ model MarcacaoMercado {
 
   @@unique([posicaoHedgeId, data])
   @@index([workspaceId, data])
+}
+
+// ============================================
+// EPIC 3 — FISCAL (NF-e + SPED)
+// ============================================
+
+model ConfiguracaoFiscal {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Dados emissor
+  cnpjEmissor        String
+  inscricaoEstadual  String?
+  inscricaoMunicipal String?
+  regimeTributario   String  // 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
+  cnae               String?
+
+  // Provider config
+  providerNome      String   @default("mock")  // 'mock' | 'nfeio' | 'enotas' | 'webmania' | 'tecnospeed'
+  providerCompanyId String?
+  ambiente          String   @default("homologacao")  // 'homologacao' | 'producao'
+
+  // Certificado A1 (Supabase Storage URL)
+  certificadoUrl        String?
+  certificadoVencimento DateTime?
+  certificadoAlias      String?
+
+  // Padrões NF-e
+  serieNFe             Int  @default(1)
+  proximoNumeroNFe     Int  @default(1)
+  serieNFeContingencia Int?
+
+  // Padrões fiscais
+  cfopCompraProdutorPF   String @default("1102")
+  cfopCompraProdutorPJ   String @default("1102")
+  cfopVendaInterestadual String @default("6101")
+  cfopVendaIntraestadual String @default("5101")
+
+  // FUNRURAL
+  funruralAplicar  Boolean @default(true)
+  funruralAliquota Float   @default(1.3)
+
+  // SPED
+  cnaeSped String?
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notasFiscais NotaFiscal[]
+}
+
+model NotaFiscal {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  configFiscalId String
+  configFiscal   ConfiguracaoFiscal @relation(fields: [configFiscalId], references: [id], onDelete: Cascade)
+
+  // Tipo / modelo
+  tipo   String  // 'entrada' | 'saida' | 'devolucao' | 'complementar' | 'triangular'
+  modelo String  @default("55")  // 55 = NF-e, 65 = NFC-e
+
+  // Numeração
+  serie     Int
+  numero    Int
+  chave     String?  @unique
+  protocolo String?
+
+  // Status SEFAZ
+  status         String  @default("rascunho")
+  // 'rascunho' | 'enviada' | 'autorizada' | 'rejeitada' | 'cancelada' | 'inutilizada' | 'denegada'
+  motivoRejeicao String? @db.Text
+
+  // Datas
+  dataEmissao      DateTime  @default(now())
+  dataAutorizacao  DateTime?
+  dataCancelamento DateTime?
+
+  // Vínculos
+  contratoId  String?
+  contrato    Contrato? @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+  romaneioId  String?
+  romaneioRel Romaneio? @relation(fields: [romaneioId], references: [id], onDelete: SetNull)
+
+  // Emitente snapshot
+  emitenteCnpj String
+  emitenteNome String
+  emitenteUF   String
+
+  // Destinatário snapshot
+  destinatarioDoc  String
+  destinatarioNome String
+  destinatarioUF   String
+  destinatarioIE   String?
+
+  // Itens (JSON)
+  itens Json
+
+  // Totais
+  valorProdutos Decimal  @db.Decimal(15, 2)
+  valorICMS     Decimal  @default(0) @db.Decimal(15, 2)
+  valorPIS      Decimal  @default(0) @db.Decimal(15, 2)
+  valorCOFINS   Decimal  @default(0) @db.Decimal(15, 2)
+  valorFUNRURAL Decimal  @default(0) @db.Decimal(15, 2)
+  valorFrete    Decimal  @default(0) @db.Decimal(15, 2)
+  valorOutros   Decimal  @default(0) @db.Decimal(15, 2)
+  valorTotal    Decimal  @db.Decimal(15, 2)
+
+  cfopPrincipal     String
+  naturezaOperacao  String
+  finalidadeEmissao String  @default("1")
+
+  intermunicipal Boolean @default(false)
+  interestadual  Boolean @default(false)
+
+  // Triangular
+  notaPaiId   String?
+  notaPaiRel  NotaFiscal?  @relation("NotaTriangular", fields: [notaPaiId], references: [id], onDelete: SetNull)
+  notasFilhas NotaFiscal[] @relation("NotaTriangular")
+
+  // Diferimento ICMS
+  diferimentoICMS Boolean @default(false)
+
+  // Provider
+  providerResponse Json?
+  providerNFeId    String?
+
+  // PDFs / XMLs
+  xmlUrl   String?
+  danfeUrl String?
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cartasCorrecao CartaCorrecao[]
+
+  @@unique([workspaceId, serie, numero])
+  @@index([workspaceId, status])
+  @@index([dataEmissao])
+  @@index([chave])
+  @@index([contratoId])
+}
+
+model CartaCorrecao {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  notaFiscalId String
+  notaFiscal   NotaFiscal @relation(fields: [notaFiscalId], references: [id], onDelete: Cascade)
+
+  sequencia Int
+  texto     String @db.Text
+
+  status    String  @default("rascunho")  // 'rascunho' | 'aceita' | 'rejeitada'
+  protocolo String?
+  motivo    String? @db.Text
+
+  dataAceite DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([notaFiscalId, sequencia])
+}
+
+model SpedExport {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  tipo        String   // 'fiscal' | 'contribuicoes'
+  competencia String   // 'YYYYMM'
+
+  arquivoUrl     String?
+  totalRegistros Int    @default(0)
+
+  status  String  @default("processando")  // 'processando' | 'pronto' | 'erro'
+  erroMsg String? @db.Text
+
+  hashArquivo String?
+
+  geradoEm DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, tipo, competencia])
+  @@index([workspaceId])
 }

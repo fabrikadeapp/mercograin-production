@@ -299,6 +299,13 @@ export default function ContratoDetalhesPage() {
                 </Button>
               </div>
             )}
+            {contrato.statusAssinatura === 'assinado' && (
+              <Link href={`/fiscal/notas/nova?contratoId=${contrato.id}`}>
+                <Button leftIcon={<FileDown className="h-4 w-4" />}>
+                  Emitir NF-e
+                </Button>
+              </Link>
+            )}
           </>
         }
       />
