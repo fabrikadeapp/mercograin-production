@@ -49,7 +49,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/propostas', icon: ListChecks, label: 'Propostas' },
   { href: '/boletos', icon: Wallet, label: 'Boletos' },
   { href: '/logistica', icon: Truck, label: 'Logística' },
-  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp Bot' },
+  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
 ] as const
 
 function getInitials(name?: string | null): string {

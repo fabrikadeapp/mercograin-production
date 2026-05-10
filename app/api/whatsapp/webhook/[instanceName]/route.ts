@@ -62,7 +62,7 @@ export async function POST(
   // 4. Roteamento
   try {
     await handleEvolutionEvent(
-      { id: instance.id, workspaceId: instance.workspaceId },
+      { id: instance.id, workspaceId: instance.workspaceId, instanceName },
       payload
     )
   } catch (e) {

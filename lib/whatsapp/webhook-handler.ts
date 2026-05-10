@@ -9,10 +9,18 @@
  */
 import type { PrismaClient } from '@prisma/client'
 import { db as defaultDb } from '@/lib/db'
+import { processCommand } from './bot-commands'
+import { captureError } from '@/lib/observability/capture'
 
 export interface InstanceCtx {
   id: string
   workspaceId: string
+  /**
+   * Opcional: nome da instância Evolution. Necessário pra que o parser
+   * de comandos possa enviar respostas. Quando ausente, comandos são
+   * silenciosamente ignorados.
+   */
+  instanceName?: string
 }
 
 export interface EvolutionWebhookPayload {
@@ -162,6 +170,25 @@ export async function processMessage(
   } catch (e: any) {
     // P2002 = duplicate (re-entrega) — ignorar silenciosamente
     if (e?.code !== 'P2002') throw e
+    // duplicate: NÃO disparar bot novamente (evita resposta dupla em retry)
+    return
+  }
+
+  // Bot commands: só pra mensagens inbound novas com texto.
+  // Falhas no bot NUNCA propagam — webhook precisa retornar 200.
+  if (!fromMe && text && instance.instanceName) {
+    try {
+      await processCommand(text, {
+        workspaceId: instance.workspaceId,
+        instanceName: instance.instanceName,
+        remoteJid,
+      })
+    } catch (e) {
+      captureError(e, {
+        where: 'webhook-handler.processCommand',
+        workspaceId: instance.workspaceId,
+      })
+    }
   }
 }
 
