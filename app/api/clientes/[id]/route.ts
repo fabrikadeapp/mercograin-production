@@ -3,6 +3,7 @@ import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { isValidCPF, isValidCNPJ } from '@/lib/br/documento'
+import { logAudit } from '@/lib/audit/log'
 
 const clienteUpdateSchema = z.object({
   nome: z.string().min(3).optional(),
@@ -21,9 +22,24 @@ const clienteUpdateSchema = z.object({
       message: 'CPF inválido',
     }),
   endereco: z.string().optional(),
-  cidade: z.string().optional(),
-  estado: z.string().optional(),
   tipo: z.enum(['comprador', 'vendedor']).optional(),
+  // QW4 — campos PF/PJ
+  tipoPessoa: z.enum(['PF', 'PJ']).optional(),
+  dadosBancarios: z
+    .object({
+      banco: z.string().optional(),
+      agencia: z.string().optional(),
+      conta: z.string().optional(),
+      tipo: z.string().optional(),
+      pixChave: z.string().optional(),
+    })
+    .partial()
+    .optional(),
+  inscricaoEstadual: z.string().optional(),
+  porte: z.enum(['ME', 'EPP', 'medio', 'grande']).optional(),
+  origemCapital: z.enum(['nacional', 'estrangeiro']).optional(),
+  scoreRelacionamento: z.number().int().min(0).max(1000).optional(),
+  limiteCredito: z.number().nonnegative().optional(),
 })
 
 // GET - Buscar cliente específico
@@ -77,7 +93,17 @@ export async function PUT(
 
     const updated = await db.cliente.update({
       where: { id: params.id },
-      data,
+      data: data as any,
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'update',
+      entidade: 'cliente',
+      entidadeId: updated.id,
+      mudancas: { antes: cliente, depois: updated },
     })
 
     return NextResponse.json(updated)
@@ -115,6 +141,16 @@ export async function DELETE(
 
     await db.cliente.delete({
       where: { id: params.id },
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'delete',
+      entidade: 'cliente',
+      entidadeId: params.id,
+      mudancas: { snapshot: cliente },
     })
 
     return NextResponse.json({ message: 'Cliente deletado com sucesso' })

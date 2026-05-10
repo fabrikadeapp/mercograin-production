@@ -85,6 +85,13 @@ export async function ativarEntidadeAprovada(
         data: { statusAprovacao: 'aprovado' },
       })
       break
+    case 'cliente':
+      // QW5 — cadastro de cliente aprovado pelo workflow
+      await db.cliente.update({
+        where: { id: entidadeId },
+        data: { statusCadastral: 'aprovado' } as any,
+      })
+      break
     // Outras entidades podem ser plugadas aqui (fixacao, washout, etc)
     default:
       break
@@ -103,6 +110,12 @@ export async function rejeitarEntidade(
       await db.contrato.update({
         where: { id: entidadeId },
         data: { statusAprovacao: 'rejeitado' },
+      })
+      break
+    case 'cliente':
+      await db.cliente.update({
+        where: { id: entidadeId },
+        data: { statusCadastral: 'rejeitado' } as any,
       })
       break
     default:

@@ -9,6 +9,7 @@ import { sendEmail } from '@/lib/email/send'
 import { welcomeTemplate } from '@/lib/email/templates/welcome'
 import { validatePasswordStrength } from '@/lib/password-validator'
 import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
+import { logAudit } from '@/lib/audit/log'
 
 const signupSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -80,6 +81,16 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    })
+
+    // QW2 — audit log signup (workspaceId null pois user ainda não tem ws)
+    await logAudit({
+      userId: user.id,
+      workspaceId: null,
+      acao: 'signup',
+      entidade: 'user',
+      entidadeId: user.id,
+      mudancas: { email: user.email, nome: user.nome },
     })
 
     // Enviar email de verificação (best-effort)

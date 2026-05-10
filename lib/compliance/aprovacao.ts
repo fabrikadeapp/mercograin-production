@@ -9,6 +9,7 @@ export type AprovacaoEntidade =
   | 'washout'
   | 'adiantamento'
   | 'nf_emissao'
+  | 'cliente'
 
 export interface AprovacaoEtapa {
   ordem: number

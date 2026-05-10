@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { sendEmail } from '@/lib/email/send'
 import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
 import { tryIniciarAprovacao } from '@/lib/compliance'
+import { logAudit } from '@/lib/audit/log'
 
 const contratoSchema = z.object({
   proposIdFk: z.string().min(1),
@@ -149,6 +150,21 @@ export async function POST(request: NextRequest) {
         workspace: {
           select: { name: true, empresa: { select: { razaoSocial: true } } },
         },
+      },
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'create',
+      entidade: 'contrato',
+      entidadeId: contrato.id,
+      mudancas: {
+        numero: contrato.numero,
+        clienteId: contrato.clienteId,
+        valorTotal,
+        statusAprovacao: contrato.statusAprovacao,
       },
     })
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sendEmail } from '@/lib/email/send'
 import { contractSignedTemplate } from '@/lib/email/templates/contract-signed'
+import { logAudit } from '@/lib/audit/log'
 
 const updateContratoSchema = z.object({
   numero: z.string().optional(),
@@ -98,6 +99,16 @@ export async function PUT(
       },
     })
 
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'update',
+      entidade: 'contrato',
+      entidadeId: updated.id,
+      mudancas: { antes: contrato, depois: { ...data } },
+    })
+
     // Notifica corretora (workspace owner) quando contrato é assinado.
     if (wasUnsigned && willBeSigned) {
       const ownerEmail = updated.workspace?.owner?.email
@@ -160,6 +171,16 @@ export async function DELETE(
       where: { id: params.id },
     })
 
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'delete',
+      entidade: 'contrato',
+      entidadeId: params.id,
+      mudancas: { snapshot: contrato },
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete contrato error:', error)
@@ -210,6 +231,16 @@ export async function PATCH(
           select: { numero: true },
         },
       },
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'update',
+      entidade: 'contrato',
+      entidadeId: updated.id,
+      mudancas: { statusAssinatura, antesStatus: contrato.statusAssinatura },
     })
 
     // Notifica corretora (workspace owner) — email é o do dono do workspace, não do cliente.

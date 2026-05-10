@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { resolveContent, type RenderContext, type ProductInfo } from '@/lib/contratos/render-template'
@@ -108,6 +109,21 @@ export async function POST(
       itensGrao,
       documentTitle: `Contrato ${contrato.numero}`,
     })
+
+    // QW8 — hash SHA-256 do PDF gerado (versionamento imutável).
+    // Best-effort: falha de DB não invalida o download.
+    try {
+      const hash = crypto
+        .createHash('sha256')
+        .update(buffer as Buffer)
+        .digest('hex')
+      await db.contrato.update({
+        where: { id: contrato.id },
+        data: { pdfHash: hash, pdfHashedAt: new Date() } as any,
+      })
+    } catch (hashErr) {
+      console.error('[contratos render-pdf] hash persist failed:', hashErr)
+    }
 
     return new NextResponse(buffer as any, {
       status: 200,

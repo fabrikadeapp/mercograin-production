@@ -287,6 +287,9 @@ model AlertaPreco {
   status         String    @default("ativo") // 'ativo' | 'disparado' | 'inativo'
   ultimoDisparo  DateTime?
   notifEnviadoEm DateTime? // último email de alerta enviado (idempotência cron)
+  // QW6 — alertas de basis e câmbio além de preço puro
+  tipo           String    @default("preco") // 'preco' | 'basis' | 'cambio'
+  graoBase       String? // pra basis: 'soja' | 'milho' | 'trigo'
   criadoEm       DateTime  @default(now())
 
   @@index([workspaceId])
@@ -309,6 +312,17 @@ model Cliente {
   endereco    String?   @db.Text
   telefone    String?   @db.VarChar(20)
   ativo       Boolean   @default(true)
+  // QW4 — cadastro PF/PJ + dados bancários + governança
+  cpf                 String?  @unique @db.VarChar(14)
+  tipoPessoa          String? // 'PF' | 'PJ'
+  dadosBancarios      Json? // { banco, agencia, conta, tipo, pixChave }
+  inscricaoEstadual   String?  @db.VarChar(30)
+  porte               String? // 'ME' | 'EPP' | 'medio' | 'grande'
+  origemCapital       String? // 'nacional' | 'estrangeiro'
+  scoreRelacionamento Int? // 0-1000
+  limiteCredito       Decimal? @db.Decimal(15, 2)
+  /// QW5 — workflow de aprovação cadastral
+  statusCadastral     String   @default("aprovado") // 'rascunho' | 'analise' | 'aprovado' | 'rejeitado'
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -336,11 +350,16 @@ model Cliente {
 model Cotacao {
   id        String   @id @default(cuid())
   grao      String // 'soja' | 'milho' | 'trigo'
-  preco     Decimal  @db.Decimal(10, 2) // cents/bushel
+  preco     Decimal  @db.Decimal(10, 2) // cents/bushel — alias de close
   simbolo   String   @db.VarChar(10) // 'ZS' | 'ZC' | 'ZW'
   fonte     String   @default("TradingView") // TradingView | Investing.com
   dolarReal Decimal? @db.Decimal(10, 4) // Taxa USD/BRL nessa hora
   volume    Int? // volume negociado
+  // QW7 — OHLC para análise técnica e candlestick
+  open      Decimal? @db.Decimal(10, 2)
+  high      Decimal? @db.Decimal(10, 2)
+  low       Decimal? @db.Decimal(10, 2)
+  close     Decimal? @db.Decimal(10, 2)
   data      DateTime @default(now())
 
   @@unique([grao, data])
@@ -408,6 +427,9 @@ model Contrato {
   pdfUrl           String?   @db.Text
   assinadoEm       DateTime?
   statusAssinatura String    @default("pendente")
+  // QW8 — versionamento imutável do PDF (SHA-256)
+  pdfHash          String?
+  pdfHashedAt      DateTime?
   criadoEm         DateTime  @default(now())
   atualizadoEm     DateTime  @updatedAt
 
@@ -535,19 +557,22 @@ model PasswordResetToken {
 // ============================================
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String
-  acao       String
-  entidade   String
-  entidadeId String
-  mudancas   Json?
-  ipAddress  String?
-  userAgent  String?
-  criadoEm   DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  acao        String
+  entidade    String
+  entidadeId  String
+  mudancas    Json?
+  ipAddress   String?
+  userAgent   String?
+  /// QW3 — workspaceId opcional (eventos sem workspace: signup, login)
+  workspaceId String?
+  criadoEm    DateTime @default(now())
 
   @@index([userId])
   @@index([entidade])
   @@index([criadoEm])
+  @@index([workspaceId])
 }
 
 // ============================================

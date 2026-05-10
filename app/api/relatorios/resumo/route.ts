@@ -170,14 +170,16 @@ export async function GET(req: NextRequest) {
     ]
 
     // Eficiência logística — TODO: criar model Logistica
+    // QW1 — NPS retorna null até existir tabela de pesquisas. UI deve renderizar
+    //       "NPS pendente" quando recebe null. Removido flag _mock e valor falso "+72".
     const logistica = {
       custoMedioT: 'R$ 184,20',
       leadTime: '6,2 dias',
       ocupacaoArmazem: '78%',
       quebraContratual: '0,4%',
       slaEntrega: '98,2%',
-      nps: '+72',
-      _mock: true,
+      nps: null as string | null,
+      npsLabel: 'NPS pendente',
     }
 
     // KPIs

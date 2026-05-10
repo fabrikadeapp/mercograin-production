@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { logAudit } from '@/lib/audit/log'
 
 const propostaSchema = z.object({
   clienteId: z.string().min(1),
@@ -132,6 +133,21 @@ export async function POST(request: NextRequest) {
         validadeEm: new Date(data.validadeEm),
       },
       include: { cliente: true },
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'create',
+      entidade: 'proposta',
+      entidadeId: proposta.id,
+      mudancas: {
+        numero: proposta.numero,
+        clienteId: proposta.clienteId,
+        tipo: proposta.tipo,
+        valorTotal: Number(proposta.valorTotal),
+      },
     })
 
     return NextResponse.json(proposta, { status: 201 })

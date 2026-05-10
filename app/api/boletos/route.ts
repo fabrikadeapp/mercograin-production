@@ -6,6 +6,7 @@ import { getBraspagClient } from '@/lib/braspag-client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { sendEmail } from '@/lib/email/send'
 import { boletoGeneratedTemplate } from '@/lib/email/templates/boleto-generated'
+import { logAudit } from '@/lib/audit/log'
 
 const boletoSchema = z.object({
   clienteId: z.string().min(1),
@@ -172,6 +173,22 @@ export async function POST(request: NextRequest) {
         braspagId: braspagId || null,
       },
       include: { cliente: true },
+    })
+
+    // QW2 — audit log
+    await logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'create',
+      entidade: 'boleto',
+      entidadeId: boleto.id,
+      mudancas: {
+        numero: boleto.numero,
+        clienteId: boleto.clienteId,
+        valor: Number(boleto.valor),
+        vencimento: boleto.vencimento,
+        braspagId,
+      },
     })
 
     // Notifica pagador (best-effort).
