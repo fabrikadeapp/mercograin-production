@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "prisma migrate dev",
+    "db:seed-demo": "tsx scripts/seed-mercograin-demo.ts",
     "db:seed": "npx prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
