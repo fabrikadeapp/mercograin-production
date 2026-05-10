@@ -30,6 +30,7 @@ import {
   CheckSquare,
   Banknote,
   Leaf,
+  ShoppingCart,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -50,6 +51,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/contratos', icon: FileText, label: 'Contratos' },
   { href: '/futuros', icon: LineChart, label: 'Futuros' },
   { href: '/classificados', icon: Store, label: 'Classificados' },
+  { href: '/ofertas', icon: ShoppingCart, label: 'Ofertas' },
   { href: '/fluxo-de-caixa', icon: Coins, label: 'Fluxo de Caixa' },
   { href: '/relatorios', icon: BarChart3, label: 'Relatórios' },
   { href: '/clientes', icon: Users, label: 'Clientes & CRM' },

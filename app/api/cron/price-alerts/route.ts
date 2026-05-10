@@ -15,6 +15,8 @@ import { db } from '@/lib/db'
 import { sendEmail } from '@/lib/email/send'
 import { priceAlertTemplate } from '@/lib/email/templates/price-alert'
 import { captureError, captureMessage } from '@/lib/observability/capture'
+import { fetchQuoteBySymbol, TD_SYMBOLS } from '@/lib/quotes/twelvedata'
+import { fetchBcbDolar } from '@/lib/quotes/bcb'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -48,17 +50,71 @@ async function handle(req: Request) {
       },
     })
 
+    // Cache pra evitar refetch USD/BRL N vezes
+    let cachedDolar: number | null = null
+    async function getDolar(): Promise<number | null> {
+      if (cachedDolar != null) return cachedDolar
+      const r = await fetchBcbDolar()
+      const v = r.cotacaoVenda
+      cachedDolar = v
+      return v
+    }
+
+    // Conversão CBOT (cents/bushel) → R$/sc (60kg) por grão
+    // bushels/ton: soja=36.74, milho=39.37, trigo=36.74 ⇒ sc60kg = ton*16.6667
+    const BUSHELS_PER_SC60: Record<string, number> = {
+      soja: 36.7437 * 0.06,   // ~2.2046
+      milho: 39.3683 * 0.06,  // ~2.3621
+      trigo: 36.7437 * 0.06,
+    }
+    function cbotToRsSc(centsPerBushel: number, grao: string, usdBrl: number): number {
+      const usdPerBushel = centsPerBushel / 100
+      const bushelsPerSc = BUSHELS_PER_SC60[grao] ?? 2.2
+      return usdPerBushel * bushelsPerSc * usdBrl
+    }
+
     for (const a of alertas) {
       try {
-        // Última cotação do grão
-        const last = await db.cotacao.findFirst({
-          where: { grao: a.graoLabel },
-          orderBy: { data: 'desc' },
-        })
-        if (!last) continue
-        const preco = Number(last.preco)
-        const alvo = Number(a.preco)
         const op = a.operador
+        const alvo = Number(a.preco)
+        let valorComparado: number | null = null
+        let fonteLabel = 'CEPEA'
+
+        if (a.tipo === 'cambio') {
+          // alvo é USD/BRL — compara contra PTAX atual
+          valorComparado = await getDolar()
+          fonteLabel = 'BCB-PTAX'
+        } else if (a.tipo === 'basis') {
+          // Basis = preço CEPEA - preço CBOT convertido R$/sc.
+          // Útil para mesa: avisa quando spread interno fica grande/pequeno.
+          const last = await db.cotacao.findFirst({
+            where: { grao: a.graoLabel },
+            orderBy: { data: 'desc' },
+          })
+          if (!last) continue
+          const dolar = await getDolar()
+          if (!dolar) continue
+          const tdSym = TD_SYMBOLS[a.graoLabel as keyof typeof TD_SYMBOLS]?.symbol
+          if (!tdSym) continue
+          const td = await fetchQuoteBySymbol(tdSym)
+          const cbotClose = td && typeof td.close !== 'undefined' ? Number(td.close) : null
+          if (!cbotClose || !Number.isFinite(cbotClose)) continue
+          const cbotRsSc = cbotToRsSc(cbotClose, a.graoBase || a.graoLabel, dolar)
+          valorComparado = Number(last.preco) - cbotRsSc
+          fonteLabel = 'CEPEA−CBOT(USD→BRL)'
+        } else {
+          // tipo='preco' (default) — comportamento original
+          const last = await db.cotacao.findFirst({
+            where: { grao: a.graoLabel },
+            orderBy: { data: 'desc' },
+          })
+          if (!last) continue
+          valorComparado = Number(last.preco)
+          fonteLabel = last.fonte
+        }
+
+        if (valorComparado == null || !Number.isFinite(valorComparado)) continue
+        const preco = valorComparado
         const condition = (op === '>' && preco >= alvo) || (op === '<' && preco <= alvo)
         if (!condition) continue
         // Cooldown
@@ -68,13 +124,16 @@ async function handle(req: Request) {
         const name = a.workspace?.owner?.nome || 'operador'
         if (!email) continue
 
-        const alvoLabel = `${op === '>' ? '≥' : '≤'} R$ ${alvo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        const moeda = a.tipo === 'cambio' ? 'R$' : a.tipo === 'basis' ? 'Δ R$' : 'R$'
+        const alvoLabel = `${op === '>' ? '≥' : '≤'} ${moeda} ${alvo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        const labelGrao = a.tipo === 'cambio' ? 'USD/BRL'
+          : a.tipo === 'basis' ? `BASIS ${a.graoLabel}` : a.graoLabel
         const tpl = priceAlertTemplate({
           name,
-          granoLabel: a.graoLabel,
+          granoLabel: labelGrao,
           precoAtual: preco,
           alvoLabel,
-          fonte: last.fonte,
+          fonte: fonteLabel,
         })
         const r = await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text })
         if (r) {

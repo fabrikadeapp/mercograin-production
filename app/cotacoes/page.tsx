@@ -4,6 +4,7 @@ import { Filter, Plus } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { CotacoesContent } from './_components/CotacoesContent'
 import { HistoricoAvancado } from '@/components/cotacoes/HistoricoAvancado'
+import { MesaShortcutsClient } from '@/components/cotacoes/MesaShortcutsClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,7 @@ export default async function Page() {
       <div className="mt-6">
         <HistoricoAvancado />
       </div>
+      <MesaShortcutsClient />
     </AppShell>
   )
 }

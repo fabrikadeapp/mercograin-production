@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { fetchCepeaQuotes, type CepeaLabel } from '@/lib/quotes/cepea'
 import { fetchBcbDolar } from '@/lib/quotes/bcb'
+import { fetchQuoteBySymbol, TD_SYMBOLS } from '@/lib/quotes/twelvedata'
 import { captureError, captureMessage } from '@/lib/observability/capture'
 
 export const dynamic = 'force-dynamic'
@@ -111,6 +112,37 @@ async function handle(req: Request) {
         continue
       }
       try {
+        // QW7 — OHLC do dia via Twelve Data (ETF proxy CBOT). Best-effort:
+        // se chave ausente / rate-limit / fora-de-pregão, mantém só close=preco
+        // CEPEA. Free tier: 800 req/dia; 3 chamadas/dia aqui é desprezível.
+        let ohlcOpen: number | null = null
+        let ohlcHigh: number | null = null
+        let ohlcLow: number | null = null
+        let ohlcClose: number = preco
+        try {
+          const tdSym = TD_SYMBOLS[label].symbol
+          const td = await fetchQuoteBySymbol(tdSym)
+          if (td) {
+            const toNum = (v: unknown) =>
+              typeof v === 'number' ? v : v ? Number(v) : null
+            const o = toNum(td.open)
+            const h = toNum(td.high)
+            const l = toNum(td.low)
+            const c = toNum(td.close)
+            // Twelve Data devolve USD/share. Pra preservar consistência (preco está
+            // em R$/sc), normaliza pra fração do close CEPEA — mantém shape OHLC
+            // sem distorcer escala. open/high/low são razões aplicadas ao close R$/sc.
+            if (o && c && Number.isFinite(o) && Number.isFinite(c) && c !== 0) {
+              ohlcOpen = +(preco * (o / c)).toFixed(2)
+              if (h) ohlcHigh = +(preco * (h / c)).toFixed(2)
+              if (l) ohlcLow  = +(preco * (l / c)).toFixed(2)
+            }
+          }
+        } catch (e: any) {
+          // OHLC falhou — não bloqueia o save principal
+          captureMessage(`sync-cotacoes: OHLC ${label} indisponível (${e?.message || e})`, 'info')
+        }
+
         await db.cotacao.upsert({
           where: { grao_data: { grao: label, data: dataDia } },
           create: {
@@ -120,12 +152,20 @@ async function handle(req: Request) {
             fonte: 'CEPEA-ESALQ',
             dolarReal: dolarReal ?? undefined,
             data: dataDia,
+            open: ohlcOpen ?? undefined,
+            high: ohlcHigh ?? undefined,
+            low: ohlcLow ?? undefined,
+            close: ohlcClose,
           },
           update: {
             preco,
             simbolo: SIMBOLO[label],
             fonte: 'CEPEA-ESALQ',
             dolarReal: dolarReal ?? undefined,
+            open: ohlcOpen ?? undefined,
+            high: ohlcHigh ?? undefined,
+            low: ohlcLow ?? undefined,
+            close: ohlcClose,
           },
         })
         summary.saved++

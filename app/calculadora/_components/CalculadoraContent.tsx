@@ -21,6 +21,7 @@ import {
   type CalculoInput,
   type Grao,
 } from '@/lib/calculo/preco-liquido'
+import { CenariosSidebar } from '@/components/calculadora/CenariosSidebar'
 
 interface Preset {
   grao: Grao
@@ -128,6 +129,13 @@ export function CalculadoraContent({ comissaoPadrao, preset }: Props) {
           <Chip variant="info">Pré-preenchido pela proposta</Chip>
         </div>
       ) : null}
+
+      {/* S10 M2 — sidebar de cenários (salvar/listar/load) */}
+      <CenariosSidebar
+        currentInput={input}
+        currentResult={result}
+        onLoad={(loaded: any) => { try { setInput(loaded as CalculoInput) } catch {} }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
         {/* COLUNA INPUTS */}

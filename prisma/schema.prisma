@@ -46,6 +46,10 @@ model User {
   // S6 M5 Risco — perfis de corretor
   corretorPerfis Corretor[]
 
+  // S10 M2 Mesa profissional — ofertas + cenários da calculadora
+  ofertas             Oferta[]             @relation("OfertaProprietario")
+  cenariosCalculadora CenarioCalculadora[]
+
   @@index([email])
 }
 
@@ -134,6 +138,9 @@ model Workspace {
   // S8 M6 — Comissão hierárquica
   comissaoRegras         ComissaoRegra[]
   comissoesApuradas      ComissaoApurada[]
+  // S10 M2 — Mesa profissional
+  ofertas                Oferta[]
+  cenariosCalculadora    CenarioCalculadora[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -474,6 +481,9 @@ model Proposta {
   @@index([status])
   @@index([validadeEm])
   @@index([workspaceId])
+
+  // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
+  ofertaOrigem Oferta?
 }
 
 // ============================================
@@ -2569,4 +2579,53 @@ model ComissaoApurada {
 
   @@index([workspaceId, status])
   @@index([corretorId])
+}
+
+// ============================================
+// S10 M2 — MESA PROFISSIONAL
+// Oferta (compra/venda com validade) + CenarioCalculadora (snapshots)
+// ============================================
+
+model Oferta {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  numero         String    @unique @db.VarChar(60)
+  tipo           String    @db.VarChar(10) // 'compra' | 'venda'
+  cultura        String    @db.VarChar(30) // 'soja' | 'milho' | 'trigo' | ...
+  qtdSc          Decimal   @db.Decimal(14, 2)
+  precoSc        Decimal   @db.Decimal(10, 2)
+  precoMoeda     String    @default("BRL") @db.VarChar(3) // 'BRL' | 'USD'
+  origem         String?   @db.VarChar(2)
+  destino        String?   @db.VarChar(2)
+  validadeHoras  Int       @default(72)
+  validaAte      DateTime
+  status         String    @default("aberta") @db.VarChar(15) // 'aberta'|'aceita'|'expirada'|'cancelada'
+  publica        Boolean   @default(false)
+  proprietarioId String
+  proprietario   User      @relation("OfertaProprietario", fields: [proprietarioId], references: [id], onDelete: Cascade)
+  observacao     String?   @db.Text
+  propostaId     String?   @unique
+  proposta       Proposta? @relation(fields: [propostaId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([workspaceId, status, cultura])
+  @@index([publica, status])
+  @@index([validaAte])
+}
+
+model CenarioCalculadora {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nome          String    @db.VarChar(120)
+  inputJson     Json
+  resultadoJson Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([workspaceId, userId])
 }
