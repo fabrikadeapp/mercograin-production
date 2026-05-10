@@ -129,6 +129,9 @@ model Workspace {
   corretores             Corretor[]
   limitesRisco           LimiteRisco[]
   limitesBreach          LimiteBreach[]
+  // S8 M6 — Comissão hierárquica
+  comissaoRegras         ComissaoRegra[]
+  comissoesApuradas      ComissaoApurada[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -2456,4 +2459,71 @@ model LimiteBreach {
 
   @@index([workspaceId, severidade, resolvidoEm])
   @@index([limiteId])
+}
+
+// ============================================
+// S8 M6 — COMISSÃO HIERÁRQUICA
+// ============================================
+
+/// Regra de comissão. Aplicada conforme escopo (tipo + filtro JSON).
+/// pctTotal é o % sobre valor do contrato. Distribuição interna via pctCorretor/Originador/Mesa/House.
+model ComissaoRegra {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  nome        String
+  descricao   String?
+  /// 'global' | 'cultura' | 'mesa' | 'corretor' | 'cliente'
+  escopoTipo  String?
+  /// Filtro JSON do escopo (ex.: { cultura: 'soja' })
+  escopoFiltro Json?
+
+  pctTotal      Float
+  pctCorretor   Float
+  pctOriginador Float?
+  pctMesa       Float?
+  pctHouse      Float?
+
+  ativo      Boolean @default(true)
+  prioridade Int     @default(0)
+
+  apuradas ComissaoApurada[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, ativo, prioridade])
+}
+
+/// Comissão apurada para um contrato específico. Imutável após criação (status='apurada').
+model ComissaoApurada {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String  @unique
+  regraId    String?
+  regra      ComissaoRegra? @relation(fields: [regraId], references: [id], onDelete: SetNull)
+
+  valorContrato       Decimal @db.Decimal(15, 2)
+  pctTotalAplicado    Float
+  valorTotalComissao  Decimal @db.Decimal(15, 2)
+
+  corretorId      String?
+  valorCorretor   Decimal @default(0) @db.Decimal(15, 2)
+  originadorId    String?
+  valorOriginador Decimal @default(0) @db.Decimal(15, 2)
+  mesaId          String?
+  valorMesa       Decimal @default(0) @db.Decimal(15, 2)
+  valorHouse      Decimal @default(0) @db.Decimal(15, 2)
+
+  /// 'apurada' | 'paga' | 'cancelada'
+  status  String    @default("apurada")
+  pagaEm  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId, status])
+  @@index([corretorId])
 }

@@ -1,0 +1,31 @@
+name: Apurar Comissões (Mensal)
+
+# Apura comissões de contratos assinados sem ComissaoApurada.
+# Endpoint: /api/cron/apurar-comissoes (idempotente — contratoId UNIQUE).
+#
+# Setup:
+#   1. Setar secret CRON_SECRET no repo (Settings → Secrets → Actions).
+#   2. Garantir que o mesmo CRON_SECRET está nas env vars do Railway.
+
+on:
+  schedule:
+    # Dia 1 de cada mês, 03:00 UTC = 00:00 BRT
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+jobs:
+  apurar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger apurar-comissoes endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/apurar-comissoes \
+            | tee response.json
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::Apuração retornou ok=false — verifique Sentry"
+            exit 1
+          fi
