@@ -18,16 +18,17 @@ jobs:
       - name: Install postgresql-client (matches Railway server version)
         run: |
           sudo apt-get update -qq
-          # Repo oficial PGDG. Instala client mais recente disponível (18 ou superior).
+          # Repo oficial PGDG.
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
             | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update -qq
-          # Tenta versão mais alta disponível; fallback ordenado.
-          sudo apt-get install -y postgresql-client-18 \
-            || sudo apt-get install -y postgresql-client-17 \
-            || sudo apt-get install -y postgresql-client-16
-          pg_dump --version
+          sudo apt-get install -y postgresql-client-18
+
+          # Ubuntu pode deixar pg_dump da versão errada no PATH (cliente 16
+          # vem como dependência implícita). Forçar PATH pra binários do 18:
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/18/bin/pg_dump --version
 
       - name: Dump database
         env:

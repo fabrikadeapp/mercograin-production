@@ -6,6 +6,7 @@ import { ScreenshotShowcase } from './ScreenshotShowcase'
 import { Pricing } from './Pricing'
 import { Faq } from './Faq'
 import { Footer } from './Footer'
+import { SalesContactFab } from './SalesContactFab'
 
 export function LandingPage() {
   return (
@@ -20,6 +21,7 @@ export function LandingPage() {
         <Faq />
       </main>
       <Footer />
+      <SalesContactFab />
     </div>
   )
 }
