@@ -1,0 +1,113 @@
+name: Backup Postgres Diário
+
+# Backup diário do Postgres Railway -> Supabase Storage (bucket privado).
+# Retenção: 30 dias (LGPD lifecycle claro).
+# Bucket destino: phb-grain-backups (privado — service_role key obrigatória).
+
+on:
+  schedule:
+    # 03:00 UTC = 00:00 BRT — horário de baixo tráfego
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install postgresql-client-16
+        run: |
+          sudo apt-get update -qq
+          # Repo oficial Postgres garante client 16+ (Railway roda 16)
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-16
+          pg_dump --version
+
+      - name: Dump database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%d_%H%M%S")
+          BACKUP_FILE="phb-grain-${TIMESTAMP}.sql.gz"
+
+          # --no-owner / --no-acl: restore funciona em qualquer DB destino
+          # --clean --if-exists: DROPs antes de CREATE (idempotente)
+          # exclude-schema: Supabase gerencia auth/storage, não fazem parte do nosso schema
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --clean \
+            --if-exists \
+            --exclude-schema='auth' \
+            --exclude-schema='storage' \
+            | gzip -9 > "$BACKUP_FILE"
+
+          echo "Backup created: $BACKUP_FILE"
+          ls -lh "$BACKUP_FILE"
+          echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
+
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          HTTP_CODE=$(curl -sSL -o /tmp/upload-resp.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/octet-stream" \
+            -H "x-upsert: true" \
+            --data-binary "@${BACKUP_FILE}" \
+            "${SUPABASE_URL}/storage/v1/object/phb-grain-backups/${BACKUP_FILE}")
+
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/upload-resp.json || true
+          echo ""
+
+          if [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::Upload falhou (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          echo "Uploaded to: phb-grain-backups/${BACKUP_FILE}"
+
+      - name: Cleanup old backups (retention 30 days)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Lista todos arquivos do bucket
+          LIST=$(curl -fsSL -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"prefix":"","limit":1000,"sortBy":{"column":"created_at","order":"asc"}}' \
+            "${SUPABASE_URL}/storage/v1/object/list/phb-grain-backups")
+
+          CUTOFF=$(date -u -d '30 days ago' +%s)
+
+          OLD_FILES=$(echo "$LIST" | jq -r --arg cutoff "$CUTOFF" '
+            .[] | select(.name | startswith("phb-grain-")) |
+            select((.created_at | fromdateiso8601) < ($cutoff | tonumber)) |
+            .name
+          ')
+
+          if [ -z "$OLD_FILES" ]; then
+            echo "Nenhum backup antigo (>30d) para limpar."
+            exit 0
+          fi
+
+          echo "$OLD_FILES" | while read -r name; do
+            if [ -n "$name" ]; then
+              echo "Deleting: $name"
+              curl -sSL -X DELETE \
+                -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+                -H "Content-Type: application/json" \
+                -d "{\"prefixes\":[\"$name\"]}" \
+                "${SUPABASE_URL}/storage/v1/object/phb-grain-backups" || true
+              echo ""
+            fi
+          done
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "::error::Backup Postgres falhou — checar Sentry e Railway logs"

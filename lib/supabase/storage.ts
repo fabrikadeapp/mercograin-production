@@ -89,6 +89,68 @@ export async function deleteImage(path: string): Promise<void> {
 }
 
 /**
+ * Upload genérico para qualquer bucket (público ou privado). Sem validação de
+ * MIME type/tamanho — chamador é responsável. Usado por fluxos não-imagem
+ * como backups Postgres.
+ */
+export async function uploadFile(opts: {
+  bucket: string
+  path: string
+  buffer: Buffer
+  contentType: string
+}): Promise<string> {
+  const supabase = getSupabaseAdmin()
+  const { error } = await supabase.storage
+    .from(opts.bucket)
+    .upload(opts.path, opts.buffer, {
+      contentType: opts.contentType,
+      upsert: true,
+    })
+  if (error) throw new Error(`Supabase upload failed: ${error.message}`)
+  return opts.path
+}
+
+/**
+ * Gera URL temporária assinada para arquivo em bucket privado.
+ * @param expiresIn segundos até expirar (default 1h)
+ */
+export async function getSignedUrl(
+  bucket: string,
+  path: string,
+  expiresIn = 3600,
+): Promise<string> {
+  const supabase = getSupabaseAdmin()
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, expiresIn)
+  if (error || !data) {
+    throw new Error(`Sign URL failed: ${error?.message ?? 'unknown error'}`)
+  }
+  return data.signedUrl
+}
+
+/** Lista arquivos em um bucket (até 100), ordenados por created_at desc. */
+export async function listFiles(bucket: string, prefix?: string) {
+  const supabase = getSupabaseAdmin()
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .list(prefix || '', {
+      sortBy: { column: 'created_at', order: 'desc' },
+      limit: 100,
+    })
+  if (error) throw new Error(error.message)
+  return data || []
+}
+
+/** Remove um ou mais arquivos. Best-effort (apenas loga warn em falha). */
+export async function deleteFile(bucket: string, paths: string[]) {
+  if (paths.length === 0) return
+  const supabase = getSupabaseAdmin()
+  const { error } = await supabase.storage.from(bucket).remove(paths)
+  if (error) console.warn('[supabase] delete failed:', error.message)
+}
+
+/**
  * Detecta se uma URL aponta para nosso bucket Supabase.
  * Retorna false para data-URLs, paths locais (/uploads/...) ou URLs externas.
  */

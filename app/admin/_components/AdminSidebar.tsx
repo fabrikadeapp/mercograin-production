@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   Tags,
   LineChart,
+  HardDriveDownload,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -43,6 +44,7 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: 'Operacional',
   },
   { href: '/admin/infra', icon: Server, label: 'Infraestrutura' },
+  { href: '/admin/backups', icon: HardDriveDownload, label: 'Backups' },
 ] as const
 
 function getInitials(name?: string | null): string {
