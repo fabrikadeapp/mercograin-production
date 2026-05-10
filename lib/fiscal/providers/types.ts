@@ -21,7 +21,8 @@ export interface NFeItemPayload {
 
 export interface NFeEmissaoPayload {
   tipo: 'entrada' | 'saida' | 'devolucao' | 'complementar' | 'triangular'
-  modelo: '55' | '65'
+  /** 55=NF-e padrão, 65=NFC-e consumidor, 04=NFP-e produtor rural. */
+  modelo: '55' | '65' | '04'
   serie: number
   numero: number
   naturezaOperacao: string

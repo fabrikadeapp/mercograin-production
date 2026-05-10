@@ -58,6 +58,19 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://www.profitsync.ia.br',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black',
+    title: 'BH Grain',
+  },
+}
+
+export const viewport = {
+  themeColor: '#0a8a3a',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 }
 
 export default function RootLayout({

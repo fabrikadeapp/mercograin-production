@@ -31,7 +31,7 @@ export interface ItemNF {
   destinatarioRegime?: RegimeDestinatario
   diferimentoICMS?: boolean
   // Operação típica de corretora
-  operacao: 'compra_produtor' | 'venda_industria' | 'venda_exportacao' | 'devolucao' | 'transferencia'
+  operacao: 'compra_produtor' | 'venda_industria' | 'venda_exportacao' | 'devolucao' | 'transferencia' | 'nfpe_produtor'
 }
 
 export interface TributosCalculados {
@@ -101,7 +101,25 @@ export function calcularTributos(item: ItemNF, regime: Regime): TributosCalculad
       UF_DIFERIMENTO_GRAOS.has(item.origemUF) &&
       !isInterestadual)
 
-  if (aplicaDiferimento) {
+  if (item.operacao === 'nfpe_produtor') {
+    // NFP-e modelo 04: emitida pelo produtor PF. Saída do produtor.
+    // ICMS depende da UF (geralmente diferido em RS/PR/MT/MS/SC/GO p/ grãos).
+    if (!isInterestadual && UF_DIFERIMENTO_GRAOS.has(item.origemUF)) {
+      obs.push('NFP-e: ICMS diferido (operação interna com produto primário)')
+      aliquotaICMS = 0
+    } else if (isInterestadual) {
+      aliquotaICMS = aliquotaICMSInterestadual(item.origemUF, item.destinoUF)
+      valorICMS = base * aliquotaICMS
+      obs.push(
+        `NFP-e: ICMS interestadual ${(aliquotaICMS * 100).toFixed(0)}% (${item.origemUF}→${item.destinoUF})`
+      )
+    } else {
+      aliquotaICMS = 0.17
+      valorICMS = base * aliquotaICMS
+      obs.push('NFP-e: ICMS interno 17% (conservador, varia por UF)')
+    }
+    obs.push('NFP-e: FUNRURAL é responsabilidade do adquirente na próxima operação (não destacado nesta nota)')
+  } else if (aplicaDiferimento) {
     obs.push('ICMS diferido (operação interna com produto primário)')
     aliquotaICMS = 0
   } else if (item.operacao === 'venda_exportacao') {

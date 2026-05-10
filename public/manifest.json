@@ -1,0 +1,42 @@
+{
+  "name": "BH Grain — Mesa de operações",
+  "short_name": "BH Grain",
+  "description": "Trading de grãos com cotações ao vivo, contratos e WhatsApp Bot",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a8a3a",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "scope": "/",
+  "icons": [
+    { "src": "/api/icons/192", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/api/icons/512", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/api/icons/192", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/api/icons/512", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Balança",
+      "short_name": "Balança",
+      "description": "Pesagem de cargas",
+      "url": "/operacao/balanca",
+      "icons": [{ "src": "/api/icons/192", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Cotações",
+      "short_name": "Cotações",
+      "description": "Preços CEPEA ao vivo",
+      "url": "/cotacoes",
+      "icons": [{ "src": "/api/icons/192", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Execução",
+      "short_name": "Execução",
+      "description": "Dashboard execução de contratos",
+      "url": "/operacao/execucao",
+      "icons": [{ "src": "/api/icons/192", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

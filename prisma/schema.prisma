@@ -1011,6 +1011,10 @@ model Romaneio {
 
   observacoes String? @db.Text
 
+  // S7 M4 — QR público pra conferência na portaria
+  qrTokenHash     String?
+  qrTokenExpiraEm DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1020,6 +1024,7 @@ model Romaneio {
   @@unique([workspaceId, numero])
   @@index([workspaceId, status])
   @@index([motoristaId])
+  @@index([qrTokenHash])
 }
 
 model TicketBalanca {
@@ -1091,6 +1096,9 @@ model Classificacao {
   descontoImpurezaPct  Float @default(0)
   descontoArdidosPct   Float @default(0)
   descontoQuebradosPct Float @default(0)
+  // S7 M4 — avariados generic (mofados/manchados/picados etc. consolidados)
+  avariadosGeral       Float @default(0)
+  descontoAvariadosPct Float @default(0)
   descontoTotalPct     Float @default(0)
 
   pesoLiquidoFinalKg Float?

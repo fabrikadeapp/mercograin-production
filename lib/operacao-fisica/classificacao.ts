@@ -17,6 +17,8 @@ export interface MedidasClassificacao {
   quebrados?: number
   esverdeados?: number
   pesoHectolitroKg?: number
+  /** S7 M4 — soma genérica de avariados (mofados/manchados/picados etc.). */
+  avariadosGeral?: number
 }
 
 export interface PadraoClassificacao {
@@ -33,6 +35,8 @@ export interface PadraoClassificacao {
   fatorDescontoImpureza: number
   fatorDescontoArdidos: number
   fatorDescontoQuebrados: number
+  /** S7 M4 — fator default 1.5% por ponto percentual de avariados generic. */
+  fatorDescontoAvariados?: number
 }
 
 export interface ResultadoClassificacao {
@@ -40,6 +44,7 @@ export interface ResultadoClassificacao {
   descontoImpurezaPct: number
   descontoArdidosPct: number
   descontoQuebradosPct: number
+  descontoAvariadosPct: number
   descontoTotalPct: number
   pesoLiquidoFinalKg: number
   alertaForaPadrao: string[]
@@ -132,9 +137,19 @@ export function classificarCarga(
     0,
     padrao.fatorDescontoQuebrados
   )
+  // S7 M4 — avariados generic: cada ponto percentual desconta fator (default 1.5%).
+  const descontoAvariadosPct = descontoLinear(
+    medidas.avariadosGeral ?? 0,
+    0,
+    padrao.fatorDescontoAvariados ?? 1.5
+  )
 
   const somaPct =
-    descontoUmidadePct + descontoImpurezaPct + descontoArdidosPct + descontoQuebradosPct
+    descontoUmidadePct +
+    descontoImpurezaPct +
+    descontoArdidosPct +
+    descontoQuebradosPct +
+    descontoAvariadosPct
   const descontoTotalPct = Math.min(somaPct, DESCONTO_TOTAL_MAX_PCT)
 
   const pesoLiquidoFinalKg = pesoBrutoKg * (1 - descontoTotalPct / 100)
@@ -190,6 +205,7 @@ export function classificarCarga(
     descontoImpurezaPct: round2(descontoImpurezaPct),
     descontoArdidosPct: round2(descontoArdidosPct),
     descontoQuebradosPct: round2(descontoQuebradosPct),
+    descontoAvariadosPct: round2(descontoAvariadosPct),
     descontoTotalPct: round2(descontoTotalPct),
     pesoLiquidoFinalKg: round2(pesoLiquidoFinalKg),
     alertaForaPadrao,
