@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import {
+  uploadImage,
+  deleteImage,
+  isSupabaseUrl,
+  getExtensionForMime,
+} from '@/lib/supabase/storage'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
-const ALLOWED_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'])
+const ALLOWED_MIMES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/svg+xml',
+  'image/webp',
+])
 
 function canManage(role: string | undefined, isAdmin: boolean) {
   if (isAdmin) return true
@@ -19,10 +29,11 @@ function canManage(role: string | undefined, isAdmin: boolean) {
  * POST — upload da logo da workspace.
  * Apenas owner/admin do workspace (ou superadmin global) pode subir.
  *
- * Storage: filesystem local em public/uploads/logos/.
- * AVISO: Railway tem filesystem efêmero — uploads se perdem em deploys novos.
- * Fallback automático para data URL inline (base64) caso FS write falhe.
- * Dívida técnica: migrar para Railway Volume ou Cloudflare R2/S3.
+ * Storage: Supabase Storage (bucket phb-grain-uploads, pasta logos/).
+ * Substitui o filesystem local (efêmero no Railway) e o fallback data-URL.
+ *
+ * Retrocompatibilidade: logos antigas em /uploads/... ou data: continuam
+ * renderizando até o usuário re-uploadar (migração lazy).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -50,38 +61,37 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const extMap: Record<string, string> = {
-      'image/png': 'png',
-      'image/jpeg': 'jpg',
-      'image/jpg': 'jpg',
-      'image/svg+xml': 'svg',
-    }
-    const ext = extMap[file.type] || 'png'
-    const filename = `${scope.workspaceId}-${Date.now()}.${ext}`
+    const ext = getExtensionForMime(file.type)
+    const fileName = `${scope.workspaceId}-${Date.now()}.${ext}`
 
-    let url: string
-    try {
-      const dir = path.join(process.cwd(), 'public', 'uploads', 'logos')
-      await fs.mkdir(dir, { recursive: true })
-      await fs.writeFile(path.join(dir, filename), buffer)
-      url = `/uploads/logos/${filename}`
-    } catch (fsErr) {
-      console.warn('[workspaces/logo] FS write falhou, usando data URL:', fsErr)
-      url = `data:${file.type};base64,${buffer.toString('base64')}`
+    // Limpar logo Supabase antiga (se existir) antes de subir nova
+    const existing = await db.dadosEmpresa.findUnique({
+      where: { workspaceId: scope.workspaceId },
+      select: { logoUrl: true },
+    })
+    if (existing?.logoUrl && isSupabaseUrl(existing.logoUrl)) {
+      await deleteImage(existing.logoUrl)
     }
+
+    const { publicUrl } = await uploadImage({
+      buffer,
+      mimeType: file.type,
+      pathPrefix: 'logos',
+      fileName,
+    })
 
     await db.dadosEmpresa.upsert({
       where: { workspaceId: scope.workspaceId },
       create: {
         workspaceId: scope.workspaceId,
         razaoSocial: 'Empresa',
-        logoUrl: url,
+        logoUrl: publicUrl,
         logoUploadedAt: new Date(),
       },
-      update: { logoUrl: url, logoUploadedAt: new Date() },
+      update: { logoUrl: publicUrl, logoUploadedAt: new Date() },
     })
 
-    return NextResponse.json({ url })
+    return NextResponse.json({ url: publicUrl })
   } catch (e: any) {
     console.error('[workspaces/logo POST]', e)
     return NextResponse.json({ error: e?.message || 'error' }, { status: 500 })
@@ -108,14 +118,10 @@ export async function DELETE() {
       return NextResponse.json({ ok: true })
     }
 
-    // Tenta remover arquivo do FS (best effort)
-    if (empresa.logoUrl && empresa.logoUrl.startsWith('/uploads/logos/')) {
-      try {
-        const filePath = path.join(process.cwd(), 'public', empresa.logoUrl)
-        await fs.unlink(filePath)
-      } catch {
-        // ignora — arquivo pode já ter sumido em deploy efêmero
-      }
+    // Best-effort: deleta arquivo no Supabase. URLs antigas (/uploads/ ou data:)
+    // não há o que apagar — apenas zera o campo no DB.
+    if (empresa.logoUrl && isSupabaseUrl(empresa.logoUrl)) {
+      await deleteImage(empresa.logoUrl)
     }
 
     await db.dadosEmpresa.update({

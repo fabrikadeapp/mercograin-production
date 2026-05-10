@@ -7,6 +7,15 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'qdzktmzpogidcxeuuozh.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
 }
 
 // Sentry é opcional: se SENTRY_DSN/NEXT_PUBLIC_SENTRY_DSN não estiverem definidos,

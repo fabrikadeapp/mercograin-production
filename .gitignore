@@ -46,3 +46,4 @@ prisma/*.db-journal
 # Playwright MCP artifacts
 .playwright-mcp/
 phb-*.png
+landing-atual.jpeg
