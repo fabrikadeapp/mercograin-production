@@ -1,4 +1,5 @@
 import { redis } from '@/lib/redis'
+import { rateLimit as memoryRateLimit } from '@/lib/security/rate-limit'
 
 interface RateLimitOptions {
   key: string
@@ -12,22 +13,38 @@ interface RateLimitResult {
   resetTime: Date
 }
 
+// Detecta a presença de Redis via env. O wrapper safeRedis sempre existe,
+// mas se REDIS_URL não está setado, todas as ops viram no-op (incr→1) e o
+// rate-limit ficaria fail-open. Aqui usamos o fallback in-memory.
+const HAS_REDIS = !!process.env.REDIS_URL
+let warnedNoRedis = false
+function warnFallbackOnce() {
+  if (warnedNoRedis) return
+  warnedNoRedis = true
+  console.warn(
+    '[RateLimit] REDIS_URL ausente — usando rate limiter in-memory (single-instance only).',
+  )
+}
+
 export async function checkRateLimit({
   key,
   limit,
   windowMs,
 }: RateLimitOptions): Promise<RateLimitResult> {
-  try {
-    if (!redis) {
-      // Fallback: sem Redis, permitir tudo (com log)
-      console.warn('[RateLimit] Redis não disponível, permitindo requisição')
-      return {
-        success: true,
-        remaining: limit,
-        resetTime: new Date(Date.now() + windowMs),
-      }
+  // Fail-closed fallback: sem Redis, usa limiter in-memory (lib/security/rate-limit).
+  // Limitação conhecida: estado por processo (multi-instance race), aceitável em
+  // single-instance Railway. NUNCA mais retornamos success=true cego.
+  if (!HAS_REDIS) {
+    warnFallbackOnce()
+    const r = memoryRateLimit(key, limit, windowMs)
+    return {
+      success: r.ok,
+      remaining: r.remaining,
+      resetTime: new Date(Date.now() + r.resetIn),
     }
+  }
 
+  try {
     const current = await redis.incr(key)
     const ttl = await redis.ttl(key)
 
@@ -45,12 +62,13 @@ export async function checkRateLimit({
       resetTime,
     }
   } catch (error) {
-    console.error('[RateLimit] Erro ao verificar limite:', error)
-    // Em caso de erro, permitir (fail-open)
+    console.error('[RateLimit] Erro Redis, fallback in-memory:', error)
+    // Falha do Redis em runtime — degrada para in-memory ao invés de fail-open.
+    const r = memoryRateLimit(key, limit, windowMs)
     return {
-      success: true,
-      remaining: limit,
-      resetTime: new Date(Date.now() + windowMs),
+      success: r.ok,
+      remaining: r.remaining,
+      resetTime: new Date(Date.now() + r.resetIn),
     }
   }
 }

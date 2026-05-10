@@ -38,17 +38,28 @@ export async function POST(
     return NextResponse.json({ ok: false, reason: 'unknown_instance' })
   }
 
-  // 2. Validar shared secret (se configurado)
-  if (instance.webhookSecret) {
-    const auth =
-      req.headers.get('apikey') ||
-      req.headers.get('x-webhook-secret') ||
-      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
-      null
-    if (auth !== instance.webhookSecret) {
-      captureMessage('whatsapp webhook auth failed', 'warning', { instanceName })
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    }
+  // 2. Validar shared secret — FAIL-CLOSED.
+  // Instância sem webhookSecret é config incompleta: rejeitamos com 503 para
+  // que ensureInstance() (no próximo lookup do workspace) regenere o secret e
+  // re-aplique via setWebhook. NUNCA aceitar payload sem auth.
+  if (!instance.webhookSecret) {
+    captureMessage('whatsapp webhook missing secret on instance', 'error', {
+      instanceName,
+      instanceId: instance.id,
+    })
+    return NextResponse.json(
+      { error: 'instance not provisioned' },
+      { status: 503 },
+    )
+  }
+  const auth =
+    req.headers.get('apikey') ||
+    req.headers.get('x-webhook-secret') ||
+    req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    null
+  if (auth !== instance.webhookSecret) {
+    captureMessage('whatsapp webhook auth failed', 'warning', { instanceName })
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   // 3. Parse payload

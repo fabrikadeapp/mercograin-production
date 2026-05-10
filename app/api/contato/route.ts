@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const contatoSchema = z.object({
   nome: z.string().min(2, 'Nome muito curto').max(120),
@@ -11,6 +12,20 @@ const contatoSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 contatos/hora por IP — protege contra spam no formulário público.
+    const ip = getClientIp(req)
+    const limit = rateLimit(`contato:${ip}`, 5, 60 * 60 * 1000)
+    if (!limit.ok) {
+      const minutes = Math.ceil(limit.resetIn / 60000)
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Muitas tentativas. Tente novamente em ${minutes} min.`,
+        },
+        { status: 429 },
+      )
+    }
+
     const body = await req.json().catch(() => null)
     if (!body) {
       return NextResponse.json(
@@ -35,10 +50,6 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data
-    const ip =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      req.headers.get('x-real-ip') ||
-      null
 
     await db.webhookLog.create({
       data: {
@@ -46,7 +57,7 @@ export async function POST(req: NextRequest) {
         status: 'recebido',
         payload: data,
         mensagem: `Contato de ${data.nome} (${data.email})`,
-        ipOrigem: ip ?? undefined,
+        ipOrigem: ip !== 'unknown' ? ip : undefined,
       },
     })
 
