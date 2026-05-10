@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldAlert,
   Tags,
+  LineChart,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -26,6 +27,7 @@ interface NavItem {
 
 const NAV_ITEMS: readonly NavItem[] = [
   { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
+  { href: '/admin/metricas', icon: LineChart, label: 'Métricas' },
   { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
   { href: '/admin/assinaturas', icon: CreditCard, label: 'Assinaturas' },
   { href: '/admin/pricing', icon: Tags, label: 'Pricing CMS' },
