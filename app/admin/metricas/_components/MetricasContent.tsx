@@ -149,6 +149,21 @@ export function MetricasContent({ initialMetrics }: Props) {
         />
       </section>
 
+      {/* ============ Seção 1b: Hedge & Risco (Enterprise tier) ============ */}
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KPICard
+          eyebrow="Volume hedge ativo"
+          value={`US$ ${Math.round(metrics.volumeHedgeAtivoUSD).toLocaleString('pt-BR')}`}
+          subtitle="notional total · posições abertas"
+          highlightValue
+        />
+        <KPICard
+          eyebrow="Exposição cambial mediana"
+          value={`US$ ${Math.round(metrics.exposicaoCambialMedianaUSD).toLocaleString('pt-BR')}`}
+          subtitle="por workspace · valor mediano"
+        />
+      </section>
+
       {/* ============ Seção 2: MRR Trend + Distribuição por Plano ============ */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="p-5 lg:col-span-2 space-y-4">

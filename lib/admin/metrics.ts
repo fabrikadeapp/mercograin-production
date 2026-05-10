@@ -66,6 +66,10 @@ export interface DashboardMetrics {
   // Churn
   churnUltimo30d: number
 
+  // Hedge & Risco (Epic 4) — vitrine pra plano Enterprise
+  volumeHedgeAtivoUSD: number // soma do notional USD de PosicaoHedge abertas
+  exposicaoCambialMedianaUSD: number // mediana do |exposição líquida USD| por workspace
+
   geradoEm: string
 }
 
@@ -346,6 +350,45 @@ export async function calcularMetricas(): Promise<DashboardMetrics> {
       .filter((x): x is TopWorkspace => x !== null)
   }
 
+  // === Hedge & Risco (Epic 4) ===
+  // Volume hedge ativo (soma USD de PosicaoHedge abertas em todos workspaces)
+  let volumeHedgeAtivoUSD = 0
+  let exposicaoCambialMedianaUSD = 0
+  try {
+    const posicoesAbertas = await db.posicaoHedge.findMany({
+      where: { status: 'aberta' },
+      select: {
+        workspaceId: true,
+        qtdContratos: true,
+        precoEntradaUsdBu: true,
+      },
+    })
+    for (const p of posicoesAbertas) {
+      volumeHedgeAtivoUSD +=
+        Number(p.qtdContratos) * 5000 * Number(p.precoEntradaUsdBu ?? 0)
+    }
+
+    // Exposição cambial mediana — agrega por workspace (somente magnitude)
+    const porWs = new Map<string, number>()
+    for (const p of posicoesAbertas) {
+      const v =
+        Number(p.qtdContratos) * 5000 * Number(p.precoEntradaUsdBu ?? 0)
+      porWs.set(p.workspaceId, (porWs.get(p.workspaceId) ?? 0) + v)
+    }
+    const valores = Array.from(porWs.values())
+      .map((v) => Math.abs(v))
+      .sort((a, b) => a - b)
+    if (valores.length > 0) {
+      const mid = Math.floor(valores.length / 2)
+      exposicaoCambialMedianaUSD =
+        valores.length % 2 === 0
+          ? (valores[mid - 1] + valores[mid]) / 2
+          : valores[mid]
+    }
+  } catch (err) {
+    // Se tabela nova ainda não existir (pré-migration), zero é OK.
+  }
+
   return {
     mrr: Math.round(mrrCents / 100),
     mrrCents,
@@ -363,6 +406,8 @@ export async function calcularMetricas(): Promise<DashboardMetrics> {
     porPlano,
     topWorkspaces,
     churnUltimo30d,
+    volumeHedgeAtivoUSD,
+    exposicaoCambialMedianaUSD,
     geradoEm: new Date().toISOString(),
   }
 }

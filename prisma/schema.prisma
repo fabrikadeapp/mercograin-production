@@ -81,6 +81,13 @@ model Workspace {
   barterInsumos        BarterInsumo[]
   planosVendas         PlanoVendas[]
   washouts             Washout[]
+  // Hedge & Risco (Epic 4)
+  posicoesHedge        PosicaoHedge[]
+  ndfs                 NDF[]
+  marcacoesMercado     MarcacaoMercado[]
+
+  /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
+  moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
 
   onboardingCompletedAt DateTime?
 
@@ -399,10 +406,12 @@ model Contrato {
   contratosFilhos    Contrato[] @relation("OperacaoTriangular")
 
   // Originação (Epic 1)
-  fixacao        ContratoFixacao?
-  adiantamentos  Adiantamento[]
-  barterInsumos  BarterInsumo[]
-  washouts       Washout[]
+  fixacao       ContratoFixacao?
+  adiantamentos Adiantamento[]
+  barterInsumos BarterInsumo[]
+  washouts      Washout[]
+  // Hedge (Epic 4): hedge financeiro vinculado a este contrato físico
+  posicoesHedge PosicaoHedge[]   @relation("HedgeContrato")
 
   @@index([clienteId])
   @@index([proposIdFk])
@@ -1264,4 +1273,134 @@ model Washout {
 
   @@index([workspaceId])
   @@index([contratoId])
+}
+
+// ============================================
+// EPIC 4 — HEDGE & RISCO
+// (Long/Short, NDF, Marcação a Mercado, Multi-moeda)
+// ============================================
+
+/// Posição de hedge financeiro (Long ou Short).
+/// IMPORTANTE: distinta de `ContratoFuturo` — ContratoFuturo modela negócio
+/// comercial (cliente compra/vende lote físico futuro). PosicaoHedge é operação
+/// financeira pura na bolsa (CBOT/B3) usada como instrumento de proteção.
+model PosicaoHedge {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String // ex 'HDG-2024-001'
+  tipo   String // 'long' | 'short'
+
+  cultura        String? // 'soja' | 'milho' | 'trigo' (null se hedge cambial puro)
+  contratoFuturo String // 'ZS' | 'ZC' | 'ZW' (CBOT) ou 'SBM' (B3)
+  vencimento     DateTime // mês de vencimento (1º dia)
+
+  qtdContratos     Float // num contratos futuros (1 contrato CBOT soja = 5000 bushels = 136 t)
+  qtdEquivalenteSc Float // qtd em sacas equivalente (calculada)
+
+  // Preços
+  precoEntradaUsdBu Decimal? @db.Decimal(10, 4) // CBOT: USD/bushel
+  precoEntradaBrlSc Decimal? @db.Decimal(10, 2) // BR: R$/sc
+
+  // Câmbio na entrada (importante pra P&L)
+  cambioEntradaUsdBrl Decimal? @db.Decimal(10, 4)
+
+  // Margem inicial / depositada
+  margemDepositadaUSD Decimal? @db.Decimal(15, 2)
+  margemDepositadaBRL Decimal? @db.Decimal(15, 2)
+
+  // Custos
+  corretagemUSD Decimal @default(0) @db.Decimal(10, 2)
+
+  // Vínculos
+  contratoOrigemId String?
+  contratoOrigem   Contrato? @relation("HedgeContrato", fields: [contratoOrigemId], references: [id], onDelete: SetNull)
+
+  status String @default("aberta") // 'aberta' | 'fechada' | 'rolada' | 'liquidada'
+
+  abertoEm  DateTime  @default(now())
+  fechadoEm DateTime?
+
+  // Quando fechado
+  precoSaidaUsdBu   Decimal? @db.Decimal(10, 4)
+  precoSaidaBrlSc   Decimal? @db.Decimal(10, 2)
+  cambioSaidaUsdBrl Decimal? @db.Decimal(10, 4)
+  pnlFinalUSD       Decimal? @db.Decimal(15, 2)
+  pnlFinalBRL       Decimal? @db.Decimal(15, 2)
+
+  observacoes String? @db.Text
+
+  marcacoes MarcacaoMercado[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, status])
+  @@index([cultura, vencimento])
+  @@index([contratoOrigemId])
+}
+
+/// NDF — Non-Deliverable Forward (moeda ou commodity).
+model NDF {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String
+  tipo   String // 'moeda' | 'commodity'
+
+  contraparteNome String
+  contraparteCnpj String?
+
+  direcao   String // 'compra' | 'venda'
+  ativoTipo String // 'USDBRL' | 'EURBRL' | 'ZS' | 'ZC' | 'ZW' ...
+
+  notional Decimal @db.Decimal(15, 2) // valor de referência
+  strike   Decimal @db.Decimal(10, 4) // taxa contratada
+
+  dataAbertura   DateTime @default(now())
+  dataVencimento DateTime
+
+  status String @default("aberta") // 'aberta' | 'liquidada' | 'cancelada'
+
+  precoLiquidacao Decimal? @db.Decimal(10, 4)
+  resultadoBRL    Decimal? @db.Decimal(15, 2)
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, status])
+  @@index([dataVencimento])
+}
+
+/// Marcação a Mercado — snapshot diário das posições abertas.
+model MarcacaoMercado {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  posicaoHedgeId String
+  posicaoHedge   PosicaoHedge @relation(fields: [posicaoHedgeId], references: [id], onDelete: Cascade)
+
+  data DateTime // dia da marcação
+
+  precoMercadoUsdBu Decimal? @db.Decimal(10, 4)
+  precoMercadoBrlSc Decimal? @db.Decimal(10, 2)
+  cambioUsdBrl      Decimal? @db.Decimal(10, 4)
+
+  pnlUnrealizedUSD Decimal @db.Decimal(15, 2)
+  pnlUnrealizedBRL Decimal @db.Decimal(15, 2)
+
+  variacaoDiaUSD Decimal? @db.Decimal(15, 2)
+  variacaoDiaBRL Decimal? @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
+
+  @@unique([posicaoHedgeId, data])
+  @@index([workspaceId, data])
 }

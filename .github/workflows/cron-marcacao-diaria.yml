@@ -1,0 +1,31 @@
+name: Marcação a Mercado Diária
+
+# Marca a mercado todas posições de hedge abertas usando última Cotacao + TaxaCambio.
+# Endpoint: /api/cron/marcacao-diaria (idempotente por dia).
+#
+# Setup necessário:
+#   1. Setar secret CRON_SECRET no repo (Settings → Secrets → Actions).
+#   2. Garantir que o mesmo CRON_SECRET está nas env vars do Railway.
+
+on:
+  schedule:
+    # 18:00 UTC = 15:00 BRT — após fechamento dos mercados intraday
+    - cron: '0 18 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  marcacao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger marcacao-diaria endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/marcacao-diaria \
+            | tee response.json
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::Marcação retornou ok=false ou parcial — verifique Sentry"
+            exit 1
+          fi
