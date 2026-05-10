@@ -118,6 +118,9 @@ model Workspace {
   contratoNotificacoes  ContratoNotificacao[]
   // S4 M1 — Compliance KYC + propriedades rurais
   propriedadesRurais    PropriedadeRural[]
+  // S5 M9 — EUDR: cadeia de custódia + DDS
+  talhaoLotes           TalhaoLote[]
+  duediligenceStatements DueDiligenceStatement[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -525,6 +528,8 @@ model Contrato {
   // Compliance (Epic 5)
   movimentosFinanceiros MovimentoFinanceiro[]
   royalties             Royalty[]
+  // S5 M9 EUDR
+  duediligenceStatements DueDiligenceStatement[]
   /// Status próprio do contrato — quando há workflow de aprovação ativo
   statusAprovacao       String                @default("aprovado") // 'pendente_aprovacao' | 'aprovado' | 'rejeitado'
 
@@ -960,6 +965,8 @@ model LoteEstoque {
 
   ticketsBalanca TicketBalanca[]
   movimentacoes  MovimentacaoLote[]
+  // S5 M9 EUDR
+  talhaoLotes    TalhaoLote[]
 
   @@unique([workspaceId, numero])
   @@index([workspaceId, cultura, status])
@@ -1042,6 +1049,9 @@ model TicketBalanca {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // S5 M9 EUDR
+  talhaoLotes TalhaoLote[]
 
   @@unique([workspaceId, numero])
   @@index([workspaceId, status, tipo])
@@ -1909,6 +1919,9 @@ model Talhao {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // S5 M9 EUDR — cadeia de custódia
+  talhaoLotes TalhaoLote[]
+
   @@unique([workspaceId, produtorId, nome])
   @@index([workspaceId, ativo])
   @@index([safraId])
@@ -2190,4 +2203,107 @@ model ListaSuja {
   @@index([lista, cnpjOuCpf])
   @@index([cnpjOuCpf])
   @@index([clienteId])
+}
+
+// ============================================
+// S5 M9 — EUDR: Cadeia de custódia + DDS + Áreas Protegidas
+// ============================================
+
+/// Cadeia de custódia: liga lote de estoque aos talhões de origem (N:M),
+/// opcionalmente apontando o ticket de balança que materializou o aporte.
+model TalhaoLote {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  talhaoId String
+  talhao   Talhao @relation(fields: [talhaoId], references: [id], onDelete: Cascade)
+
+  loteId String
+  lote   LoteEstoque @relation(fields: [loteId], references: [id], onDelete: Cascade)
+
+  qtdSc Float
+
+  ticketBalancaId String?
+  ticketBalanca   TicketBalanca? @relation(fields: [ticketBalancaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([talhaoId, loteId, ticketBalancaId])
+  @@index([workspaceId])
+  @@index([loteId])
+  @@index([talhaoId])
+}
+
+/// Catálogo local de áreas protegidas (TI/UC/embargo IBAMA) para checagem
+/// de sobreposição com propriedades rurais. Populado por cron mensal.
+model AreaProtegida {
+  id   String @id @default(cuid())
+  tipo String // 'terra_indigena' | 'unidade_conservacao' | 'embargo_ibama'
+  nome String
+  uf   String?
+
+  geoJson      Json
+  centroideLat Float?
+  centroideLng Float?
+  bboxJson     Json? // [minLng, minLat, maxLng, maxLat]
+
+  fonte       String // 'funai' | 'icmbio' | 'ibama'
+  fonteUrl    String?
+  importadoEm DateTime @default(now())
+
+  @@index([tipo, uf])
+}
+
+/// Due Diligence Statement — declaração formal exigida pelo EUDR para
+/// exportação de commodities relacionadas a desmatamento (soja, café, etc.)
+/// para a UE.
+model DueDiligenceStatement {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  contratoId String?
+  contrato   Contrato? @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+
+  // Operador EUDR (exportador)
+  operadorNome     String
+  operadorCnpj     String
+  operadorEndereco String
+
+  // Produto
+  cultura      String
+  ncm          String
+  qtdToneladas Float
+
+  // Cadeia (snapshots)
+  propriedadesOrigem Json // [{ propriedadeId, nome, car, areaHa, geoJson, carStatus, sobreposicao, alertasMapBiomas }]
+  lotesEnvolvidos    Json // [{ loteId, numero, qtdSc, talhoesOrigem }]
+
+  // Riscos
+  riscoNivel   String // 'baixo' | 'medio' | 'alto' | 'critico'
+  riscoFatores Json   // [{ tipo, descricao, gravidade }]
+
+  // Atestação
+  atestadoPor String?
+  atestadoEm  DateTime?
+
+  conclusao String @default("rascunho") // 'rascunho' | 'em_revisao' | 'aprovada' | 'rejeitada' | 'enviada_ue'
+
+  pdfUrl  String?
+  pdfHash String?
+
+  eudrSubmissionId String?
+  eudrSubmittedAt  DateTime?
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, conclusao])
+  @@index([contratoId])
 }
