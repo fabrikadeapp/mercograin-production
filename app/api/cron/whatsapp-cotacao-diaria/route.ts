@@ -13,7 +13,7 @@
  */
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { sendText } from '@/lib/whatsapp/evolution'
+import { sendText, getDefaultInstance } from '@/lib/whatsapp/evolution'
 import { captureError, captureMessage } from '@/lib/observability/capture'
 
 export const dynamic = 'force-dynamic'
@@ -142,19 +142,25 @@ async function handle(req: Request) {
   }
 
   const recipientsRaw = (process.env.WHATSAPP_DAILY_RECIPIENTS || '').trim()
-  const recipients = recipientsRaw
+  const globalRecipients = recipientsRaw
     ? recipientsRaw
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
     : []
 
-  if (recipients.length === 0) {
+  // Multi-tenant: workspaces com instância conectada
+  const connectedInstances = await db.whatsAppInstance.findMany({
+    where: { status: 'connected' },
+    select: { id: true, workspaceId: true, instanceName: true },
+  })
+
+  if (globalRecipients.length === 0 && connectedInstances.length === 0) {
     return NextResponse.json({
       ok: true,
       sent: 0,
       failed: 0,
-      message: 'no recipients configured',
+      message: 'no recipients configured and no workspace instances connected',
     })
   }
 
@@ -171,20 +177,60 @@ async function handle(req: Request) {
 
   let sent = 0
   let failed = 0
+  let totalTargets = 0
   const errors: string[] = []
 
-  for (const number of recipients) {
-    try {
-      await sendText(number, message)
-      sent++
-    } catch (err: any) {
-      failed++
-      const msg = err?.message || 'unknown'
-      errors.push(`${number}: ${msg}`)
-      captureError(err, {
-        where: 'cron/whatsapp-cotacao-diaria/sendText',
-        number,
-      })
+  // 1) Fallback global via env (legacy) — usa instância default
+  if (globalRecipients.length > 0) {
+    const defaultInstance = getDefaultInstance()
+    for (const number of globalRecipients) {
+      totalTargets++
+      try {
+        await sendText(defaultInstance, number, message)
+        sent++
+      } catch (err: any) {
+        failed++
+        const msg = err?.message || 'unknown'
+        errors.push(`[global ${number}] ${msg}`)
+        captureError(err, {
+          where: 'cron/whatsapp-cotacao-diaria/sendText',
+          scope: 'global',
+          number,
+        })
+      }
+    }
+  }
+
+  // 2) Multi-tenant — para cada workspace conectado, envia pra members do workspace
+  //    com telefone preenchido em WorkspaceMember.user.telefone? — neste schema
+  //    User não tem telefone, então usamos DadosEmpresa.telefone como fallback,
+  //    e/ou WHATSAPP_DAILY_RECIPIENTS específico do workspace via env CSV
+  //    (TODO: schema dedicado pra opt-in por member).
+  for (const wsInst of connectedInstances) {
+    const empresa = await db.dadosEmpresa.findUnique({
+      where: { workspaceId: wsInst.workspaceId },
+      select: { telefone: true },
+    })
+    const wsRecipients: string[] = []
+    if (empresa?.telefone) wsRecipients.push(empresa.telefone)
+
+    for (const number of wsRecipients) {
+      totalTargets++
+      try {
+        await sendText(wsInst.instanceName, number, message)
+        sent++
+      } catch (err: any) {
+        failed++
+        const msg = err?.message || 'unknown'
+        errors.push(`[ws=${wsInst.workspaceId} ${number}] ${msg}`)
+        captureError(err, {
+          where: 'cron/whatsapp-cotacao-diaria/sendText',
+          scope: 'workspace',
+          workspaceId: wsInst.workspaceId,
+          instanceName: wsInst.instanceName,
+          number,
+        })
+      }
     }
   }
 
@@ -192,8 +238,12 @@ async function handle(req: Request) {
     ok: true,
     sent,
     failed,
-    total: recipients.length,
-    message: `enviado para ${sent}/${recipients.length} destinatários`,
+    total: totalTargets,
+    instances: {
+      global: globalRecipients.length,
+      workspaces: connectedInstances.length,
+    },
+    message: `enviado para ${sent}/${totalTargets} destinatários`,
     errors: errors.length ? errors : undefined,
   })
 }

@@ -62,6 +62,7 @@ model Workspace {
   armazens          Armazem[]
   motoristas        Motorista[]
   ordensCarga       OrdemCarga[]
+  whatsappInstance  WhatsAppInstance?
 
   onboardingCompletedAt DateTime?
 
@@ -669,4 +670,34 @@ model OrdemCarga {
   @@index([motoristaId])
   @@index([transportadoraId])
   @@index([contratoId])
+}
+
+// ============================================
+// WHATSAPP INSTÂNCIA (Evolution API por workspace)
+// ============================================
+
+model WhatsAppInstance {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  instanceName  String  @unique
+  evolutionId   String?
+  status        String  @default("disconnected") // disconnected|connecting|connected|error
+
+  phoneNumber   String?
+  phoneJid      String?
+  profileName   String?
+  profilePicUrl String?
+
+  connectedAt    DateTime?
+  disconnectedAt DateTime?
+  lastQrAt       DateTime?
+
+  webhookSecret String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
 }

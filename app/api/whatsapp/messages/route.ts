@@ -1,30 +1,32 @@
 /**
  * GET /api/whatsapp/messages?limit=50
- * Lista últimos envios WhatsApp registrados em WebhookLog (tipo='whatsapp_send').
+ * Lista últimos envios WhatsApp registrados em WebhookLog (tipo='whatsapp_send'),
+ * filtrados pelo workspaceId atual (admin pode usar ?scope=all).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { requireScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
+    const scope = await requireScope(searchParams)
+
     const limit = Math.min(
       Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1),
       200
     )
 
-    // Multi-tenancy: filtrar por userId no payload (admin pode ver tudo via ?scope=all)
-    const wantAll = searchParams.get('scope') === 'all'
+    const wantAll = scope.isAdmin && searchParams.get('scope') === 'all'
     const baseWhere: any = { tipo: 'whatsapp_send' }
     if (!wantAll) {
-      baseWhere.payload = { path: ['userId'], equals: session.user.id }
+      // Filtra logs cujo payload.workspaceId == scope.workspaceId
+      // Backwards-compat: também aceita logs antigos que tinham apenas userId do user atual
+      baseWhere.OR = [
+        { payload: { path: ['workspaceId'], equals: scope.workspaceId } },
+        { payload: { path: ['userId'], equals: scope.userId } },
+      ]
     }
 
     const rows = await db.webhookLog.findMany({
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
         number: p.number ?? '',
         text: p.text ?? '',
         messageId: p.messageId ?? null,
-        status: r.status, // recebido | processado | erro
+        status: r.status,
         mensagem: r.mensagem ?? null,
         timestamp: r.criadoEm,
       }
@@ -48,13 +50,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data, total: data.length })
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Erro ao listar mensagens'
+    if (message === 'Não autorizado') {
+      return NextResponse.json({ error: message }, { status: 401 })
+    }
     console.error('[whatsapp/messages] erro:', error)
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : 'Erro ao listar mensagens',
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

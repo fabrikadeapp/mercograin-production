@@ -5,9 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { auth } from '@/auth'
 import { requireScope } from '@/lib/auth/scope'
 import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
+import { ensureInstance as ensureWorkspaceInstance } from '@/lib/whatsapp/instance-resolver'
 import { db } from '@/lib/db'
 import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
@@ -75,10 +75,6 @@ function render(
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
     const scope = await requireScope()
 
     const ip = getClientIp(request)
@@ -134,8 +130,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: rendered.error }, { status: 400 })
     }
 
+    const wsInstance = await ensureWorkspaceInstance(scope.workspaceId)
+
     try {
-      const r = await sendText(resolvedNumber, rendered)
+      const r = await sendText(wsInstance.instanceName, resolvedNumber, rendered)
       await db.webhookLog
         .create({
           data: {
@@ -147,7 +145,9 @@ export async function POST(request: NextRequest) {
               template,
               targetType,
               targetId: targetId ?? null,
-              userId: session.user.id,
+              userId: scope.userId,
+              workspaceId: scope.workspaceId,
+              instanceName: wsInstance.instanceName,
             } as any,
             status: 'processado',
             mensagem: `Notify ${template} (${r.messageId})`,
@@ -167,6 +167,8 @@ export async function POST(request: NextRequest) {
               text: rendered,
               template,
               error: message,
+              workspaceId: scope.workspaceId,
+              instanceName: wsInstance.instanceName,
             } as any,
             status: 'erro',
             mensagem: message,

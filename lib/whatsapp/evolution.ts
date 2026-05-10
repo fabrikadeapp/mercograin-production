@@ -1,18 +1,14 @@
 /**
  * Evolution API v2 client (WhatsApp).
  *
- * Replaces the legacy local-baileys implementation. All HTTP traffic targets the
- * Evolution API v2.2.3 instance hosted on Railway. Every call includes the
- * `apikey` header and disables Next.js fetch caching.
- *
- * TODO: Implement webhook receiver at /api/whatsapp/webhook to handle inbound
- * MESSAGES_UPSERT / CONNECTION_UPDATE events when we want to react to incoming
- * messages or connection state changes.
+ * Multi-tenant: todas as funções aceitam `instanceName` como parâmetro.
+ * Para uso legacy (cron envs etc), use `getDefaultInstance()` que retorna
+ * `process.env.EVOLUTION_INSTANCE_NAME` como fallback.
  */
 
 const EVOLUTION_URL = (process.env.EVOLUTION_API_URL || '').replace(/\/+$/, '')
 const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY || ''
-const INSTANCE = process.env.EVOLUTION_INSTANCE_NAME || 'phb-grain'
+const DEFAULT_INSTANCE = process.env.EVOLUTION_INSTANCE_NAME || 'phb-grain'
 
 export type EvolutionState = 'open' | 'connecting' | 'close' | 'unknown'
 
@@ -21,6 +17,7 @@ export interface EvolutionInstance {
   status: EvolutionState
   ownerJid?: string
   profileName?: string
+  profilePicUrl?: string
 }
 
 export class EvolutionError extends Error {
@@ -41,6 +38,11 @@ function ensureEnv() {
       500
     )
   }
+}
+
+/** Retorna o instanceName default (legacy / single-instance fallback). */
+export function getDefaultInstance(): string {
+  return DEFAULT_INSTANCE
 }
 
 async function evoFetch<T = any>(
@@ -88,65 +90,95 @@ function normalizeState(value: unknown): EvolutionState {
   return 'unknown'
 }
 
-function pickInstance(raw: any): EvolutionInstance {
-  // Connection-state endpoint shape: { instance: { instanceName, state } }
-  // Create endpoint shape: { instance: { instanceName, instanceId, status }, ... }
-  // FetchInstances list item shape can be: { instance: { ... } } or flat
+function pickInstance(raw: any, fallbackName: string): EvolutionInstance {
   const inst = raw?.instance ?? raw ?? {}
   const state = normalizeState(inst.state ?? inst.status ?? raw?.state)
   return {
-    instanceName: inst.instanceName ?? inst.name ?? INSTANCE,
+    instanceName: inst.instanceName ?? inst.name ?? fallbackName,
     status: state,
     ownerJid: inst.ownerJid ?? inst.owner ?? undefined,
     profileName: inst.profileName ?? inst.profilePicName ?? undefined,
+    profilePicUrl: inst.profilePicUrl ?? inst.profilePictureUrl ?? undefined,
   }
+}
+
+export interface CreateInstanceOpts {
+  webhookSecret?: string
+  webhookUrl?: string
+  qrcode?: boolean
 }
 
 /**
- * Ensures the dedicated instance exists. Creates it if missing and returns
- * the current connection state. Tolerates 403/409 ("already exists").
+ * Cria a instância no Evolution. Idempotente — tolera 403/409 ("already exists").
+ * Lança erro só se for um erro real e não duplicação.
  */
-export async function ensureInstance(): Promise<EvolutionInstance> {
-  const state = await evoFetch<any>(
-    `/instance/connectionState/${encodeURIComponent(INSTANCE)}`
-  )
-  if (state.ok && state.data) {
-    return pickInstance(state.data)
+export async function createInstance(
+  instanceName: string,
+  opts: CreateInstanceOpts = {}
+): Promise<EvolutionInstance> {
+  const body: Record<string, any> = {
+    instanceName,
+    qrcode: opts.qrcode ?? true,
+    integration: 'WHATSAPP-BAILEYS',
+  }
+  if (opts.webhookUrl) {
+    body.webhook = { url: opts.webhookUrl, byEvents: true }
   }
 
-  // Try to create
-  const create = await evoFetch<any>(`/instance/create`, {
+  const res = await evoFetch<any>(`/instance/create`, {
     method: 'POST',
-    body: JSON.stringify({
-      instanceName: INSTANCE,
-      qrcode: true,
-      integration: 'WHATSAPP-BAILEYS',
-    }),
+    body: JSON.stringify(body),
   })
 
-  if (create.ok || create.status === 409 || create.status === 403) {
-    // Try state again after create attempt
-    const after = await evoFetch<any>(
-      `/instance/connectionState/${encodeURIComponent(INSTANCE)}`
-    )
-    if (after.ok && after.data) return pickInstance(after.data)
-    return pickInstance(create.data ?? {})
+  if (res.ok || res.status === 409 || res.status === 403) {
+    return pickInstance(res.data ?? {}, instanceName)
+  }
+
+  // Detect "already exists" semânticamente
+  const msg = JSON.stringify(res.data || '').toLowerCase()
+  if (msg.includes('already') || msg.includes('exists')) {
+    return pickInstance(res.data ?? {}, instanceName)
   }
 
   throw new EvolutionError(
-    `Falha ao garantir instance "${INSTANCE}" (status ${create.status})`,
-    create.status,
-    create.data
+    `Falha ao criar instance "${instanceName}" (status ${res.status})`,
+    res.status,
+    res.data
   )
 }
 
-export async function getConnectionState(): Promise<EvolutionInstance> {
+/**
+ * Garante que a instância existe (cria se necessário) e retorna seu estado.
+ */
+export async function ensureInstance(
+  instanceName: string = DEFAULT_INSTANCE,
+  opts: CreateInstanceOpts = {}
+): Promise<EvolutionInstance> {
+  const state = await evoFetch<any>(
+    `/instance/connectionState/${encodeURIComponent(instanceName)}`
+  )
+  if (state.ok && state.data) {
+    return pickInstance(state.data, instanceName)
+  }
+
+  await createInstance(instanceName, opts)
+
+  const after = await evoFetch<any>(
+    `/instance/connectionState/${encodeURIComponent(instanceName)}`
+  )
+  if (after.ok && after.data) return pickInstance(after.data, instanceName)
+  return { instanceName, status: 'connecting' }
+}
+
+export async function getConnectionState(
+  instanceName: string = DEFAULT_INSTANCE
+): Promise<EvolutionInstance> {
   const res = await evoFetch<any>(
-    `/instance/connectionState/${encodeURIComponent(INSTANCE)}`
+    `/instance/connectionState/${encodeURIComponent(instanceName)}`
   )
   if (!res.ok) {
     if (res.status === 404) {
-      return { instanceName: INSTANCE, status: 'close' }
+      return { instanceName, status: 'close' }
     }
     throw new EvolutionError(
       `Falha ao obter estado da instance (status ${res.status})`,
@@ -154,22 +186,39 @@ export async function getConnectionState(): Promise<EvolutionInstance> {
       res.data
     )
   }
-  return pickInstance(res.data)
+  return pickInstance(res.data, instanceName)
 }
 
-export async function getQRCode(): Promise<{
+/**
+ * Busca dados de perfil enriquecidos (foto, nome, número) — só vale se conectado.
+ * Tenta /instance/fetchInstances ?instanceName= … (Evolution v2 retorna ownerJid + profile).
+ */
+export async function fetchInstanceProfile(
+  instanceName: string
+): Promise<EvolutionInstance | null> {
+  const res = await evoFetch<any>(
+    `/instance/fetchInstances?instanceName=${encodeURIComponent(instanceName)}`
+  )
+  if (!res.ok) return null
+  const arr = Array.isArray(res.data) ? res.data : res.data ? [res.data] : []
+  if (arr.length === 0) return null
+  return pickInstance(arr[0], instanceName)
+}
+
+export async function getQRCode(
+  instanceName: string = DEFAULT_INSTANCE
+): Promise<{
   base64: string | null
   pairingCode?: string
   alreadyConnected: boolean
 }> {
-  // Make sure instance exists first.
-  const inst = await ensureInstance()
+  const inst = await ensureInstance(instanceName)
   if (inst.status === 'open') {
     return { base64: null, alreadyConnected: true }
   }
 
   const res = await evoFetch<any>(
-    `/instance/connect/${encodeURIComponent(INSTANCE)}`
+    `/instance/connect/${encodeURIComponent(instanceName)}`
   )
   if (!res.ok) {
     throw new EvolutionError(
@@ -195,9 +244,11 @@ export async function getQRCode(): Promise<{
   }
 }
 
-export async function logout(): Promise<void> {
+export async function logout(
+  instanceName: string = DEFAULT_INSTANCE
+): Promise<void> {
   const res = await evoFetch<any>(
-    `/instance/logout/${encodeURIComponent(INSTANCE)}`,
+    `/instance/logout/${encodeURIComponent(instanceName)}`,
     { method: 'DELETE' }
   )
   if (!res.ok && res.status !== 404) {
@@ -210,14 +261,29 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Normalizes a Brazilian/E164 phone string: strips non-digits and prepends 55
- * (Brazil DDI) when missing. Validates a minimum sane length.
+ * Remove a instância do Evolution (delete completo, libera o nome).
+ */
+export async function deleteInstance(instanceName: string): Promise<void> {
+  const res = await evoFetch<any>(
+    `/instance/delete/${encodeURIComponent(instanceName)}`,
+    { method: 'DELETE' }
+  )
+  if (!res.ok && res.status !== 404) {
+    throw new EvolutionError(
+      `Falha ao deletar instance (status ${res.status})`,
+      res.status,
+      res.data
+    )
+  }
+}
+
+/**
+ * Normaliza E.164 brasileiro: strip não-dígitos, prepend 55 se faltar.
  */
 export function normalizeNumber(input: string): string {
   let digits = (input || '').replace(/\D/g, '')
   if (!digits) throw new EvolutionError('Número inválido', 400)
   if (digits.length <= 11) {
-    // assume Brazil — prepend 55 if absent
     digits = `55${digits}`
   }
   if (digits.length < 12 || digits.length > 15) {
@@ -227,6 +293,7 @@ export function normalizeNumber(input: string): string {
 }
 
 export async function sendText(
+  instanceName: string,
   number: string,
   text: string,
   opts: { delay?: number } = {}
@@ -240,7 +307,7 @@ export async function sendText(
   }
 
   const res = await evoFetch<any>(
-    `/message/sendText/${encodeURIComponent(INSTANCE)}`,
+    `/message/sendText/${encodeURIComponent(instanceName)}`,
     {
       method: 'POST',
       body: JSON.stringify({
@@ -269,6 +336,7 @@ export async function sendText(
 }
 
 export async function checkNumbers(
+  instanceName: string,
   numbers: string[]
 ): Promise<Array<{ number: string; exists: boolean; jid?: string }>> {
   const normalized = numbers.map((n) => {
@@ -279,7 +347,7 @@ export async function checkNumbers(
     }
   })
   const res = await evoFetch<any>(
-    `/chat/whatsappNumbers/${encodeURIComponent(INSTANCE)}`,
+    `/chat/whatsappNumbers/${encodeURIComponent(instanceName)}`,
     {
       method: 'POST',
       body: JSON.stringify({ numbers: normalized }),
@@ -300,4 +368,4 @@ export async function checkNumbers(
   }))
 }
 
-export const EVOLUTION_INSTANCE = INSTANCE
+export const EVOLUTION_INSTANCE = DEFAULT_INSTANCE

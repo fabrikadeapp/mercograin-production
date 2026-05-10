@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
+import { ensureInstance as ensureWorkspaceInstance } from '@/lib/whatsapp/instance-resolver'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { z } from 'zod'
 
@@ -133,8 +134,10 @@ export async function POST(
       graos,
     })
 
+    const wsInstance = await ensureWorkspaceInstance(scope.workspaceId)
+
     try {
-      const result = await sendText(phoneNumber, message)
+      const result = await sendText(wsInstance.instanceName, phoneNumber, message)
 
       // Log de auditoria (best-effort).
       await db.webhookLog

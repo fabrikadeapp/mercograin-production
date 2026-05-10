@@ -31,7 +31,10 @@ interface StatusResponse {
   status: ConnState
   ownerJid: string | null
   profileName: string | null
-  instanceName?: string
+  profilePicUrl?: string | null
+  phoneNumber?: string | null
+  instanceName?: string | null
+  provisioned?: boolean
 }
 
 interface ConnectResponse {
@@ -41,6 +44,9 @@ interface ConnectResponse {
   alreadyConnected: boolean
   ownerJid: string | null
   profileName: string | null
+  profilePicUrl?: string | null
+  phoneNumber?: string | null
+  instanceName?: string | null
 }
 
 interface MessageRow {
@@ -97,6 +103,9 @@ export function WhatsAppContent() {
         alreadyConnected: d.status === 'open',
         ownerJid: d.ownerJid,
         profileName: d.profileName,
+        profilePicUrl: d.profilePicUrl ?? null,
+        phoneNumber: d.phoneNumber ?? null,
+        instanceName: d.instanceName ?? prev?.instanceName ?? null,
       }))
     } catch {
       /* swallow — UI stays in last known state */
@@ -291,9 +300,18 @@ export function WhatsAppContent() {
               </p>
             ) : isConnected ? (
               <div className="space-y-4 text-center">
-                <div className="mx-auto h-16 w-16 rounded-pill bg-bg-2 border border-border-1 flex items-center justify-center">
-                  <Smartphone className="h-7 w-7 text-accent" />
-                </div>
+                {conn?.profilePicUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={conn.profilePicUrl}
+                    alt={conn.profileName ?? 'Perfil WhatsApp'}
+                    className="mx-auto h-16 w-16 rounded-pill border border-border-1 object-cover"
+                  />
+                ) : (
+                  <div className="mx-auto h-16 w-16 rounded-pill bg-bg-2 border border-border-1 flex items-center justify-center">
+                    <Smartphone className="h-7 w-7 text-accent" />
+                  </div>
+                )}
                 <div>
                   <p className="text-fg-1 font-semibold">Conectado</p>
                   {conn?.profileName ? (
@@ -301,9 +319,14 @@ export function WhatsAppContent() {
                       {conn.profileName}
                     </p>
                   ) : null}
-                  {conn?.ownerJid ? (
+                  {conn?.phoneNumber || conn?.ownerJid ? (
                     <p className="text-fg-3 text-micro t-num mt-0.5">
-                      {conn.ownerJid.split('@')[0]}
+                      {conn.phoneNumber ?? conn.ownerJid?.split('@')[0]}
+                    </p>
+                  ) : null}
+                  {conn?.instanceName ? (
+                    <p className="text-fg-3 text-micro mt-0.5">
+                      Instância: <span className="t-num">{conn.instanceName}</span>
                     </p>
                   ) : null}
                 </div>

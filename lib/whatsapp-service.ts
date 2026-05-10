@@ -13,6 +13,7 @@
 import {
   ensureInstance,
   getConnectionState,
+  getDefaultInstance,
   getQRCode as evoGetQRCode,
   logout as evoLogout,
   sendText as evoSendText,
@@ -72,7 +73,7 @@ export async function sendWhatsAppMessage(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   warnLegacy('sendWhatsAppMessage')
   try {
-    const r = await evoSendText(phoneNumber, message)
+    const r = await evoSendText(getDefaultInstance(), phoneNumber, message)
     return { success: true, messageId: r.messageId }
   } catch (err) {
     return {
