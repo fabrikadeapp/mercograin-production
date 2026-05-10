@@ -23,9 +23,17 @@ model User {
   criadoEm         DateTime @default(now())
   atualizadoEm     DateTime @updatedAt
 
+  // 2FA TOTP (S2 M10)
+  totpSecret              String?
+  totpEnabled             Boolean                  @default(false)
+  totpVerifiedAt          DateTime?
+  recoveryCodes           String[]                 @default([])
+
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   classificados           Classificado[]           @relation("ClassificadoAutor")
+  pushSubscriptions       PushSubscription[]
+  pending2FA              Pending2FA[]
 
   // Workspaces
   workspacesOwned      Workspace[]       @relation("WorkspaceOwner")
@@ -101,6 +109,9 @@ model Workspace {
   movimentosFinanceiros MovimentoFinanceiro[]
   talhoes               Talhao[]
   royalties             Royalty[]
+  // S2 M10
+  aceiteContratos       AceiteContrato[]
+  pushSubscriptions     PushSubscription[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -336,6 +347,8 @@ model Cliente {
   adiantamentos    Adiantamento[]    @relation("ProdutorAdiantamentos")
   // Compliance (Epic 5)
   talhoes          Talhao[]
+  // S2 M10
+  pushSubscriptions PushSubscription[]
 
   @@index([email])
   @@index([cnpj])
@@ -446,6 +459,9 @@ model Contrato {
   contratoOriginalId String?
   contratoOriginal   Contrato?  @relation("OperacaoTriangular", fields: [contratoOriginalId], references: [id], onDelete: SetNull)
   contratosFilhos    Contrato[] @relation("OperacaoTriangular")
+
+  // S2 M10
+  aceite                AceiteContrato?
 
   // Originação (Epic 1)
   fixacao               ContratoFixacao?
@@ -1871,4 +1887,79 @@ model Royalty {
 
   @@index([workspaceId, status])
   @@index([contratoId])
+}
+
+// ============================================
+// S2 M10 — 2FA, Aceite Digital, Web Push
+// ============================================
+
+model Pending2FA {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AceiteContrato {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String   @unique
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  tokenHash String @unique
+
+  aceitanteNome    String?
+  aceitanteCpfCnpj String?
+
+  aceitoEm        DateTime?
+  ipAceite        String?
+  userAgentAceite String?
+
+  geoLat Float?
+  geoLng Float?
+
+  pdfHashAceito String?
+
+  status String @default("pendente") // 'pendente' | 'aceito' | 'recusado' | 'expirado'
+
+  enviadoEm DateTime @default(now())
+  expiraEm  DateTime
+
+  observacoesRecusa String? @db.Text
+
+  @@index([workspaceId, status])
+  @@index([tokenHash])
+}
+
+model PushSubscription {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clienteId String?
+  cliente   Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  endpoint String @unique
+  p256dh   String
+  auth     String
+
+  ativo       Boolean   @default(true)
+  ultimoEnvio DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([clienteId])
+  @@index([workspaceId])
 }

@@ -11,6 +11,7 @@ import type { PrismaClient } from '@prisma/client'
 import { db as defaultDb } from '@/lib/db'
 import { sendText as defaultSendText } from './evolution'
 import { captureError } from '@/lib/observability/capture'
+import { gerarTokenAceite } from '@/lib/contratos/aceite'
 
 type DbLike = PrismaClient | typeof defaultDb
 type SendTextFn = typeof defaultSendText
@@ -95,7 +96,18 @@ export async function processCommand(
       break
     case '/contratos':
     case '/contrato':
-      body = await buildContratos(ctx.workspaceId, db)
+      if (args[0] === 'pendentes') {
+        body = await buildContratosPendentes(ctx, db)
+      } else {
+        body = await buildContratos(ctx.workspaceId, db)
+      }
+      break
+    case '/aceitar':
+      body = await buildAceitar(parts[1], ctx, db)
+      break
+    case '/recebiveis':
+    case '/recebíveis':
+      body = await buildRecebiveis(ctx, db)
       break
     case '/ajuda':
     case '/help':
@@ -276,10 +288,185 @@ function buildAjuda(): string {
     '/cotacao soja|milho|trigo — Cotação específica',
     '/propostas — Últimas propostas',
     '/contratos — Contratos ativos',
+    '/contratos pendentes — Contratos aguardando assinatura',
+    '/aceitar [nº] — Link de aceite digital do contrato',
+    '/recebiveis — Boletos pendentes (apenas produtor)',
     '/ajuda — Esta mensagem',
     '',
     `Acesse o painel: ${APP_URL}`,
   ].join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// Portal-lite (S2 M10) — comandos voltados ao produtor identificado por whatsapp
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve cliente do workspace pelo remoteJid (formato 5551999...@s.whatsapp.net).
+ * Retorna null se não houver match.
+ */
+async function resolveClienteByJid(
+  ctx: BotContext,
+  db: DbLike
+): Promise<{ id: string; nome: string } | null> {
+  const phone = ctx.remoteJid.replace(/@.*$/, '').replace(/\D/g, '')
+  if (!phone) return null
+  // Tenta match exato e variações com/sem 9 (BR)
+  const variants = Array.from(
+    new Set([
+      phone,
+      phone.replace(/^55/, ''),
+      phone.startsWith('55') ? phone : `55${phone}`,
+    ])
+  )
+  const cliente = await db.cliente.findFirst({
+    where: {
+      workspaceId: ctx.workspaceId,
+      OR: variants.map((p) => ({ whatsapp: { contains: p } })),
+    },
+    select: { id: true, nome: true },
+  })
+  return cliente
+}
+
+async function buildContratosPendentes(
+  ctx: BotContext,
+  db: DbLike
+): Promise<string> {
+  const cliente = await resolveClienteByJid(ctx, db)
+  if (!cliente) {
+    return 'Você não está cadastrado como cliente desta corretora.'
+  }
+  const contratos = await db.contrato.findMany({
+    where: {
+      workspaceId: ctx.workspaceId,
+      clienteId: cliente.id,
+      statusAssinatura: 'pendente',
+    },
+    orderBy: { criadoEm: 'desc' },
+    take: 5,
+    select: { id: true, numero: true, criadoEm: true },
+  })
+  if (contratos.length === 0) {
+    return `📜 ${cliente.nome}\n\nNenhum contrato pendente de assinatura.`
+  }
+  const lines = [`📜 ${cliente.nome} — pendentes de assinatura`, '']
+  for (const c of contratos) {
+    lines.push(`#${c.numero} — criado ${fmtDate(c.criadoEm)}`)
+    lines.push(`Aceite: /aceitar ${c.numero}`)
+    lines.push('')
+  }
+  return lines.join('\n')
+}
+
+async function buildAceitar(
+  contractRef: string | undefined,
+  ctx: BotContext,
+  db: DbLike
+): Promise<string> {
+  if (!contractRef) {
+    return 'Use: /aceitar [número-do-contrato]'
+  }
+  const cliente = await resolveClienteByJid(ctx, db)
+  if (!cliente) {
+    return 'Você não está cadastrado como cliente desta corretora.'
+  }
+  const contrato = await db.contrato.findFirst({
+    where: {
+      workspaceId: ctx.workspaceId,
+      clienteId: cliente.id,
+      numero: contractRef,
+    },
+    select: { id: true, numero: true, statusAssinatura: true },
+  })
+  if (!contrato) {
+    return `Contrato ${contractRef} não encontrado.`
+  }
+  if (contrato.statusAssinatura === 'assinado') {
+    return `Contrato ${contrato.numero} já está assinado.`
+  }
+  // Verifica se já existe aceite válido
+  const existente = await db.aceiteContrato.findUnique({
+    where: { contratoId: contrato.id },
+  })
+  let token: string
+  if (
+    existente &&
+    existente.status === 'pendente' &&
+    existente.expiraEm > new Date()
+  ) {
+    // Não temos token cru (só hash) — gera novo e atualiza
+    const fresh = gerarTokenAceite(contrato.id)
+    token = fresh.token
+    await db.aceiteContrato.update({
+      where: { id: existente.id },
+      data: { tokenHash: fresh.tokenHash, enviadoEm: new Date() },
+    })
+  } else {
+    const fresh = gerarTokenAceite(contrato.id)
+    token = fresh.token
+    await db.aceiteContrato.upsert({
+      where: { contratoId: contrato.id },
+      create: {
+        workspaceId: ctx.workspaceId,
+        contratoId: contrato.id,
+        tokenHash: fresh.tokenHash,
+        status: 'pendente',
+        expiraEm: new Date(Date.now() + 7 * 86400_000),
+      },
+      update: {
+        tokenHash: fresh.tokenHash,
+        status: 'pendente',
+        expiraEm: new Date(Date.now() + 7 * 86400_000),
+        enviadoEm: new Date(),
+        aceitoEm: null,
+        observacoesRecusa: null,
+      },
+    })
+  }
+  return [
+    `📜 Contrato ${contrato.numero}`,
+    '',
+    'Revise e assine digitalmente:',
+    `${APP_URL}/aceite/${token}`,
+    '',
+    'Link válido por 7 dias.',
+  ].join('\n')
+}
+
+async function buildRecebiveis(ctx: BotContext, db: DbLike): Promise<string> {
+  const cliente = await resolveClienteByJid(ctx, db)
+  if (!cliente) {
+    return 'Você não está cadastrado como cliente desta corretora.'
+  }
+  const boletos = await db.boleto.findMany({
+    where: {
+      workspaceId: ctx.workspaceId,
+      clienteId: cliente.id,
+      status: { in: ['aberto', 'pendente'] },
+    },
+    orderBy: { vencimento: 'asc' },
+    take: 10,
+    select: {
+      numero: true,
+      valor: true,
+      vencimento: true,
+      status: true,
+      linkBoleto: true,
+    },
+  })
+  if (boletos.length === 0) {
+    return `💰 ${cliente.nome}\n\nNenhum boleto pendente.`
+  }
+  const lines = [`💰 ${cliente.nome} — boletos pendentes`, '']
+  for (const b of boletos) {
+    lines.push(
+      `#${b.numero} — R$ ${fmtBRL(Number(b.valor))} · venc ${fmtDate(b.vencimento)}`
+    )
+    if (b.linkBoleto) lines.push(b.linkBoleto)
+    lines.push('')
+  }
+  return lines.join('\n')
 }
 
 // ---------------------------------------------------------------------------

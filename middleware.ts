@@ -5,7 +5,7 @@ export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|auth).*)'],
 }
 
-const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal']
+const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite']
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth

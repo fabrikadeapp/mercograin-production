@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [twofa, setTwofa] = useState(false)
+  const [totpCode, setTotpCode] = useState('')
+  const [recoveryCode, setRecoveryCode] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,10 +33,27 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email,
         password,
+        ...(twofa
+          ? useRecovery
+            ? { recoveryCode }
+            : { totpCode }
+          : {}),
         redirect: false,
       })
 
       if (!result?.ok) {
+        const errMsg = (result as any)?.error || ''
+        if (errMsg.includes('2FA_REQUIRED')) {
+          setTwofa(true)
+          setError('')
+          setLoading(false)
+          return
+        }
+        if (errMsg.includes('2FA_INVALID')) {
+          setError('Código 2FA inválido')
+          setLoading(false)
+          return
+        }
         setError('Email ou senha inválidos')
         setLoading(false)
         return
@@ -108,6 +129,47 @@ export default function LoginPage() {
                 Esqueci minha senha
               </Link>
             </div>
+
+            {twofa && !useRecovery && (
+              <div className="space-y-2">
+                <Input
+                  label="Código 2FA (6 dígitos)"
+                  type="text"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setUseRecovery(true)}
+                  className="text-fg-3 text-small hover:text-accent"
+                >
+                  Usar código de recuperação
+                </button>
+              </div>
+            )}
+            {twofa && useRecovery && (
+              <div className="space-y-2">
+                <Input
+                  label="Código de recuperação"
+                  type="text"
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value.toUpperCase())}
+                  placeholder="XXXX-XXXX-XX"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setUseRecovery(false)}
+                  className="text-fg-3 text-small hover:text-accent"
+                >
+                  Voltar para código TOTP
+                </button>
+              </div>
+            )}
 
             <Button type="submit" fullWidth loading={loading}>
               {loading ? 'Conectando…' : 'Entrar'}

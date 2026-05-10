@@ -117,6 +117,61 @@ export const authConfig = {
             return null
           }
 
+          // 2FA TOTP — se ativo, exige código (totpCode) ou recoveryCode
+          if ((user as any).totpEnabled && (user as any).totpSecret) {
+            const totpCode = (credentials as any).totpCode as
+              | string
+              | undefined
+            const recoveryCode = (credentials as any).recoveryCode as
+              | string
+              | undefined
+
+            if (!totpCode && !recoveryCode) {
+              // Sinal pro frontend: precisa 2FA
+              throw new Error('2FA_REQUIRED')
+            }
+
+            // Validação inline (evita import circular com lib/auth/totp.ts)
+            const OTPAuth = await import('otpauth')
+            let ok = false
+
+            if (totpCode && /^\d{6}$/.test(totpCode)) {
+              const totp = new OTPAuth.TOTP({
+                issuer: 'BH Grain',
+                algorithm: 'SHA1',
+                digits: 6,
+                period: 30,
+                secret: OTPAuth.Secret.fromBase32(
+                  (user as any).totpSecret as string
+                ),
+              })
+              ok = totp.validate({ token: totpCode, window: 1 }) !== null
+            }
+
+            if (!ok && recoveryCode) {
+              const bcryptMod = await import('bcryptjs')
+              const codes: string[] = ((user as any).recoveryCodes ||
+                []) as string[]
+              const normalized = recoveryCode.trim().toUpperCase()
+              for (let i = 0; i < codes.length; i++) {
+                if (await bcryptMod.compare(normalized, codes[i])) {
+                  ok = true
+                  // consome o código
+                  const remaining = codes.filter((_, idx) => idx !== i)
+                  await db.user.update({
+                    where: { id: user.id },
+                    data: { recoveryCodes: remaining },
+                  })
+                  break
+                }
+              }
+            }
+
+            if (!ok) {
+              throw new Error('2FA_INVALID')
+            }
+          }
+
           return {
             id: user.id,
             email: user.email,
