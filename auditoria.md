@@ -247,7 +247,7 @@ Todos os modelos de negócio escopados por `workspaceId`. Helper `lib/auth/scope
 - `aero.gus@hotmail.com` — `role: admin` — sua senha pessoal. Acessa `/admin`.
 
 ### Trader Enterprise (demo)
-- `admin@mercograin.com` / `Admin@123456` — `role: user`, Subscription Enterprise active até 07/06/2026
+- `admin@mercograin.com` / `Admin@123456` — `role: user`, Subscription Enterprise active até 07/06/2026 (conta admin do produto — coincidência de nome com a corretora piloto **MercoGrain** que será cadastrada como cliente; o produto comercial chama-se **PHB Grain**)
 - Workspace: **PHB Grain Trading** (LTDA, CNPJ 47.892.156/0001-89)
 - Onboarding completo, 8 clientes, 8 fornecedores, 9 propostas, 4 contratos, 9 boletos, 15 contratos futuros, 6 ordens de carga, 2 templates, 4 alertas, 6 classificados.
 

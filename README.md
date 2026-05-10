@@ -17,9 +17,11 @@ Sistema integrado de **cotação, proposta, contrato e cobrança** para trading 
 ### 1. Clonar Repositório
 
 ```bash
-git clone https://github.com/seu-usuario/mercograin.git
-cd mercograin
+git clone https://github.com/fabrikadeapp/mercograin-production.git phb-grain
+cd phb-grain
 ```
+
+> Nota: o repositório no GitHub mantém o nome legado `mercograin-production` (codename do projeto). O produto comercial chama-se **PHB Grain**. **MercoGrain** é o nome da corretora cliente piloto que assina o trial — não confundir com o produto.
 
 ### 2. Instalar Dependências
 
@@ -186,7 +188,7 @@ Usar NextAuth.js com credenciais:
 
 ```javascript
 // Padrão desenvolvimento
-Email: dev@mercograin.com
+Email: dev@phbgrain.com
 Senha: 123456
 ```
 
@@ -233,7 +235,7 @@ REDIS_URL=seu-redis-url
 ## 📚 Estrutura de Pastas
 
 ```
-mercograin/
+phb-grain/                  # raiz do projeto (path local pode variar; repo legado: mercograin-production)
 ├── app/                    # Next.js App Router
 │   ├── api/               # Backend endpoints
 │   │   ├── webhooks/      # Webhooks (TradingView, Braspag)
