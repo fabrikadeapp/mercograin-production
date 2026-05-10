@@ -118,6 +118,24 @@ export default async function FiscalHubPage() {
             <div className="text-fg-3 text-small">PIS/COFINS · {competenciaAtual}</div>
           </Card>
         </Link>
+        <Link href="/fiscal/guias" className="block">
+          <Card className="h-full p-5 hover:border-accent/40 transition">
+            <div className="flex items-center gap-3 mb-2">
+              <FileCheck className="h-5 w-5 text-accent" />
+              <span className="t-num-sm">Guias</span>
+            </div>
+            <div className="text-fg-3 text-small">DARF · GNRE · GARE-SP</div>
+          </Card>
+        </Link>
+        <Link href="/fiscal/simulador-uf" className="block">
+          <Card className="h-full p-5 hover:border-accent/40 transition">
+            <div className="flex items-center gap-3 mb-2">
+              <FileCheck className="h-5 w-5 text-accent" />
+              <span className="t-num-sm">Simulador UF</span>
+            </div>
+            <div className="text-fg-3 text-small">Comparar carga tributária entre estados</div>
+          </Card>
+        </Link>
       </div>
 
       {!configurado && (

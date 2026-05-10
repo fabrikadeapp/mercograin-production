@@ -105,6 +105,8 @@ model Workspace {
   notasFiscais           NotaFiscal[]
   cartasCorrecao         CartaCorrecao[]
   spedExports            SpedExport[]
+  // S9 M7 — Guias fiscais (DARF/GNRE/GARE)
+  guias                  Guia[]
   // Compliance & Escala (Epic 5)
   aprovacaoWorkflows     AprovacaoWorkflow[]
   aprovacoes             Aprovacao[]
@@ -1748,7 +1750,7 @@ model SpedExport {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  tipo        String // 'fiscal' | 'contribuicoes'
+  tipo        String // 'fiscal' | 'contribuicoes' | 'ecd' | 'ecf'   (S9 M7: ECD/ECF anuais)
   competencia String // 'YYYYMM'
 
   arquivoUrl     String?
@@ -1765,6 +1767,47 @@ model SpedExport {
 
   @@unique([workspaceId, tipo, competencia])
   @@index([workspaceId])
+}
+
+/// S9 M7 — Guia de arrecadação (DARF/GNRE/GARE).
+model Guia {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String // sequencial por workspace
+  tipo   String // 'darf' | 'gnre' | 'gare'
+
+  codigoReceita    String
+  contribuinteDoc  String // CPF/CNPJ
+  contribuinteNome String
+
+  periodoApuracao String   // 'YYYYMM' ou data
+  valorPrincipal  Decimal  @db.Decimal(15, 2)
+  multa           Decimal  @default(0) @db.Decimal(15, 2)
+  juros           Decimal  @default(0) @db.Decimal(15, 2)
+  valorTotal      Decimal  @db.Decimal(15, 2)
+
+  vencimento DateTime
+
+  codigoBarras    String?
+  linhaDigitavel  String?
+
+  status  String    @default("aberto") // 'aberto' | 'pago' | 'cancelado'
+  pagoEm  DateTime?
+
+  uf String? // GNRE / GARE
+
+  referenciaContratoId String?
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, tipo, status])
+  @@index([workspaceId, vencimento])
 }
 
 // ============================================

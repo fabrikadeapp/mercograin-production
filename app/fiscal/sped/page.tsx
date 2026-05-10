@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
 import { SpedActions } from '../_components/SpedActions'
+import { EcdEcfActions } from '../_components/EcdEcfActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,18 @@ export default async function SpedPage() {
           <h3 className="text-h3 mb-2">SPED Contribuições — PIS/COFINS</h3>
           <p className="text-fg-3 text-small mb-3">Apuração mensal de contribuições federais para Lucro Real / Presumido.</p>
           <SpedActions tipo="contribuicoes" competencia={compAnterior} compAtual={competenciaAtual} />
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="text-h3 mb-2">ECD — Escrituração Contábil Digital</h3>
+          <p className="text-fg-3 text-small mb-3">Geração anual: plano de contas, lançamentos, balancete, DRE.</p>
+          <EcdEcfActions tipo="ecd" anoAtual={hoje.getFullYear()} />
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="text-h3 mb-2">ECF — Escrituração Contábil Fiscal</h3>
+          <p className="text-fg-3 text-small mb-3">Apuração anual IRPJ/CSLL + atividades incentivadas.</p>
+          <EcdEcfActions tipo="ecf" anoAtual={hoje.getFullYear()} />
         </Card>
       </div>
 
