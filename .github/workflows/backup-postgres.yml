@@ -15,21 +15,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Install postgresql-client-16
+      - name: Install postgresql-client (matches Railway server version)
         run: |
           sudo apt-get update -qq
-          # Repo oficial Postgres garante client 16+ (Railway roda 16)
+          # Repo oficial PGDG. Instala client mais recente disponível (18 ou superior).
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
             | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update -qq
-          sudo apt-get install -y postgresql-client-16
+          # Tenta versão mais alta disponível; fallback ordenado.
+          sudo apt-get install -y postgresql-client-18 \
+            || sudo apt-get install -y postgresql-client-17 \
+            || sudo apt-get install -y postgresql-client-16
           pg_dump --version
 
       - name: Dump database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
         run: |
+          set -euo pipefail
+          # pipefail garante que erro do pg_dump derruba a pipeline (sem ele,
+          # gzip 'sucesso' mascara dump vazio)
           TIMESTAMP=$(date -u +"%Y-%m-%d_%H%M%S")
           BACKUP_FILE="phb-grain-${TIMESTAMP}.sql.gz"
 
@@ -45,7 +51,14 @@ jobs:
             --exclude-schema='storage' \
             | gzip -9 > "$BACKUP_FILE"
 
-          echo "Backup created: $BACKUP_FILE"
+          # Sanity check: dump deve ter pelo menos 1KB (CREATE TABLE de 1 modelo já passa disso)
+          SIZE=$(stat -c%s "$BACKUP_FILE")
+          if [ "$SIZE" -lt 1024 ]; then
+            echo "::error::Backup suspeito: apenas $SIZE bytes. Dump provavelmente falhou."
+            exit 1
+          fi
+
+          echo "Backup created: $BACKUP_FILE ($SIZE bytes)"
           ls -lh "$BACKUP_FILE"
           echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
 
@@ -85,9 +98,11 @@ jobs:
 
           CUTOFF=$(date -u -d '30 days ago' +%s)
 
+          # jq fromdateiso8601 não aceita milissegundos no formato ISO do Supabase.
+          # Strip ".XXXZ" -> "Z" antes de parsear.
           OLD_FILES=$(echo "$LIST" | jq -r --arg cutoff "$CUTOFF" '
             .[] | select(.name | startswith("phb-grain-")) |
-            select((.created_at | fromdateiso8601) < ($cutoff | tonumber)) |
+            select(((.created_at | sub("\\.[0-9]+Z$"; "Z")) | fromdateiso8601) < ($cutoff | tonumber)) |
             .name
           ')
 
