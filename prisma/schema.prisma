@@ -31,6 +31,10 @@ model User {
   workspacesOwned      Workspace[]       @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
 
+  // Compliance (Epic 5)
+  aprovacoesSolicitadas Aprovacao[]        @relation("AprovacaoSolicitante")
+  aprovacaoDecisoes     AprovacaoDecisao[]
+
   @@index([email])
 }
 
@@ -50,46 +54,53 @@ model Workspace {
   subscription Subscription?
 
   // Relações migradas de usuarioId → workspaceId
-  clientes             Cliente[]
-  propostas            Proposta[]
-  contratos            Contrato[]
-  boletos              Boleto[]
-  classificados        Classificado[]
-  alertasPreco         AlertaPreco[]
-  contratosFuturos     ContratoFuturo[]
-  fornecedores         Fornecedor[]
-  templatesContrato    ContratoTemplate[]
-  armazens             Armazem[]
-  motoristas           Motorista[]
-  ordensCarga          OrdemCarga[]
+  clientes              Cliente[]
+  propostas             Proposta[]
+  contratos             Contrato[]
+  boletos               Boleto[]
+  classificados         Classificado[]
+  alertasPreco          AlertaPreco[]
+  contratosFuturos      ContratoFuturo[]
+  fornecedores          Fornecedor[]
+  templatesContrato     ContratoTemplate[]
+  armazens              Armazem[]
+  motoristas            Motorista[]
+  ordensCarga           OrdemCarga[]
   // Operação Física (Epic 2)
-  safras               Safra[]
-  tabelasClassificacao TabelaClassificacao[]
-  balancas             Balanca[]
-  lotesEstoque         LoteEstoque[]
-  romaneios            Romaneio[]
-  ticketsBalanca       TicketBalanca[]
-  classificacoes       Classificacao[]
-  movimentacoesLote    MovimentacaoLote[]
-  whatsappInstance     WhatsAppInstance?
-  whatsappContacts     WhatsAppContact[]
-  whatsappMessages     WhatsAppMessage[]
+  safras                Safra[]
+  tabelasClassificacao  TabelaClassificacao[]
+  balancas              Balanca[]
+  lotesEstoque          LoteEstoque[]
+  romaneios             Romaneio[]
+  ticketsBalanca        TicketBalanca[]
+  classificacoes        Classificacao[]
+  movimentacoesLote     MovimentacaoLote[]
+  whatsappInstance      WhatsAppInstance?
+  whatsappContacts      WhatsAppContact[]
+  whatsappMessages      WhatsAppMessage[]
   // Originação & Fixação (Epic 1)
-  contratosFixacao     ContratoFixacao[]
-  fixacoes             Fixacao[]
-  adiantamentos        Adiantamento[]
-  barterInsumos        BarterInsumo[]
-  planosVendas         PlanoVendas[]
-  washouts             Washout[]
+  contratosFixacao      ContratoFixacao[]
+  fixacoes              Fixacao[]
+  adiantamentos         Adiantamento[]
+  barterInsumos         BarterInsumo[]
+  planosVendas          PlanoVendas[]
+  washouts              Washout[]
   // Hedge & Risco (Epic 4)
-  posicoesHedge        PosicaoHedge[]
-  ndfs                 NDF[]
-  marcacoesMercado     MarcacaoMercado[]
+  posicoesHedge         PosicaoHedge[]
+  ndfs                  NDF[]
+  marcacoesMercado      MarcacaoMercado[]
   // Fiscal (Epic 3)
-  configuracaoFiscal   ConfiguracaoFiscal?
-  notasFiscais         NotaFiscal[]
-  cartasCorrecao       CartaCorrecao[]
-  spedExports          SpedExport[]
+  configuracaoFiscal    ConfiguracaoFiscal?
+  notasFiscais          NotaFiscal[]
+  cartasCorrecao        CartaCorrecao[]
+  spedExports           SpedExport[]
+  // Compliance & Escala (Epic 5)
+  aprovacaoWorkflows    AprovacaoWorkflow[]
+  aprovacoes            Aprovacao[]
+  centrosCusto          CentroCusto[]
+  movimentosFinanceiros MovimentoFinanceiro[]
+  talhoes               Talhao[]
+  royalties             Royalty[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -171,6 +182,8 @@ model Fornecedor {
   whatsappContacts         WhatsAppContact[]
   // Originação (Epic 1) — fornecedores de insumos no barter
   barterInsumos            BarterInsumo[]
+  // Compliance (Epic 5)
+  royalties                Royalty[]
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -307,6 +320,8 @@ model Cliente {
   whatsappContacts WhatsAppContact[]
   // Originação (Epic 1) — produtor recebe adiantamentos
   adiantamentos    Adiantamento[]    @relation("ProdutorAdiantamentos")
+  // Compliance (Epic 5)
+  talhoes          Talhao[]
 
   @@index([email])
   @@index([cnpj])
@@ -411,14 +426,19 @@ model Contrato {
   contratosFilhos    Contrato[] @relation("OperacaoTriangular")
 
   // Originação (Epic 1)
-  fixacao       ContratoFixacao?
-  adiantamentos Adiantamento[]
-  barterInsumos BarterInsumo[]
-  washouts      Washout[]
+  fixacao               ContratoFixacao?
+  adiantamentos         Adiantamento[]
+  barterInsumos         BarterInsumo[]
+  washouts              Washout[]
   // Hedge (Epic 4): hedge financeiro vinculado a este contrato físico
-  posicoesHedge PosicaoHedge[]   @relation("HedgeContrato")
+  posicoesHedge         PosicaoHedge[]        @relation("HedgeContrato")
   // Fiscal (Epic 3)
-  notasFiscais  NotaFiscal[]
+  notasFiscais          NotaFiscal[]
+  // Compliance (Epic 5)
+  movimentosFinanceiros MovimentoFinanceiro[]
+  royalties             Royalty[]
+  /// Status próprio do contrato — quando há workflow de aprovação ativo
+  statusAprovacao       String                @default("aprovado") // 'pendente_aprovacao' | 'aprovado' | 'rejeitado'
 
   @@index([clienteId])
   @@index([proposIdFk])
@@ -450,6 +470,9 @@ model Boleto {
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Compliance (Epic 5)
+  movimentosFinanceiros MovimentoFinanceiro[]
 
   @@index([clienteId])
   @@index([status])
@@ -748,10 +771,13 @@ model Safra {
   fim     DateTime
   ativa   Boolean  @default(true)
 
-  romaneios      Romaneio[]
-  ticketsBalanca TicketBalanca[]
-  lotes          LoteEstoque[]
-  planosVendas   PlanoVendas[]
+  romaneios             Romaneio[]
+  ticketsBalanca        TicketBalanca[]
+  lotes                 LoteEstoque[]
+  planosVendas          PlanoVendas[]
+  // Compliance (Epic 5)
+  movimentosFinanceiros MovimentoFinanceiro[]
+  talhoes               Talhao[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1418,21 +1444,21 @@ model MarcacaoMercado {
 // ============================================
 
 model ConfiguracaoFiscal {
-  id          String   @id @default(cuid())
-  workspaceId String   @unique
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Dados emissor
   cnpjEmissor        String
   inscricaoEstadual  String?
   inscricaoMunicipal String?
-  regimeTributario   String  // 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
+  regimeTributario   String // 'simples_nacional' | 'lucro_presumido' | 'lucro_real' | 'mei'
   cnae               String?
 
   // Provider config
-  providerNome      String   @default("mock")  // 'mock' | 'nfeio' | 'enotas' | 'webmania' | 'tecnospeed'
+  providerNome      String  @default("mock") // 'mock' | 'nfeio' | 'enotas' | 'webmania' | 'tecnospeed'
   providerCompanyId String?
-  ambiente          String   @default("homologacao")  // 'homologacao' | 'producao'
+  ambiente          String  @default("homologacao") // 'homologacao' | 'producao'
 
   // Certificado A1 (Supabase Storage URL)
   certificadoUrl        String?
@@ -1466,7 +1492,7 @@ model ConfiguracaoFiscal {
 }
 
 model NotaFiscal {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -1474,13 +1500,13 @@ model NotaFiscal {
   configFiscal   ConfiguracaoFiscal @relation(fields: [configFiscalId], references: [id], onDelete: Cascade)
 
   // Tipo / modelo
-  tipo   String  // 'entrada' | 'saida' | 'devolucao' | 'complementar' | 'triangular'
-  modelo String  @default("55")  // 55 = NF-e, 65 = NFC-e
+  tipo   String // 'entrada' | 'saida' | 'devolucao' | 'complementar' | 'triangular'
+  modelo String @default("55") // 55 = NF-e, 65 = NFC-e
 
   // Numeração
   serie     Int
   numero    Int
-  chave     String?  @unique
+  chave     String? @unique
   protocolo String?
 
   // Status SEFAZ
@@ -1514,18 +1540,18 @@ model NotaFiscal {
   itens Json
 
   // Totais
-  valorProdutos Decimal  @db.Decimal(15, 2)
-  valorICMS     Decimal  @default(0) @db.Decimal(15, 2)
-  valorPIS      Decimal  @default(0) @db.Decimal(15, 2)
-  valorCOFINS   Decimal  @default(0) @db.Decimal(15, 2)
-  valorFUNRURAL Decimal  @default(0) @db.Decimal(15, 2)
-  valorFrete    Decimal  @default(0) @db.Decimal(15, 2)
-  valorOutros   Decimal  @default(0) @db.Decimal(15, 2)
-  valorTotal    Decimal  @db.Decimal(15, 2)
+  valorProdutos Decimal @db.Decimal(15, 2)
+  valorICMS     Decimal @default(0) @db.Decimal(15, 2)
+  valorPIS      Decimal @default(0) @db.Decimal(15, 2)
+  valorCOFINS   Decimal @default(0) @db.Decimal(15, 2)
+  valorFUNRURAL Decimal @default(0) @db.Decimal(15, 2)
+  valorFrete    Decimal @default(0) @db.Decimal(15, 2)
+  valorOutros   Decimal @default(0) @db.Decimal(15, 2)
+  valorTotal    Decimal @db.Decimal(15, 2)
 
   cfopPrincipal     String
   naturezaOperacao  String
-  finalidadeEmissao String  @default("1")
+  finalidadeEmissao String @default("1")
 
   intermunicipal Boolean @default(false)
   interestadual  Boolean @default(false)
@@ -1561,7 +1587,7 @@ model NotaFiscal {
 }
 
 model CartaCorrecao {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -1571,7 +1597,7 @@ model CartaCorrecao {
   sequencia Int
   texto     String @db.Text
 
-  status    String  @default("rascunho")  // 'rascunho' | 'aceita' | 'rejeitada'
+  status    String  @default("rascunho") // 'rascunho' | 'aceita' | 'rejeitada'
   protocolo String?
   motivo    String? @db.Text
 
@@ -1583,17 +1609,17 @@ model CartaCorrecao {
 }
 
 model SpedExport {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  tipo        String   // 'fiscal' | 'contribuicoes'
-  competencia String   // 'YYYYMM'
+  tipo        String // 'fiscal' | 'contribuicoes'
+  competencia String // 'YYYYMM'
 
   arquivoUrl     String?
-  totalRegistros Int    @default(0)
+  totalRegistros Int     @default(0)
 
-  status  String  @default("processando")  // 'processando' | 'pronto' | 'erro'
+  status  String  @default("processando") // 'processando' | 'pronto' | 'erro'
   erroMsg String? @db.Text
 
   hashArquivo String?
@@ -1604,4 +1630,220 @@ model SpedExport {
 
   @@unique([workspaceId, tipo, competencia])
   @@index([workspaceId])
+}
+
+// ============================================
+// COMPLIANCE & ESCALA (Epic 5) — Aprovação multi-nível, DRE, Conciliação, Talhões, Royalties
+// ============================================
+
+/// Workflow de aprovação multi-nível por entidade.
+model AprovacaoWorkflow {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  nome      String
+  descricao String? @db.Text
+
+  /// Entidade que dispara workflow: 'contrato' | 'fixacao' | 'washout' | 'adiantamento' | 'nf_emissao'
+  entidade String
+  /// JSON com condições, ex: { "valorMinimo": 500000 } ou { "qtdMinimaSc": 5000 }
+  condicao Json
+  /// Array ordenado de etapas: [{ ordem, role, nome }]
+  etapas   Json
+
+  slaHoras Int     @default(48)
+  ativo    Boolean @default(true)
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  aprovacoes Aprovacao[]
+
+  @@index([workspaceId, entidade, ativo])
+}
+
+/// Instância de aprovação em curso ou finalizada.
+model Aprovacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  workflowId String
+  workflow   AprovacaoWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  entidadeTipo String
+  entidadeId   String
+
+  snapshot Json
+
+  etapaAtual  Int @default(1)
+  totalEtapas Int
+
+  /// 'pendente' | 'aprovada' | 'rejeitada' | 'cancelada' | 'expirada'
+  status String @default("pendente")
+
+  solicitanteId String
+  solicitante   User   @relation("AprovacaoSolicitante", fields: [solicitanteId], references: [id], onDelete: Restrict)
+
+  prazoEtapaAtual DateTime
+
+  observacoes String?            @db.Text
+  decisoes    AprovacaoDecisao[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status, etapaAtual])
+  @@index([entidadeTipo, entidadeId])
+}
+
+model AprovacaoDecisao {
+  id String @id @default(cuid())
+
+  aprovacaoId String
+  aprovacao   Aprovacao @relation(fields: [aprovacaoId], references: [id], onDelete: Cascade)
+
+  etapa       Int
+  aprovadorId String
+  aprovador   User   @relation(fields: [aprovadorId], references: [id], onDelete: Restrict)
+
+  /// 'aprovado' | 'rejeitado'
+  decisao String
+  motivo  String? @db.Text
+
+  decididoEm DateTime @default(now())
+
+  @@unique([aprovacaoId, etapa])
+}
+
+/// Centro de custo hierárquico (DRE / contabilidade gerencial).
+model CentroCusto {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  codigo    String
+  nome      String
+  descricao String? @db.Text
+
+  paiId  String?
+  pai    CentroCusto?  @relation("CentroCustoHierarquia", fields: [paiId], references: [id], onDelete: SetNull)
+  filhos CentroCusto[] @relation("CentroCustoHierarquia")
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movimentos MovimentoFinanceiro[]
+
+  @@unique([workspaceId, codigo])
+  @@index([workspaceId, ativo])
+}
+
+/// Movimento financeiro — base para DRE e conciliação bancária.
+model MovimentoFinanceiro {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  data     DateTime
+  /// 'receita' | 'despesa' | 'transferencia'
+  tipo     String
+  /// 'comissao' | 'frete' | 'corretagem' | 'imposto' | 'salario' | 'outros'
+  natureza String
+
+  valor     Decimal @db.Decimal(15, 2)
+  descricao String
+
+  centroCustoId String?
+  centroCusto   CentroCusto? @relation(fields: [centroCustoId], references: [id], onDelete: SetNull)
+
+  contratoId String?
+  contrato   Contrato? @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+
+  boletoId String?
+  boleto   Boleto? @relation(fields: [boletoId], references: [id], onDelete: SetNull)
+
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  cultura String?
+
+  conciliado   Boolean   @default(false)
+  conciliadoEm DateTime?
+  ofxLineHash  String?   @unique
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, data])
+  @@index([workspaceId, tipo, natureza])
+  @@index([centroCustoId])
+  @@index([safraId])
+}
+
+/// Talhão / Gleba do produtor.
+model Talhao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  produtorId String
+  produtor   Cliente @relation(fields: [produtorId], references: [id], onDelete: Cascade)
+
+  nome String
+  area Float
+
+  cultura String?
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  produtividadeEstimadaSc Float?
+  produtividadeRealSc     Float?
+
+  latitude  Float?
+  longitude Float?
+  municipio String?
+  uf        String?
+
+  observacoes String?  @db.Text
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, produtorId, nome])
+  @@index([workspaceId, ativo])
+  @@index([safraId])
+}
+
+/// Royalty de sementes/cultivar (apurado por contrato).
+model Royalty {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  detentorId String
+  detentor   Fornecedor @relation(fields: [detentorId], references: [id], onDelete: Restrict)
+
+  cultivar   String
+  qtdSc      Float
+  valorPorSc Decimal @db.Decimal(10, 4)
+  valorTotal Decimal @db.Decimal(15, 2)
+
+  /// 'apurado' | 'pago' | 'contestado'
+  status String @default("apurado")
+
+  pagoEm DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([contratoId])
 }

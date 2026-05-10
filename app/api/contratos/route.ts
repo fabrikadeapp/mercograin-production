@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sendEmail } from '@/lib/email/send'
 import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
+import { tryIniciarAprovacao } from '@/lib/compliance'
 
 const contratoSchema = z.object({
   proposIdFk: z.string().min(1),
@@ -109,6 +110,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Compliance gate (Epic 5): se há workflow ativo aplicável, contrato nasce 'pendente_aprovacao'
+    let aprovacaoIniciada: any = null
+    const valorTotal = Number(proposta.valorTotal || data.valor || 0)
+    const workflows = await db.aprovacaoWorkflow.findMany({
+      where: {
+        workspaceId: scope.workspaceId,
+        entidade: 'contrato',
+        ativo: true,
+      },
+    })
+    const workflowAplicavel = workflows.find((w) => {
+      const cond: any = w.condicao || {}
+      if (cond.sempre) return true
+      if (typeof cond.valorMinimo === 'number')
+        return valorTotal >= cond.valorMinimo
+      return false
+    })
+    const statusAprovacaoInicial = workflowAplicavel
+      ? 'pendente_aprovacao'
+      : 'aprovado'
+
     const contrato = await db.contrato.create({
       data: {
         proposIdFk: data.proposIdFk,
@@ -117,6 +139,7 @@ export async function POST(request: NextRequest) {
         workspaceId: scope.workspaceId,
         dataInicio: new Date(),
         statusAssinatura: 'pendente',
+        statusAprovacao: statusAprovacaoInicial,
       },
       include: {
         cliente: true,
@@ -128,6 +151,28 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Inicia aprovação se há workflow aplicável (best-effort)
+    if (workflowAplicavel) {
+      try {
+        aprovacaoIniciada = await tryIniciarAprovacao({
+          workspaceId: scope.workspaceId,
+          solicitanteId: scope.userId,
+          entidade: {
+            tipo: 'contrato',
+            id: contrato.id,
+            valorTotal,
+          },
+          snapshot: {
+            numero: contrato.numero,
+            clienteId: contrato.clienteId,
+            valorTotal,
+          },
+        })
+      } catch (apErr) {
+        console.error('Erro iniciando aprovação:', apErr)
+      }
+    }
 
     // Notifica cliente final via Resend (best-effort, não falha a request).
     if (cliente.email) {
@@ -162,7 +207,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(contrato, { status: 201 })
+    return NextResponse.json(
+      { ...contrato, aprovacao: aprovacaoIniciada?.aprovacao || null },
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
