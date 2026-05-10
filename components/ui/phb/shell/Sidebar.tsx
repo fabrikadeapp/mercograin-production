@@ -22,6 +22,7 @@ import {
   WifiOff,
   CreditCard,
   Calculator,
+  Scale,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -49,6 +50,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/propostas', icon: ListChecks, label: 'Propostas' },
   { href: '/boletos', icon: Wallet, label: 'Boletos' },
   { href: '/logistica', icon: Truck, label: 'Logística' },
+  { href: '/operacao', icon: Scale, label: 'Operação' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
 ] as const
 

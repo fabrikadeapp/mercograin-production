@@ -50,21 +50,30 @@ model Workspace {
   subscription Subscription?
 
   // Relações migradas de usuarioId → workspaceId
-  clientes          Cliente[]
-  propostas         Proposta[]
-  contratos         Contrato[]
-  boletos           Boleto[]
-  classificados     Classificado[]
-  alertasPreco      AlertaPreco[]
-  contratosFuturos  ContratoFuturo[]
-  fornecedores      Fornecedor[]
-  templatesContrato ContratoTemplate[]
-  armazens          Armazem[]
-  motoristas        Motorista[]
-  ordensCarga       OrdemCarga[]
-  whatsappInstance  WhatsAppInstance?
-  whatsappContacts  WhatsAppContact[]
-  whatsappMessages  WhatsAppMessage[]
+  clientes             Cliente[]
+  propostas            Proposta[]
+  contratos            Contrato[]
+  boletos              Boleto[]
+  classificados        Classificado[]
+  alertasPreco         AlertaPreco[]
+  contratosFuturos     ContratoFuturo[]
+  fornecedores         Fornecedor[]
+  templatesContrato    ContratoTemplate[]
+  armazens             Armazem[]
+  motoristas           Motorista[]
+  ordensCarga          OrdemCarga[]
+  // Operação Física (Epic 2)
+  safras               Safra[]
+  tabelasClassificacao TabelaClassificacao[]
+  balancas             Balanca[]
+  lotesEstoque         LoteEstoque[]
+  romaneios            Romaneio[]
+  ticketsBalanca       TicketBalanca[]
+  classificacoes       Classificacao[]
+  movimentacoesLote    MovimentacaoLote[]
+  whatsappInstance     WhatsAppInstance?
+  whatsappContacts     WhatsAppContact[]
+  whatsappMessages     WhatsAppMessage[]
 
   onboardingCompletedAt DateTime?
 
@@ -137,10 +146,10 @@ model Fornecedor {
   updatedAt    DateTime  @updatedAt
 
   // Relações com Logística
-  armazens                  Armazem[]
-  transportadoraMotoristas  Motorista[]   @relation("TransportadoraMotoristas")
-  ordensTransporte          OrdemCarga[]  @relation("TransportadoraOrdens")
-  whatsappContacts          WhatsAppContact[]
+  armazens                 Armazem[]
+  transportadoraMotoristas Motorista[]       @relation("TransportadoraMotoristas")
+  ordensTransporte         OrdemCarga[]      @relation("TransportadoraOrdens")
+  whatsappContacts         WhatsAppContact[]
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -167,10 +176,10 @@ model ContratoTemplate {
 // ============================================
 
 model Subscription {
-  id                   String     @id @default(cuid())
+  id                   String    @id @default(cuid())
   workspaceId          String    @unique
   workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String     @unique
+  stripeSubscriptionId String    @unique
   stripeCustomerId     String
   stripePriceId        String
   plan                 String // 'starter' | 'pro' | 'enterprise'
@@ -179,7 +188,7 @@ model Subscription {
   trialEnd             DateTime?
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean    @default(false)
+  cancelAtPeriodEnd    Boolean   @default(false)
   canceledAt           DateTime?
 
   // Membros (cobrança extra)
@@ -204,25 +213,25 @@ model Subscription {
 // ============================================
 
 model Classificado {
-  id           String     @id @default(cuid())
+  id           String    @id @default(cuid())
   tipo         String // 'venda' | 'compra'
   grao         String // 'soja' | 'milho' | 'trigo' | 'sorgo'
   variedade    String?
   safra        String?
   volumeSc     Int
-  precoSc      Decimal    @db.Decimal(10, 2)
+  precoSc      Decimal   @db.Decimal(10, 2)
   modal        String // 'FOB' | 'CIF'
   cidade       String
   uf           String
-  deltaPct     Decimal?   @db.Decimal(5, 2)
-  status       String     @default("ativo") // 'ativo' | 'pausado' | 'fechado'
+  deltaPct     Decimal?  @db.Decimal(5, 2)
+  status       String    @default("ativo") // 'ativo' | 'pausado' | 'fechado'
   expiraEm     DateTime?
   autorId      String
-  autor        User       @relation("ClassificadoAutor", fields: [autorId], references: [id], onDelete: Cascade)
+  autor        User      @relation("ClassificadoAutor", fields: [autorId], references: [id], onDelete: Cascade)
   workspaceId  String
-  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  criadoEm     DateTime   @default(now())
-  atualizadoEm DateTime   @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
 
   @@index([grao, tipo, status])
   @@index([criadoEm])
@@ -234,17 +243,17 @@ model Classificado {
 // ============================================
 
 model AlertaPreco {
-  id            String     @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  symbol        String // ex: 'ZS=F'
-  graoLabel     String // ex: 'soja'
-  operador      String // '>' | '<'
-  preco         Decimal    @db.Decimal(10, 2)
-  status        String     @default("ativo") // 'ativo' | 'disparado' | 'inativo'
-  ultimoDisparo DateTime?
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  symbol         String // ex: 'ZS=F'
+  graoLabel      String // ex: 'soja'
+  operador       String // '>' | '<'
+  preco          Decimal   @db.Decimal(10, 2)
+  status         String    @default("ativo") // 'ativo' | 'disparado' | 'inativo'
+  ultimoDisparo  DateTime?
   notifEnviadoEm DateTime? // último email de alerta enviado (idempotência cron)
-  criadoEm      DateTime   @default(now())
+  criadoEm       DateTime  @default(now())
 
   @@index([workspaceId])
   @@index([status])
@@ -255,19 +264,19 @@ model AlertaPreco {
 // ============================================
 
 model Cliente {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  nome        String     @db.VarChar(255)
-  tipo        String     @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
-  email       String?    @db.VarChar(255)
-  whatsapp    String?    @db.VarChar(20)
-  cnpj        String?    @unique @db.VarChar(18)
-  endereco    String?    @db.Text
-  telefone    String?    @db.VarChar(20)
-  ativo       Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  nome        String    @db.VarChar(255)
+  tipo        String    @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
+  email       String?   @db.VarChar(255)
+  whatsapp    String?   @db.VarChar(20)
+  cnpj        String?   @unique @db.VarChar(18)
+  endereco    String?   @db.Text
+  telefone    String?   @db.VarChar(20)
+  ativo       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   propostas        Proposta[]
   contratos        Contrato[]
@@ -337,7 +346,7 @@ model Proposta {
   contratos Contrato[]
 
   workspaceId String
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([status])
@@ -368,7 +377,7 @@ model Contrato {
   ordensCarga OrdemCarga[]
 
   workspaceId String
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([proposIdFk])
@@ -398,7 +407,7 @@ model Boleto {
   atualizadoEm DateTime  @updatedAt
 
   workspaceId String
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([status])
@@ -551,25 +560,25 @@ model PricingRevision {
 // ============================================
 
 model ContratoFuturo {
-  id           String     @id @default(cuid())
+  id           String    @id @default(cuid())
   /// LEGADO — será removido após backfill
   usuarioId    String?
   workspaceId  String
-  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   grao         String // 'soja' | 'milho' | 'trigo' | 'sorgo'
   lado         String // 'compra' (bid) | 'venda' (ask)
-  vencimento   DateTime   @db.Date
-  precoSc      Decimal    @db.Decimal(10, 2)
+  vencimento   DateTime  @db.Date
+  precoSc      Decimal   @db.Decimal(10, 2)
   volumeSc     Int
   /// Codigo de vencimento estilo B3: K26 (mai/26), N26 (jul/26), X26 (nov/26)
-  codigoVenc   String?    @db.VarChar(10)
-  praca        String?    @db.VarChar(100)
-  observacao   String?    @db.Text
-  status       String     @default("ativo") // 'ativo' | 'executado' | 'cancelado'
+  codigoVenc   String?   @db.VarChar(10)
+  praca        String?   @db.VarChar(100)
+  observacao   String?   @db.Text
+  status       String    @default("ativo") // 'ativo' | 'executado' | 'cancelado'
   clienteId    String?
-  cliente      Cliente?   @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  criadoEm     DateTime   @default(now())
-  atualizadoEm DateTime   @updatedAt
+  cliente      Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
 
   @@index([workspaceId, grao, status])
   @@index([vencimento])
@@ -580,100 +589,361 @@ model ContratoFuturo {
 // ============================================
 
 model Armazem {
-  id              String      @id @default(cuid())
-  workspaceId     String
-  workspace       Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  nome            String
-  tipo            String      // 'silo' | 'granel' | 'horizontal' | 'misto'
-  capacidadeSc    Int         // capacidade em sacas 60kg
-  endereco        String?
-  cidade          String?
-  uf              String?     @db.VarChar(2)
-  cep             String?     @db.VarChar(10)
-  contato         String?
-  telefone        String?
-  observacao      String?     @db.Text
-  ativo           Boolean     @default(true)
+  id            String        @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome          String
+  tipo          String // 'silo' | 'granel' | 'horizontal' | 'misto'
+  capacidadeSc  Int // capacidade em sacas 60kg
+  endereco      String?
+  cidade        String?
+  uf            String?       @db.VarChar(2)
+  cep           String?       @db.VarChar(10)
+  contato       String?
+  telefone      String?
+  observacao    String?       @db.Text
+  ativo         Boolean       @default(true)
   /// Próprio (galpão da empresa) ou terceirizado (Fornecedor)
-  proprio         Boolean     @default(true)
-  fornecedorId    String?
-  fornecedor      Fornecedor? @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  ordensOrigem    OrdemCarga[] @relation("ArmazemOrigem")
-  ordensDestino   OrdemCarga[] @relation("ArmazemDestino")
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  proprio       Boolean       @default(true)
+  fornecedorId  String?
+  fornecedor    Fornecedor?   @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  ordensOrigem  OrdemCarga[]  @relation("ArmazemOrigem")
+  ordensDestino OrdemCarga[]  @relation("ArmazemDestino")
+  // Operação Física (Epic 2)
+  balancas      Balanca[]
+  lotesEstoque  LoteEstoque[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([workspaceId, ativo])
   @@index([fornecedorId])
 }
 
 model Motorista {
-  id               String      @id @default(cuid())
+  id               String          @id @default(cuid())
   workspaceId      String
-  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace        Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   nome             String
-  cpf              String?     @db.VarChar(14)
-  cnh              String?     @db.VarChar(20)
-  cnhCategoria     String?     @db.VarChar(5)
+  cpf              String?         @db.VarChar(14)
+  cnh              String?         @db.VarChar(20)
+  cnhCategoria     String?         @db.VarChar(5)
   telefone         String?
   whatsapp         String?
   email            String?
   /// Veículo padrão
-  placa            String?     @db.VarChar(10)
+  placa            String?         @db.VarChar(10)
   veiculo          String?
   capacidadeSc     Int?
   /// Vinculado a uma transportadora (Fornecedor)
   transportadoraId String?
-  transportadora   Fornecedor? @relation("TransportadoraMotoristas", fields: [transportadoraId], references: [id], onDelete: SetNull)
-  observacao       String?     @db.Text
-  ativo            Boolean     @default(true)
+  transportadora   Fornecedor?     @relation("TransportadoraMotoristas", fields: [transportadoraId], references: [id], onDelete: SetNull)
+  observacao       String?         @db.Text
+  ativo            Boolean         @default(true)
   ordens           OrdemCarga[]
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  // Operação Física (Epic 2)
+  romaneios        Romaneio[]
+  ticketsBalanca   TicketBalanca[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([workspaceId, ativo])
   @@index([transportadoraId])
 }
 
 model OrdemCarga {
-  id                String      @id @default(cuid())
-  numero            String      @unique
-  workspaceId       String
-  workspace         Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  contratoId        String?
-  contrato          Contrato?   @relation(fields: [contratoId], references: [id], onDelete: SetNull)
-  clienteId         String?
-  cliente           Cliente?    @relation("ClienteCargas", fields: [clienteId], references: [id], onDelete: SetNull)
-  motoristaId       String?
-  motorista         Motorista?  @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
-  transportadoraId  String?
-  transportadora    Fornecedor? @relation("TransportadoraOrdens", fields: [transportadoraId], references: [id], onDelete: SetNull)
-  armazemOrigemId   String?
-  armazemOrigem     Armazem?    @relation("ArmazemOrigem", fields: [armazemOrigemId], references: [id], onDelete: SetNull)
-  armazemDestinoId  String?
-  armazemDestino    Armazem?    @relation("ArmazemDestino", fields: [armazemDestinoId], references: [id], onDelete: SetNull)
-  grao              String      // 'soja' | 'milho' | 'trigo' | 'sorgo'
-  quantidadeSc      Int
-  pesoToneladas     Decimal?    @db.Decimal(10, 2)
+  id               String      @id @default(cuid())
+  numero           String      @unique
+  workspaceId      String
+  workspace        Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contratoId       String?
+  contrato         Contrato?   @relation(fields: [contratoId], references: [id], onDelete: SetNull)
+  clienteId        String?
+  cliente          Cliente?    @relation("ClienteCargas", fields: [clienteId], references: [id], onDelete: SetNull)
+  motoristaId      String?
+  motorista        Motorista?  @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
+  transportadoraId String?
+  transportadora   Fornecedor? @relation("TransportadoraOrdens", fields: [transportadoraId], references: [id], onDelete: SetNull)
+  armazemOrigemId  String?
+  armazemOrigem    Armazem?    @relation("ArmazemOrigem", fields: [armazemOrigemId], references: [id], onDelete: SetNull)
+  armazemDestinoId String?
+  armazemDestino   Armazem?    @relation("ArmazemDestino", fields: [armazemDestinoId], references: [id], onDelete: SetNull)
+  grao             String // 'soja' | 'milho' | 'trigo' | 'sorgo'
+  quantidadeSc     Int
+  pesoToneladas    Decimal?    @db.Decimal(10, 2)
   /// Datas
-  dataAgendada      DateTime
-  dataCarregamento  DateTime?
-  dataDescarga      DateTime?
+  dataAgendada     DateTime
+  dataCarregamento DateTime?
+  dataDescarga     DateTime?
   /// CT-e
-  ctEnumero         String?     @db.VarChar(50)
-  ctEpdfUrl         String?     @db.Text
-  ctEdataEmissao    DateTime?
+  ctEnumero        String?     @db.VarChar(50)
+  ctEpdfUrl        String?     @db.Text
+  ctEdataEmissao   DateTime?
   /// Status
-  status            String      @default("agendada")
-  observacao        String?     @db.Text
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  status           String      @default("agendada")
+  observacao       String?     @db.Text
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@index([workspaceId, status])
   @@index([dataAgendada])
   @@index([motoristaId])
   @@index([transportadoraId])
   @@index([contratoId])
+}
+
+// ============================================
+// OPERAÇÃO FÍSICA (Epic 2) — Safra, Lotes, Romaneios, Balança, Classificação
+// ============================================
+
+model Safra {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  nome    String // ex "2024/25"
+  cultura String // 'soja' | 'milho' | 'trigo'
+  inicio  DateTime
+  fim     DateTime
+  ativa   Boolean  @default(true)
+
+  romaneios      Romaneio[]
+  ticketsBalanca TicketBalanca[]
+  lotes          LoteEstoque[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, nome, cultura])
+  @@index([workspaceId, ativa])
+}
+
+model TabelaClassificacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  cultura String
+  nome    String
+
+  umidadePadrao     Float
+  umidadeMaxima     Float
+  impurezaPadrao    Float
+  impurezaMaxima    Float
+  ardidosMaximo     Float
+  quebradosMaximo   Float
+  esverdeadosMaximo Float?
+  pesoHectolitroMin Float?
+
+  fatorDescontoUmidade   Float @default(1.0)
+  fatorDescontoImpureza  Float @default(1.0)
+  fatorDescontoArdidos   Float @default(2.0)
+  fatorDescontoQuebrados Float @default(0.5)
+
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, cultura, nome])
+  @@index([workspaceId, cultura, ativo])
+}
+
+model Balanca {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  nome       String
+  modelo     String?
+  fabricante String?
+
+  armazemId String?
+  armazem   Armazem? @relation(fields: [armazemId], references: [id], onDelete: SetNull)
+
+  capacidadeMaxKg    Int     @default(80000)
+  precisaoKg         Int     @default(20)
+  tipoIntegracao     String  @default("manual") // manual | serial | tcp | api
+  enderecoIntegracao String?
+
+  ativa     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticketsBalanca TicketBalanca[]
+
+  @@index([workspaceId, ativa])
+  @@index([armazemId])
+}
+
+model LoteEstoque {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero  String
+  cultura String
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  armazemId String
+  armazem   Armazem @relation(fields: [armazemId], references: [id], onDelete: Restrict)
+
+  qtdInicialSc Float
+  qtdAtualSc   Float
+
+  umidadeMedia  Float?
+  impurezaMedia Float?
+
+  status String @default("ativo") // ativo | consumido | transferido
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticketsBalanca TicketBalanca[]
+  movimentacoes  MovimentacaoLote[]
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, cultura, status])
+  @@index([armazemId])
+}
+
+model Romaneio {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  contratosIds String[]
+
+  motoristaId String?
+  motorista   Motorista? @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
+
+  origem  String
+  destino String
+
+  cultura String
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  status String @default("rascunho") // rascunho | em_transito | recebido | cancelado
+
+  dataSaida   DateTime?
+  dataChegada DateTime?
+
+  observacoes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticketsBalanca TicketBalanca[]
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, status])
+  @@index([motoristaId])
+}
+
+model TicketBalanca {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String
+  tipo   String // recepcao | expedicao | transferencia
+
+  romaneioId String?
+  romaneio   Romaneio? @relation(fields: [romaneioId], references: [id], onDelete: SetNull)
+
+  balancaId String?
+  balanca   Balanca? @relation(fields: [balancaId], references: [id], onDelete: SetNull)
+
+  loteId String?
+  lote   LoteEstoque? @relation(fields: [loteId], references: [id], onDelete: SetNull)
+
+  pesoBrutoKg   Float
+  taraKg        Float
+  pesoLiquidoKg Float
+
+  cultura String
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  classificacaoId String?
+  classificacao   Classificacao? @relation(fields: [classificacaoId], references: [id], onDelete: SetNull)
+
+  placa       String?
+  motoristaId String?
+  motorista   Motorista? @relation(fields: [motoristaId], references: [id], onDelete: SetNull)
+
+  fotoUrl     String?
+  observacoes String? @db.Text
+
+  status String @default("aberto") // aberto | classificado | finalizado
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, status, tipo])
+  @@index([romaneioId])
+  @@index([loteId])
+}
+
+model Classificacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  cultura String
+
+  umidade          Float
+  impureza         Float
+  ardidos          Float  @default(0)
+  quebrados        Float  @default(0)
+  esverdeados      Float?
+  pesoHectolitroKg Float?
+
+  tabelaId String?
+
+  descontoUmidadePct   Float @default(0)
+  descontoImpurezaPct  Float @default(0)
+  descontoArdidosPct   Float @default(0)
+  descontoQuebradosPct Float @default(0)
+  descontoTotalPct     Float @default(0)
+
+  pesoLiquidoFinalKg Float?
+
+  classificadoPor String?
+  observacoes     String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticketsBalanca TicketBalanca[]
+
+  @@index([workspaceId, cultura])
+}
+
+model MovimentacaoLote {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  loteId String
+  lote   LoteEstoque @relation(fields: [loteId], references: [id], onDelete: Cascade)
+
+  tipo  String // entrada | saida | transferencia | quebra_tecnica | rebaixe
+  qtdSc Float
+
+  armazemDestinoId String?
+  ticketBalancaId  String?
+  contratoId       String?
+
+  motivo String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId, loteId])
+  @@index([tipo])
 }
 
 // ============================================
@@ -685,9 +955,9 @@ model WhatsAppInstance {
   workspaceId String    @unique
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  instanceName  String  @unique
-  evolutionId   String?
-  status        String  @default("disconnected") // disconnected|connecting|connected|error
+  instanceName String  @unique
+  evolutionId  String?
+  status       String  @default("disconnected") // disconnected|connecting|connected|error
 
   phoneNumber   String?
   phoneJid      String?
