@@ -122,7 +122,20 @@ export async function createInstance(
     integration: 'WHATSAPP-BAILEYS',
   }
   if (opts.webhookUrl) {
-    body.webhook = { url: opts.webhookUrl, byEvents: true }
+    const webhookHeaders: Record<string, string> = {}
+    if (opts.webhookSecret) webhookHeaders.apikey = opts.webhookSecret
+    body.webhook = {
+      enabled: true,
+      url: opts.webhookUrl,
+      byEvents: false,
+      base64: false,
+      events: [
+        'MESSAGES_UPSERT',
+        'CONNECTION_UPDATE',
+        'QRCODE_UPDATED',
+      ],
+      headers: webhookHeaders,
+    }
   }
 
   const res = await evoFetch<any>(`/instance/create`, {
@@ -366,6 +379,61 @@ export async function checkNumbers(
     exists: Boolean(row.exists),
     jid: row.jid ?? undefined,
   }))
+}
+
+/**
+ * Configura/atualiza o webhook de uma instância já existente.
+ * Útil pra retroativo (instâncias criadas sem webhook).
+ *
+ * Evolution v2.3.7: POST /webhook/set/{instance}
+ * Shape compatível com versões 2.x (campos webhook + events). Evolution aceita
+ * tanto chave-camelCase quanto snake_case em diferentes minor versions —
+ * mandamos ambos pra robustez.
+ */
+export async function setWebhook(
+  instanceName: string,
+  webhookUrl: string,
+  webhookSecret?: string,
+  events: string[] = [
+    'MESSAGES_UPSERT',
+    'CONNECTION_UPDATE',
+    'QRCODE_UPDATED',
+  ]
+): Promise<void> {
+  const headers: Record<string, any> = {}
+  if (webhookSecret) {
+    // Evolution reenvia esses headers em cada webhook delivery
+    headers.apikey = webhookSecret
+  }
+
+  const body = {
+    webhook: {
+      enabled: true,
+      url: webhookUrl,
+      byEvents: false,
+      base64: false,
+      events,
+      headers,
+    },
+    // legacy/flat fields pra compat 2.x antigo
+    url: webhookUrl,
+    enabled: true,
+    webhook_by_events: false,
+    events,
+  }
+
+  const res = await evoFetch<any>(
+    `/webhook/set/${encodeURIComponent(instanceName)}`,
+    { method: 'POST', body: JSON.stringify(body) }
+  )
+
+  if (!res.ok && res.status !== 404) {
+    throw new EvolutionError(
+      `Falha ao configurar webhook (status ${res.status})`,
+      res.status,
+      res.data
+    )
+  }
 }
 
 export const EVOLUTION_INSTANCE = DEFAULT_INSTANCE

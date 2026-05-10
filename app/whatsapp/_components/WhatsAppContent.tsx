@@ -137,7 +137,25 @@ export function WhatsAppContent() {
       })
       if (!r.ok) return
       const d = await r.json()
-      setMessages(d.data ?? [])
+      // Mapeia novo shape (WhatsAppMessage) para o MessageRow legado da UI.
+      // Status backend (delivered|sent|read|pending|failed) → UI (processado|recebido|erro).
+      const mapped: MessageRow[] = (d.data ?? []).map((m: any) => {
+        const number = String(m.remoteJid || '').split('@')[0] || ''
+        let uiStatus: MessageRow['status'] = 'processado'
+        if (m.status === 'failed') uiStatus = 'erro'
+        else if (m.status === 'pending') uiStatus = 'recebido'
+        else if (m.fromMe === false) uiStatus = 'recebido'
+        return {
+          id: m.id,
+          number,
+          text: m.text ?? (m.mediaCaption ?? (m.mediaType ? `[${m.mediaType}]` : '')),
+          messageId: m.messageId ?? null,
+          status: uiStatus,
+          mensagem: null,
+          timestamp: m.timestamp,
+        }
+      })
+      setMessages(mapped)
     } catch {
       /* ignore */
     }

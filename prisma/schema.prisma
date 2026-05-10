@@ -63,6 +63,8 @@ model Workspace {
   motoristas        Motorista[]
   ordensCarga       OrdemCarga[]
   whatsappInstance  WhatsAppInstance?
+  whatsappContacts  WhatsAppContact[]
+  whatsappMessages  WhatsAppMessage[]
 
   onboardingCompletedAt DateTime?
 
@@ -138,6 +140,7 @@ model Fornecedor {
   armazens                  Armazem[]
   transportadoraMotoristas  Motorista[]   @relation("TransportadoraMotoristas")
   ordensTransporte          OrdemCarga[]  @relation("TransportadoraOrdens")
+  whatsappContacts          WhatsAppContact[]
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -271,6 +274,7 @@ model Cliente {
   boletos          Boleto[]
   contratosFuturos ContratoFuturo[]
   cargas           OrdemCarga[]      @relation("ClienteCargas")
+  whatsappContacts WhatsAppContact[]
 
   @@index([email])
   @@index([cnpj])
@@ -700,4 +704,71 @@ model WhatsAppInstance {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+}
+
+// ============================================
+// WHATSAPP CONVERSAS (Contatos + Mensagens)
+// ============================================
+
+model WhatsAppContact {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  jid           String // ex: "5551999999999@s.whatsapp.net"
+  phone         String? // só dígitos: "5551999999999"
+  pushName      String? // nome que ele se identifica
+  profilePicUrl String?
+
+  // Vínculo opcional com Cliente/Fornecedor existente
+  clienteId    String?
+  cliente      Cliente?    @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  fornecedorId String?
+  fornecedor   Fornecedor? @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+
+  lastMessageAt DateTime?
+  unreadCount   Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@unique([workspaceId, jid])
+  @@index([workspaceId, lastMessageAt])
+  @@index([clienteId])
+  @@index([fornecedorId])
+}
+
+model WhatsAppMessage {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contactId String
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  // Identificadores Evolution/WhatsApp
+  messageId String // ID único da mensagem no WhatsApp (key.id)
+  remoteJid String // JID do contact ou grupo
+  fromMe    Boolean // true = enviada pela corretora, false = recebida
+
+  // Conteúdo
+  text         String? @db.Text
+  mediaType    String? // image|video|audio|document|sticker|null
+  mediaUrl     String?
+  mediaCaption String?
+
+  // Reply / quote
+  replyToMessageId String?
+
+  status String @default("delivered") // pending|sent|delivered|read|failed
+
+  // Timestamps
+  timestamp DateTime // timestamp do WhatsApp
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, messageId]) // idempotência
+  @@index([workspaceId, contactId, timestamp])
+  @@index([workspaceId, timestamp])
 }
