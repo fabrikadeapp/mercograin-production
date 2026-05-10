@@ -285,6 +285,7 @@ model Cotacao {
   volume    Int? // volume negociado
   data      DateTime @default(now())
 
+  @@unique([grao, data])
   @@index([grao])
   @@index([data])
   @@index([simbolo])

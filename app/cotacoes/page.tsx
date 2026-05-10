@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Filter, Plus } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { CotacoesContent } from './_components/CotacoesContent'
+import { HistoricoChart } from '@/components/cotacoes/HistoricoChart'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,9 @@ export default async function Page() {
         }
       />
       <CotacoesContent />
+      <div className="mt-6">
+        <HistoricoChart />
+      </div>
     </AppShell>
   )
 }

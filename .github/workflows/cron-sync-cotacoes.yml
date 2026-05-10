@@ -1,0 +1,33 @@
+name: Sync Cotações Diário
+
+# Persiste snapshot CEPEA (soja/milho/trigo) + BCB PTAX (USD/BRL) na tabela
+# Cotacao/TaxaCambio. Endpoint: /api/cron/sync-cotacoes (idempotente por dia).
+#
+# Setup necessário:
+#   1. Setar secret CRON_SECRET no repo (Settings → Secrets → Actions)
+#      Gerar com: `openssl rand -hex 32`
+#   2. Garantir que o mesmo CRON_SECRET está nas env vars do Railway.
+
+on:
+  schedule:
+    # 23:00 UTC = 20:00 BRT — após fechamento CEPEA (18h) e BCB intra-day final
+    - cron: '0 23 * * 1-5'
+  workflow_dispatch: # permite trigger manual via GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger sync endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/sync-cotacoes \
+            | tee response.json
+          # Falha o job se ok=false
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::Sync retornou ok=false ou parcial — verifique Sentry"
+            exit 1
+          fi
