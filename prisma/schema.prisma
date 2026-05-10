@@ -184,6 +184,10 @@ model Subscription {
   stripeBaseItemId  String?
   stripeSeatsItemId String?
 
+  // Notificações idempotentes (cron de trial)
+  notifTrialEndingAt  DateTime?
+  notifTrialExpiredAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -235,6 +239,7 @@ model AlertaPreco {
   preco         Decimal    @db.Decimal(10, 2)
   status        String     @default("ativo") // 'ativo' | 'disparado' | 'inativo'
   ultimoDisparo DateTime?
+  notifEnviadoEm DateTime? // último email de alerta enviado (idempotência cron)
   criadoEm      DateTime   @default(now())
 
   @@index([workspaceId])

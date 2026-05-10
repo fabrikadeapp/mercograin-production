@@ -1,0 +1,23 @@
+name: Price Alerts Check
+
+# Verifica AlertaPreco vs cotação atual e dispara emails quando match.
+# Endpoint: /api/cron/price-alerts (cooldown 12h por alerta).
+
+on:
+  schedule:
+    # A cada 30 minutos durante horário de mercado (8h-19h BRT, seg-sex)
+    # 11:00-22:00 UTC = 08:00-19:00 BRT
+    - cron: '*/30 11-22 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger price-alerts endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/price-alerts

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getBraspagClient } from '@/lib/braspag-client'
 import { Decimal } from '@prisma/client/runtime/library'
+import { sendEmail } from '@/lib/email/send'
+import { boletoGeneratedTemplate } from '@/lib/email/templates/boleto-generated'
 
 const boletoSchema = z.object({
   clienteId: z.string().min(1),
@@ -171,6 +173,27 @@ export async function POST(request: NextRequest) {
       },
       include: { cliente: true },
     })
+
+    // Notifica pagador (best-effort).
+    if (boleto.cliente?.email && linkBoleto) {
+      try {
+        const tpl = boletoGeneratedTemplate({
+          payerName: boleto.cliente.nome,
+          valor: Number(boleto.valor),
+          vencimento: boleto.vencimento,
+          linkBoleto,
+          numero: boleto.numero,
+        })
+        await sendEmail({
+          to: boleto.cliente.email,
+          subject: tpl.subject,
+          html: tpl.html,
+          text: tpl.text,
+        })
+      } catch (emailError) {
+        console.error('Erro ao enviar notificação boleto_gerado:', emailError)
+      }
+    }
 
     return NextResponse.json(boleto, { status: 201 })
   } catch (error) {

@@ -2,7 +2,8 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { enviarNotificacaoContrato } from '@/lib/services/email-notifications'
+import { sendEmail } from '@/lib/email/send'
+import { contractSignedTemplate } from '@/lib/email/templates/contract-signed'
 
 const updateContratoSchema = z.object({
   numero: z.string().optional(),
@@ -80,6 +81,8 @@ export async function PUT(
     const body = await request.json()
     const data = updateContratoSchema.parse(body)
 
+    const wasUnsigned = contrato.statusAssinatura !== 'assinado'
+    const willBeSigned = data.statusAssinatura === 'assinado'
     const updated = await db.contrato.update({
       where: { id: params.id },
       data: {
@@ -87,9 +90,32 @@ export async function PUT(
         dataInicio: data.dataInicio ? new Date(data.dataInicio) : undefined,
         dataFim: data.dataFim ? new Date(data.dataFim) : undefined,
         statusAssinatura: data.statusAssinatura,
+        assinadoEm: wasUnsigned && willBeSigned ? new Date() : undefined,
       },
-      include: { cliente: true },
+      include: {
+        cliente: true,
+        workspace: { select: { owner: { select: { email: true, nome: true } } } },
+      },
     })
+
+    // Notifica corretora (workspace owner) quando contrato é assinado.
+    if (wasUnsigned && willBeSigned) {
+      const ownerEmail = updated.workspace?.owner?.email
+      if (ownerEmail) {
+        try {
+          const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
+          const tpl = contractSignedTemplate({
+            contractNumber: updated.numero,
+            signerName: updated.cliente?.nome || 'Cliente',
+            signedAt: updated.assinadoEm ?? new Date(),
+            contractUrl: `${APP_URL}/contratos/${updated.id}`,
+          })
+          await sendEmail({ to: ownerEmail, subject: tpl.subject, html: tpl.html, text: tpl.text })
+        } catch (emailError) {
+          console.error('Erro ao enviar notificação contrato_assinado:', emailError)
+        }
+      }
+    }
 
     return NextResponse.json(updated)
   } catch (error) {
@@ -186,16 +212,26 @@ export async function PATCH(
       },
     })
 
-    if (statusAssinatura === 'assinado' && updated.cliente.email) {
+    // Notifica corretora (workspace owner) — email é o do dono do workspace, não do cliente.
+    if (statusAssinatura === 'assinado' && !contrato.assinadoEm) {
       try {
-        await enviarNotificacaoContrato({
-          tipo: 'contrato_assinado',
-          numero: updated.numero,
-          proposta: updated.proposta.numero,
-          email: updated.cliente.email,
+        const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
+        const ws = await db.workspace.findUnique({
+          where: { id: contrato.workspaceId },
+          select: { owner: { select: { email: true } } },
         })
+        const ownerEmail = ws?.owner?.email
+        if (ownerEmail) {
+          const tpl = contractSignedTemplate({
+            contractNumber: updated.numero,
+            signerName: updated.cliente?.nome || 'Cliente',
+            signedAt: updated.assinadoEm ?? new Date(),
+            contractUrl: `${APP_URL}/contratos/${updated.id}`,
+          })
+          await sendEmail({ to: ownerEmail, subject: tpl.subject, html: tpl.html, text: tpl.text })
+        }
       } catch (emailError) {
-        console.error('Erro ao enviar notificação:', emailError)
+        console.error('Erro ao enviar notificação contrato_assinado (PATCH):', emailError)
       }
     }
 

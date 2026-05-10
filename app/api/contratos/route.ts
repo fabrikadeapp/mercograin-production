@@ -2,7 +2,8 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { enviarNotificacaoContrato } from '@/lib/services/email-notifications'
+import { sendEmail } from '@/lib/email/send'
+import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
 
 const contratoSchema = z.object({
   proposIdFk: z.string().min(1),
@@ -120,21 +121,44 @@ export async function POST(request: NextRequest) {
       include: {
         cliente: true,
         proposta: {
-          select: { numero: true },
+          select: { numero: true, graos: true },
+        },
+        workspace: {
+          select: { name: true, empresa: { select: { razaoSocial: true } } },
         },
       },
     })
 
+    // Notifica cliente final via Resend (best-effort, não falha a request).
     if (cliente.email) {
       try {
-        await enviarNotificacaoContrato({
-          tipo: 'contrato_criado',
-          numero: contrato.numero,
-          proposta: contrato.proposta.numero,
-          email: cliente.email,
+        const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
+        // Extrai primeiro grão da proposta para o resumo do email.
+        let granoLabel = '—'
+        let quantidadeSc: number | string = '—'
+        let precoSc: number | string = '—'
+        const graos = contrato.proposta.graos as any
+        const first = Array.isArray(graos) ? graos[0] : null
+        if (first && typeof first === 'object') {
+          granoLabel = String(first.grao || first.label || first.nome || '—')
+          quantidadeSc = Number(first.volumeSc ?? first.quantidadeSc ?? first.qtd ?? 0) || '—'
+          precoSc = Number(first.precoSc ?? first.preco ?? 0) || '—'
+        }
+        const corretoraName =
+          contrato.workspace?.empresa?.razaoSocial ||
+          contrato.workspace?.name ||
+          'PHB Grain'
+        const tpl = contractCreatedTemplate({
+          contractNumber: contrato.numero,
+          contractUrl: `${APP_URL}/contratos/${contrato.id}`,
+          corretoraName,
+          granoLabel,
+          quantidadeSc,
+          precoSc,
         })
+        await sendEmail({ to: cliente.email, subject: tpl.subject, html: tpl.html, text: tpl.text })
       } catch (emailError) {
-        console.error('Erro ao enviar notificação:', emailError)
+        console.error('Erro ao enviar notificação contrato_criado:', emailError)
       }
     }
 

@@ -1,0 +1,22 @@
+name: Trial Notifications Diário
+
+# Dispara emails de trial-ending (3d antes) e trial-expired (após).
+# Endpoint: /api/cron/trial-notifications (idempotente via notifTrialEndingAt/notifTrialExpiredAt).
+
+on:
+  schedule:
+    # 13:00 UTC = 10:00 BRT — horário comercial pra usuário ler logo
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger trial-notifications endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/trial-notifications

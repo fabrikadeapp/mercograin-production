@@ -3,8 +3,10 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateToken, getTokenExpiry, hashToken } from '@/lib/token-service'
-import { sendEmail } from '@/lib/email-service'
+import { sendEmail as sendLegacyEmail } from '@/lib/email-service'
 import { verifyEmailEmail } from '@/lib/email/templates'
+import { sendEmail } from '@/lib/email/send'
+import { welcomeTemplate } from '@/lib/email/templates/welcome'
 import { validatePasswordStrength } from '@/lib/password-validator'
 import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
       const baseUrl = process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
       const verifyUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`
       const tpl = verifyEmailEmail({ name: nome, verifyUrl })
-      await sendEmail({
+      await sendLegacyEmail({
         to: email,
         subject: tpl.subject,
         html: tpl.html,
@@ -94,6 +96,14 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('Error sending verification email:', emailError)
       // Continua mesmo com falha — usuário pode reenviar via /auth/resend-verification
+    }
+
+    // Welcome email (best-effort) — separado do verify para que falha de um não impeça o outro.
+    try {
+      const tpl = welcomeTemplate({ name: nome })
+      await sendEmail({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text })
+    } catch (welcomeError) {
+      console.error('Error sending welcome email:', welcomeError)
     }
 
     return NextResponse.json(
