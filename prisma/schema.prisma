@@ -116,6 +116,8 @@ model Workspace {
   assinaturasDigitais   AssinaturaDigital[]
   clausulasContrato     ClausulaContrato[]
   contratoNotificacoes  ContratoNotificacao[]
+  // S4 M1 — Compliance KYC + propriedades rurais
+  propriedadesRurais    PropriedadeRural[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -361,6 +363,10 @@ model Cliente {
   limiteCredito       Decimal? @db.Decimal(15, 2)
   /// QW5 — workflow de aprovação cadastral
   statusCadastral     String   @default("aprovado") // 'rascunho' | 'analise' | 'aprovado' | 'rejeitado'
+  /// S4 M1 — KYC unificado
+  kycResultado        Json?
+  kycRodadoEm         DateTime?
+  kycStatus           String   @default("nao_verificado") // 'nao_verificado'|'aprovado'|'pendencias'|'reprovado'
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -374,6 +380,9 @@ model Cliente {
   adiantamentos    Adiantamento[]    @relation("ProdutorAdiantamentos")
   // Compliance (Epic 5)
   talhoes          Talhao[]
+  // S4 M1 — propriedades rurais (KYC compliance)
+  propriedadesRurais PropriedadeRural[]
+  listaSujaEntries   ListaSuja[]
   // S2 M10
   pushSubscriptions PushSubscription[]
 
@@ -1891,6 +1900,10 @@ model Talhao {
   municipio String?
   uf        String?
 
+  // S4 M1 — vínculo opcional com propriedade rural cadastrada
+  propriedadeId String?
+  propriedade   PropriedadeRural? @relation(fields: [propriedadeId], references: [id], onDelete: SetNull)
+
   observacoes String?  @db.Text
   ativo       Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -1899,6 +1912,7 @@ model Talhao {
   @@unique([workspaceId, produtorId, nome])
   @@index([workspaceId, ativo])
   @@index([safraId])
+  @@index([propriedadeId])
 }
 
 /// Royalty de sementes/cultivar (apurado por contrato).
@@ -2082,4 +2096,98 @@ model ContratoNotificacao {
 
   @@unique([contratoId, marco])
   @@index([workspaceId])
+}
+
+// ============================================
+// S4 M1 — Compliance KYC + Propriedades Rurais
+// ============================================
+
+/// PropriedadeRural — imóvel rural vinculado a um produtor.
+/// Contém matrícula, NIRF/INCRA, CAR (Cadastro Ambiental Rural),
+/// georreferenciamento e flags ambientais (embargos, sobreposições).
+model PropriedadeRural {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  produtorId String
+  produtor   Cliente @relation(fields: [produtorId], references: [id], onDelete: Cascade)
+
+  nome String // "Fazenda Santa Helena"
+
+  // Documentos rurais
+  matricula String?
+  cartorio  String?
+  nirf      String? // Número Identificação Fiscal Imóvel Rural (Receita)
+  incra     String? // CCIR INCRA
+  itr       String? // ITR (valor pago último ano)
+
+  // CAR — Cadastro Ambiental Rural
+  car             String? // AA-NNNNNNN-XXXXXXXX...
+  carValidadoEm  DateTime?
+  carStatus      String? // 'ativo'|'pendente'|'cancelado'|'invalido'|'desconhecido'|'analise'
+  carResposta    Json?
+
+  // Áreas (hectares)
+  areaTotalHa             Float?
+  areaPlantavelHa         Float?
+  areaReservaLegal        Float?
+  areaPreservacaoPermanente Float? // APP
+  areaConsolidada         Float?
+
+  // Georreferenciamento
+  geoJson      Json?
+  centroideLat Float?
+  centroideLng Float?
+
+  // Localização
+  municipio String?
+  uf        String?
+
+  // Compliance ambiental
+  embargoIbama        Boolean   @default(false)
+  embargoVerificadoEm DateTime?
+  sobreposicaoTI      Boolean   @default(false) // Terra Indígena
+  sobreposicaoUC      Boolean   @default(false) // Unidade Conservação
+  alertaDesmatamento  Json?
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  talhoes Talhao[]
+
+  @@unique([workspaceId, matricula])
+  @@index([workspaceId, ativo])
+  @@index([produtorId])
+  @@index([car])
+}
+
+/// ListaSuja — cache local de listas oficiais de sanções (CEIS, CNEP, CEPIM,
+/// Trabalho Escravo, PEP, OFAC). Populada por cron periódico para evitar
+/// chamadas externas em cada consulta KYC.
+model ListaSuja {
+  id        String   @id @default(cuid())
+  lista     String   // 'trabalho_escravo' | 'ceis' | 'cnep' | 'cepim' | 'pep' | 'ofac'
+  cnpjOuCpf String   // só dígitos
+  nome      String
+  uf        String?
+  municipio String?
+  detalhes  Json?
+  vigenteAte DateTime?
+
+  // Relação opcional com Cliente quando há match exato (auxilia auditoria)
+  clienteId String?
+  cliente   Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  // Workspace é opcional: listas oficiais são globais (workspaceId=null),
+  // mas matches gerados por cron podem ser materializados por workspace.
+  workspaceId String?
+
+  importadoEm DateTime @default(now())
+
+  @@index([lista, cnpjOuCpf])
+  @@index([cnpjOuCpf])
+  @@index([clienteId])
 }
