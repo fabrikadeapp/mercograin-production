@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
+import { OriginacaoPanel } from './_components/OriginacaoPanel'
 
 interface GraoItem {
   grao: string
@@ -40,6 +41,7 @@ interface Contrato {
   id: string
   numero: string
   statusAssinatura: 'pendente' | 'assinado' | 'cancelado'
+  modalidade?: string
   dataInicio: string
   dataFim?: string
   assinadoEm?: string
@@ -299,6 +301,17 @@ export default function ContratoDetalhesPage() {
             )}
           </>
         }
+      />
+
+      <OriginacaoPanel
+        contratoId={contrato.id}
+        modalidade={contrato.modalidade || 'fixo'}
+        isAdmin={true}
+        qtdContratoSugerida={contrato.proposta.graos.reduce(
+          (acc: number, g: any) =>
+            acc + Number(g.volumeSc ?? g.quantidadeSc ?? g.quantidade ?? 0),
+          0
+        )}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -74,6 +74,13 @@ model Workspace {
   whatsappInstance     WhatsAppInstance?
   whatsappContacts     WhatsAppContact[]
   whatsappMessages     WhatsAppMessage[]
+  // Originação & Fixação (Epic 1)
+  contratosFixacao     ContratoFixacao[]
+  fixacoes             Fixacao[]
+  adiantamentos        Adiantamento[]
+  barterInsumos        BarterInsumo[]
+  planosVendas         PlanoVendas[]
+  washouts             Washout[]
 
   onboardingCompletedAt DateTime?
 
@@ -150,6 +157,8 @@ model Fornecedor {
   transportadoraMotoristas Motorista[]       @relation("TransportadoraMotoristas")
   ordensTransporte         OrdemCarga[]      @relation("TransportadoraOrdens")
   whatsappContacts         WhatsAppContact[]
+  // Originação (Epic 1) — fornecedores de insumos no barter
+  barterInsumos            BarterInsumo[]
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -284,6 +293,8 @@ model Cliente {
   contratosFuturos ContratoFuturo[]
   cargas           OrdemCarga[]      @relation("ClienteCargas")
   whatsappContacts WhatsAppContact[]
+  // Originação (Epic 1) — produtor recebe adiantamentos
+  adiantamentos    Adiantamento[]    @relation("ProdutorAdiantamentos")
 
   @@index([email])
   @@index([cnpj])
@@ -379,10 +390,25 @@ model Contrato {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // Modalidade — preço fixo, a fixar, misto, barter ou triangular
+  modalidade String @default("fixo") // 'fixo' | 'a_fixar' | 'misto' | 'barter' | 'triangular'
+
+  // Operação triangular: este contrato pode ser filho de outro (mesma origem)
+  contratoOriginalId String?
+  contratoOriginal   Contrato?  @relation("OperacaoTriangular", fields: [contratoOriginalId], references: [id], onDelete: SetNull)
+  contratosFilhos    Contrato[] @relation("OperacaoTriangular")
+
+  // Originação (Epic 1)
+  fixacao        ContratoFixacao?
+  adiantamentos  Adiantamento[]
+  barterInsumos  BarterInsumo[]
+  washouts       Washout[]
+
   @@index([clienteId])
   @@index([proposIdFk])
   @@index([assinadoEm])
   @@index([workspaceId])
+  @@index([contratoOriginalId])
 }
 
 // ============================================
@@ -709,6 +735,7 @@ model Safra {
   romaneios      Romaneio[]
   ticketsBalanca TicketBalanca[]
   lotes          LoteEstoque[]
+  planosVendas   PlanoVendas[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1041,4 +1068,200 @@ model WhatsAppMessage {
   @@unique([workspaceId, messageId]) // idempotência
   @@index([workspaceId, contactId, timestamp])
   @@index([workspaceId, timestamp])
+}
+
+// ============================================
+// ORIGINAÇÃO & FIXAÇÃO (Epic 1)
+// ============================================
+
+/// Configuração de fixação de um contrato (apenas para modalidade "a_fixar" / "misto").
+model ContratoFixacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String   @unique
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  modalidade String // 'fixo' | 'a_fixar' | 'misto' | 'barter' | 'triangular'
+
+  qtdTotalSc        Float
+  qtdFixadaSc       Float @default(0)
+  qtdRemanescenteSc Float
+
+  fixacaoInicio DateTime?
+  fixacaoFim    DateTime?
+
+  gatilhoTipo    String? // 'preco_alvo' | 'manual' | 'data_limite'
+  gatilhoPrecoSc Float?
+  gatilhoCultura String? // 'soja' | 'milho' | 'trigo'
+
+  statusFixacao String @default("pendente") // 'pendente' | 'parcial' | 'totalmente_fixado' | 'cancelado'
+
+  observacoes String? @db.Text
+
+  fixacoes Fixacao[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, statusFixacao])
+}
+
+/// Cada fixação parcial de preço sobre um ContratoFixacao.
+model Fixacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoFixacaoId String
+  contratoFixacao   ContratoFixacao @relation(fields: [contratoFixacaoId], references: [id], onDelete: Cascade)
+
+  qtdSc         Float
+  precoSc       Float
+  precoUSDSc    Float?
+  cotacaoUSDBRL Float?
+  premio        Float?
+  base          Float?
+
+  fixadoEm  DateTime @default(now())
+  fixadoPor String?
+
+  observacoes String? @db.Text
+  pdfUrl      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([contratoFixacaoId, fixadoEm])
+  @@index([workspaceId])
+}
+
+/// Adiantamento ao produtor (cash ou insumo) — quitado pela entrega física.
+model Adiantamento {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  produtorId String
+  produtor   Cliente @relation("ProdutorAdiantamentos", fields: [produtorId], references: [id], onDelete: Restrict)
+
+  valor Decimal @db.Decimal(15, 2)
+
+  tipo String // 'dinheiro' | 'insumo' | 'misto'
+
+  dataAdiantamento DateTime  @default(now())
+  dataPrevistaQuit DateTime?
+
+  qtdAbatidaSc  Float @default(0)
+  qtdEsperadaSc Float
+
+  status String @default("aberto") // 'aberto' | 'parcial' | 'quitado' | 'inadimplente'
+
+  observacoes String? @db.Text
+
+  itensInsumo BarterInsumo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, status])
+  @@index([produtorId])
+  @@index([contratoId])
+}
+
+/// Insumo entregue ao produtor (barter) — convertido em sacas equivalentes.
+model BarterInsumo {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  adiantamentoId String?
+  adiantamento   Adiantamento? @relation(fields: [adiantamentoId], references: [id], onDelete: SetNull)
+
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  descricao    String
+  fornecedorId String?
+  fornecedor   Fornecedor? @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+
+  quantidade Float
+  unidade    String // 'kg' | 'l' | 'sc' | 'un'
+  precoUnit  Decimal @db.Decimal(10, 2)
+  valorTotal Decimal @db.Decimal(15, 2)
+
+  precoFixadoSc        Float
+  qtdGraoEquivalenteSc Float
+
+  status String @default("pendente") // 'pendente' | 'entregue' | 'recebido_grao' | 'cancelado'
+
+  dataEntregaInsumo DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([contratoId])
+  @@index([adiantamentoId])
+  @@index([fornecedorId])
+}
+
+/// Plano de vendas / forecast por safra+cultura.
+model PlanoVendas {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  safraId String?
+  safra   Safra?  @relation(fields: [safraId], references: [id], onDelete: SetNull)
+
+  cultura String
+
+  qtdPrevistaSc   Float
+  qtdContratadaSc Float @default(0)
+  qtdFixadaSc     Float @default(0)
+  qtdEntregueSc   Float @default(0)
+
+  precoMedioPrevistoSc Float?
+
+  observacoes String? @db.Text
+
+  status String @default("ativo") // 'ativo' | 'concluido' | 'cancelado'
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, cultura, safraId])
+  @@index([workspaceId, status])
+}
+
+/// Washout — desfazimento de contrato com motivo e custo associado.
+model Washout {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  motivo          String // 'cliente_desistiu' | 'forcas_maior' | 'preco_inviavel' | 'outro'
+  motivoDescricao String? @db.Text
+
+  custoWashout  Decimal @default(0) @db.Decimal(15, 2)
+  custoQuemPaga String? // 'comprador' | 'vendedor' | 'corretora'
+
+  qtdAfetadaSc Float
+
+  aprovadoPor String?
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([contratoId])
 }
