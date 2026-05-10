@@ -6,6 +6,7 @@ import { generateToken, getTokenExpiry, hashToken } from '@/lib/token-service'
 import { sendEmail } from '@/lib/email-service'
 import { verifyEmailEmail } from '@/lib/email/templates'
 import { validatePasswordStrength } from '@/lib/password-validator'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const signupSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -15,6 +16,18 @@ const signupSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 signups/hora por IP — protege contra criação massiva de contas.
+    const ip = getClientIp(request)
+    const limit = rateLimit(`signup:${ip}`, 5, 60 * 60 * 1000)
+    if (!limit.ok) {
+      const minutes = Math.ceil(limit.resetIn / 60000)
+      console.warn(`[auth] signup rate limit exceeded for IP ${ip}`)
+      return NextResponse.json(
+        { error: `Muitas tentativas. Tente novamente em ${minutes} min.` },
+        { status: 429 },
+      )
+    }
+
     const body = await request.json()
 
     const { nome, email, senha } = signupSchema.parse(body)

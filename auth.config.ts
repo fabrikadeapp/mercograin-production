@@ -2,6 +2,7 @@ import type { NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 import { db } from '@/lib/db'
+import { rateLimit } from '@/lib/security/rate-limit'
 
 export const authConfig = {
   pages: {
@@ -82,6 +83,20 @@ export const authConfig = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        // Rate limit: 5 tentativas / 15min por email.
+        // Em NextAuth Credentials, o request não é exposto ao authorize de forma confiável,
+        // por isso usamos o email como chave (trade-off: atacante pode rotacionar emails,
+        // mas defende contra brute-force em uma conta-alvo, que é o caso comum).
+        const emailKey = String(credentials.email).toLowerCase()
+        const limit = rateLimit(`login:email:${emailKey}`, 5, 15 * 60 * 1000)
+        if (!limit.ok) {
+          const minutes = Math.ceil(limit.resetIn / 60000)
+          console.warn(`[auth] login rate limit triggered for ${emailKey}`)
+          throw new Error(
+            `Muitas tentativas de login. Aguarde ${minutes} minuto(s).`,
+          )
         }
 
         try {

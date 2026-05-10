@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/email-service'
 import { resetPasswordEmail } from '@/lib/email/templates'
 import { z } from 'zod'
 import crypto from 'crypto'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -19,6 +20,20 @@ function getIp(request: NextRequest): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 tentativas/hora por IP — protege contra abuso de envio de emails.
+    const ip = getClientIp(request)
+    const limit = rateLimit(`forgot-password:${ip}`, 3, 60 * 60 * 1000)
+    if (!limit.ok) {
+      const minutes = Math.ceil(limit.resetIn / 60000)
+      // Audit best-effort (sem userId pois ainda não autenticado).
+      // AuditLog requer userId, então logamos apenas em console.
+      console.warn(`[auth] forgot-password rate limit exceeded for IP ${ip}`)
+      return NextResponse.json(
+        { error: `Muitas tentativas. Tente novamente em ${minutes} min.` },
+        { status: 429 },
+      )
+    }
+
     const body = await request.json()
     const { email } = forgotPasswordSchema.parse(body)
 
