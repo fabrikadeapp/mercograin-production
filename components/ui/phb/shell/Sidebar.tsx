@@ -21,6 +21,7 @@ import {
   MessageCircle,
   WifiOff,
   CreditCard,
+  Calculator,
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -37,6 +38,7 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/cotacoes', icon: TrendingUp, label: 'Cotações' },
+  { href: '/calculadora', icon: Calculator, label: 'Calculadora' },
   { href: '/contratos', icon: FileText, label: 'Contratos' },
   { href: '/futuros', icon: LineChart, label: 'Futuros' },
   { href: '/classificados', icon: Store, label: 'Classificados' },

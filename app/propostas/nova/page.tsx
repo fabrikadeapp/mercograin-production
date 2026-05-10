@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Plus, Trash2, Wheat, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Wheat, Loader2, Calculator } from 'lucide-react'
 import {
   AppShell,
   PageHeader,
@@ -178,11 +178,24 @@ export default function NovaPropostaPage() {
         subtitle="Crie uma proposta comercial com especificação de grãos e validade."
         search={false}
         actions={
-          <Link href="/propostas">
-            <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Voltar
-            </Button>
-          </Link>
+          <>
+            <Link
+              href={`/calculadora?from=proposta${
+                graos[0]?.grao ? `&grao=${graos[0].grao}` : ''
+              }${graos[0]?.preco ? `&preco=${graos[0].preco}` : ''}${
+                graos[0]?.quantidade ? `&quantidade=${graos[0].quantidade}` : ''
+              }`}
+            >
+              <Button variant="secondary" leftIcon={<Calculator className="h-4 w-4" />}>
+                Calcular líquido
+              </Button>
+            </Link>
+            <Link href="/propostas">
+              <Button variant="ghost" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+                Voltar
+              </Button>
+            </Link>
+          </>
         }
       />
 

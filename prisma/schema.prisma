@@ -107,6 +107,7 @@ model DadosEmpresa {
   logoUrl           String?
   dadosBancarios    Json?
   certificadoPath   String?
+  comissaoPadrao    Float?    @default(1.5)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
