@@ -1,0 +1,29 @@
+name: Risco — Detecção de Breaches
+
+# Detecta breaches de limites de risco em todos workspaces e dispara emails.
+# Endpoint: /api/cron/risco-breaches (idempotente — não duplica breach aberto).
+#
+# Setup: CRON_SECRET no repo + Railway env.
+
+on:
+  schedule:
+    # A cada 30min em horário comercial seg-sex (11-22 UTC ≈ 08-19 BRT)
+    - cron: '*/30 11-22 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  risco-breaches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger risco-breaches endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/risco-breaches \
+            | tee response.json
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::risco-breaches retornou ok=false — verifique Sentry"
+            exit 1
+          fi

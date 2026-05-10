@@ -131,6 +131,20 @@ async function handle(req: Request) {
         ? r.pnlBRL - Number(previa.pnlUnrealizedBRL)
         : null
 
+      const cot =
+        pos.cultura === 'soja' ? sojaCot : pos.cultura === 'milho' ? milhoCot : trigoCot
+      const inputsSnapshot = {
+        cotacaoId: cot?.id ?? null,
+        cotacaoData: cot?.data?.toISOString?.() ?? null,
+        precoMercadoBrlSc: brlSc,
+        precoMercadoUsdBu: precoUsdBu,
+        cambioId: tx?.id ?? null,
+        cambioData: tx?.data?.toISOString?.() ?? null,
+        cambioUsdBrl: cambio,
+        pnlFormula:
+          'pnl_usd = sinal * (mkt - entrada) * qtdContratos * 5000 - corretagem',
+        kgPorBushel: CBOT_CONTRATO[sym].kgPorBushel,
+      }
       await db.marcacaoMercado.upsert({
         where: {
           posicaoHedgeId_data: { posicaoHedgeId: pos.id, data: dia },
@@ -146,6 +160,9 @@ async function handle(req: Request) {
           pnlUnrealizedBRL: r.pnlBRL,
           variacaoDiaUSD,
           variacaoDiaBRL,
+          inputsSnapshot,
+          calcMetodo: 'cron_marcacao_diaria',
+          calcVersao: 'v1',
         },
         update: {
           precoMercadoUsdBu: precoUsdBu,
@@ -155,6 +172,9 @@ async function handle(req: Request) {
           pnlUnrealizedBRL: r.pnlBRL,
           variacaoDiaUSD,
           variacaoDiaBRL,
+          inputsSnapshot,
+          calcMetodo: 'cron_marcacao_diaria',
+          calcVersao: 'v1',
         },
       })
       marcadas++

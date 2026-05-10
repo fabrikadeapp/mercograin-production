@@ -24,10 +24,10 @@ model User {
   atualizadoEm     DateTime @updatedAt
 
   // 2FA TOTP (S2 M10)
-  totpSecret              String?
-  totpEnabled             Boolean                  @default(false)
-  totpVerifiedAt          DateTime?
-  recoveryCodes           String[]                 @default([])
+  totpSecret     String?
+  totpEnabled    Boolean   @default(false)
+  totpVerifiedAt DateTime?
+  recoveryCodes  String[]  @default([])
 
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
@@ -42,6 +42,9 @@ model User {
   // Compliance (Epic 5)
   aprovacoesSolicitadas Aprovacao[]        @relation("AprovacaoSolicitante")
   aprovacaoDecisoes     AprovacaoDecisao[]
+
+  // S6 M5 Risco — perfis de corretor
+  corretorPerfis Corretor[]
 
   @@index([email])
 }
@@ -62,65 +65,70 @@ model Workspace {
   subscription Subscription?
 
   // Relações migradas de usuarioId → workspaceId
-  clientes              Cliente[]
-  propostas             Proposta[]
-  contratos             Contrato[]
-  boletos               Boleto[]
-  classificados         Classificado[]
-  alertasPreco          AlertaPreco[]
-  contratosFuturos      ContratoFuturo[]
-  fornecedores          Fornecedor[]
-  templatesContrato     ContratoTemplate[]
-  armazens              Armazem[]
-  motoristas            Motorista[]
-  ordensCarga           OrdemCarga[]
+  clientes               Cliente[]
+  propostas              Proposta[]
+  contratos              Contrato[]
+  boletos                Boleto[]
+  classificados          Classificado[]
+  alertasPreco           AlertaPreco[]
+  contratosFuturos       ContratoFuturo[]
+  fornecedores           Fornecedor[]
+  templatesContrato      ContratoTemplate[]
+  armazens               Armazem[]
+  motoristas             Motorista[]
+  ordensCarga            OrdemCarga[]
   // Operação Física (Epic 2)
-  safras                Safra[]
-  tabelasClassificacao  TabelaClassificacao[]
-  balancas              Balanca[]
-  lotesEstoque          LoteEstoque[]
-  romaneios             Romaneio[]
-  ticketsBalanca        TicketBalanca[]
-  classificacoes        Classificacao[]
-  movimentacoesLote     MovimentacaoLote[]
-  whatsappInstance      WhatsAppInstance?
-  whatsappContacts      WhatsAppContact[]
-  whatsappMessages      WhatsAppMessage[]
+  safras                 Safra[]
+  tabelasClassificacao   TabelaClassificacao[]
+  balancas               Balanca[]
+  lotesEstoque           LoteEstoque[]
+  romaneios              Romaneio[]
+  ticketsBalanca         TicketBalanca[]
+  classificacoes         Classificacao[]
+  movimentacoesLote      MovimentacaoLote[]
+  whatsappInstance       WhatsAppInstance?
+  whatsappContacts       WhatsAppContact[]
+  whatsappMessages       WhatsAppMessage[]
   // Originação & Fixação (Epic 1)
-  contratosFixacao      ContratoFixacao[]
-  fixacoes              Fixacao[]
-  adiantamentos         Adiantamento[]
-  barterInsumos         BarterInsumo[]
-  planosVendas          PlanoVendas[]
-  washouts              Washout[]
+  contratosFixacao       ContratoFixacao[]
+  fixacoes               Fixacao[]
+  adiantamentos          Adiantamento[]
+  barterInsumos          BarterInsumo[]
+  planosVendas           PlanoVendas[]
+  washouts               Washout[]
   // Hedge & Risco (Epic 4)
-  posicoesHedge         PosicaoHedge[]
-  ndfs                  NDF[]
-  marcacoesMercado      MarcacaoMercado[]
+  posicoesHedge          PosicaoHedge[]
+  ndfs                   NDF[]
+  marcacoesMercado       MarcacaoMercado[]
   // Fiscal (Epic 3)
-  configuracaoFiscal    ConfiguracaoFiscal?
-  notasFiscais          NotaFiscal[]
-  cartasCorrecao        CartaCorrecao[]
-  spedExports           SpedExport[]
+  configuracaoFiscal     ConfiguracaoFiscal?
+  notasFiscais           NotaFiscal[]
+  cartasCorrecao         CartaCorrecao[]
+  spedExports            SpedExport[]
   // Compliance & Escala (Epic 5)
-  aprovacaoWorkflows    AprovacaoWorkflow[]
-  aprovacoes            Aprovacao[]
-  centrosCusto          CentroCusto[]
-  movimentosFinanceiros MovimentoFinanceiro[]
-  talhoes               Talhao[]
-  royalties             Royalty[]
+  aprovacaoWorkflows     AprovacaoWorkflow[]
+  aprovacoes             Aprovacao[]
+  centrosCusto           CentroCusto[]
+  movimentosFinanceiros  MovimentoFinanceiro[]
+  talhoes                Talhao[]
+  royalties              Royalty[]
   // S2 M10
-  aceiteContratos       AceiteContrato[]
-  pushSubscriptions     PushSubscription[]
+  aceiteContratos        AceiteContrato[]
+  pushSubscriptions      PushSubscription[]
   // S3 M3 — Assinatura digital + cláusulas + versionamento + marcos
-  assinaturasDigitais   AssinaturaDigital[]
-  clausulasContrato     ClausulaContrato[]
-  contratoNotificacoes  ContratoNotificacao[]
+  assinaturasDigitais    AssinaturaDigital[]
+  clausulasContrato      ClausulaContrato[]
+  contratoNotificacoes   ContratoNotificacao[]
   // S4 M1 — Compliance KYC + propriedades rurais
-  propriedadesRurais    PropriedadeRural[]
+  propriedadesRurais     PropriedadeRural[]
   // S5 M9 — EUDR: cadeia de custódia + DDS
-  talhaoLotes           TalhaoLote[]
+  talhaoLotes            TalhaoLote[]
   duediligenceStatements DueDiligenceStatement[]
+  // S6 M5 — Risco profissional
+  mesas                  Mesa[]
+  corretores             Corretor[]
+  limitesRisco           LimiteRisco[]
+  limitesBreach          LimiteBreach[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -209,23 +217,23 @@ model Fornecedor {
 }
 
 model ContratoTemplate {
-  id          String    @id @default(cuid())
+  id          String                   @id @default(cuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   nome        String
   tipo        String // 'venda' | 'compra' | 'intermediacao' | 'outros'
   descricao   String?
   contentJson Json
   variaveis   Json?
-  ativo       Boolean   @default(true)
-  isDefault   Boolean   @default(false)
+  ativo       Boolean                  @default(true)
+  isDefault   Boolean                  @default(false)
   // S3 M3 — versionamento de template
-  versao      Int       @default(1)
+  versao      Int                      @default(1)
   versoes     ContratoTemplateVersao[]
   // S3 M3 — cláusulas associadas a esse template (templates podem ter cláusulas padrão)
   clausulas   ClausulaContrato[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
 
   @@index([workspaceId, tipo, ativo])
 }
@@ -344,50 +352,50 @@ model AlertaPreco {
 // ============================================
 
 model Cliente {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  nome        String    @db.VarChar(255)
-  tipo        String    @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
-  email       String?   @db.VarChar(255)
-  whatsapp    String?   @db.VarChar(20)
-  cnpj        String?   @unique @db.VarChar(18)
-  endereco    String?   @db.Text
-  telefone    String?   @db.VarChar(20)
-  ativo       Boolean   @default(true)
+  id                  String    @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome                String    @db.VarChar(255)
+  tipo                String    @default("ambos") // 'comprador' | 'vendedor' | 'ambos'
+  email               String?   @db.VarChar(255)
+  whatsapp            String?   @db.VarChar(20)
+  cnpj                String?   @unique @db.VarChar(18)
+  endereco            String?   @db.Text
+  telefone            String?   @db.VarChar(20)
+  ativo               Boolean   @default(true)
   // QW4 — cadastro PF/PJ + dados bancários + governança
-  cpf                 String?  @unique @db.VarChar(14)
+  cpf                 String?   @unique @db.VarChar(14)
   tipoPessoa          String? // 'PF' | 'PJ'
   dadosBancarios      Json? // { banco, agencia, conta, tipo, pixChave }
-  inscricaoEstadual   String?  @db.VarChar(30)
+  inscricaoEstadual   String?   @db.VarChar(30)
   porte               String? // 'ME' | 'EPP' | 'medio' | 'grande'
   origemCapital       String? // 'nacional' | 'estrangeiro'
   scoreRelacionamento Int? // 0-1000
-  limiteCredito       Decimal? @db.Decimal(15, 2)
+  limiteCredito       Decimal?  @db.Decimal(15, 2)
   /// QW5 — workflow de aprovação cadastral
-  statusCadastral     String   @default("aprovado") // 'rascunho' | 'analise' | 'aprovado' | 'rejeitado'
+  statusCadastral     String    @default("aprovado") // 'rascunho' | 'analise' | 'aprovado' | 'rejeitado'
   /// S4 M1 — KYC unificado
   kycResultado        Json?
   kycRodadoEm         DateTime?
-  kycStatus           String   @default("nao_verificado") // 'nao_verificado'|'aprovado'|'pendencias'|'reprovado'
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  kycStatus           String    @default("nao_verificado") // 'nao_verificado'|'aprovado'|'pendencias'|'reprovado'
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  propostas        Proposta[]
-  contratos        Contrato[]
-  boletos          Boleto[]
-  contratosFuturos ContratoFuturo[]
-  cargas           OrdemCarga[]      @relation("ClienteCargas")
-  whatsappContacts WhatsAppContact[]
+  propostas          Proposta[]
+  contratos          Contrato[]
+  boletos            Boleto[]
+  contratosFuturos   ContratoFuturo[]
+  cargas             OrdemCarga[]       @relation("ClienteCargas")
+  whatsappContacts   WhatsAppContact[]
   // Originação (Epic 1) — produtor recebe adiantamentos
-  adiantamentos    Adiantamento[]    @relation("ProdutorAdiantamentos")
+  adiantamentos      Adiantamento[]     @relation("ProdutorAdiantamentos")
   // Compliance (Epic 5)
-  talhoes          Talhao[]
+  talhoes            Talhao[]
   // S4 M1 — propriedades rurais (KYC compliance)
   propriedadesRurais PropriedadeRural[]
   listaSujaEntries   ListaSuja[]
   // S2 M10
-  pushSubscriptions PushSubscription[]
+  pushSubscriptions  PushSubscription[]
 
   @@index([email])
   @@index([cnpj])
@@ -500,7 +508,7 @@ model Contrato {
   contratosFilhos    Contrato[] @relation("OperacaoTriangular")
 
   // S2 M10
-  aceite                AceiteContrato?
+  aceite AceiteContrato?
 
   // S3 M3 — Snapshot imutável da versão de template usada na geração
   templateVersaoSnapshot Json?
@@ -517,21 +525,25 @@ model Contrato {
   notificacoes      ContratoNotificacao[]
 
   // Originação (Epic 1)
-  fixacao               ContratoFixacao?
-  adiantamentos         Adiantamento[]
-  barterInsumos         BarterInsumo[]
-  washouts              Washout[]
+  fixacao                ContratoFixacao?
+  adiantamentos          Adiantamento[]
+  barterInsumos          BarterInsumo[]
+  washouts               Washout[]
   // Hedge (Epic 4): hedge financeiro vinculado a este contrato físico
-  posicoesHedge         PosicaoHedge[]        @relation("HedgeContrato")
+  posicoesHedge          PosicaoHedge[]          @relation("HedgeContrato")
   // Fiscal (Epic 3)
-  notasFiscais          NotaFiscal[]
+  notasFiscais           NotaFiscal[]
   // Compliance (Epic 5)
-  movimentosFinanceiros MovimentoFinanceiro[]
-  royalties             Royalty[]
+  movimentosFinanceiros  MovimentoFinanceiro[]
+  royalties              Royalty[]
   // S5 M9 EUDR
   duediligenceStatements DueDiligenceStatement[]
   /// Status próprio do contrato — quando há workflow de aprovação ativo
-  statusAprovacao       String                @default("aprovado") // 'pendente_aprovacao' | 'aprovado' | 'rejeitado'
+  statusAprovacao        String                  @default("aprovado") // 'pendente_aprovacao' | 'aprovado' | 'rejeitado'
+
+  // S6 M5 — atribuição hierárquica
+  corretorId String?
+  mesaId     String?
 
   @@index([clienteId])
   @@index([proposIdFk])
@@ -1466,6 +1478,10 @@ model PosicaoHedge {
 
   observacoes String? @db.Text
 
+  // S6 M5 — atribuição hierárquica
+  corretorId String?
+  mesaId     String?
+
   marcacoes MarcacaoMercado[]
 
   createdAt DateTime @default(now())
@@ -1475,6 +1491,8 @@ model PosicaoHedge {
   @@index([workspaceId, status])
   @@index([cultura, vencimento])
   @@index([contratoOrigemId])
+  @@index([corretorId])
+  @@index([mesaId])
 }
 
 /// NDF — Non-Deliverable Forward (moeda ou commodity).
@@ -1533,6 +1551,11 @@ model MarcacaoMercado {
 
   variacaoDiaUSD Decimal? @db.Decimal(15, 2)
   variacaoDiaBRL Decimal? @db.Decimal(15, 2)
+
+  // S6 M5 — Auditoria de cálculo (qual cotação/câmbio/formula foi usada)
+  inputsSnapshot Json?
+  calcMetodo     String?
+  calcVersao     String? @default("v1")
 
   createdAt DateTime @default(now())
 
@@ -2136,17 +2159,17 @@ model PropriedadeRural {
   itr       String? // ITR (valor pago último ano)
 
   // CAR — Cadastro Ambiental Rural
-  car             String? // AA-NNNNNNN-XXXXXXXX...
-  carValidadoEm  DateTime?
-  carStatus      String? // 'ativo'|'pendente'|'cancelado'|'invalido'|'desconhecido'|'analise'
-  carResposta    Json?
+  car           String? // AA-NNNNNNN-XXXXXXXX...
+  carValidadoEm DateTime?
+  carStatus     String? // 'ativo'|'pendente'|'cancelado'|'invalido'|'desconhecido'|'analise'
+  carResposta   Json?
 
   // Áreas (hectares)
-  areaTotalHa             Float?
-  areaPlantavelHa         Float?
-  areaReservaLegal        Float?
+  areaTotalHa               Float?
+  areaPlantavelHa           Float?
+  areaReservaLegal          Float?
   areaPreservacaoPermanente Float? // APP
-  areaConsolidada         Float?
+  areaConsolidada           Float?
 
   // Georreferenciamento
   geoJson      Json?
@@ -2181,13 +2204,13 @@ model PropriedadeRural {
 /// Trabalho Escravo, PEP, OFAC). Populada por cron periódico para evitar
 /// chamadas externas em cada consulta KYC.
 model ListaSuja {
-  id        String   @id @default(cuid())
-  lista     String   // 'trabalho_escravo' | 'ceis' | 'cnep' | 'cepim' | 'pep' | 'ofac'
-  cnpjOuCpf String   // só dígitos
-  nome      String
-  uf        String?
-  municipio String?
-  detalhes  Json?
+  id         String    @id @default(cuid())
+  lista      String // 'trabalho_escravo' | 'ceis' | 'cnep' | 'cepim' | 'pep' | 'ofac'
+  cnpjOuCpf  String // só dígitos
+  nome       String
+  uf         String?
+  municipio  String?
+  detalhes   Json?
   vigenteAte DateTime?
 
   // Relação opcional com Cliente quando há match exato (auxilia auditoria)
@@ -2238,7 +2261,7 @@ model TalhaoLote {
 /// Catálogo local de áreas protegidas (TI/UC/embargo IBAMA) para checagem
 /// de sobreposição com propriedades rurais. Populado por cron mensal.
 model AreaProtegida {
-  id   String @id @default(cuid())
+  id   String  @id @default(cuid())
   tipo String // 'terra_indigena' | 'unidade_conservacao' | 'embargo_ibama'
   nome String
   uf   String?
@@ -2284,7 +2307,7 @@ model DueDiligenceStatement {
 
   // Riscos
   riscoNivel   String // 'baixo' | 'medio' | 'alto' | 'critico'
-  riscoFatores Json   // [{ tipo, descricao, gravidade }]
+  riscoFatores Json // [{ tipo, descricao, gravidade }]
 
   // Atestação
   atestadoPor String?
@@ -2306,4 +2329,123 @@ model DueDiligenceStatement {
   @@unique([workspaceId, numero])
   @@index([workspaceId, conclusao])
   @@index([contratoId])
+}
+
+// ============================================
+// EPIC S6 M5 — RISCO PROFISSIONAL
+// ============================================
+
+/// Mesa de operações — agrupa corretores (e P&L)
+model Mesa {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  nome      String
+  descricao String?
+
+  ativo Boolean @default(true)
+
+  corretores Corretor[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, ativo])
+}
+
+/// Corretor — vincula User opcional, mesa, comissão hierárquica.
+model Corretor {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  mesaId String?
+  mesa   Mesa?   @relation(fields: [mesaId], references: [id], onDelete: SetNull)
+
+  nome     String
+  email    String?
+  whatsapp String?
+  cpf      String?
+
+  // Comissão hierárquica (% sobre comissão da mesa)
+  comissaoPct           Float  @default(0.5)
+  comissaoOriginadorPct Float?
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, cpf])
+  @@index([workspaceId, ativo])
+  @@index([mesaId])
+  @@index([userId])
+}
+
+/// Limite de risco — workspace define escopos/tipos com valor máximo e aviso.
+model LimiteRisco {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// 'total' | 'cultura' | 'corretor' | 'mesa' | 'contraparte' | 'regiao'
+  escopo       String
+  /// Filtro JSON do escopo (ex: { cultura: 'soja' } ou { corretorId: 'xxx' })
+  escopoFiltro Json?
+
+  /// 'exposicao_usd' | 'exposicao_brl' | 'qtd_sc' | 'var_usd' | 'pnl_neg_usd'
+  tipo String
+
+  valorMaximo Decimal  @db.Decimal(15, 2)
+  /// Patamar de aviso (ex 80% do valor máximo). Se null usa 80%.
+  valorAviso  Decimal? @db.Decimal(15, 2)
+
+  ativo Boolean @default(true)
+
+  observacao String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  breaches LimiteBreach[]
+
+  @@index([workspaceId, escopo, tipo])
+  @@index([workspaceId, ativo])
+}
+
+/// Breach detectado de um LimiteRisco.
+model LimiteBreach {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  limiteId String
+  limite   LimiteRisco @relation(fields: [limiteId], references: [id], onDelete: Cascade)
+
+  valorAtual  Decimal @db.Decimal(15, 2)
+  valorMaximo Decimal @db.Decimal(15, 2)
+  /// Quanto % acima do limite (positivo = excedeu)
+  excedidoEm  Decimal @db.Decimal(8, 2)
+
+  /// 'aviso' | 'breach' | 'critico'
+  severidade String
+
+  detectadoEm DateTime  @default(now())
+  resolvidoEm DateTime?
+
+  triggerEntidade   String?
+  triggerEntidadeId String?
+  triggerSnapshot   Json?
+
+  /// Notificações enviadas [{canal:'email', enviadoEm}, ...]
+  notificadoPor Json?
+
+  observacao String? @db.Text
+
+  @@index([workspaceId, severidade, resolvidoEm])
+  @@index([limiteId])
 }

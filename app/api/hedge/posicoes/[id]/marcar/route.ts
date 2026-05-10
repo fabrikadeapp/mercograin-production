@@ -58,12 +58,18 @@ export async function POST(
 
   // Resolver câmbio
   let cambio = body?.cambioUsdBrl
+  let cambioRefId: string | null = null
+  let cambioRefData: Date | null = null
   if (!cambio) {
     const tx = await db.taxaCambio.findFirst({
       where: { origem: 'USD', destino: 'BRL' },
       orderBy: { data: 'desc' },
     })
-    if (tx) cambio = Number(tx.taxa)
+    if (tx) {
+      cambio = Number(tx.taxa)
+      cambioRefId = tx.id
+      cambioRefData = tx.data
+    }
   }
   if (!cambio) {
     return NextResponse.json(
@@ -75,12 +81,16 @@ export async function POST(
   // Resolver preço de mercado
   let precoUsdBu = body?.precoMercadoUsdBu
   let precoBrlSc = body?.precoMercadoBrlSc
+  let cotacaoRefId: string | null = null
+  let cotacaoRefData: Date | null = null
   if (!precoUsdBu) {
     const cot = await db.cotacao.findFirst({
       where: { grao: pos.cultura ?? '' },
       orderBy: { data: 'desc' },
     })
     if (cot) {
+      cotacaoRefId = cot.id
+      cotacaoRefData = cot.data
       // Cotacao.preco vem em R$/sc (CEPEA). Inverte pra USD/bu.
       const brlSc = Number(cot.preco)
       precoBrlSc = brlSc
@@ -132,6 +142,22 @@ export async function POST(
     ? r.pnlBRL - Number(previa.pnlUnrealizedBRL)
     : null
 
+  const inputsSnapshot = {
+    cotacaoId: cotacaoRefId,
+    cotacaoData: cotacaoRefData?.toISOString?.() ?? null,
+    precoMercadoBrlSc: precoBrlSc ?? null,
+    precoMercadoUsdBu: precoUsdBu,
+    cambioId: cambioRefId,
+    cambioData: cambioRefData?.toISOString?.() ?? null,
+    cambioUsdBrl: cambio,
+    overrideManual:
+      body?.precoMercadoUsdBu != null ||
+      body?.precoMercadoBrlSc != null ||
+      body?.cambioUsdBrl != null,
+    pnlFormula:
+      'pnl_usd = sinal * (mkt - entrada) * qtdContratos * 5000 - corretagem',
+    kgPorBushel: CBOT_CONTRATO[sym].kgPorBushel,
+  }
   const created = await db.marcacaoMercado.upsert({
     where: { posicaoHedgeId_data: { posicaoHedgeId: pos.id, data: dia } },
     create: {
@@ -145,6 +171,9 @@ export async function POST(
       pnlUnrealizedBRL: r.pnlBRL,
       variacaoDiaUSD,
       variacaoDiaBRL,
+      inputsSnapshot,
+      calcMetodo: 'marcacao_manual',
+      calcVersao: 'v1',
     },
     update: {
       precoMercadoUsdBu: precoUsdBu,
@@ -154,6 +183,9 @@ export async function POST(
       pnlUnrealizedBRL: r.pnlBRL,
       variacaoDiaUSD,
       variacaoDiaBRL,
+      inputsSnapshot,
+      calcMetodo: 'marcacao_manual',
+      calcVersao: 'v1',
     },
   })
 
