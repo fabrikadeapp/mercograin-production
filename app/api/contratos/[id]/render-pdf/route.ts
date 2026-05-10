@@ -85,7 +85,29 @@ export async function POST(
     }
 
     const resolved = resolveContent(template.contentJson, ctx)
-    const buffer = await renderTemplateToPdfBuffer(resolved)
+
+    // Tabela de grãos: convert proposta.graos to ItemGrao[] (quantidade em sacas)
+    const itensGrao = Array.isArray(graos)
+      ? graos
+          .map((g: any) => {
+            const unidade = String(g?.unidade ?? 't').toLowerCase()
+            const qtdRaw = Number(g?.quantidade ?? 0)
+            // Converter para sacas se em toneladas (1 t = 16.6667 sc de 60kg)
+            const quantidadeSc = unidade === 't' ? qtdRaw * (1000 / 60) : qtdRaw
+            return {
+              grao: String(g?.grao ?? ''),
+              quantidadeSc: Math.round(quantidadeSc),
+              precoSc: Number(g?.preco ?? 0),
+            }
+          })
+          .filter((it) => it.quantidadeSc > 0 || it.precoSc > 0)
+      : []
+
+    const buffer = await renderTemplateToPdfBuffer(resolved, {
+      customLogoUrl: empresa?.logoUrl ?? null,
+      itensGrao,
+      documentTitle: `Contrato ${contrato.numero}`,
+    })
 
     return new NextResponse(buffer as any, {
       status: 200,

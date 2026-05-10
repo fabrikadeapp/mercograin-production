@@ -1,9 +1,37 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer'
+import { PdfLogo } from './pdf-logo'
+import { PdfTabelaGraos, type ItemGrao } from './pdf-tabela-graos'
 
 const styles = StyleSheet.create({
-  page: { padding: 48, fontFamily: 'Helvetica', fontSize: 11, color: '#111' },
+  page: { paddingTop: 56, paddingBottom: 56, paddingHorizontal: 48, fontFamily: 'Helvetica', fontSize: 11, color: '#111' },
+  header: {
+    position: 'absolute',
+    top: 24,
+    left: 48,
+    right: 48,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerMeta: { fontSize: 8, color: '#888', textAlign: 'right' },
+  footer: {
+    position: 'absolute',
+    bottom: 24,
+    left: 48,
+    right: 48,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    fontSize: 8,
+    color: '#888',
+    paddingTop: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: '#e0e0e0',
+  },
   h1: { fontSize: 18, fontWeight: 700, marginBottom: 12, marginTop: 4 },
   h2: { fontSize: 14, fontWeight: 700, marginVertical: 10 },
   h3: { fontSize: 12, fontWeight: 700, marginVertical: 8 },
@@ -113,18 +141,69 @@ function renderBlock(node: any, key: any): any {
   }
 }
 
-export function TemplatePdfDocument({ resolvedContent }: { resolvedContent: any }) {
+export interface TemplatePdfDocumentProps {
+  resolvedContent: any
+  customLogoUrl?: string | null
+  itensGrao?: ItemGrao[]
+  documentTitle?: string
+}
+
+export function TemplatePdfDocument({
+  resolvedContent,
+  customLogoUrl,
+  itensGrao,
+  documentTitle,
+}: TemplatePdfDocumentProps) {
+  const generatedAt = new Date().toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
+        {/* Header fixo no topo de cada página */}
+        <View style={styles.header} fixed>
+          <PdfLogo customLogoUrl={customLogoUrl ?? null} />
+          <View>
+            {documentTitle ? (
+              <Text style={[styles.headerMeta, { fontWeight: 700, color: '#444' }]}>
+                {documentTitle}
+              </Text>
+            ) : null}
+            <Text style={styles.headerMeta}>Gerado em {generatedAt}</Text>
+          </View>
+        </View>
+
+        {/* Tabela de grãos (se itens fornecidos) */}
+        <PdfTabelaGraos items={itensGrao ?? []} />
+
+        {/* Conteúdo Tiptap renderizado */}
         {renderBlock(resolvedContent, 'root')}
+
+        {/* Footer fixo */}
+        <View style={styles.footer} fixed>
+          <Text>PHB Grain · Documento gerado eletronicamente</Text>
+          <Text
+            render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
+          />
+        </View>
       </Page>
     </Document>
   )
 }
 
-export async function renderTemplateToPdfBuffer(resolvedContent: any): Promise<Buffer> {
-  const instance = pdf(<TemplatePdfDocument resolvedContent={resolvedContent} />)
+export async function renderTemplateToPdfBuffer(
+  resolvedContent: any,
+  options?: { customLogoUrl?: string | null; itensGrao?: ItemGrao[]; documentTitle?: string }
+): Promise<Buffer> {
+  const instance = pdf(
+    <TemplatePdfDocument
+      resolvedContent={resolvedContent}
+      customLogoUrl={options?.customLogoUrl ?? null}
+      itensGrao={options?.itensGrao}
+      documentTitle={options?.documentTitle}
+    />
+  )
   // @react-pdf/renderer v4 supports toBuffer() returning a NodeJS.ReadableStream
   // We collect chunks into a Buffer.
   const stream = await instance.toBuffer()
