@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { auth } from '@/auth'
 import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
 import { db } from '@/lib/db'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const sendSchema = z.object({
   number: z.string().min(8, 'Número inválido'),
@@ -19,6 +20,20 @@ export async function POST(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const ip = getClientIp(request)
+    const limit = rateLimit(`whatsapp-send:${ip}`, 30, 60_000)
+    if (!limit.ok) {
+      return NextResponse.json(
+        {
+          error:
+            'Muitas mensagens. Tente em ' +
+            Math.ceil(limit.resetIn / 1000) +
+            's',
+        },
+        { status: 429 }
+      )
     }
 
     const json = await request.json().catch(() => null)

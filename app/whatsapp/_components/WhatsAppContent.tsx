@@ -76,6 +76,8 @@ export function WhatsAppContent() {
   const [conn, setConn] = React.useState<ConnectResponse | null>(null)
   const [loadingConn, setLoadingConn] = React.useState(true)
   const [refreshingQR, setRefreshingQR] = React.useState(false)
+  const [qrUpdatedAt, setQrUpdatedAt] = React.useState<number | null>(null)
+  const [qrAgeSec, setQrAgeSec] = React.useState(0)
   const [number, setNumber] = React.useState('')
   const [text, setText] = React.useState('')
   const [sending, setSending] = React.useState(false)
@@ -111,6 +113,7 @@ export function WhatsAppContent() {
         return
       }
       setConn(d)
+      if (d?.qrCode) setQrUpdatedAt(Date.now())
     } catch (e) {
       toast.error('Erro ao gerar QR Code')
     } finally {
@@ -149,6 +152,27 @@ export function WhatsAppContent() {
     }, 3000)
     return () => clearInterval(id)
   }, [isConnected, fetchStatus])
+
+  // Auto-refresh QR a cada 30s enquanto não conectado (QR do WhatsApp expira ~40s).
+  React.useEffect(() => {
+    if (isConnected) return
+    const id = setInterval(() => {
+      fetchConnect()
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [isConnected, fetchConnect])
+
+  // Tick de 1s pra atualizar o "QR atualizado há Xs".
+  React.useEffect(() => {
+    if (isConnected || !qrUpdatedAt) {
+      setQrAgeSec(0)
+      return
+    }
+    const id = setInterval(() => {
+      setQrAgeSec(Math.floor((Date.now() - qrUpdatedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isConnected, qrUpdatedAt])
 
   // When state flips to connected, refresh once to pull profile info & clear QR
   React.useEffect(() => {
@@ -295,13 +319,20 @@ export function WhatsAppContent() {
             ) : (
               <div className="space-y-4 text-center">
                 {conn?.qrCode ? (
-                  <div className="rounded-md border border-border-1 bg-bg-1 p-3 inline-block mx-auto">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={conn.qrCode}
-                      alt="QR Code WhatsApp"
-                      className="h-56 w-56 mx-auto"
-                    />
+                  <div>
+                    <div className="rounded-md border border-border-1 bg-bg-1 p-3 inline-block mx-auto">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={conn.qrCode}
+                        alt="QR Code WhatsApp"
+                        className="h-56 w-56 mx-auto"
+                      />
+                    </div>
+                    {qrUpdatedAt ? (
+                      <p className="text-fg-3 text-micro mt-2">
+                        QR atualizado há {qrAgeSec}s · renova a cada 30s
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="h-56 w-56 mx-auto rounded-md border border-dashed border-border-2 bg-bg-2 flex flex-col items-center justify-center gap-2">

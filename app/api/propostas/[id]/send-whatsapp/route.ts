@@ -1,6 +1,10 @@
 /**
  * POST /api/propostas/[id]/send-whatsapp
- * Send WhatsApp notification when proposal is sent
+ * Send WhatsApp notification when proposal is sent.
+ *
+ * Refactored (Sem 4.15) — agora usa lib/whatsapp/evolution.ts diretamente, sem
+ * fila Bull/Redis. Síncrono. A pilha legacy (lib/whatsapp-queue.ts +
+ * lib/whatsapp-service.ts) está deprecada e não tem mais consumers.
  *
  * Body:
  * {
@@ -11,13 +15,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
-import { queueProposalNotification } from '@/lib/whatsapp-queue'
+import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { z } from 'zod'
 
 const sendWhatsAppSchema = z.object({
   phoneNumber: z.string().optional(),
 })
+
+const SUFFIX = '\n\n_PHB Grain · Trading de Grãos_'
+
+interface GraoItem {
+  grao?: string
+  quantidade?: number
+  preco?: number
+  subtotal?: number
+}
+
+function buildProposalMessage(args: {
+  clienteNome: string
+  numero: string
+  tipo: string
+  valor: string
+  validade: string
+  graos: GraoItem[]
+}): string {
+  const { clienteNome, numero, tipo, valor, validade, graos } = args
+  const tipoLabel = tipo === 'venda' ? 'Venda' : tipo === 'compra' ? 'Compra' : tipo
+  const linhas: string[] = []
+  linhas.push(`🌾 *Nova proposta — PHB Grain*`)
+  linhas.push('')
+  linhas.push(`Olá ${clienteNome},`)
+  linhas.push('')
+  linhas.push(`Você recebeu a proposta nº *${numero}* (${tipoLabel}).`)
+
+  if (graos.length > 0) {
+    linhas.push('')
+    for (const g of graos.slice(0, 5)) {
+      const nomeGrao = (g.grao || '').toString()
+      const qtd = g.quantidade ?? 0
+      const preco = g.preco ?? 0
+      linhas.push(`📦 ${nomeGrao} · ${qtd} sc · R$ ${preco.toFixed(2)}/sc`)
+    }
+    if (graos.length > 5) {
+      linhas.push(`… e mais ${graos.length - 5} ${graos.length - 5 === 1 ? 'item' : 'itens'}`)
+    }
+  }
+
+  linhas.push('')
+  linhas.push(`💰 Total: ${valor}`)
+  linhas.push(`📅 Válida até ${validade}`)
+  return linhas.join('\n') + SUFFIX
+}
 
 export async function POST(
   request: NextRequest,
@@ -29,11 +78,9 @@ export async function POST(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Get request body
     const body = await request.json().catch(() => ({}))
     const { phoneNumber: providedPhone } = sendWhatsAppSchema.parse(body)
 
-    // Get proposta (multi-tenancy via Proposta.workspaceId)
     const proposta = await db.proposta.findFirst({
       where: { id: params.id, ...scope.whereOwn() },
       include: {
@@ -55,41 +102,94 @@ export async function POST(
       )
     }
 
-    // Get phone number
+    // Validação de telefone — preserva lógica original.
     const phoneNumber = providedPhone || proposta.cliente.whatsapp
-
     if (!phoneNumber) {
       return NextResponse.json(
         {
           error: 'Número WhatsApp não fornecido',
-          message: 'O cliente não possui número WhatsApp registrado. Envie manualmente ou registre o número.',
+          message:
+            'O cliente não possui número WhatsApp registrado. Envie manualmente ou registre o número.',
         },
         { status: 400 }
       )
     }
 
-    // Queue notification
-    // Convert Decimal to number if needed
-    const valor = typeof proposta.valorTotal === 'number' 
-      ? proposta.valorTotal 
-      : Number(proposta.valorTotal)
+    const valor =
+      typeof proposta.valorTotal === 'number'
+        ? proposta.valorTotal
+        : Number(proposta.valorTotal)
 
-    const jobId = await queueProposalNotification(
-      phoneNumber,
-      proposta.numero,
-      proposta.cliente.nome,
-      proposta.tipo,
-      formatCurrency(valor),
-      formatDate(proposta.validadeEm),
-      scope.userId
-    )
+    const graos: GraoItem[] = Array.isArray(proposta.graos)
+      ? (proposta.graos as GraoItem[])
+      : []
 
-    return NextResponse.json({
-      success: true,
-      jobId,
-      message: `Notificação WhatsApp enfileirada para ${phoneNumber}`,
-      phone: phoneNumber.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'),
+    const message = buildProposalMessage({
+      clienteNome: proposta.cliente.nome,
+      numero: proposta.numero,
+      tipo: proposta.tipo,
+      valor: formatCurrency(valor),
+      validade: formatDate(proposta.validadeEm),
+      graos,
     })
+
+    try {
+      const result = await sendText(phoneNumber, message)
+
+      // Log de auditoria (best-effort).
+      await db.webhookLog
+        .create({
+          data: {
+            tipo: 'whatsapp_send',
+            payload: {
+              number: phoneNumber,
+              text: message,
+              messageId: result.messageId,
+              template: 'proposal_sent',
+              propostaId: proposta.id,
+              userId: scope.userId,
+            } as any,
+            status: 'processado',
+            mensagem: `Proposta ${proposta.numero} enviada (${result.messageId})`,
+          },
+        })
+        .catch(() => undefined)
+
+      return NextResponse.json({
+        success: true,
+        messageId: result.messageId,
+        message: `Notificação WhatsApp enviada para ${phoneNumber}`,
+        phone: phoneNumber.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3'),
+      })
+    } catch (err) {
+      const status = err instanceof EvolutionError ? err.status : 500
+      const errorMessage = err instanceof Error ? err.message : 'Falha no envio'
+
+      await db.webhookLog
+        .create({
+          data: {
+            tipo: 'whatsapp_send',
+            payload: {
+              number: phoneNumber,
+              text: message,
+              error: errorMessage,
+              propostaId: proposta.id,
+            } as any,
+            status: 'erro',
+            mensagem: errorMessage,
+            codigoErro: String(status),
+          },
+        })
+        .catch(() => undefined)
+
+      return NextResponse.json(
+        {
+          error: 'Erro ao enviar WhatsApp',
+          message: errorMessage,
+        },
+        { status: status >= 400 && status < 600 ? status : 500 }
+      )
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

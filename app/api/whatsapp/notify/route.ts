@@ -9,6 +9,7 @@ import { auth } from '@/auth'
 import { requireScope } from '@/lib/auth/scope'
 import { sendText, EvolutionError } from '@/lib/whatsapp/evolution'
 import { db } from '@/lib/db'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const SUFFIX = '\n\n_PHB Grain · Trading de Grãos_'
 
@@ -21,6 +22,7 @@ const notifySchema = z
       'boleto_vencendo',
       'contrato_assinado',
       'cotacao_alerta',
+      'proposal_sent',
       'custom',
     ]),
     data: z.record(z.any()).default({}),
@@ -53,6 +55,14 @@ function render(
       } (${data.delta ?? ''}%). Configure novos alertas em ${
         data.link ?? ''
       }${SUFFIX}`
+    case 'proposal_sent':
+      return `🌾 *Nova proposta — PHB Grain*\n\nOlá ${data.clienteNome ?? ''},\n\nVocê recebeu a proposta nº *${
+        data.propostaNumero ?? ''
+      }*:\n\n📦 ${data.granoLabel ?? ''} · ${data.quantidadeSc ?? ''} sc\n💰 R$ ${
+        data.precoSc ?? ''
+      }/sc\n📅 Válida até ${data.validUntil ?? ''}\n\nAcesse para revisar:\n${
+        data.viewUrl ?? ''
+      }\n\n_Proposta gerada via PHB Grain_`
     case 'custom':
       if (!data.text || typeof data.text !== 'string') {
         return { error: 'data.text obrigatório para template custom' }
@@ -70,6 +80,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
     const scope = await requireScope()
+
+    const ip = getClientIp(request)
+    const limit = rateLimit(`whatsapp-send:${ip}`, 30, 60_000)
+    if (!limit.ok) {
+      return NextResponse.json(
+        {
+          error:
+            'Muitas mensagens. Tente em ' +
+            Math.ceil(limit.resetIn / 1000) +
+            's',
+        },
+        { status: 429 }
+      )
+    }
 
     const body = await request.json().catch(() => null)
     const parsed = notifySchema.safeParse(body)

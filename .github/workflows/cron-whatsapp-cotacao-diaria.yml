@@ -1,0 +1,28 @@
+name: WhatsApp Cotação Diária
+
+# Envia resumo diário de cotações via WhatsApp para destinatários configurados
+# em WHATSAPP_DAILY_RECIPIENTS (env var no Railway, CSV de números E.164).
+# Endpoint: /api/cron/whatsapp-cotacao-diaria
+#
+# Setup:
+#   1. Setar secret CRON_SECRET no repo (mesmo dos outros crons).
+#   2. Configurar WHATSAPP_DAILY_RECIPIENTS nas env vars do Railway,
+#      ex: "5551999999999,5551888888888". Vazio = nenhum envio (no-op).
+
+on:
+  schedule:
+    # 11:00 UTC = 08:00 BRT seg-sex
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger WhatsApp daily quotation
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/whatsapp-cotacao-diaria

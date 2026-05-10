@@ -1,11 +1,13 @@
 /**
- * Legacy WhatsApp Service — now a façade over the Evolution API client.
+ * @deprecated Use `lib/whatsapp/evolution.ts` directly. This module is kept
+ * apenas como compat shim — não tem mais consumers ativos no app (Sem 4.15
+ * removeu o último em `app/api/propostas/[id]/send-whatsapp/route.ts`).
+ *
+ * Legacy WhatsApp Service — façade over the Evolution API client.
  *
  * The original implementation used `baileys` running locally with auth files
  * persisted on disk. We migrated to Evolution API v2 (multi-tenant, REST,
- * Railway-hosted). This file is preserved as a compatibility shim so existing
- * callers (e.g. `lib/whatsapp-queue.ts`, internal notification helpers) keep
- * working without churn. New code should import from `lib/whatsapp/evolution`.
+ * Railway-hosted). New code should import from `lib/whatsapp/evolution`.
  */
 
 import {
