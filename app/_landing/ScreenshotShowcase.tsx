@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 export function ScreenshotShowcase() {
   return (
     <section id="demo" className="border-b border-border-1 bg-bg-1">
@@ -12,7 +14,7 @@ export function ScreenshotShowcase() {
           </p>
         </div>
 
-        <div className="relative mx-auto w-full max-w-[960px]">
+        <div className="relative mx-auto w-full max-w-[1100px]">
           {/* glow ring */}
           <div
             aria-hidden
@@ -23,22 +25,25 @@ export function ScreenshotShowcase() {
             }}
           />
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-border-2 bg-bg-2 shadow-card">
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
-              <span className="eyebrow text-fg-3">Preview</span>
-              <span className="text-h2 font-semibold text-fg-1">
-                Screenshot do dashboard PHB Grain
-              </span>
-              <span className="text-small text-fg-3">
-                cotações · contratos · fluxo · alertas
-              </span>
-            </div>
-
-            {/* faux toolbar */}
-            <div className="absolute left-0 right-0 top-0 flex h-9 items-center gap-1.5 border-b border-border-1 bg-bg-3 px-3">
+            {/* faux browser toolbar */}
+            <div className="absolute left-0 right-0 top-0 z-10 flex h-9 items-center gap-1.5 border-b border-border-1 bg-bg-3 px-3">
               <span className="h-2.5 w-2.5 rounded-full bg-neg/80" />
               <span className="h-2.5 w-2.5 rounded-full bg-warn/80" />
               <span className="h-2.5 w-2.5 rounded-full bg-pos/80" />
+              <span className="ml-3 text-micro text-fg-4 font-mono">
+                www.profitsync.ia.br/dashboard
+              </span>
             </div>
+
+            {/* screenshot real do dashboard */}
+            <Image
+              src="/landing/dashboard-preview.png"
+              alt="Dashboard PHB Grain — cotações ao vivo, book de futuros e mercado CBOT"
+              fill
+              className="object-cover object-top pt-9"
+              priority
+              sizes="(min-width: 1100px) 1100px, 100vw"
+            />
           </div>
         </div>
       </div>
