@@ -1,5 +1,5 @@
 /**
- * Email templates PHB Grain (dark theme + accent verde).
+ * Email templates BH Grain (dark theme + accent verde).
  * HTML inline (sem Tailwind) — clientes de email não suportam CSS externo nem classes utilitárias.
  */
 
@@ -26,7 +26,7 @@ function shell({ preheader = '', bodyHtml }: ShellOpts): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PHB Grain</title>
+  <title>BH Grain</title>
 </head>
 <body style="margin:0;padding:0;background-color:${COLORS.bg0};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${COLORS.fg1};">
   <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader)}</span>
@@ -39,7 +39,7 @@ function shell({ preheader = '', bodyHtml }: ShellOpts): string {
               <table role="presentation" width="100%"><tr>
                 <td style="font-family:inherit;">
                   <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:${COLORS.accent};vertical-align:middle;margin-right:8px;"></span>
-                  <span style="font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${COLORS.accent};vertical-align:middle;">PHB Grain</span>
+                  <span style="font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${COLORS.accent};vertical-align:middle;">BH Grain</span>
                 </td>
               </tr></table>
             </td>
@@ -52,10 +52,10 @@ function shell({ preheader = '', bodyHtml }: ShellOpts): string {
           <tr>
             <td style="padding:20px 32px;border-top:1px solid ${COLORS.border};background-color:${COLORS.bg0};">
               <p style="margin:0;font-size:12px;line-height:1.5;color:${COLORS.fg3};">
-                PHB Grain &middot; Mesa de operações de grãos<br/>
+                BH Grain &middot; Mesa de operações de grãos<br/>
                 <a href="https://www.profitsync.ia.br" style="color:${COLORS.fg3};text-decoration:underline;">www.profitsync.ia.br</a>
               </p>
-              <p style="margin:8px 0 0 0;font-size:11px;color:${COLORS.fg3};">© ${new Date().getFullYear()} PHB Grain. Todos os direitos reservados.</p>
+              <p style="margin:8px 0 0 0;font-size:11px;color:${COLORS.fg3};">© ${new Date().getFullYear()} BH Grain. Todos os direitos reservados.</p>
             </td>
           </tr>
         </table>
@@ -94,7 +94,7 @@ export function resetPasswordEmail({ name, resetUrl }: ResetPasswordEmailOpts) {
     <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${COLORS.fg3};">Recuperação de acesso</p>
     <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:${COLORS.fg1};font-weight:600;">Solicitação de redefinição de senha</h1>
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Olá, ${safeName}.</p>
-    <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Recebemos um pedido para redefinir a senha da sua conta no PHB Grain. Clique no botão abaixo para criar uma nova senha.</p>
+    <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Recebemos um pedido para redefinir a senha da sua conta no BH Grain. Clique no botão abaixo para criar uma nova senha.</p>
     ${ctaButton('Redefinir senha', resetUrl)}
     <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Ou copie e cole este link no navegador:</p>
     <p style="margin:0 0 24px 0;padding:12px;border-radius:6px;background-color:${COLORS.bg2};font-size:12px;line-height:1.5;color:${COLORS.fg2};word-break:break-all;font-family:'SF Mono',Monaco,monospace;">${escapeHtml(resetUrl)}</p>
@@ -102,9 +102,9 @@ export function resetPasswordEmail({ name, resetUrl }: ResetPasswordEmailOpts) {
     <p style="margin:0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Se você não solicitou a redefinição, ignore este email — sua senha permanecerá inalterada.</p>
   `
   return {
-    subject: 'PHB Grain · Redefinir senha',
-    html: shell({ preheader: 'Crie uma nova senha para sua conta PHB Grain. Link válido por 1 hora.', bodyHtml }),
-    text: `Olá ${name},\n\nRecebemos um pedido para redefinir sua senha no PHB Grain.\n\nAbra este link (válido por 1 hora):\n${resetUrl}\n\nSe você não solicitou, ignore este email.`,
+    subject: 'BH Grain · Redefinir senha',
+    html: shell({ preheader: 'Crie uma nova senha para sua conta BH Grain. Link válido por 1 hora.', bodyHtml }),
+    text: `Olá ${name},\n\nRecebemos um pedido para redefinir sua senha no BH Grain.\n\nAbra este link (válido por 1 hora):\n${resetUrl}\n\nSe você não solicitou, ignore este email.`,
   }
 }
 
@@ -119,17 +119,17 @@ export function verifyEmailEmail({ name, verifyUrl }: VerifyEmailEmailOpts) {
     <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${COLORS.fg3};">Confirmação de email</p>
     <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:${COLORS.fg1};font-weight:600;">Confirme seu email</h1>
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Olá, ${safeName}.</p>
-    <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Para ativar sua conta no PHB Grain, confirme seu endereço de email clicando no botão abaixo.</p>
+    <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Para ativar sua conta no BH Grain, confirme seu endereço de email clicando no botão abaixo.</p>
     ${ctaButton('Confirmar email', verifyUrl)}
     <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Ou copie e cole este link no navegador:</p>
     <p style="margin:0 0 24px 0;padding:12px;border-radius:6px;background-color:${COLORS.bg2};font-size:12px;line-height:1.5;color:${COLORS.fg2};word-break:break-all;font-family:'SF Mono',Monaco,monospace;">${escapeHtml(verifyUrl)}</p>
     <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Este link expira em <strong style="color:${COLORS.fg2};">24 horas</strong>.</p>
-    <p style="margin:0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Se você não criou uma conta no PHB Grain, ignore este email.</p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Se você não criou uma conta no BH Grain, ignore este email.</p>
   `
   return {
-    subject: 'PHB Grain · Confirme seu email',
+    subject: 'BH Grain · Confirme seu email',
     html: shell({ preheader: 'Ative sua conta confirmando seu email. Link válido por 24 horas.', bodyHtml }),
-    text: `Olá ${name},\n\nConfirme seu email no PHB Grain abrindo este link (válido por 24h):\n${verifyUrl}\n\nSe você não criou conta, ignore.`,
+    text: `Olá ${name},\n\nConfirme seu email no BH Grain abrindo este link (válido por 24h):\n${verifyUrl}\n\nSe você não criou conta, ignore.`,
   }
 }
 
@@ -145,7 +145,7 @@ export function welcomeEmail({ name, dashboardUrl }: WelcomeEmailOpts) {
   const numStyle = `display:inline-block;width:24px;height:24px;line-height:24px;border-radius:50%;background-color:${COLORS.accent};color:${COLORS.bg0};font-size:13px;font-weight:700;text-align:center;margin-right:10px;vertical-align:middle;`
   const bodyHtml = `
     <p style="margin:0 0 8px 0;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${COLORS.accent};">Bem-vindo a bordo</p>
-    <h1 style="margin:0 0 16px 0;font-size:26px;line-height:1.3;color:${COLORS.fg1};font-weight:600;">Olá, ${safeName}. Seja bem-vindo ao PHB Grain.</h1>
+    <h1 style="margin:0 0 16px 0;font-size:26px;line-height:1.3;color:${COLORS.fg1};font-weight:600;">Olá, ${safeName}. Seja bem-vindo ao BH Grain.</h1>
     <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:${COLORS.fg2};">Sua mesa de operações está pronta. Para começar, recomendamos três próximos passos:</p>
 
     <div style="${stepStyle}">
@@ -168,8 +168,8 @@ export function welcomeEmail({ name, dashboardUrl }: WelcomeEmailOpts) {
     <p style="margin:24px 0 0 0;font-size:13px;line-height:1.6;color:${COLORS.fg3};">Qualquer dúvida, responda este email — nosso time está disponível para ajudar.</p>
   `
   return {
-    subject: 'Bem-vindo ao PHB Grain!',
+    subject: 'Bem-vindo ao BH Grain!',
     html: shell({ preheader: 'Sua conta está pronta. Veja os próximos passos para operar.', bodyHtml }),
-    text: `Olá ${name},\n\nBem-vindo ao PHB Grain. Próximos passos:\n1. Configurar sua empresa\n2. Cadastrar clientes e fornecedores\n3. Acessar o dashboard\n\n${url}`,
+    text: `Olá ${name},\n\nBem-vindo ao BH Grain. Próximos passos:\n1. Configurar sua empresa\n2. Cadastrar clientes e fornecedores\n3. Acessar o dashboard\n\n${url}`,
   }
 }

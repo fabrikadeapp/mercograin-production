@@ -57,7 +57,7 @@ export async function ensureSeatPriceForPlan(planSlug: string): Promise<string> 
     product = found
   } else {
     product = await stripe.products.create({
-      name: `PHB Grain · Membro Extra (${plan.name})`,
+      name: `BH Grain · Membro Extra (${plan.name})`,
       metadata: {
         lookup_key: 'phbgrain_seat',
         planSlug,

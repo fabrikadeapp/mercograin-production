@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'PHB Grain — Toda sua mesa de operações em um só lugar'
+export const alt = 'BH Grain — Toda sua mesa de operações em um só lugar'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -50,10 +50,10 @@ export default function OpengraphImage() {
               fontWeight: 700,
             }}
           >
-            P
+            B
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 36, fontWeight: 700, color: '#fafafa' }}>PHB</span>
+            <span style={{ fontSize: 36, fontWeight: 700, color: '#fafafa' }}>BH</span>
             <span style={{ fontSize: 36, fontWeight: 400, color: '#0a8a3a' }}>Grain</span>
           </div>
         </div>

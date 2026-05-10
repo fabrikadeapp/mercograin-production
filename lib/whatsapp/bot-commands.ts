@@ -143,7 +143,7 @@ async function buildCotacao(
     )
   )
 
-  const lines: string[] = ['🌾 Cotações ao vivo — PHB Grain', '']
+  const lines: string[] = ['🌾 Cotações ao vivo — BH Grain', '']
   let dolar: number | null = null
   let dataMaisRecente: Date | null = null
 

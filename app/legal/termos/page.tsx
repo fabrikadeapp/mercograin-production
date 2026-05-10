@@ -3,8 +3,8 @@ import { Footer } from '@/app/_landing/Footer'
 import { Card } from '@/components/ui/phb'
 
 export const metadata = {
-  title: 'Termos de uso — PHB Grain',
-  description: 'Termos de uso da plataforma PHB Grain.',
+  title: 'Termos de uso — BH Grain',
+  description: 'Termos de uso da plataforma BH Grain.',
 }
 
 const sectionH = 'text-h2 font-semibold text-fg-1 mt-10 mb-3'
@@ -31,14 +31,14 @@ export default function TermosPage() {
             <Card className="p-8 md:p-10">
               <p className={para}>
                 Estes Termos de Uso (&quot;Termos&quot;) regem o acesso e uso da plataforma
-                PHB Grain (&quot;Serviço&quot;), operada pela PHB Grain, sociedade
+                BH Grain (&quot;Serviço&quot;), operada pela BH Grain, sociedade
                 empresária constituída sob as leis da República Federativa do Brasil.
                 Ao utilizar o Serviço, você concorda integralmente com estes Termos.
               </p>
 
               <h2 className={sectionH}>1. Objeto</h2>
               <p className={para}>
-                O PHB Grain é uma plataforma SaaS B2B voltada a tradings de grãos,
+                O BH Grain é uma plataforma SaaS B2B voltada a tradings de grãos,
                 oferecendo cotações de mercado, gestão de contratos, fluxo de caixa,
                 integrações com WhatsApp e ferramentas correlatas. O Serviço é
                 disponibilizado mediante assinatura recorrente.
@@ -83,7 +83,7 @@ export default function TermosPage() {
               <h2 className={sectionH}>6. Propriedade intelectual</h2>
               <p className={para}>
                 Todo o software, marca, layout, código-fonte e elementos visuais do
-                Serviço são de titularidade exclusiva da PHB Grain ou de seus
+                Serviço são de titularidade exclusiva da BH Grain ou de seus
                 licenciantes. Concedemos a você uma licença limitada, não exclusiva e
                 revogável para uso conforme estes Termos.
               </p>
@@ -91,7 +91,7 @@ export default function TermosPage() {
               <h2 className={sectionH}>7. Dados</h2>
               <p className={para}>
                 Você é proprietário dos dados que insere no Serviço (clientes,
-                contratos, propostas, etc.). A PHB Grain não vende, aluga ou
+                contratos, propostas, etc.). A BH Grain não vende, aluga ou
                 comercializa esses dados. Atuamos como operadora de dados nos termos da
                 LGPD, sob suas instruções e finalidades estabelecidas. O tratamento de
                 dados pessoais está detalhado em nossa{' '}
@@ -111,7 +111,7 @@ export default function TermosPage() {
 
               <h2 className={sectionH}>9. Limitação de responsabilidade</h2>
               <p className={para}>
-                Na máxima extensão permitida pela legislação aplicável, a PHB Grain
+                Na máxima extensão permitida pela legislação aplicável, a BH Grain
                 não responderá por danos indiretos, lucros cessantes, perda de
                 oportunidade ou prejuízos decorrentes de decisões comerciais tomadas
                 com base em dados exibidos pela plataforma. A responsabilidade total

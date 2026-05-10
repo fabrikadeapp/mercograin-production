@@ -44,7 +44,7 @@ function getSmtpTransporter(): nodemailer.Transporter | null {
 }
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM || 'PHB Grain <noreply@profitsync.ia.br>'
+  return process.env.EMAIL_FROM || 'BH Grain <noreply@profitsync.ia.br>'
 }
 
 export async function sendEmail(options: EmailOptions): Promise<SendEmailResult> {
@@ -100,14 +100,14 @@ export const emailTemplates = {
   resetPassword: (token: string, userName: string) => {
     const url = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
     return {
-      subject: 'PHB Grain · Redefinir senha',
+      subject: 'BH Grain · Redefinir senha',
       html: `<p>Olá ${userName}, redefina sua senha: <a href="${url}">${url}</a> (expira em 1 hora)</p>`,
       text: `Redefinir senha: ${url}`,
     }
   },
 
   proposalSent: (clienteName: string, proposalNumber: string) => ({
-    subject: `Proposta ${proposalNumber} Enviada - PHB Grain`,
+    subject: `Proposta ${proposalNumber} Enviada - BH Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Nova Proposta Enviada</h2>
@@ -123,7 +123,7 @@ export const emailTemplates = {
   }),
 
   boletoCreated: (clienteName: string, boletoNumber: string, dueDate: string, value: string) => ({
-    subject: `Boleto ${boletoNumber} - PHB Grain`,
+    subject: `Boleto ${boletoNumber} - BH Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Boleto Criado</h2>
@@ -144,7 +144,7 @@ export const emailTemplates = {
   }),
 
   boleteOverdue: (clienteName: string, boletoNumber: string, daysOverdue: number) => ({
-    subject: `Boleto ${boletoNumber} Vencido - PHB Grain`,
+    subject: `Boleto ${boletoNumber} Vencido - BH Grain`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #d97706;">Boleto Vencido</h2>

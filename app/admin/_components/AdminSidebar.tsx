@@ -103,7 +103,7 @@ export function AdminSidebar({
             <ShieldAlert className="h-4 w-4" style={{ color: 'var(--neg)' }} />
           </div>
           <div className="text-body font-semibold leading-none">
-            <span className="text-fg-1">PHB</span>
+            <span className="text-fg-1">BH</span>
             <span className="text-accent ml-1">Grain</span>
           </div>
           <span

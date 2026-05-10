@@ -24,7 +24,7 @@ export interface PdfLogoProps {
 
 /**
  * Logo do PDF — 2 níveis:
- *  1. Default: brand "PHB Grain" desenhado inline (texto + bloco verde) — funciona offline
+ *  1. Default: brand "BH Grain" desenhado inline (texto + bloco verde) — funciona offline
  *  2. Custom: logoUrl da workspace (DadosEmpresa.logoUrl), sobrescreve a default
  *
  * O componente <Image /> do @react-pdf/renderer aceita URLs http(s), data URLs
@@ -41,10 +41,10 @@ export function PdfLogo({ customLogoUrl }: PdfLogoProps) {
   return (
     <View style={styles.logoContainer}>
       <View style={styles.logoMark}>
-        <Text style={styles.logoMarkText}>PHB</Text>
+        <Text style={styles.logoMarkText}>BH</Text>
       </View>
       <Text style={styles.logoBrand}>
-        PHB <Text style={styles.logoBrandLight}>Grain</Text>
+        BH <Text style={styles.logoBrandLight}>Grain</Text>
       </Text>
     </View>
   )

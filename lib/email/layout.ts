@@ -68,7 +68,7 @@ export function renderEmailLayout(opts: LayoutOpts): string {
           <tr>
             <td style="padding:20px 24px;border-bottom:1px solid ${C.border};">
               <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${C.accent};vertical-align:middle;margin-right:8px;"></span>
-              <span style="font-size:14px;font-weight:700;letter-spacing:0.6px;color:${C.text};vertical-align:middle;">PHB Grain</span>
+              <span style="font-size:14px;font-weight:700;letter-spacing:0.6px;color:${C.text};vertical-align:middle;">BH Grain</span>
             </td>
           </tr>
           <tr>
@@ -89,8 +89,8 @@ export function renderEmailLayout(opts: LayoutOpts): string {
                 <a href="${escapeHtml(unsubscribeMailto)}" style="color:${C.textFaint};text-decoration:underline;">Cancelar notificações</a>
               </p>
               <p style="margin:0;font-size:11px;line-height:1.5;color:${C.textFaint};">
-                PHB Grain &middot; Mesa de operações de grãos<br/>
-                © ${new Date().getFullYear()} PHB Grain. Todos os direitos reservados.
+                BH Grain &middot; Mesa de operações de grãos<br/>
+                © ${new Date().getFullYear()} BH Grain. Todos os direitos reservados.
               </p>
             </td>
           </tr>

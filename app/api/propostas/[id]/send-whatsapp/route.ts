@@ -24,7 +24,7 @@ const sendWhatsAppSchema = z.object({
   phoneNumber: z.string().optional(),
 })
 
-const SUFFIX = '\n\n_PHB Grain · Trading de Grãos_'
+const SUFFIX = '\n\n_BH Grain · Trading de Grãos_'
 
 interface GraoItem {
   grao?: string
@@ -44,7 +44,7 @@ function buildProposalMessage(args: {
   const { clienteNome, numero, tipo, valor, validade, graos } = args
   const tipoLabel = tipo === 'venda' ? 'Venda' : tipo === 'compra' ? 'Compra' : tipo
   const linhas: string[] = []
-  linhas.push(`🌾 *Nova proposta — PHB Grain*`)
+  linhas.push(`🌾 *Nova proposta — BH Grain*`)
   linhas.push('')
   linhas.push(`Olá ${clienteNome},`)
   linhas.push('')

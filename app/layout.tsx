@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.profitsync.ia.br'),
   title: {
-    default: 'PHB Grain — Mesa de operações para trading de grãos',
-    template: '%s · PHB Grain',
+    default: 'BH Grain — Mesa de operações para trading de grãos',
+    template: '%s · BH Grain',
   },
   description:
     'Cotações ao vivo CEPEA, contratos digitais, fluxo de caixa, WhatsApp Bot e relatórios — desenhado para tradings que precisam de precisão financeira e controle total da safra.',
@@ -24,23 +24,23 @@ export const metadata: Metadata = {
     'gestão safra',
     'agronegócio Brasil',
   ],
-  authors: [{ name: 'PHB Grain' }],
-  creator: 'PHB Grain',
-  publisher: 'PHB Grain',
-  applicationName: 'PHB Grain',
+  authors: [{ name: 'BH Grain' }],
+  creator: 'BH Grain',
+  publisher: 'BH Grain',
+  applicationName: 'BH Grain',
   category: 'Agronegócio',
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
     url: 'https://www.profitsync.ia.br',
-    siteName: 'PHB Grain',
-    title: 'PHB Grain — Mesa de operações para trading de grãos',
+    siteName: 'BH Grain',
+    title: 'BH Grain — Mesa de operações para trading de grãos',
     description:
       'Cotações ao vivo CEPEA + contratos + fluxo de caixa + WhatsApp Bot. Toda sua mesa de operações em um só lugar.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PHB Grain — Mesa de operações para trading de grãos',
+    title: 'BH Grain — Mesa de operações para trading de grãos',
     description:
       'Cotações ao vivo CEPEA + contratos + fluxo de caixa + WhatsApp Bot. Toda sua mesa em um só lugar.',
   },

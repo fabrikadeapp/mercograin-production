@@ -193,9 +193,9 @@ export async function GET(req: NextRequest) {
     const spreadPct = spread !== null && mid !== null && mid > 0 ? (spread / mid) * 100 : null
 
     const fonte =
-      bestBid.real && bestAsk.real ? 'Suas propostas (PHB Grain)' :
-      bestBid.real ? 'Compra: PHB Grain · Venda: estimado CEPEA' :
-      bestAsk.real ? 'Compra: estimado CEPEA · Venda: PHB Grain' :
+      bestBid.real && bestAsk.real ? 'Suas propostas (BH Grain)' :
+      bestBid.real ? 'Compra: BH Grain · Venda: estimado CEPEA' :
+      bestAsk.real ? 'Compra: estimado CEPEA · Venda: BH Grain' :
       'Estimado · CEPEA'
 
     const out: BookResponse = {

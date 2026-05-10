@@ -35,16 +35,16 @@ const schema = z.object({
 function renderFake(name: typeof TEMPLATES[number]) {
   switch (name) {
     case 'welcome':
-      return welcomeTemplate({ name: 'João Silva', workspaceName: 'Trading PHB' })
+      return welcomeTemplate({ name: 'João Silva', workspaceName: 'Trading BH' })
     case 'trial-ending':
-      return trialEndingTemplate({ name: 'João Silva', workspaceName: 'Trading PHB', daysLeft: 3, planName: 'Pro' })
+      return trialEndingTemplate({ name: 'João Silva', workspaceName: 'Trading BH', daysLeft: 3, planName: 'Pro' })
     case 'trial-expired':
       return trialExpiredTemplate({ name: 'João Silva' })
     case 'contract-created':
       return contractCreatedTemplate({
         contractNumber: 'CTR-2026-001',
         contractUrl: 'https://www.profitsync.ia.br/contratos/exemplo',
-        corretoraName: 'PHB Trading LTDA',
+        corretoraName: 'BH Trading LTDA',
         granoLabel: 'soja',
         quantidadeSc: 1500,
         precoSc: 145.5,

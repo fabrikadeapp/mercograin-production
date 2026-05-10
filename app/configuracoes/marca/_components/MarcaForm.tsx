@@ -46,7 +46,7 @@ export function MarcaForm({ initialLogoUrl, initialUploadedAt, canEdit }: Props)
   }
 
   const handleRemove = async () => {
-    if (!confirm('Remover logo customizada e voltar para a logo padrão PHB Grain?')) return
+    if (!confirm('Remover logo customizada e voltar para a logo padrão BH Grain?')) return
     setError(null)
     setBusy(true)
     try {
@@ -77,10 +77,10 @@ export function MarcaForm({ initialLogoUrl, initialUploadedAt, canEdit }: Props)
           ) : (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-[#0a8a3a] text-white font-bold flex items-center justify-center text-xs">
-                PHB
+                BH
               </div>
               <span className="text-base font-bold text-gray-900">
-                PHB <span className="font-normal text-[#0a8a3a]">Grain</span>
+                BH <span className="font-normal text-[#0a8a3a]">Grain</span>
               </span>
               <span className="text-xs text-gray-500 ml-2">(logo padrão)</span>
             </div>

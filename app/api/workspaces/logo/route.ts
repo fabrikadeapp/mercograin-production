@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * DELETE — remove logo customizada (volta a usar a default PHB Grain).
+ * DELETE — remove logo customizada (volta a usar a default BH Grain).
  */
 export async function DELETE() {
   try {

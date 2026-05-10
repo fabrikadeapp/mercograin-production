@@ -1,5 +1,5 @@
 /**
- * Seed de dados ficcionais realistas pra demo do PHB Grain à corretora piloto MercoGrain.
+ * Seed de dados ficcionais realistas pra demo do BH Grain à corretora piloto MercoGrain.
  *
  * IDEMPOTENTE — rodar 2x não duplica entries (detecta via número/cnpj).
  *

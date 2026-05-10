@@ -57,7 +57,7 @@ const TIPO_LABEL: Record<Tipo, string> = {
 }
 
 function tipoBadge(tipo: Tipo): React.ReactNode {
-  // Map to PHB Badge variants — fallback to neutral chip-like style via Badge variants available
+  // Map to BH Badge variants — fallback to neutral chip-like style via Badge variants available
   // Available Badge variants: depende do componente. Usamos Badge com classes utilitárias.
   const styles: Record<Tipo, { bg: string; fg: string; label: string }> = {
     transportadora: {

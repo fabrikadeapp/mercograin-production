@@ -16,12 +16,12 @@ test('subject contains user name', () => {
 test('html contains brand + personalization', () => {
   const out = welcomeTemplate({
     name: 'Maria',
-    workspaceName: 'PHB Trading',
+    workspaceName: 'BH Trading',
     dashboardUrl: 'https://app.example.com/dashboard',
   })
-  assert(out.html.includes('PHB Grain'), 'html missing brand')
+  assert(out.html.includes('BH Grain'), 'html missing brand')
   assert(out.html.includes('Maria'), 'html missing user name')
-  assert(out.html.includes('PHB Trading'), 'html missing workspaceName')
+  assert(out.html.includes('BH Trading'), 'html missing workspaceName')
   assert(out.html.includes('https://app.example.com/dashboard'), 'html missing dashboardUrl')
   assert(out.html.includes('Acessar painel'), 'html missing CTA label')
 })
@@ -30,7 +30,7 @@ test('plain text strips HTML tags', () => {
   const out = welcomeTemplate({ name: 'Lucas' })
   assert(out.text && out.text.length > 0, 'text empty')
   assert(!/<[^>]+>/.test(out.text), 'text still contains HTML tags')
-  assert(out.text.includes('PHB Grain'), 'text missing brand')
+  assert(out.text.includes('BH Grain'), 'text missing brand')
 })
 
 test('escapes HTML in name (XSS protection)', () => {

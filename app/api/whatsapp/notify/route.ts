@@ -11,7 +11,7 @@ import { ensureInstance as ensureWorkspaceInstance } from '@/lib/whatsapp/instan
 import { db } from '@/lib/db'
 import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
-const SUFFIX = '\n\n_PHB Grain · Trading de Grãos_'
+const SUFFIX = '\n\n_BH Grain · Trading de Grãos_'
 
 const notifySchema = z
   .object({
@@ -56,13 +56,13 @@ function render(
         data.link ?? ''
       }${SUFFIX}`
     case 'proposal_sent':
-      return `🌾 *Nova proposta — PHB Grain*\n\nOlá ${data.clienteNome ?? ''},\n\nVocê recebeu a proposta nº *${
+      return `🌾 *Nova proposta — BH Grain*\n\nOlá ${data.clienteNome ?? ''},\n\nVocê recebeu a proposta nº *${
         data.propostaNumero ?? ''
       }*:\n\n📦 ${data.granoLabel ?? ''} · ${data.quantidadeSc ?? ''} sc\n💰 R$ ${
         data.precoSc ?? ''
       }/sc\n📅 Válida até ${data.validUntil ?? ''}\n\nAcesse para revisar:\n${
         data.viewUrl ?? ''
-      }\n\n_Proposta gerada via PHB Grain_`
+      }\n\n_Proposta gerada via BH Grain_`
     case 'custom':
       if (!data.text || typeof data.text !== 'string') {
         return { error: 'data.text obrigatório para template custom' }

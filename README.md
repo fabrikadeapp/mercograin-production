@@ -1,4 +1,4 @@
-# PHB Grain Trading System
+# BH Grain Trading System
 
 Sistema integrado de **cotação, proposta, contrato e cobrança** para trading de grãos (soja, milho, trigo).
 
@@ -21,7 +21,7 @@ git clone https://github.com/fabrikadeapp/mercograin-production.git phb-grain
 cd phb-grain
 ```
 
-> Nota: o repositório no GitHub mantém o nome legado `mercograin-production` (codename do projeto). O produto comercial chama-se **PHB Grain**. **MercoGrain** é o nome da corretora cliente piloto que assina o trial — não confundir com o produto.
+> Nota: o repositório no GitHub mantém o nome legado `mercograin-production` (codename do projeto). O produto comercial chama-se **BH Grain**. **MercoGrain** é o nome da corretora cliente piloto que assina o trial — não confundir com o produto.
 
 ### 2. Instalar Dependências
 

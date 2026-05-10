@@ -94,7 +94,7 @@ function SidebarBrand() {
           </svg>
         </div>
         <div className="text-body font-semibold leading-none">
-          <span className="text-fg-1">PHB</span>
+          <span className="text-fg-1">BH</span>
           <span className="text-accent ml-1">Grain</span>
         </div>
       </div>
@@ -215,7 +215,7 @@ function SidebarProCard() {
     <div className="mx-3 mb-3 bg-bg-2 border border-border-1 rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 text-accent" />
-        <span className="text-fg-1 text-small font-semibold">PHB Grain Pro</span>
+        <span className="text-fg-1 text-small font-semibold">BH Grain Pro</span>
       </div>
       <p className="text-fg-3 text-micro leading-snug">
         Cotações em tempo real, integração CEPEA + B3 e bot WhatsApp ilimitado.

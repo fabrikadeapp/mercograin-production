@@ -82,7 +82,7 @@ async function buildMessage(): Promise<string> {
   })
 
   const lines: string[] = []
-  lines.push(`🌾 *Cotações de hoje — PHB Grain*`)
+  lines.push(`🌾 *Cotações de hoje — BH Grain*`)
   lines.push('')
 
   graos.forEach((g, i) => {

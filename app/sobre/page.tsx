@@ -4,7 +4,7 @@ import { Footer } from '@/app/_landing/Footer'
 import { Card } from '@/components/ui/phb'
 
 export const metadata = {
-  title: 'Sobre — PHB Grain',
+  title: 'Sobre — BH Grain',
   description:
     'Mesa de operações para o agronegócio brasileiro. Construído com tecnologia bancária, adaptado à realidade do grão.',
 }
@@ -55,7 +55,7 @@ export default function SobrePage() {
             <p className="eyebrow mb-3 text-fg-3">Manifesto</p>
             <div className="space-y-6 text-body leading-relaxed text-fg-2">
               <p>
-                <span className="text-fg-1 font-medium">PHB Grain</span> nasceu da mesa
+                <span className="text-fg-1 font-medium">BH Grain</span> nasceu da mesa
                 de operações de uma trading real. Não é uma plataforma desenhada por
                 consultores em PowerPoint — é o sistema que a gente queria ter quando
                 fechava soja em Paranaguá às 4 da tarde de uma sexta-feira.

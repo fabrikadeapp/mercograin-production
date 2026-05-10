@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       grao,
-      fonte: 'PHB Grain · Mesa B3',
+      fonte: 'BH Grain · Mesa B3',
       unidade: 'R$/sc 60kg',
       vencimentos,
       totalRegistros: rows.length,

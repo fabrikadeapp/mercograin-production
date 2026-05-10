@@ -43,7 +43,7 @@ export function Step6Tour({ ownerName, onComplete, onBack, completing }: Props) 
         </h1>
         <p className="text-fg-3 text-base">
           Seu workspace está configurado. A partir de agora, você tem acesso ao
-          painel completo do PHB Grain — cotações ao vivo, contratos, boletos,
+          painel completo do BH Grain — cotações ao vivo, contratos, boletos,
           logística e muito mais.
         </p>
       </div>

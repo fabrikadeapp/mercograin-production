@@ -33,7 +33,7 @@ export function Brand({ size = 'md', className }: BrandProps) {
         </svg>
       </div>
       <div className={`${s.text} font-semibold leading-none`}>
-        <span className="text-fg-1">PHB</span>
+        <span className="text-fg-1">BH</span>
         <span className="text-accent ml-1">Grain</span>
       </div>
     </div>

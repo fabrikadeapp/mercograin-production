@@ -38,7 +38,7 @@ export function ScreenshotShowcase() {
             {/* screenshot real do dashboard */}
             <Image
               src="/landing/dashboard-preview.png"
-              alt="Dashboard PHB Grain — cotações ao vivo, book de futuros e mercado CBOT"
+              alt="Dashboard BH Grain — cotações ao vivo, book de futuros e mercado CBOT"
               fill
               className="object-cover object-top pt-9"
               priority

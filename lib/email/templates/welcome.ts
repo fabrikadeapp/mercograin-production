@@ -15,7 +15,7 @@ export function welcomeTemplate(args: WelcomeArgs) {
   const stepBox = `padding:14px 16px;border:1px solid ${COLORS.border};border-radius:8px;background-color:${COLORS.bg};margin:0 0 10px 0;`
 
   const bodyHtml = `
-    <p style="margin:0 0 16px 0;">Olá, <strong style="color:${COLORS.text};">${name}</strong>. Sua conta no <strong>PHB Grain</strong> foi criada — bem-vindo(a) a bordo (${ws}).</p>
+    <p style="margin:0 0 16px 0;">Olá, <strong style="color:${COLORS.text};">${name}</strong>. Sua conta no <strong>BH Grain</strong> foi criada — bem-vindo(a) a bordo (${ws}).</p>
     <p style="margin:0 0 18px 0;">Para começar a operar, recomendamos três próximos passos:</p>
     <div style="${stepBox}">
       <p style="margin:0 0 4px 0;font-size:14px;font-weight:600;color:${COLORS.text};">1. Cadastrar seu primeiro cliente</p>
@@ -32,7 +32,7 @@ export function welcomeTemplate(args: WelcomeArgs) {
   `
 
   const html = renderEmailLayout({
-    title: `Bem-vindo(a) ao PHB Grain, ${args.name}`,
+    title: `Bem-vindo(a) ao BH Grain, ${args.name}`,
     preheader: 'Sua mesa de operações está pronta. Veja os próximos passos.',
     bodyHtml,
     ctaLabel: 'Acessar painel',
@@ -41,7 +41,7 @@ export function welcomeTemplate(args: WelcomeArgs) {
   })
 
   return {
-    subject: `Bem-vindo(a) ao PHB Grain, ${args.name} 🌾`,
+    subject: `Bem-vindo(a) ao BH Grain, ${args.name} 🌾`,
     html,
     text: plainText(html),
   }

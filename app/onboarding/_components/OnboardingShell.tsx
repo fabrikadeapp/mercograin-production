@@ -29,7 +29,7 @@ export function OnboardingShell({ step, totalSteps, ownerName, children }: Props
             <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center font-bold text-bg-0">
               P
             </div>
-            <div className="font-bold tracking-tight text-fg-1">PHB Grain</div>
+            <div className="font-bold tracking-tight text-fg-1">BH Grain</div>
           </div>
 
           <div className="eyebrow text-fg-3 mb-3">CONFIGURAÇÃO INICIAL</div>

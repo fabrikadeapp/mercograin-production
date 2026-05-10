@@ -20,7 +20,7 @@ export function Footer() {
         </div>
 
         <div className="mt-16 border-t border-border-1 pt-8 text-center text-micro text-fg-3">
-          © 2026 PHB Grain · Grain Intelligence · Feito no Brasil
+          © 2026 BH Grain · Grain Intelligence · Feito no Brasil
         </div>
       </div>
     </footer>

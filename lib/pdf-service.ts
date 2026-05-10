@@ -74,7 +74,7 @@ export interface ContratoPDFData {
 const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
   React.createElement(
     'Document' as any,
-    { producer: 'PHB Grain', creator: 'PHB Grain System', title: `Proposta ${data.numero}` },
+    { producer: 'BH Grain', creator: 'BH Grain System', title: `Proposta ${data.numero}` },
     React.createElement(
       'Page' as any,
       { size: 'A4', style: { padding: 40, fontFamily: 'Helvetica' } },
@@ -177,7 +177,7 @@ const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
       React.createElement(
         'View' as any,
         { style: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e7eb', fontSize: 9, color: '#666', textAlign: 'center' } },
-        React.createElement('Text' as any, null, 'PHB Grain - Sistema de Gestão de Grãos'),
+        React.createElement('Text' as any, null, 'BH Grain - Sistema de Gestão de Grãos'),
         React.createElement('Text' as any, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
       )
     )
@@ -187,7 +187,7 @@ const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
 const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
   React.createElement(
     'Document' as any,
-    { producer: 'PHB Grain', creator: 'PHB Grain System', title: `Contrato ${data.numero}` },
+    { producer: 'BH Grain', creator: 'BH Grain System', title: `Contrato ${data.numero}` },
     React.createElement(
       'Page' as any,
       { size: 'A4', style: { padding: 40, fontFamily: 'Helvetica' } },
@@ -300,7 +300,7 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
           'View' as any,
           { style: { width: '45%', textAlign: 'center' } },
           React.createElement('View' as any, { style: { height: 40, marginBottom: 10 } }),
-          React.createElement('Text' as any, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura da PHB Grain')
+          React.createElement('Text' as any, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura da BH Grain')
         )
       ),
 
@@ -308,7 +308,7 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
       React.createElement(
         'View' as any,
         { style: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e7eb', fontSize: 9, color: '#666', textAlign: 'center' } },
-        React.createElement('Text' as any, null, 'PHB Grain - Sistema de Gestão de Grãos'),
+        React.createElement('Text' as any, null, 'BH Grain - Sistema de Gestão de Grãos'),
         React.createElement('Text' as any, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
       )
     )

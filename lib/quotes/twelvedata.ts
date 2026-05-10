@@ -1,5 +1,5 @@
 /**
- * Twelve Data live quotes for PHB Grain.
+ * Twelve Data live quotes for BH Grain.
  *
  * Free tier: 800 req/dia · 8 req/min. Cache agressivo em memória pra evitar
  * estouro do rate limit (várias páginas/usuários em paralelo).

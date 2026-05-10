@@ -183,7 +183,7 @@ export function PlanForm({ initial, mode, planId, onSaved }: Props) {
             update('name', nv)
             if (!slugTouched.current) update('slug', slugify(nv))
           }}
-          placeholder="ex: PHB Grain · Pro"
+          placeholder="ex: BH Grain · Pro"
           required
         />
 

@@ -16,7 +16,7 @@ function client(): Resend {
   return cached
 }
 
-export const FROM = process.env.EMAIL_FROM || 'PHB Grain <noreply@profitsync.ia.br>'
+export const FROM = process.env.EMAIL_FROM || 'BH Grain <noreply@profitsync.ia.br>'
 
 export interface SendEmailParams {
   to: string | string[]

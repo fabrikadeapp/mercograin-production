@@ -48,7 +48,7 @@ export function Testimonials() {
         <div className="mb-14 max-w-2xl">
           <p className="eyebrow mb-3 text-fg-3">Quem usa</p>
           <h2 className="font-sans text-h1 font-semibold tracking-tight text-fg-1">
-            Tradings que confiam no <span className="text-accent">PHB Grain</span>.
+            Tradings que confiam no <span className="text-accent">BH Grain</span>.
           </h2>
         </div>
 

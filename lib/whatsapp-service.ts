@@ -99,19 +99,19 @@ Sua proposta #${v.proposalNumber} foi enviada com sucesso!
 • Valor: ${v.value}
 • Validade: ${v.validity}
 
-_PHB Grain · Trading de Grãos_`,
+_BH Grain · Trading de Grãos_`,
     contract_created: (v) => `✅ *Contrato Criado!*
 
 O contrato #${v.contractNumber} foi criado com base na proposta #${v.proposalNumber}.
 
-_PHB Grain · Trading de Grãos_`,
+_BH Grain · Trading de Grãos_`,
     invoice_generated: (v) => `💰 *Boleto Gerado!*
 
 Seu boleto #${v.invoiceNumber} está pronto para pagamento.
 📅 Vencimento: ${v.dueDate}
 💵 Valor: ${v.amount}
 
-_PHB Grain · Trading de Grãos_`,
+_BH Grain · Trading de Grãos_`,
   }
   const tpl = templates[templateName]
   if (!tpl) {
@@ -131,7 +131,7 @@ export async function testWhatsAppConnection(
   warnLegacy('testWhatsAppConnection')
   const r = await sendWhatsAppMessage(
     phoneNumber,
-    '✅ Teste de conexão WhatsApp PHB Grain — Evolution API funcionando!'
+    '✅ Teste de conexão WhatsApp BH Grain — Evolution API funcionando!'
   )
   return r.success
     ? { success: true, message: `✅ Mensagem enviada para ${phoneNumber}` }

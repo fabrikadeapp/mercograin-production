@@ -216,7 +216,7 @@ export default function Playground() {
     <AppShell>
       <PageHeader
         eyebrow="Mesa de operações · Tempo real"
-        title="Playground PHB Grain"
+        title="Playground BH Grain"
         subtitle="Atualizado há 12s · CEPEA + B3 + USDA"
         actions={
           <>

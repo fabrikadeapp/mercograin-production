@@ -6,7 +6,7 @@ const SALES_WHATSAPP = process.env.NEXT_PUBLIC_SALES_WHATSAPP || '5551999999999'
 const SALES_EMAIL = process.env.NEXT_PUBLIC_SALES_EMAIL || 'vendas@profitsync.ia.br'
 
 const WA_MESSAGE = encodeURIComponent(
-  'Olá! Vi a PHB Grain e gostaria de conversar sobre o plano Enterprise / demonstração.',
+  'Olá! Vi a BH Grain e gostaria de conversar sobre o plano Enterprise / demonstração.',
 )
 
 export function SalesContactFab() {

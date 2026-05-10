@@ -182,7 +182,7 @@ export function TemplatePdfDocument({
 
         {/* Footer fixo */}
         <View style={styles.footer} fixed>
-          <Text>PHB Grain · Documento gerado eletronicamente</Text>
+          <Text>BH Grain · Documento gerado eletronicamente</Text>
           <Text
             render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
           />

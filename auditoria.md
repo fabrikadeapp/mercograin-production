@@ -1,4 +1,4 @@
-# Auditoria — PHB Grain
+# Auditoria — BH Grain
 
 > Snapshot técnico do sistema em **10/05/2026**.
 > Domínio: https://www.profitsync.ia.br
@@ -11,7 +11,7 @@
 
 | Item | Valor |
 |---|---|
-| Nome comercial | PHB Grain |
+| Nome comercial | BH Grain |
 | Tagline | Grain Intelligence · Mesa de operações para tradings de grãos |
 | Stack | Next.js 14 (App Router) · React 18 · TypeScript · Prisma 5 · Postgres |
 | Auth | NextAuth v5 (Credentials Provider · bcrypt) |
@@ -22,17 +22,17 @@
 
 ---
 
-## 2. Arquitetura Railway (projeto **PHB Grain**)
+## 2. Arquitetura Railway (projeto **BH Grain**)
 
 ```
-PHB Grain
+BH Grain
 ├── web              ← App Next.js (https://www.profitsync.ia.br)
 ├── Postgres         ← Banco do app (clientes, contratos, etc.)
 ├── evolution-api    ← Evolution v2.3.7 dedicada
 └── Postgres-1M2U    ← Banco isolado da Evolution
 ```
 
-**Independência:** projeto **lauraia** (Laura.IA) não compartilha mais nenhum recurso. Verificado em 10/05/2026: zero instâncias PHB Grain em lauraia.
+**Independência:** projeto **lauraia** (Laura.IA) não compartilha mais nenhum recurso. Verificado em 10/05/2026: zero instâncias BH Grain em lauraia.
 
 ### Domínios
 - `https://www.profitsync.ia.br` — landing + app
@@ -247,8 +247,8 @@ Todos os modelos de negócio escopados por `workspaceId`. Helper `lib/auth/scope
 - `aero.gus@hotmail.com` — `role: admin` — sua senha pessoal. Acessa `/admin`.
 
 ### Trader Enterprise (demo)
-- `admin@mercograin.com` / `Admin@123456` — `role: user`, Subscription Enterprise active até 07/06/2026 (conta admin do produto — coincidência de nome com a corretora piloto **MercoGrain** que será cadastrada como cliente; o produto comercial chama-se **PHB Grain**)
-- Workspace: **PHB Grain Trading** (LTDA, CNPJ 47.892.156/0001-89)
+- `admin@mercograin.com` / `Admin@123456` — `role: user`, Subscription Enterprise active até 07/06/2026 (conta admin do produto — coincidência de nome com a corretora piloto **MercoGrain** que será cadastrada como cliente; o produto comercial chama-se **BH Grain**)
+- Workspace: **BH Grain Trading** (LTDA, CNPJ 47.892.156/0001-89)
 - Onboarding completo, 8 clientes, 8 fornecedores, 9 propostas, 4 contratos, 9 boletos, 15 contratos futuros, 6 ordens de carga, 2 templates, 4 alertas, 6 classificados.
 
 ### Stripe test
@@ -260,7 +260,7 @@ Todos os modelos de negócio escopados por `workspaceId`. Helper `lib/auth/scope
 
 Resumo dos últimos 30 commits:
 
-- `fbdb646` Evolution API v2.3.7 dedicada para PHB Grain (QR funcionando)
+- `fbdb646` Evolution API v2.3.7 dedicada para BH Grain (QR funcionando)
 - `977f7a0` WhatsApp page com estado claro de manutenção
 - `3ef058a` detecção real de mercado aberto/fechado por horário Brasília
 - `f958247` BCB PTAX como fonte primária USDBRL
@@ -275,7 +275,7 @@ Resumo dos últimos 30 commits:
 - `72a7f6e` multi-tenancy + landing comercial + Stripe trial 10d + SuperAdmin completo
 - `13658b0`, `aaa34a0`, `fd1e657`, `aa34f2d`, `65106f9` integração CEPEA/ESALQ
 - `905c2b3` substituição Yahoo Finance por Twelve Data
-- `209c487` rename PHB Green → PHB Grain + dados ao vivo + WhatsApp + APIs reais
+- `209c487` rename PHB Green → BH Grain + dados ao vivo + WhatsApp + APIs reais
 - `e88691f` aplicar design system PHB Green ao sistema completo
 
 ---
@@ -290,4 +290,4 @@ Resumo dos últimos 30 commits:
 
 ---
 
-*Documento gerado por SuperAdmin orquestrador AIOS · projeto PHB Grain.*
+*Documento gerado por SuperAdmin orquestrador AIOS · projeto BH Grain.*

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/phb'
 import { ContatoForm } from './ContatoForm'
 
 export const metadata = {
-  title: 'Contato — PHB Grain',
+  title: 'Contato — BH Grain',
   description: 'Fale com a gente. Email, WhatsApp ou formulário direto.',
 }
 

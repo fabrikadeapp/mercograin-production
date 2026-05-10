@@ -46,7 +46,7 @@ export interface SerializedPlan {
 }
 
 function toShortName(name: string): string {
-  // 'PHB Grain · Starter' → 'Starter'
+  // 'BH Grain · Starter' → 'Starter'
   const idx = name.lastIndexOf('·')
   if (idx >= 0) return name.slice(idx + 1).trim()
   return name

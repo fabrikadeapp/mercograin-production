@@ -13,7 +13,7 @@ export function trialEndingTemplate(args: TrialEndingArgs) {
   const ws = escapeHtml(args.workspaceName || 'sua empresa')
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://www.profitsync.ia.br'
   const billingUrl = args.billingUrl || `${APP_URL}/perfil/plano`
-  const plan = escapeHtml(args.planName || 'PHB Grain')
+  const plan = escapeHtml(args.planName || 'BH Grain')
   const days = Math.max(0, Math.round(args.daysLeft))
 
   const bodyHtml = `

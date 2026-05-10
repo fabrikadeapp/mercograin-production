@@ -176,7 +176,7 @@ export function SecretAdminPortal() {
       <button
         type="button"
         onClick={handleBrandClick}
-        aria-label="PHB Grain — Início"
+        aria-label="BH Grain — Início"
         className="cursor-pointer focus:outline-none"
       >
         <Brand />

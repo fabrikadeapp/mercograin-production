@@ -173,7 +173,7 @@ export function ClassificadosContent() {
         <EmptyState
           icon={Sprout}
           title="Nenhum lote anunciado"
-          description="Anuncie o primeiro lote para começar a negociar com o marketplace PHB."
+          description="Anuncie o primeiro lote para começar a negociar com o marketplace BH."
           cta={
             <Link href="/classificados/novo">
               <Button leftIcon={<Plus className="h-4 w-4" />}>Anunciar lote</Button>

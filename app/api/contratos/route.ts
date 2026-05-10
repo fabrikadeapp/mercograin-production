@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
         const corretoraName =
           contrato.workspace?.empresa?.razaoSocial ||
           contrato.workspace?.name ||
-          'PHB Grain'
+          'BH Grain'
         const tpl = contractCreatedTemplate({
           contractNumber: contrato.numero,
           contractUrl: `${APP_URL}/contratos/${contrato.id}`,

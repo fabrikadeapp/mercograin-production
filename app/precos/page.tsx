@@ -10,7 +10,7 @@ import { loadActivePlans } from '@/lib/pricing/serialize'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Preços — PHB Grain',
+  title: 'Preços — BH Grain',
   description:
     'Trial de 10 dias grátis. Cancele quando quiser. Planos editáveis em tempo real.',
 }

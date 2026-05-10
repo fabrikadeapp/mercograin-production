@@ -5,15 +5,15 @@ import { Footer } from '@/app/_landing/Footer'
 import { Card } from '@/components/ui/phb'
 
 export const metadata = {
-  title: 'Legal — PHB Grain',
-  description: 'Termos de uso e política de privacidade do PHB Grain.',
+  title: 'Legal — BH Grain',
+  description: 'Termos de uso e política de privacidade do BH Grain.',
 }
 
 const ITEMS = [
   {
     href: '/legal/termos',
     title: 'Termos de uso',
-    description: 'Condições contratuais para uso do PHB Grain.',
+    description: 'Condições contratuais para uso do BH Grain.',
     icon: FileText,
   },
   {

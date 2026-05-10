@@ -7,7 +7,7 @@ export interface TemplateVariable {
 
 export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   // Empresa
-  { key: 'empresa.razaoSocial', label: 'Razão social', category: 'Empresa', example: 'PHB Grain LTDA' },
+  { key: 'empresa.razaoSocial', label: 'Razão social', category: 'Empresa', example: 'BH Grain LTDA' },
   { key: 'empresa.cnpj', label: 'CNPJ', category: 'Empresa', example: '12.345.678/0001-99' },
   { key: 'empresa.endereco', label: 'Endereço', category: 'Empresa', example: 'Av Paulista, 1000' },
   { key: 'empresa.cidade', label: 'Cidade', category: 'Empresa', example: 'São Paulo' },

@@ -3,9 +3,9 @@ import { Footer } from '@/app/_landing/Footer'
 import { Card } from '@/components/ui/phb'
 
 export const metadata = {
-  title: 'Política de privacidade — PHB Grain',
+  title: 'Política de privacidade — BH Grain',
   description:
-    'Como o PHB Grain coleta, usa e protege seus dados em conformidade com a LGPD.',
+    'Como o BH Grain coleta, usa e protege seus dados em conformidade com a LGPD.',
 }
 
 const sectionH = 'text-h2 font-semibold text-fg-1 mt-10 mb-3'
@@ -32,7 +32,7 @@ export default function PrivacidadePage() {
           <div className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-20">
             <Card className="p-8 md:p-10">
               <p className={para}>
-                Esta Política descreve como a PHB Grain trata dados pessoais e dados
+                Esta Política descreve como a BH Grain trata dados pessoais e dados
                 de uso da plataforma, em conformidade com a Lei Geral de Proteção de
                 Dados (Lei nº 13.709/2018 — &quot;LGPD&quot;).
               </p>
@@ -71,7 +71,7 @@ export default function PrivacidadePage() {
 
               <h2 className={sectionH}>3. Quem tem acesso</h2>
               <p className={para}>
-                Acesso interno é restrito a funcionários autorizados da PHB Grain,
+                Acesso interno é restrito a funcionários autorizados da BH Grain,
                 sujeitos a controles de acesso baseados em papéis (RBAC) e termos de
                 confidencialidade. Compartilhamos dados estritamente necessários com os
                 seguintes processadores:
@@ -97,7 +97,7 @@ export default function PrivacidadePage() {
 
               <h2 className={sectionH}>4. Compartilhamento</h2>
               <p className={para}>
-                A PHB Grain <strong className="text-fg-1">não vende</strong> dados
+                A BH Grain <strong className="text-fg-1">não vende</strong> dados
                 pessoais. O compartilhamento ocorre apenas com os processadores
                 listados acima, todos contratualmente vinculados a obrigações de
                 proteção de dados, ou quando exigido por ordem judicial / autoridade
