@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { Upload, ChevronDown, ChevronUp } from 'lucide-react'
+import { Upload, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Button, Input, Select } from '@/components/ui/phb'
 import type { EmpresaInitial } from './OnboardingWizard'
+import { isValidCNPJ } from '@/lib/br/documento'
 
 interface Props {
   workspaceId: string
@@ -72,9 +73,87 @@ export function Step1Empresa({ initial, onSaved }: Props) {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [cnpjLoading, setCnpjLoading] = useState(false)
+  const [cnpjInfo, setCnpjInfo] = useState<string | null>(null)
+  const [cepLoading, setCepLoading] = useState(false)
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }))
+  }
+
+  // Preenche apenas se o campo destino estiver vazio (não sobrescreve digitação prévia)
+  function fillIfEmpty(patch: Partial<typeof form>) {
+    setForm((f) => {
+      const next = { ...f }
+      for (const k of Object.keys(patch) as (keyof typeof form)[]) {
+        if (!f[k] && patch[k]) {
+          next[k] = patch[k] as string
+        }
+      }
+      return next
+    })
+  }
+
+  async function handleCnpjBlur() {
+    const digits = form.cnpj.replace(/\D/g, '')
+    if (digits.length !== 14) return
+    if (!isValidCNPJ(digits)) return
+    setCnpjLoading(true)
+    setCnpjInfo(null)
+    try {
+      const res = await fetch(`/api/br/cnpj/${digits}`)
+      if (!res.ok) {
+        // 404 / 429 / 500 — silencioso, deixa user preencher manual
+        return
+      }
+      const d = await res.json()
+      const enderecoParts = [
+        d.logradouro,
+        d.numero,
+        d.complemento,
+        d.bairro,
+      ].filter((p: string | null) => p && String(p).trim().length > 0)
+      const endereco = enderecoParts.join(', ')
+      fillIfEmpty({
+        razaoSocial: d.razaoSocial || '',
+        nomeFantasia: d.nomeFantasia || '',
+        email: d.email || '',
+        telefone: d.telefone ? maskTelefone(String(d.telefone)) : '',
+        cep: d.cep ? maskCep(String(d.cep)) : '',
+        endereco: endereco || '',
+        cidade: d.municipio || '',
+        uf: d.uf || '',
+      })
+      setCnpjInfo(`Dados encontrados (${d.source})`)
+    } catch {
+      // network — silencioso
+    } finally {
+      setCnpjLoading(false)
+    }
+  }
+
+  async function handleCepBlur() {
+    const digits = form.cep.replace(/\D/g, '')
+    if (digits.length !== 8) return
+    setCepLoading(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      if (!res.ok) return
+      const d = await res.json()
+      if (d?.erro) return
+      const enderecoParts = [d.logradouro, d.bairro].filter(
+        (p: string) => p && p.trim().length > 0
+      )
+      fillIfEmpty({
+        endereco: enderecoParts.join(', '),
+        cidade: d.localidade || '',
+        uf: d.uf || '',
+      })
+    } catch {
+      // silencioso
+    } finally {
+      setCepLoading(false)
+    }
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -164,10 +243,17 @@ export function Step1Empresa({ initial, onSaved }: Props) {
           onChange={(e) => set('nomeFantasia', e.target.value)}
         />
         <Input
-          label="CNPJ"
+          label={cnpjLoading ? 'CNPJ · consultando...' : 'CNPJ'}
           value={form.cnpj}
           onChange={(e) => set('cnpj', maskCnpj(e.target.value))}
+          onBlur={handleCnpjBlur}
           placeholder="00.000.000/0000-00"
+          rightAddon={
+            cnpjLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-fg-3" />
+            ) : null
+          }
+          helperText={cnpjInfo || undefined}
         />
         <Input
           label="Inscrição estadual"
@@ -207,10 +293,16 @@ export function Step1Empresa({ initial, onSaved }: Props) {
             placeholder="—"
           />
           <Input
-            label="CEP"
+            label={cepLoading ? 'CEP · consultando...' : 'CEP'}
             value={form.cep}
             onChange={(e) => set('cep', maskCep(e.target.value))}
+            onBlur={handleCepBlur}
             placeholder="00000-000"
+            rightAddon={
+              cepLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-fg-3" />
+              ) : null
+            }
           />
         </div>
       </div>
