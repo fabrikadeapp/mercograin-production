@@ -37,6 +37,7 @@ export async function GET(
             tipo: true,
           },
         },
+        assinaturaDigital: true,
       },
     })
 

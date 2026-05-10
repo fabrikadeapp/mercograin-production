@@ -1,0 +1,31 @@
+name: Marcos de Contratos (Diário)
+
+# Avalia contratos assinados e dispara avisos por email nos marcos
+# 30d / 15d / 7d / 1d / vencido. Idempotente por ContratoNotificacao(contratoId, marco).
+#
+# Setup:
+#   1. CRON_SECRET nos Secrets do repo (Settings → Secrets → Actions).
+#   2. Mesmo CRON_SECRET nas env vars do Railway.
+
+on:
+  schedule:
+    # 09:00 UTC = 06:00 BRT — manhã, antes do expediente
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  marcos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger contrato-marcos endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/contrato-marcos \
+            | tee response.json
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::Marcos retornou ok=false ou parcial — verifique Sentry"
+            exit 1
+          fi

@@ -29,6 +29,7 @@ import {
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { OriginacaoPanel } from './_components/OriginacaoPanel'
+import { AssinaturaDigitalPanel } from './_components/AssinaturaDigitalPanel'
 
 interface GraoItem {
   grao: string
@@ -320,6 +321,20 @@ export default function ContratoDetalhesPage() {
           0
         )}
       />
+
+      <AssinaturaDigitalPanel
+        contratoId={contrato.id}
+        contratoNumero={contrato.numero}
+        statusAssinatura={contrato.statusAssinatura}
+      />
+
+      <div className="flex gap-3">
+        <Link href={`/contratos/${contrato.id}/clausulas`}>
+          <Button variant="ghost" size="sm">
+            Cláusulas do contrato
+          </Button>
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

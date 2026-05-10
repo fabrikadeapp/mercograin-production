@@ -112,6 +112,10 @@ model Workspace {
   // S2 M10
   aceiteContratos       AceiteContrato[]
   pushSubscriptions     PushSubscription[]
+  // S3 M3 — Assinatura digital + cláusulas + versionamento + marcos
+  assinaturasDigitais   AssinaturaDigital[]
+  clausulasContrato     ClausulaContrato[]
+  contratoNotificacoes  ContratoNotificacao[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -210,10 +214,33 @@ model ContratoTemplate {
   variaveis   Json?
   ativo       Boolean   @default(true)
   isDefault   Boolean   @default(false)
+  // S3 M3 — versionamento de template
+  versao      Int       @default(1)
+  versoes     ContratoTemplateVersao[]
+  // S3 M3 — cláusulas associadas a esse template (templates podem ter cláusulas padrão)
+  clausulas   ClausulaContrato[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([workspaceId, tipo, ativo])
+}
+
+// S3 M3 — Versões imutáveis de templates de contrato
+model ContratoTemplateVersao {
+  id         String           @id @default(cuid())
+  templateId String
+  template   ContratoTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  versao      Int
+  contentJson Json
+  variaveis   Json?
+
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  comentario String?
+
+  @@unique([templateId, versao])
 }
 
 // ============================================
@@ -462,6 +489,20 @@ model Contrato {
 
   // S2 M10
   aceite                AceiteContrato?
+
+  // S3 M3 — Snapshot imutável da versão de template usada na geração
+  templateVersaoSnapshot Json?
+  templateVersaoId       String?
+
+  // S3 M3 — Forma + prazo de pagamento, local de entrega
+  formaPagamento     String? // 'a_vista'|'parcelado'|'30_60_90'|'safra'|'misto'
+  prazoPagamentoDias Int?
+  localEntrega       String?
+
+  // S3 M3 — Cláusulas customizáveis + assinatura digital + notificações
+  clausulas         ClausulaContrato[]
+  assinaturaDigital AssinaturaDigital?
+  notificacoes      ContratoNotificacao[]
 
   // Originação (Epic 1)
   fixacao               ContratoFixacao?
@@ -1961,5 +2002,84 @@ model PushSubscription {
 
   @@index([userId])
   @@index([clienteId])
+  @@index([workspaceId])
+}
+
+// ============================================
+// S3 M3 — ASSINATURA DIGITAL + CLÁUSULAS + NOTIFICAÇÕES
+// ============================================
+
+model AssinaturaDigital {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String   @unique
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  providerNome  String // 'mock' | 'zapsign' | 'clicksign' | 'd4sign'
+  providerDocId String @unique
+
+  authMode String // 'simple' | 'icp_brasil' | 'sms' | 'email_token'
+
+  status String @default("pendente") // 'pendente'|'parcial'|'assinado'|'recusado'|'expirado'|'cancelado'
+
+  enviadoEm    DateTime  @default(now())
+  finalizadoEm DateTime?
+  expiraEm     DateTime?
+
+  signatarios Json // [{name, cpfCnpj, email, signedAt, refusedAt, ip, ...}]
+
+  pdfOriginalHash String?
+  pdfAssinadoUrl  String?
+  pdfAssinadoHash String?
+
+  carimboTempo Json? // RFC 3161 timestamp se disponível
+
+  webhookSecret String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+}
+
+model ClausulaContrato {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String?
+  contrato   Contrato? @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  templateId String?
+  template   ContratoTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  ordem  Int
+  tipo   String // 'multa'|'arbitragem'|'foro'|'forca_maior'|'pagamento'|'entrega'|'outras'
+  titulo String
+  texto  String @db.Text
+
+  obrigatoria Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([contratoId])
+  @@index([templateId])
+}
+
+model ContratoNotificacao {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String
+  contrato   Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  marco     String // '30d'|'15d'|'7d'|'1d'|'vencido'
+  enviadoEm DateTime @default(now())
+
+  @@unique([contratoId, marco])
   @@index([workspaceId])
 }
