@@ -2,13 +2,30 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { isValidCPF, isValidCNPJ } from '@/lib/br/documento'
+
+const cpfRefinement = z
+  .string()
+  .optional()
+  .refine(
+    (v) => !v || v.length === 0 || isValidCPF(v),
+    { message: 'CPF inválido' }
+  )
+
+const cnpjRefinement = z
+  .string()
+  .optional()
+  .refine(
+    (v) => !v || v.length === 0 || isValidCNPJ(v),
+    { message: 'CNPJ inválido' }
+  )
 
 const clienteSchema = z.object({
   nome: z.string().min(3),
   email: z.string().email().optional(),
   telefone: z.string().optional(),
-  cnpj: z.string().optional(),
-  cpf: z.string().optional(),
+  cnpj: cnpjRefinement,
+  cpf: cpfRefinement,
   endereco: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().optional(),

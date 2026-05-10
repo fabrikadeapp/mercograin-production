@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { isValidCNPJ } from '@/lib/br/documento'
 
 const TIPO_ENUM = z.enum([
   'transportadora',
@@ -15,7 +16,13 @@ const fornecedorSchema = z.object({
   tipo: TIPO_ENUM,
   razaoSocial: z.string().min(2, 'Razão social obrigatória'),
   nomeFantasia: z.string().optional().nullable(),
-  cnpj: z.string().optional().nullable(),
+  cnpj: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((v) => !v || v.length === 0 || isValidCNPJ(v), {
+      message: 'CNPJ inválido',
+    }),
   contato: z.string().optional().nullable(),
   telefone: z.string().optional().nullable(),
   email: z.string().email().optional().nullable().or(z.literal('')),

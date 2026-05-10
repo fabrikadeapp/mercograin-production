@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -16,14 +17,28 @@ import {
 } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { schemas } from '@/lib/utils/validators'
+import {
+  isValidCPF,
+  isValidCNPJ,
+  formatCPF,
+  formatCNPJ,
+} from '@/lib/br/documento'
 
 const clienteSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   telefone: schemas.phone.optional().or(z.literal('')),
   tipo: z.enum(['comprador', 'vendedor', 'ambos']),
-  cpf: z.string().optional().or(z.literal('')),
-  cnpj: z.string().optional().or(z.literal('')),
+  cpf: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((v) => !v || isValidCPF(v), { message: 'CPF inválido' }),
+  cnpj: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((v) => !v || isValidCNPJ(v), { message: 'CNPJ inválido' }),
   endereco: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().optional(),
@@ -39,16 +54,87 @@ const TIPO_OPCOES = [
 
 export default function NovoClientePage() {
   const router = useRouter()
-  const { success, error: showError } = useToast()
+  const { success, error: showError, info } = useToast()
+  const [lookingUp, setLookingUp] = useState(false)
 
   const {
     register,
     handleSubmit,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
     defaultValues: { tipo: 'comprador' },
   })
+
+  /**
+   * Ao sair do campo CNPJ:
+   *   1. Valida dígitos localmente — economiza chamadas externas
+   *   2. Se válido, busca em /api/br/cnpj/{cnpj} (BrasilAPI primário)
+   *   3. Auto-preenche campos vazios com dados retornados (não sobrescreve
+   *      o que o usuário já digitou)
+   */
+  async function handleCnpjBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const raw = e.target.value
+    const clean = raw.replace(/\D/g, '')
+    if (clean.length !== 14) return
+    if (!isValidCNPJ(clean)) return
+
+    // formata visualmente
+    setValue('cnpj', formatCNPJ(clean), { shouldValidate: true })
+
+    setLookingUp(true)
+    try {
+      const r = await fetch(`/api/br/cnpj/${clean}`)
+      if (!r.ok) {
+        if (r.status === 404) info('CNPJ não encontrado na Receita')
+        else if (r.status === 429) showError('Muitas consultas. Tente em 1h')
+        return
+      }
+      const j = await r.json()
+      const current = getValues()
+      const fillIfEmpty = (
+        field: keyof ClienteFormData,
+        value: string | null
+      ) => {
+        if (value && !current[field]) {
+          setValue(field, value, { shouldValidate: false })
+        }
+      }
+      fillIfEmpty('nome', j.razaoSocial)
+      fillIfEmpty('email', j.email)
+      fillIfEmpty('telefone', j.telefone)
+      // endereço composto
+      if (!current.endereco) {
+        const partes = [
+          j.logradouro,
+          j.numero,
+          j.complemento,
+          j.bairro,
+          j.cep ? `CEP ${j.cep}` : null,
+        ].filter(Boolean)
+        if (partes.length > 0) {
+          setValue('endereco', partes.join(', '), { shouldValidate: false })
+        }
+      }
+      fillIfEmpty('cidade', j.municipio)
+      fillIfEmpty('estado', j.uf)
+      success('Dados da empresa preenchidos automaticamente')
+    } catch (err) {
+      console.error('cnpj lookup failed', err)
+    } finally {
+      setLookingUp(false)
+    }
+  }
+
+  function handleCpfBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const raw = e.target.value
+    const clean = raw.replace(/\D/g, '')
+    if (clean.length === 11 && isValidCPF(clean)) {
+      setValue('cpf', formatCPF(clean), { shouldValidate: true })
+    }
+  }
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
@@ -77,6 +163,9 @@ export default function NovoClientePage() {
       showError(err instanceof Error ? err.message : 'Erro ao criar cliente')
     }
   }
+
+  const cnpjReg = register('cnpj')
+  const cpfReg = register('cpf')
 
   return (
     <AppShell>
@@ -114,13 +203,21 @@ export default function NovoClientePage() {
               <Input
                 label="CPF"
                 placeholder="000.000.000-00"
-                {...register('cpf')}
+                {...cpfReg}
+                onBlur={(e) => {
+                  cpfReg.onBlur(e)
+                  handleCpfBlur(e)
+                }}
                 error={errors.cpf?.message}
               />
               <Input
-                label="CNPJ"
+                label={lookingUp ? 'CNPJ · consultando…' : 'CNPJ'}
                 placeholder="00.000.000/0000-00"
-                {...register('cnpj')}
+                {...cnpjReg}
+                onBlur={(e) => {
+                  cnpjReg.onBlur(e)
+                  handleCnpjBlur(e)
+                }}
                 error={errors.cnpj?.message}
               />
             </div>

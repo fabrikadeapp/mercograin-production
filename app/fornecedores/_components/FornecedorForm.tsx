@@ -12,6 +12,7 @@ import {
   Input,
   Select,
 } from '@/components/ui/phb'
+import { isValidCNPJ, formatCNPJ } from '@/lib/br/documento'
 
 const TIPO_OPCOES = [
   { value: 'transportadora', label: 'Transportadora' },
@@ -115,6 +116,10 @@ export function FornecedorForm({
   const router = useRouter()
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [cnpjLookingUp, setCnpjLookingUp] = React.useState(false)
+  const [cnpjFieldError, setCnpjFieldError] = React.useState<string | null>(
+    null
+  )
 
   const meta = (initial?.metadata || {}) as Record<string, any>
 
@@ -185,12 +190,64 @@ export function FornecedorForm({
     return {}
   }
 
+  /**
+   * Ao sair do campo CNPJ:
+   *  1) valida dígitos (economiza chamada externa)
+   *  2) consulta /api/br/cnpj e auto-preenche campos vazios
+   */
+  async function handleCnpjBlur() {
+    const clean = cnpj.replace(/\D/g, '')
+    if (clean.length === 0) {
+      setCnpjFieldError(null)
+      return
+    }
+    if (clean.length !== 14 || !isValidCNPJ(clean)) {
+      setCnpjFieldError('CNPJ inválido')
+      return
+    }
+    setCnpjFieldError(null)
+    setCnpj(formatCNPJ(clean))
+
+    setCnpjLookingUp(true)
+    try {
+      const r = await fetch(`/api/br/cnpj/${clean}`)
+      if (!r.ok) return
+      const j = await r.json()
+      // não sobrescreve o que o usuário já digitou
+      if (!razaoSocial && j.razaoSocial) setRazaoSocial(j.razaoSocial)
+      if (!nomeFantasia && j.nomeFantasia) setNomeFantasia(j.nomeFantasia)
+      if (!email && j.email) setEmail(j.email)
+      if (!telefone && j.telefone) setTelefone(j.telefone)
+      if (!endereco) {
+        const partes = [
+          j.logradouro,
+          j.numero,
+          j.complemento,
+          j.bairro,
+          j.cep ? `CEP ${j.cep}` : null,
+        ].filter(Boolean)
+        if (partes.length > 0) setEndereco(partes.join(', '))
+      }
+      if (!cidade && j.municipio) setCidade(j.municipio)
+      if (!uf && j.uf) setUf(j.uf)
+    } catch (err) {
+      console.error('cnpj lookup failed', err)
+    } finally {
+      setCnpjLookingUp(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
     if (!razaoSocial.trim()) {
       setError('Razão social é obrigatória')
+      return
+    }
+
+    if (cnpj && cnpj.replace(/\D/g, '').length > 0 && !isValidCNPJ(cnpj)) {
+      setError('CNPJ inválido')
       return
     }
 
@@ -289,10 +346,15 @@ export function FornecedorForm({
                 onChange={(e) => setNomeFantasia(e.target.value)}
               />
               <Input
-                label="CNPJ"
+                label={cnpjLookingUp ? 'CNPJ · consultando…' : 'CNPJ'}
                 placeholder="00.000.000/0000-00"
                 value={cnpj}
-                onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                onChange={(e) => {
+                  setCnpj(maskCNPJ(e.target.value))
+                  if (cnpjFieldError) setCnpjFieldError(null)
+                }}
+                onBlur={handleCnpjBlur}
+                error={cnpjFieldError || undefined}
               />
             </div>
           </section>
