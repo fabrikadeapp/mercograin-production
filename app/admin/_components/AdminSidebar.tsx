@@ -43,6 +43,7 @@ const NAV_ITEMS: readonly NavItem[] = [
     icon: Activity,
     label: 'Operacional',
   },
+  { href: '/admin/cotacoes', icon: Activity, label: 'Fontes cotação' },
   { href: '/admin/infra', icon: Server, label: 'Infraestrutura' },
   { href: '/admin/backups', icon: HardDriveDownload, label: 'Backups' },
 ] as const

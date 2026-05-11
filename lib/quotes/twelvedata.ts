@@ -13,26 +13,12 @@
  * Para preços brasileiros oficiais use lib/quotes/cepea.ts.
  */
 
+import type { QuoteLabel, LiveQuote } from './types'
+
 const API_BASE = 'https://api.twelvedata.com'
 const API_KEY = process.env.TWELVEDATA_API_KEY || ''
 
-export type QuoteLabel = 'soja' | 'milho' | 'trigo' | 'usdbrl'
-
-export interface LiveQuote {
-  symbol: string
-  label: QuoteLabel
-  price: number | null
-  open: number | null
-  high: number | null
-  low: number | null
-  previousClose: number | null
-  changeAbs: number | null
-  changePct: number | null
-  currency: string
-  exchangeName: string | null
-  marketState: string | null
-  fetchedAt: string
-}
+export type { QuoteLabel, LiveQuote }
 
 interface SymbolConfig {
   symbol: string
@@ -97,10 +83,8 @@ interface TwelveDataQuote {
   message?: string
 }
 
-export interface TimeseriesPoint {
-  datetime: string
-  close: number
-}
+export type { TimeseriesPoint } from './types'
+import type { TimeseriesPoint } from './types'
 
 /**
  * Fetch quote bruto com cache. Retorna null se rate-limit, erro ou sem chave.

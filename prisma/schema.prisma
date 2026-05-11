@@ -2719,3 +2719,14 @@ model CenarioCalculadora {
 
   @@index([workspaceId, userId])
 }
+
+/// Configuração global do sistema — key/value JSON.
+/// Usado pelo super-admin para flags que afetam o sistema inteiro (ex.: fonte
+/// primária de cotações, fallbacks, etc.). NÃO confundir com Workspace settings.
+model SystemConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
