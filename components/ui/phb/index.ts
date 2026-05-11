@@ -27,6 +27,8 @@ export * from './data/DemandList'
 export * from './data/NewsItem'
 export * from './data/AlertItem'
 export * from './data/MapPlaceholder'
+export * from './data/WorldMap'
+export * from './data/RiskBadge'
 
 // Feedback
 export * from './feedback/EmptyState'

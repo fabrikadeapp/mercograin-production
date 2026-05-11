@@ -17,6 +17,8 @@ export default async function Page() {
         eyebrow="Mesa · Pipeline futuros"
         title="Contratos Futuros"
         subtitle="Book próprio agregado por vencimento · B3 + CBOT"
+        search={false}
+        showBell={false}
         actions={
           <Link href="/futuros/novo">
             <Button leftIcon={<Plus className="h-4 w-4" />}>Novo contrato futuro</Button>

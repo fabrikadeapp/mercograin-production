@@ -55,7 +55,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : leftIcon}
-        {variant !== 'icon' && children}
+        {children}
         {rightIcon && !loading ? rightIcon : null}
       </button>
     )

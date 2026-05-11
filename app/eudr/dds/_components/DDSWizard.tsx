@@ -46,7 +46,23 @@ export function DDSWizard({ contratos, operadorDefault }: Props) {
     setForm((f) => ({ ...f, [k]: v }))
   }
 
+  function validate(): string | null {
+    if (!form.operadorNome?.trim()) return 'Informe a Razão Social do operador (passo 1).'
+    if (!form.operadorCnpj?.trim()) return 'Informe o CNPJ do operador (passo 1).'
+    if (!form.cultura?.trim()) return 'Selecione a cultura (passo 2).'
+    if (!form.ncm?.trim()) return 'Informe o código NCM (passo 2).'
+    const t = Number(form.qtdToneladas)
+    if (!Number.isFinite(t) || t <= 0)
+      return 'Informe a quantidade em toneladas (passo 2) — deve ser maior que zero.'
+    return null
+  }
+
   async function submit() {
+    const v = validate()
+    if (v) {
+      setErr(v)
+      return
+    }
     setSubmitting(true)
     setErr(null)
     try {
@@ -195,10 +211,28 @@ export function DDSWizard({ contratos, operadorDefault }: Props) {
           <p className="text-xs text-zinc-500 mt-2">
             Após criar, atestação e geração de PDF estarão disponíveis no detalhe.
           </p>
+          {validate() && (
+            <p className="text-small mt-3" style={{ color: 'var(--warn)' }}>
+              ⚠ {validate()}
+            </p>
+          )}
         </div>
       )}
 
-      {err ? <p className="text-xs text-red-400 mt-3">{err}</p> : null}
+      {err ? (
+        <div
+          className="mt-4 rounded-md px-4 py-3 text-small"
+          style={{
+            background: 'rgba(211, 47, 47, 0.10)',
+            border: '1px solid rgba(211, 47, 47, 0.30)',
+            color: 'var(--neg)',
+          }}
+          role="alert"
+        >
+          <strong className="font-semibold">Não foi possível criar a DDS:</strong>{' '}
+          {err}
+        </div>
+      ) : null}
 
       <div className="flex justify-between mt-6">
         <Button variant="ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>

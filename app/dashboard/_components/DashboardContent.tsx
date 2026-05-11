@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react'
-import { MoreHorizontal, Plus, Minus, Inbox, Truck } from 'lucide-react'
+import { MoreHorizontal, Inbox, Truck } from 'lucide-react'
 import Link from 'next/link'
 import {
   Card,
@@ -14,9 +14,9 @@ import {
   ProgressBar,
   DemandList,
   DenseTable,
-  PipRow,
+  RiskBadge,
   IconButton,
-  MapPlaceholder,
+  WorldMap,
   EmptyState,
   Skeleton,
   ErrorBanner,
@@ -293,7 +293,7 @@ export function DashboardContent() {
         </div>
       ),
     },
-    { key: 'risco', header: 'RISCO', accessor: (r) => <PipRow level={r.risco} size="sm" />, align: 'left' },
+    { key: 'risco', header: 'RISCO', accessor: (r) => <RiskBadge level={r.risco} />, align: 'left' },
     { key: 'valor', header: 'VALOR', accessor: (r) => <span className="t-num text-fg-1">{r.valor}</span>, align: 'right', isNumeric: true },
   ]
 
@@ -405,11 +405,7 @@ export function DashboardContent() {
           <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
             <DemandList items={demand} />
             <div className="relative">
-              <MapPlaceholder size={192} />
-              <div className="absolute bottom-2 right-2 flex flex-col gap-1">
-                <IconButton aria-label="Aproximar"><Plus className="h-3.5 w-3.5" /></IconButton>
-                <IconButton aria-label="Afastar"><Minus className="h-3.5 w-3.5" /></IconButton>
-              </div>
+              <WorldMap size={240} />
             </div>
           </div>
           <a href="#" className="mt-5 inline-block text-accent text-small hover:underline">Ver todos os destinos →</a>

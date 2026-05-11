@@ -10,6 +10,7 @@ import {
   Button,
   EmptyState,
   Skeleton,
+  SearchField,
 } from '@/components/ui/phb'
 
 interface Futuro {
@@ -64,9 +65,29 @@ function fmtVol(sc: number): string {
 export function FuturosContent() {
   const [grao, setGrao] = React.useState('')
   const [status, setStatus] = React.useState('ativo')
+  const [query, setQuery] = React.useState('')
   const [data, setData] = React.useState<Futuro[]>([])
   const [loading, setLoading] = React.useState(true)
   const [total, setTotal] = React.useState(0)
+
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return data
+    return data.filter((f) => {
+      const hay = [
+        f.grao,
+        f.lado,
+        f.codigoVenc ?? '',
+        f.praca ?? '',
+        f.observacao ?? '',
+        f.cliente?.nome ?? '',
+        fmtVencimento(f.vencimento).label,
+      ]
+        .join(' ')
+        .toLowerCase()
+      return hay.includes(q)
+    })
+  }, [data, query])
 
   const fetchData = React.useCallback(async () => {
     setLoading(true)
@@ -99,6 +120,12 @@ export function FuturosContent() {
 
   return (
     <div className="space-y-4">
+      <SearchField
+        placeholder="Buscar por grão, vencimento, praça, cliente…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        shortcut=""
+      />
       <Card className="p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Tabs
@@ -114,7 +141,10 @@ export function FuturosContent() {
             onChange={(v) => setStatus(v)}
             size="sm"
           />
-          <span className="ml-auto text-fg-3 text-small">{total} {total === 1 ? 'contrato' : 'contratos'}</span>
+          <span className="ml-auto text-fg-3 text-small">
+            {filtered.length}
+            {query ? ` de ${total}` : ''} {filtered.length === 1 ? 'contrato' : 'contratos'}
+          </span>
         </div>
       </Card>
 
@@ -123,11 +153,11 @@ export function FuturosContent() {
           <div className="p-6 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={40} />)}
           </div>
-        ) : data.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="p-12">
             <EmptyState
-              title="Sem contratos futuros"
-              description="Adicione seu primeiro contrato futuro para começar a montar o book."
+              title={query ? 'Nada encontrado' : 'Sem contratos futuros'}
+              description={query ? `Nenhum contrato corresponde a "${query}".` : 'Adicione seu primeiro contrato futuro para começar a montar o book.'}
               cta={
                 <Link href="/futuros/novo">
                   <Button leftIcon={<Plus className="h-4 w-4" />}>Novo contrato</Button>
@@ -150,7 +180,7 @@ export function FuturosContent() {
               </tr>
             </thead>
             <tbody>
-              {data.map((f) => {
+              {filtered.map((f) => {
                 const v = fmtVencimento(f.vencimento)
                 const preco = Number(f.precoSc)
                 const total = preco * f.volumeSc

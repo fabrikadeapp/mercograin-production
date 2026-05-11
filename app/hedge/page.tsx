@@ -102,16 +102,31 @@ export default async function HedgeHubPage() {
                 }
           }
         />
-        <KPICard
-          eyebrow="Exposição USD não-hedgeada"
-          value={fmtUSD(Math.max(0, exposicao.exposicaoLiquidaUSD))}
-          subtitle={`${(exposicao.hedgeRatio * 100).toFixed(0)}% coberto`}
-          delta={
-            exposicao.alertaSubExposto
-              ? { value: 'sub-exposto', trend: 'neg' }
-              : undefined
-          }
-        />
+        <Card className="p-5 space-y-3">
+          <p className="eyebrow">Exposição USD</p>
+          <p className="t-num-lg text-fg-1">
+            {fmtUSD(Math.max(0, exposicao.exposicaoLiquidaUSD))}
+          </p>
+          <p className="text-small text-fg-3">
+            {(exposicao.hedgeRatio * 100).toFixed(0)}% coberto
+          </p>
+          {exposicao.alertaSubExposto && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5 text-micro font-medium"
+              style={{
+                background: 'rgba(211, 47, 47, 0.10)',
+                color: 'var(--neg)',
+              }}
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-pill"
+                style={{ background: 'var(--neg)' }}
+                aria-hidden
+              />
+              Sub-exposto
+            </span>
+          )}
+        </Card>
         <KPICard eyebrow="NDF ativos" value={String(ndfsAtivos)} />
       </div>
 
