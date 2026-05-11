@@ -1,7 +1,15 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Urbanist } from 'next/font/google'
 import './globals.css'
+
+const urbanist = Urbanist({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-urbanist',
+  weight: ['300', '400', '500', '600', '700'],
+})
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProviderClient } from '@/contexts/SessionProviderClient'
 
@@ -67,7 +75,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport = {
-  themeColor: '#0a8a3a',
+  themeColor: '#0F7305',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -81,8 +89,8 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      data-palette="pulse"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      data-palette="synthex"
+      className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable}`}
     >
       <body className="bg-bg-0 text-fg-1 font-sans antialiased min-h-screen">
         <SessionProviderClient>

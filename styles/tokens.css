@@ -209,6 +209,95 @@
   --shadow-glow: 0 0 0 1px rgba(74, 222, 154, 0.28), 0 8px 32px -8px var(--accent-glow);
 }
 
+/* ---------- Synthex (light glassmorphic, baseado no Synthex UI Dribbble) ---------- */
+[data-palette="synthex"],
+:root[data-palette="synthex"] {
+  /* Backgrounds — gradient water suave */
+  --bg-0: #E8EEF0;
+  --bg-1: rgba(255, 255, 255, 0.65);
+  --bg-2: rgba(255, 255, 255, 0.85);
+  --bg-3: #FFFFFF;
+  --bg-inset: #D4DCDE;
+
+  /* Foregrounds — teal deep */
+  --fg-1: #1B4D5B;
+  --fg-2: rgba(27, 77, 91, 0.72);
+  --fg-3: rgba(27, 77, 91, 0.55);
+  --fg-4: rgba(27, 77, 91, 0.38);
+
+  /* Accent — green deep */
+  --accent: #0F7305;
+  --accent-ink: #FFFFFF;
+  --accent-glow: rgba(15, 115, 5, 0.25);
+
+  /* Semantic */
+  --pos: #0F7305;
+  --neg: #D32F2F;
+  --warn: #E89F2A;
+  --info: #1B4D5B;
+
+  /* Grain Tokens (mantidos similar, adaptados pro light) */
+  --grain-soja: #8FA854;
+  --grain-milho: #C9931E;
+  --grain-trigo: #B86839;
+  --grain-usd: #2A8973;
+
+  /* Radius — pill dominante (DESIGN.md §5) */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+
+  /* Spacing — mantido base 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+
+  /* Shadows — glass cards do DESIGN.md §6 */
+  --shadow-card: 0 1px 2px rgba(22, 34, 68, 0.04), 0 4px 16px rgba(22, 34, 68, 0.06);
+  --shadow-pop: 0 4px 8px rgba(22, 34, 68, 0.08), 0 16px 32px rgba(22, 34, 68, 0.10);
+  --shadow-glow: 0 0 0 1px rgba(15, 115, 5, 0.20), 0 8px 24px -8px var(--accent-glow);
+  --shadow-floating: 0 24px 48px rgba(22, 34, 68, 0.18);
+
+  /* Borders — sutis (vidro) */
+  --border-1: rgba(22, 34, 68, 0.08);
+  --border-2: rgba(22, 34, 68, 0.14);
+
+  /* Typography — Urbanist */
+  --font-sans: var(--font-urbanist), 'Urbanist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Glass effect helpers */
+  --blur-glass: blur(16px);
+  --bg-app-gradient: linear-gradient(180deg, #E8EEF0 0%, #D4DCDE 100%);
+}
+
+/* Aplica fundo gradiente em html/body quando palette=synthex */
+:root[data-palette="synthex"] body,
+html[data-palette="synthex"] body {
+  background: var(--bg-app-gradient);
+  background-attachment: fixed;
+  color: var(--fg-1);
+}
+
+/* Glass card utility */
+.glass-card {
+  background: var(--bg-1);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
 /* Numerals: tabular + alt stylistic set */
 .font-mono,
 [class*="font-mono"] {
