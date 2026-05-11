@@ -1,57 +1,63 @@
 import Link from 'next/link'
-import { Button } from '@/components/ui/phb'
 import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-border-1 bg-bg-0">
-      {/* glow ambient */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 h-[600px] w-[900px] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
-        style={{
-          background:
-            'radial-gradient(circle, var(--accent) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="relative mx-auto flex min-h-[80vh] max-w-7xl flex-col items-center justify-center px-4 py-24 text-center md:px-8 md:py-32">
-        <p className="eyebrow mb-6 text-fg-3">
-          TRADING DE GRÃOS · MESA DE OPERAÇÕES
-        </p>
-
-        <h1 className="max-w-4xl font-sans text-[40px] font-semibold leading-[1.05] tracking-[-0.03em] text-fg-1 sm:text-[56px]">
-          Toda sua mesa de operações{' '}
-          <span className="text-accent">em um só lugar</span>.
+    <section className="relative isolate overflow-hidden bg-bg-0">
+      <div className="relative mx-auto flex min-h-[88vh] max-w-7xl flex-col items-center px-4 pt-20 pb-0 md:px-8 md:pt-28">
+        <h1 className="max-w-5xl text-center font-sans text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] text-fg-1 sm:text-[64px] md:text-[80px]">
+          Sua{' '}
+          <span style={{ color: 'var(--accent)' }}>mesa de operações</span>
+          <br className="hidden sm:inline" />
+          {' '}em tempo real.
         </h1>
 
-        <p className="mt-6 max-w-[60ch] text-body text-fg-2">
-          Cotações ao vivo CEPEA, contratos, fluxo de caixa, WhatsApp Bot e
-          relatórios — desenhados para tradings que precisam de precisão
-          financeira e controle total da safra.
+        <p className="mt-8 max-w-[60ch] text-center text-body text-fg-2 sm:text-h3 sm:leading-snug">
+          Cotações ao vivo CEPEA, contratos digitais, fluxo de caixa e
+          WhatsApp Bot — a precisão que sua corretora de grãos precisa para
+          operar a safra inteira.
         </p>
 
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-          <Link href="/auth/signup?plan=pro">
-            <Button variant="primary" size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>
-              Iniciar trial grátis · 10 dias
-            </Button>
+        <div className="mt-10">
+          <Link
+            href="/auth/signup?plan=pro"
+            className="inline-flex items-center gap-2 rounded-pill px-8 py-4 text-body font-medium shadow-lg transition-all hover:shadow-xl"
+            style={{
+              background: 'var(--accent)',
+              color: 'var(--accent-ink)',
+            }}
+          >
+            Começar trial grátis
+            <ArrowRight className="h-4 w-4" />
           </Link>
-          <a href="#demo">
-            <Button variant="ghost" size="lg">Ver demonstração</Button>
-          </a>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-small text-fg-3">
-          <span className="t-num text-fg-2">+312 contratos/mês ativos</span>
-          <span className="text-border-2">·</span>
-          <span className="t-num text-fg-2">R$ 18,4M em negociação</span>
-          <span className="text-border-2">·</span>
-          <span>CEPEA</span>
-          <span className="text-border-2">·</span>
-          <span>ESALQ</span>
-          <span className="text-border-2">·</span>
-          <span>B3</span>
+        {/* Imagem full-bleed: campo de grãos brasileiro */}
+        <div
+          className="relative mt-16 w-screen left-1/2 -translate-x-1/2 overflow-hidden"
+          style={{ height: 'clamp(320px, 50vh, 560px)' }}
+        >
+          <picture>
+            <source
+              media="(min-width: 1024px)"
+              srcSet="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=2400&q=80"
+            />
+            <img
+              src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1600&q=80"
+              alt="Plantação de soja no Brasil"
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+            />
+          </picture>
+          {/* fade superior pra blending com fundo */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-24"
+            style={{
+              background:
+                'linear-gradient(180deg, var(--bg-0) 0%, transparent 100%)',
+            }}
+          />
         </div>
       </div>
     </section>
