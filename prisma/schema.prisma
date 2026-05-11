@@ -5,8 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -149,6 +150,19 @@ model Workspace {
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
+
+  /// AI provider — 'managed' = usa chave da plataforma (faturado via licença)
+  /// 'byok' = cliente traz própria chave OpenAI (mais barato, ele paga consumo).
+  /// Default 'managed' — super-admin libera 'byok' para planos Enterprise.
+  aiMode String @default("managed")
+
+  /// Chave OpenAI do cliente quando aiMode='byok' — criptografada AES-256-GCM
+  aiKeyEncrypted String? @db.Text
+  aiKeyIv        String?
+  aiKeyTag       String?
+
+  /// Modelo OpenAI preferido (default gpt-4o-mini)
+  aiModel String @default("gpt-4o-mini")
 
   onboardingCompletedAt DateTime?
 
@@ -785,6 +799,13 @@ model Plan {
   includedMembers        Int     @default(1)
   extraMemberPriceCents  Int     @default(15000)
   stripeExtraSeatPriceId String?
+
+  /// Disponibilidade do agente AI no plano:
+  /// 'none' = sem AI; 'managed' = AI com chave da plataforma (limites por plano);
+  /// 'byok_allowed' = AI managed + opcional cliente trazer chave própria (Enterprise)
+  aiAccess           String @default("none")
+  /// Limite de mensagens AI / mês quando aiAccess='managed' (0 = ilimitado)
+  aiMonthlyMessages  Int    @default(0)
 
   features  PlanFeature[]
   createdAt DateTime      @default(now())

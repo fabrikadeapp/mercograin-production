@@ -1,8 +1,56 @@
+import Link from 'next/link'
+import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import { AppShell, PageHeader } from '@/components/ui/phb'
+import { Image as ImageIcon, Sparkles } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-export default function ConfiguracoesPage() {
-  // Por ora a única seção de configuração é Marca/Logo.
-  redirect('/configuracoes/marca')
+const SECTIONS = [
+  {
+    href: '/configuracoes/marca',
+    title: 'Marca & Logo',
+    description: 'Logo da empresa exibida em PDFs (contratos, propostas, boletos).',
+    icon: ImageIcon,
+  },
+  {
+    href: '/configuracoes/ai',
+    title: 'Agente AI',
+    description:
+      'Configure o modo (gerenciado ou BYOK), modelo OpenAI e chave própria para o agente AI.',
+    icon: Sparkles,
+  },
+]
+
+export default async function ConfiguracoesPage() {
+  const session = await auth()
+  if (!session?.user) redirect('/auth/login')
+
+  return (
+    <AppShell>
+      <PageHeader
+        eyebrow="Configurações"
+        title="Configurações da workspace"
+        subtitle="Personalize identidade visual e integrações para esta workspace."
+        search={false}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+        {SECTIONS.map(({ href, title, description, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex items-start gap-4 p-5 rounded-lg border border-gray-200 bg-white hover:border-[#0a8a3a] hover:shadow-sm transition"
+          >
+            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-emerald-50 text-[#0a8a3a] flex items-center justify-center group-hover:bg-emerald-100 transition">
+              <Icon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-gray-900 mb-1">{title}</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">{description}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </AppShell>
+  )
 }

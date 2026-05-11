@@ -277,7 +277,7 @@ function UserMenu() {
               <p className="text-micro text-fg-3 truncate">{session?.user?.email}</p>
             </div>
             <Link
-              href="/configuracoes/marca"
+              href="/configuracoes"
               className="flex items-center gap-2 px-3 py-2 text-small text-fg-1 hover:bg-bg-2 transition"
               onClick={() => setOpen(false)}
             >
