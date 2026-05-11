@@ -35,10 +35,33 @@ module.exports = {
 
         'border-1': 'var(--border-1)',
         'border-2': 'var(--border-2)',
+
+        // ===== VisionGlass tokens (namespace paralelo) =====
+        'vg-bg': 'var(--vg-bg-surface)',
+        'vg-bg-scrim': 'var(--vg-bg-scrim)',
+        'vg-card': 'var(--vg-glass-card)',
+        'vg-card-hover': 'var(--vg-glass-card-hover)',
+        'vg-dock': 'var(--vg-glass-dock)',
+        'vg-fg': 'var(--vg-fg-primary)',
+        'vg-fg-2': 'var(--vg-fg-secondary)',
+        'vg-fg-3': 'var(--vg-fg-tertiary)',
+        'vg-fg-4': 'var(--vg-fg-quaternary)',
+        'vg-accent': 'var(--vg-accent-primary)',
+        'vg-accent-hover': 'var(--vg-accent-primary-hover)',
+        'vg-accent-muted': 'var(--vg-accent-primary-muted)',
+        'vg-destructive': 'var(--vg-accent-destructive)',
+        'vg-success': 'var(--vg-accent-success)',
+        'vg-warning': 'var(--vg-accent-warning)',
       },
       borderColor: {
         'border-1': 'var(--border-1)',
         'border-2': 'var(--border-2)',
+        'vg-border': 'var(--vg-glass-card-border)',
+        'vg-border-strong': 'var(--vg-glass-card-border-strong)',
+      },
+      backdropBlur: {
+        'vg-card': '32px',
+        'vg-dock': '40px',
       },
       borderRadius: {
         xs: 'var(--r-xs)',
@@ -47,6 +70,9 @@ module.exports = {
         lg: 'var(--r-lg)',
         xl: 'var(--r-xl)',
         pill: 'var(--r-pill)',
+        'vg-card': 'var(--vg-radius-card)',
+        'vg-button': 'var(--vg-radius-button)',
+        'vg-dock': 'var(--vg-radius-dock)',
       },
       spacing: {
         1: 'var(--space-1)',
@@ -63,6 +89,11 @@ module.exports = {
         card: 'var(--shadow-card)',
         pop: 'var(--shadow-pop)',
         glow: 'var(--shadow-glow)',
+        'vg-card': 'var(--vg-shadow-card)',
+        'vg-card-elevated': 'var(--vg-shadow-card-elevated)',
+        'vg-dock': 'var(--vg-shadow-dock)',
+        'vg-focus': 'var(--vg-shadow-focus)',
+        'vg-glow': 'var(--vg-shadow-glow)',
       },
       fontFamily: {
         sans: 'var(--font-sans)',
@@ -76,6 +107,17 @@ module.exports = {
         body: ['14px', { lineHeight: '1.5', letterSpacing: '0' }],
         small: ['12.5px', { lineHeight: '1.45', letterSpacing: '0.005em' }],
         micro: ['11px', { lineHeight: '1.4', letterSpacing: '0.04em' }],
+
+        // ===== VisionGlass type scale =====
+        'vg-display-xl': ['64px', { lineHeight: '1.04', letterSpacing: '-0.025em', fontWeight: '700' }],
+        'vg-display-lg': ['48px', { lineHeight: '1.08', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'vg-h1':         ['32px', { lineHeight: '1.15', letterSpacing: '-0.015em', fontWeight: '700' }],
+        'vg-h2':         ['24px', { lineHeight: '1.20', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'vg-h3':         ['20px', { lineHeight: '1.30', letterSpacing: '-0.005em', fontWeight: '600' }],
+        'vg-body':       ['15px', { lineHeight: '1.47' }],
+        'vg-label':      ['13px', { lineHeight: '1.30', fontWeight: '500' }],
+        'vg-caption':    ['11px', { lineHeight: '1.36', letterSpacing: '0.01em', fontWeight: '500' }],
+        'vg-metric':     ['28px', { lineHeight: '1.10', letterSpacing: '-0.02em', fontWeight: '600' }],
       },
     },
   },

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VisionGlass — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vg-bg-surface: #0E0F12;
+    --vg-bg-scrim: rgba(14,15,18,0.55);
+    --vg-bg-ambient: linear-gradient(135deg, #2A2620 0%, #1A1814 100%);
+    --vg-glass-card: rgba(28,28,32,0.62);
+    --vg-glass-card-hover: rgba(38,38,44,0.72);
+    --vg-glass-card-border: rgba(255,255,255,0.08);
+    --vg-glass-card-border-strong: rgba(255,255,255,0.14);
+    --vg-glass-dock: rgba(20,20,24,0.78);
+    --vg-glass-dock-border: rgba(255,255,255,0.10);
+    --vg-glass-pill-track: rgba(255,255,255,0.06);
+    --vg-fg-primary: #F5F5F7;
+    --vg-fg-secondary: rgba(235,235,245,0.72);
+    --vg-fg-tertiary: rgba(235,235,245,0.50);
+    --vg-fg-quaternary: rgba(235,235,245,0.30);
+    --vg-accent-primary: #0A84FF;
+    --vg-accent-primary-hover: #3B9DFF;
+    --vg-accent-primary-muted: rgba(10,132,255,0.16);
+    --vg-accent-destructive: #FF453A;
+    --vg-accent-success: #30D158;
+    --vg-shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.32);
+    --vg-shadow-dock: 0 12px 36px rgba(0,0,0,0.48), 0 1px 0 rgba(255,255,255,0.06) inset;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: var(--vg-bg-ambient);
+    color: var(--vg-fg-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(50,40,30,0.6), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(40,30,25,0.5), transparent 50%),
+      linear-gradient(135deg, #2A2620 0%, #1A1814 100%);
+    padding: 32px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+  /* Card primitivo */
+  .vg-card {
+    background: var(--vg-glass-card);
+    border: 1px solid var(--vg-glass-card-border);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--vg-shadow-card);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+  }
+  .vg-card--lg { padding: 24px; }
+  /* Welcome */
+  .welcome { grid-column: 1 / 13; padding: 12px 4px 16px 4px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .welcome .greet { font-size: 17px; color: var(--vg-fg-secondary); font-weight: 400; margin-bottom: 4px; }
+  .welcome h1 {
+    font-size: 64px; line-height: 1.04; font-weight: 700; letter-spacing: -0.025em;
+  }
+  .pill-segment {
+    display: inline-flex; background: var(--vg-glass-card);
+    border: 1px solid var(--vg-glass-card-border); border-radius: 999px;
+    padding: 4px;
+    backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  }
+  .pill-segment button {
+    padding: 8px 16px; border-radius: 999px; border: 0;
+    background: transparent; color: var(--vg-fg-secondary);
+    font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer;
+    transition: all 160ms cubic-bezier(0.34,1.56,0.64,1);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .pill-segment button.is-active {
+    background: var(--vg-glass-card-hover); color: var(--vg-fg-primary);
+  }
+  .avatar { width: 40px; height: 40px; border-radius: 999px; background: var(--vg-accent-primary-muted); display: inline-flex; align-items: center; justify-content: center; color: var(--vg-fg-primary); font-weight: 600; font-size: 14px; border: 1px solid var(--vg-glass-card-border); }
+  /* Hero card */
+  .card-hero { grid-column: 1 / 6; min-height: 280px; }
+  .card-leaves { grid-column: 6 / 10; min-height: 280px; }
+  .card-approval { grid-column: 10 / 13; min-height: 280px; }
+  .card-income { grid-column: 1 / 3; }
+  .card-expenses { grid-column: 3 / 6; }
+  .card-attendance { grid-column: 6 / 10; }
+  .card-forms { grid-column: 10 / 13; }
+  .card-msg { grid-column: 1 / 2; }
+  .card-hr { grid-column: 2 / 4; }
+  .card-add1 { grid-column: 4 / 6; }
+  .card-add2 { grid-column: 10 / 13; }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 17px; font-weight: 600; }
+  .card-action {
+    width: 32px; height: 32px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 0; color: var(--vg-fg-secondary); cursor: pointer;
+  }
+  .card-action:hover { background: var(--vg-glass-card-hover); color: var(--vg-fg-primary); }
+
+  /* Mark Attendance */
+  .attendance-meta { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .attendance-date { font-size: 20px; font-weight: 600; line-height: 1.3; display: flex; align-items: center; gap: 8px; }
+  .attendance-clock { font-size: 28px; font-weight: 600; font-feature-settings: 'tnum' 1; line-height: 1; letter-spacing: -0.02em; text-align: right; }
+  .attendance-clock-label { font-size: 12px; color: var(--vg-fg-tertiary); margin-top: 4px; text-align: right; }
+  .attendance-status { font-size: 13px; color: var(--vg-fg-secondary); display: flex; gap: 4px; align-items: center; }
+  .attendance-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
+  .vg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: 999px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: background 160ms; }
+  .vg-btn--primary { background: var(--vg-accent-primary); color: white; }
+  .vg-btn--primary:hover { background: var(--vg-accent-primary-hover); }
+  .vg-btn--secondary { background: var(--vg-glass-card-hover); color: var(--vg-fg-primary); }
+  .vg-btn--destructive-text { grid-column: 1 / 3; background: transparent; color: var(--vg-accent-destructive); padding: 12px; }
+  .vg-btn--destructive-text:hover { background: var(--vg-accent-destructive); color: white; opacity: 0.9; }
+
+  /* Leaves Summary */
+  .leaves-year { font-size: 32px; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 16px; }
+  .leaves-list { display: flex; flex-direction: column; gap: 14px; }
+  .leave-row { display: flex; flex-direction: column; gap: 4px; }
+  .leave-label { font-size: 12px; color: var(--vg-fg-tertiary); }
+  .progress-pill {
+    position: relative; height: 28px; border-radius: 999px;
+    background: var(--vg-glass-pill-track); overflow: hidden;
+    display: flex; align-items: center; padding: 0 12px; gap: 8px;
+    font-size: 13px; font-weight: 600; font-feature-settings: 'tnum' 1;
+  }
+  .progress-fill { position: absolute; inset: 0; background: var(--vg-accent-primary-muted); transform-origin: left; }
+  .progress-fill.is-warn { background: rgba(255,159,10,0.20); }
+  .progress-pill > .indicator { width: 16px; height: 16px; border-radius: 999px; background: var(--vg-accent-primary); position: relative; z-index: 1; flex-shrink: 0; }
+  .progress-pill > .indicator.is-warn { background: var(--vg-accent-warning); }
+  .progress-pill > .indicator.is-success { background: var(--vg-accent-success); }
+  .progress-pill > .value { position: relative; z-index: 1; }
+  .add-circle { width: 28px; height: 28px; border-radius: 999px; background: var(--vg-accent-primary); display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 18px; cursor: pointer; margin-left: auto; border: 0; }
+
+  /* Approval list */
+  .approval-list { display: flex; flex-direction: column; gap: 12px; }
+  .approval-row { display: flex; align-items: center; gap: 12px; }
+  .approval-avatar { width: 40px; height: 40px; border-radius: 999px; background: var(--vg-accent-primary-muted); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+  .approval-info { flex: 1; min-width: 0; }
+  .approval-name { font-size: 14px; font-weight: 600; }
+  .approval-meta { font-size: 12px; color: var(--vg-fg-tertiary); }
+  .approval-actions { display: flex; gap: 4px; align-items: center; }
+  .btn-approve { background: var(--vg-glass-card-hover); color: var(--vg-fg-primary); border: 0; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-decline { width: 24px; height: 24px; border-radius: 999px; border: 0; background: transparent; color: var(--vg-accent-destructive); cursor: pointer; font-size: 16px; }
+
+  /* Income / Expenses */
+  .stat-delta { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .stat-delta.pos { color: var(--vg-accent-success); background: rgba(48,209,88,0.10); }
+  .stat-delta.neg { color: var(--vg-accent-destructive); background: rgba(255,69,58,0.10); }
+  .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .stat-row-label { font-size: 12px; color: var(--vg-fg-tertiary); }
+  .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; font-feature-settings: 'tnum' 1; }
+  .stat-value .currency { color: var(--vg-fg-tertiary); margin-right: 4px; }
+
+  /* Attendance Summary */
+  .att-bar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .att-bar { height: 8px; border-radius: 999px; background: var(--vg-glass-pill-track); overflow: hidden; margin-bottom: 8px; }
+  .att-bar > div { height: 100%; border-radius: inherit; }
+  .att-bar > .blue { background: var(--vg-accent-primary); }
+  .att-bar > .red { background: var(--vg-accent-destructive); }
+  .att-figure { font-size: 32px; font-weight: 600; letter-spacing: -0.02em; font-feature-settings: 'tnum' 1; }
+  .att-figure-meta { display: flex; align-items: center; justify-content: space-between; }
+  .att-figure-label { font-size: 12px; color: var(--vg-fg-tertiary); }
+  .att-figure-trend { font-size: 12px; color: var(--vg-accent-success); font-weight: 500; }
+  .att-figure-trend.neg { color: var(--vg-accent-destructive); }
+  .att-row { margin-bottom: 20px; }
+  .att-row:last-child { margin-bottom: 0; }
+  .att-pct { font-size: 12px; font-weight: 600; }
+  .att-pct.pos { color: var(--vg-accent-success); }
+  .att-pct.neg { color: var(--vg-accent-destructive); }
+
+  /* Forms card */
+  .form-select { background: transparent; border: 1px solid var(--vg-glass-card-border); border-radius: 999px; padding: 10px 16px; color: var(--vg-fg-secondary); font-size: 13px; width: 100%; margin-bottom: 12px; font-family: inherit; }
+  .form-cta { width: 100%; }
+
+  /* Small cards */
+  .small-card-label { font-size: 12px; color: var(--vg-fg-tertiary); margin-bottom: 4px; }
+  .small-card-value { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; font-feature-settings: 'tnum' 1; }
+  .badge-approved { font-size: 11px; color: var(--vg-accent-success); font-weight: 500; margin-left: 8px; }
+
+  /* Add widget */
+  .add-widget {
+    border: 2px dashed var(--vg-glass-card-border-strong);
+    border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: var(--vg-fg-tertiary); min-height: 100px; cursor: pointer;
+    transition: border-color 240ms, color 240ms;
+  }
+  .add-widget:hover { border-color: var(--vg-fg-secondary); color: var(--vg-fg-secondary); }
+  .add-widget .plus { font-size: 24px; line-height: 1; }
+  .add-widget .label { font-size: 13px; }
+
+  /* Dock */
+  .dock-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50; }
+  .vg-dock {
+    display: inline-flex; gap: 4px; padding: 8px;
+    background: var(--vg-glass-dock); border: 1px solid var(--vg-glass-dock-border);
+    border-radius: 32px; box-shadow: var(--vg-shadow-dock);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+  }
+  .dock-item {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px;
+    border-radius: 999px; color: var(--vg-fg-secondary); font-size: 13px; font-weight: 500;
+    background: transparent; border: 0; cursor: pointer; font-family: inherit;
+    transition: color 160ms, background 160ms;
+  }
+  .dock-item:hover { color: var(--vg-fg-primary); }
+  .dock-item.is-active { color: var(--vg-fg-primary); background: var(--vg-glass-card-hover); }
+  .dock-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+
+  .ico { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+
+  body { padding-bottom: 120px; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Welcome -->
+    <section class="welcome">
+      <div>
+        <div class="greet">Welcome Back,</div>
+        <h1>Ibrahim Memon</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="pill-segment">
+          <button>Today</button>
+          <button class="is-active">This month</button>
+          <button>📅 Date</button>
+        </div>
+        <div class="avatar">IM</div>
+      </div>
+    </section>
+
+    <!-- Mark Attendance -->
+    <article class="vg-card vg-card--lg card-hero">
+      <div class="card-header">
+        <div class="card-title">Mark Attendance</div>
+        <div class="pill-segment" style="margin-left: auto; margin-right: 8px;">
+          <button class="is-active">Work From Home</button>
+          <button>Office</button>
+        </div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="attendance-meta">
+        <div>
+          <div class="attendance-date">📅 June, Thursday 17</div>
+          <div style="margin-top: 12px;">
+            <div class="attendance-status">📍 Blue Cube Head Office</div>
+            <div class="attendance-status" style="margin-top: 4px;">🕒 You Clocked In 12:40 AM</div>
+          </div>
+        </div>
+        <div>
+          <div class="attendance-clock">00:52:03</div>
+          <div class="attendance-clock-label">Work Hours</div>
+        </div>
+      </div>
+      <div class="attendance-actions">
+        <button class="vg-btn vg-btn--primary">Out for Lunch</button>
+        <button class="vg-btn vg-btn--secondary">Out for Break</button>
+        <button class="vg-btn vg-btn--destructive-text">⏏ Clock Out</button>
+      </div>
+    </article>
+
+    <!-- Leaves Summary -->
+    <article class="vg-card card-leaves">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Leaves Summary</div>
+        </div>
+        <div style="color: var(--vg-fg-tertiary); font-size: 12px;">This year</div>
+      </div>
+      <div class="leaves-year">2024</div>
+      <div class="leaves-list">
+        <div class="leave-row">
+          <div class="leave-label">Annual Leave</div>
+          <div class="progress-pill"><div class="progress-fill" style="width: 100%;"></div><div class="indicator is-success"></div><span class="value">15/15</span></div>
+        </div>
+        <div class="leave-row">
+          <div class="leave-label">Unpaid Leave</div>
+          <div class="progress-pill"><div class="progress-fill" style="width: 80%;"></div><div class="indicator"></div><span class="value">12/15</span></div>
+        </div>
+        <div class="leave-row">
+          <div class="leave-label">Sick Leave</div>
+          <div class="progress-pill"><div class="progress-fill is-warn" style="width: 62%;"></div><div class="indicator is-warn"></div><span class="value">5/8</span></div>
+        </div>
+        <div class="leave-row">
+          <div class="leave-label">Casual Leave</div>
+          <div class="progress-pill" style="padding-right: 4px;"><div class="progress-fill" style="width: 40%;"></div><div class="indicator"></div><span class="value">2/5</span><button class="add-circle">+</button></div>
+        </div>
+        <div class="leave-row">
+          <div class="leave-label">Bereavement Leave</div>
+          <div class="progress-pill"><div class="progress-fill" style="width: 33%;"></div><div class="indicator"></div><span class="value">1/3</span></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Waiting for Approval -->
+    <article class="vg-card card-approval">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Waiting For Approval</div>
+          <div style="font-size: 12px; color: var(--vg-fg-tertiary); margin-top: 2px;">5 Pending Approvals</div>
+        </div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="approval-list">
+        <div class="approval-row">
+          <div class="approval-avatar">VG</div>
+          <div class="approval-info">
+            <div class="approval-name">Valeria Garza</div>
+            <div class="approval-meta">Promotion · 24 min ago</div>
+          </div>
+          <div class="approval-actions">
+            <button class="btn-approve">Approve</button>
+            <button class="btn-decline">✕</button>
+          </div>
+        </div>
+        <div class="approval-row">
+          <div class="approval-avatar">MS</div>
+          <div class="approval-info">
+            <div class="approval-name">Marci Senter</div>
+            <div class="approval-meta">HR Letters · 1d ago</div>
+          </div>
+          <div class="approval-actions">
+            <button class="btn-approve">Approve</button>
+            <button class="btn-decline">✕</button>
+          </div>
+        </div>
+        <div class="approval-row">
+          <div class="approval-avatar">DR</div>
+          <div class="approval-info">
+            <div class="approval-name">Donal Roche</div>
+            <div class="approval-meta">Leave · 2d ago</div>
+          </div>
+          <div class="approval-actions">
+            <button class="btn-approve">Approve</button>
+            <button class="btn-decline">✕</button>
+          </div>
+        </div>
+        <div class="approval-row">
+          <div class="approval-avatar">FV</div>
+          <div class="approval-info">
+            <div class="approval-name">Feida Varnes</div>
+            <div class="approval-meta">Forms · 5w ago</div>
+          </div>
+          <div class="approval-actions">
+            <button class="btn-approve">Approve</button>
+            <button class="btn-decline">✕</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Income -->
+    <article class="vg-card card-income">
+      <div class="card-header">
+        <div class="card-title">Income</div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="stat-row">
+        <span class="stat-delta neg">↓ -7,2%</span>
+        <span class="stat-row-label">Higher</span>
+      </div>
+      <div class="stat-value"><span class="currency">$</span>12,800.00</div>
+    </article>
+
+    <!-- Expenses -->
+    <article class="vg-card card-expenses">
+      <div class="card-header">
+        <div class="card-title">Expenses</div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="stat-row">
+        <span class="stat-delta neg">↓ -12,2%</span>
+      </div>
+      <div class="stat-value"><span class="currency">$</span>2,800.00</div>
+    </article>
+
+    <!-- Attendance Summary -->
+    <article class="vg-card card-attendance">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Attendance Summary</div>
+          <div style="font-size: 12px; color: var(--vg-fg-tertiary); margin-top: 2px;">This Month</div>
+        </div>
+        <button class="card-action">+</button>
+      </div>
+      <div class="att-row">
+        <div class="att-bar-row">
+          <span class="att-pct" style="visibility: hidden;">.</span>
+          <span class="att-pct pos">80.2%</span>
+        </div>
+        <div class="att-bar"><div class="blue" style="width: 80.2%;"></div></div>
+        <div class="att-figure">6.75</div>
+        <div class="att-figure-meta">
+          <span class="att-figure-label">Avg Time Spent Hours</span>
+          <span class="att-figure-trend">↑ Higher</span>
+        </div>
+      </div>
+      <div class="att-row">
+        <div class="att-bar-row">
+          <span></span>
+          <span class="att-pct neg">12.4%</span>
+        </div>
+        <div class="att-bar"><div class="red" style="width: 12.4%;"></div></div>
+        <div class="att-figure">02</div>
+        <div class="att-figure-meta">
+          <span class="att-figure-label">Total Late (days)</span>
+          <span class="att-figure-trend neg">↑ 1 late remaning</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Forms -->
+    <article class="vg-card card-forms">
+      <div class="card-header">
+        <div class="card-title">Forms</div>
+        <button class="card-action">+</button>
+      </div>
+      <select class="form-select">
+        <option>Select Form</option>
+      </select>
+      <button class="vg-btn vg-btn--primary form-cta">Fill Form</button>
+    </article>
+
+    <!-- Messages -->
+    <article class="vg-card card-msg">
+      <div class="card-header">
+        <div class="card-title" style="font-size: 14px;">Messag...</div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="small-card-label">+2 Unread · Chat</div>
+      <div class="small-card-value">15</div>
+    </article>
+
+    <!-- HR Letters -->
+    <article class="vg-card card-hr">
+      <div class="card-header">
+        <div class="card-title">HR Letters</div>
+        <button class="card-action">↗</button>
+      </div>
+      <div class="small-card-label">Status</div>
+      <div class="small-card-value">21 <span class="badge-approved">Approved</span></div>
+    </article>
+
+    <!-- Add widget 1 -->
+    <article class="add-widget card-add1">
+      <div class="plus">+</div>
+      <div class="label">Add widget</div>
+    </article>
+
+    <!-- Add widget 2 -->
+    <article class="add-widget card-add2" style="min-height: 130px;">
+      <div class="plus">+</div>
+      <div class="label">Add widget</div>
+    </article>
+  </div>
+
+  <!-- Dock -->
+  <div class="dock-wrap">
+    <div class="vg-dock">
+      <button class="dock-item is-active"><span class="dock-icon">⌗</span> Dashboard</button>
+      <button class="dock-item"><span class="dock-icon">$</span> Expense</button>
+      <button class="dock-item"><span class="dock-icon">⏱</span> Timesheet</button>
+      <button class="dock-item"><span class="dock-icon">⚙</span> Settings</button>
+    </div>
+  </div>
+</body>
+</html>

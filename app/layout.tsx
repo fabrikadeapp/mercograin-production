@@ -12,6 +12,7 @@ const urbanist = Urbanist({
 })
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProviderClient } from '@/contexts/SessionProviderClient'
+import { getUiTheme } from '@/lib/ui/theme'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,15 +82,17 @@ export const viewport = {
   maximumScale: 5,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const theme = await getUiTheme().catch(() => 'phb' as const)
   return (
     <html
       lang="pt-BR"
       data-palette="synthex"
+      data-theme={theme}
       className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable}`}
     >
       <body className="bg-bg-0 text-fg-1 font-sans antialiased min-h-screen">
