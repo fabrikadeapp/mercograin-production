@@ -11,6 +11,21 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const path = req.nextUrl.pathname
 
+  // S12 M10 — Portal Produtor: auth separada (cookie bh_portal_session).
+  // /portal/[slug]/login e /portal/[slug]/setup são públicos; demais
+  // /portal/* exigem o cookie do portal (validado nas próprias páginas/APIs).
+  if (path.startsWith('/portal/')) {
+    const sub = path.split('/').slice(3).join('/') // após /portal/{slug}/
+    const isPublicPortal = sub === 'login' || sub === 'setup' || sub === ''
+    if (isPublicPortal) return NextResponse.next()
+    const hasPortalCookie = !!req.cookies.get('bh_portal_session')?.value
+    if (!hasPortalCookie) {
+      const slug = path.split('/')[2] || ''
+      return NextResponse.redirect(new URL(`/portal/${slug}/login`, req.url))
+    }
+    return NextResponse.next()
+  }
+
   const isPublic =
     PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + '/')) ||
     path.startsWith('/auth')

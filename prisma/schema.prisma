@@ -141,6 +141,10 @@ model Workspace {
   // S10 M2 — Mesa profissional
   ofertas                Oferta[]
   cenariosCalculadora    CenarioCalculadora[]
+  // S12 M10 — Portal produtor
+  produtorAccessos       ProdutorAccess[]
+  documentosProdutor     DocumentoProdutor[]
+  mensagensProdutor      MensagemProdutor[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -408,11 +412,75 @@ model Cliente {
   listaSujaEntries   ListaSuja[]
   // S2 M10
   pushSubscriptions  PushSubscription[]
+  // S12 M10 — portal produtor (B2C lite)
+  produtorAccess     ProdutorAccess?
+  documentosProdutor DocumentoProdutor[]
+  mensagensProdutor  MensagemProdutor[]
 
   @@index([email])
   @@index([cnpj])
   @@index([tipo])
   @@index([workspaceId])
+}
+
+// ============================================
+// S12 M10 — PORTAL PRODUTOR (B2C lite)
+// ============================================
+
+model ProdutorAccess {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clienteId        String    @unique
+  cliente          Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  emailLogin       String    @unique
+  passwordHash     String?
+  tokenInicial     String?   // hash bcrypt do token de setup (1-time)
+  acessoCriadoEm   DateTime?
+  ultimoLogin      DateTime?
+  ativo            Boolean   @default(true)
+  twoFactorEnabled Boolean   @default(false)
+  totpSecret       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model DocumentoProdutor {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clienteId    String
+  cliente      Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipo         String    // 'contrato' | 'nf' | 'cpr' | 'comprovante' | 'outro'
+  titulo       String    @db.VarChar(255)
+  descricao    String?   @db.Text
+  arquivoUrl   String    @db.Text
+  arquivoHash  String?   @db.VarChar(128)
+  tamanhoBytes Int
+  mimeType     String    @db.VarChar(120)
+  enviadoPor   String    // 'corretora' | 'produtor'
+  uploaderId   String?
+  visivel      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  @@index([clienteId, tipo])
+  @@index([workspaceId])
+}
+
+model MensagemProdutor {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clienteId   String
+  cliente     Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  remetente   String    // 'corretora' | 'produtor'
+  texto       String    @db.Text
+  lidaEm      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([clienteId, createdAt])
 }
 
 // ============================================
