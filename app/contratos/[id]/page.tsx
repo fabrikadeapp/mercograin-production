@@ -33,9 +33,18 @@ import { AssinaturaDigitalPanel } from './_components/AssinaturaDigitalPanel'
 
 interface GraoItem {
   grao: string
-  quantidade: number
-  preco: number
-  subtotal: number
+  quantidade?: number
+  quantidadeSc?: number
+  preco?: number
+  precoSc?: number
+  subtotal?: number
+}
+
+function normGrao(g: GraoItem) {
+  const quantidade = Number(g.quantidade ?? g.quantidadeSc ?? 0)
+  const preco = Number(g.preco ?? g.precoSc ?? 0)
+  const subtotal = Number(g.subtotal ?? quantidade * preco)
+  return { grao: g.grao || '—', quantidade, preco, subtotal }
 }
 
 interface Contrato {
@@ -235,14 +244,14 @@ export default function ContratoDetalhesPage() {
       header: 'Qtd (t)',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => g.quantidade.toLocaleString('pt-BR'),
+      accessor: (g) => normGrao(g).quantidade.toLocaleString('pt-BR'),
     },
     {
       key: 'preco',
       header: 'Preço (R$/t)',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => formatCurrency(g.preco),
+      accessor: (g) => formatCurrency(normGrao(g).preco),
     },
     {
       key: 'subtotal',
@@ -250,7 +259,7 @@ export default function ContratoDetalhesPage() {
       align: 'right',
       isNumeric: true,
       accessor: (g) => (
-        <span className="text-fg-1 font-semibold">{formatCurrency(g.subtotal)}</span>
+        <span className="text-fg-1 font-semibold">{formatCurrency(normGrao(g).subtotal)}</span>
       ),
     },
   ]
