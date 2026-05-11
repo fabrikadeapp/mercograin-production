@@ -29,10 +29,8 @@ interface Props {
 
 export function DropdownNavigation({ navItems }: Props) {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const [isHover, setIsHover] = useState<number | null>(null)
+  const [hoverId, setHoverId] = useState<number | null>(null)
   const pathname = usePathname() ?? '/'
-
-  const handleHover = (menuLabel: string | null) => setOpenMenu(menuLabel)
 
   function isItemActive(item: NavItem): boolean {
     if (item.link) return pathname === item.link || pathname.startsWith(`${item.link}/`)
@@ -43,58 +41,58 @@ export function DropdownNavigation({ navItems }: Props) {
   }
 
   return (
-    <ul className="relative flex items-center space-x-0">
+    <ul className="relative flex items-center gap-1">
       {navItems.map((navItem) => {
         const active = isItemActive(navItem)
+        const isHovered = hoverId === navItem.id || openMenu === navItem.label
+        const baseClasses = `text-small py-1.5 px-3 flex group transition-colors duration-200 items-center justify-center gap-1 relative rounded-pill ${
+          active ? 'text-fg-1 bg-bg-2' : 'text-fg-3 hover:text-fg-1'
+        }`
+
         return (
           <li
             key={navItem.label}
             className="relative"
-            onMouseEnter={() => handleHover(navItem.label)}
-            onMouseLeave={() => handleHover(null)}
+            onMouseEnter={() => {
+              setOpenMenu(navItem.label)
+              setHoverId(navItem.id)
+            }}
+            onMouseLeave={() => {
+              setOpenMenu(null)
+              setHoverId(null)
+            }}
           >
             {navItem.link ? (
-              <Link
-                href={navItem.link}
-                className={`text-small py-2 px-4 flex group transition-colors duration-300 items-center justify-center gap-1 relative ${
-                  active ? 'text-fg-1' : 'text-fg-3 hover:text-fg-1'
-                }`}
-                onMouseEnter={() => setIsHover(navItem.id)}
-                onMouseLeave={() => setIsHover(null)}
-              >
-                <span>{navItem.label}</span>
-                {(isHover === navItem.id || active) && (
-                  <motion.div
-                    layoutId="hover-bg"
-                    className="absolute inset-0 size-full"
-                    style={{ borderRadius: 99, background: 'var(--bg-2)' }}
+              <Link href={navItem.link} className={baseClasses}>
+                {/* hover overlay APENAS quando não-active */}
+                {isHovered && !active && (
+                  <motion.span
+                    layoutId="nav-hover-bg"
+                    className="absolute inset-0 rounded-pill bg-bg-2"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
+                <span className="relative z-10">{navItem.label}</span>
               </Link>
             ) : (
-              <button
-                className={`text-small py-2 px-4 flex cursor-pointer group transition-colors duration-300 items-center justify-center gap-1 relative ${
-                  active ? 'text-fg-1' : 'text-fg-3 hover:text-fg-1'
-                }`}
-                onMouseEnter={() => setIsHover(navItem.id)}
-                onMouseLeave={() => setIsHover(null)}
-                type="button"
-              >
-                <span>{navItem.label}</span>
-                {navItem.subMenus && (
-                  <ChevronDown
-                    className={`h-4 w-4 group-hover:rotate-180 duration-300 transition-transform ${
-                      openMenu === navItem.label ? 'rotate-180' : ''
-                    }`}
+              <button type="button" className={baseClasses}>
+                {isHovered && !active && (
+                  <motion.span
+                    layoutId="nav-hover-bg"
+                    className="absolute inset-0 rounded-pill bg-bg-2"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
-                {(isHover === navItem.id || openMenu === navItem.label || active) && (
-                  <motion.div
-                    layoutId="hover-bg"
-                    className="absolute inset-0 size-full"
-                    style={{ borderRadius: 99, background: 'var(--bg-2)' }}
-                  />
-                )}
+                <span className="relative z-10 flex items-center gap-1">
+                  {navItem.label}
+                  {navItem.subMenus && (
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                        openMenu === navItem.label ? 'rotate-180' : ''
+                      }`}
+                    />
+                  )}
+                </span>
               </button>
             )}
 
@@ -102,21 +100,24 @@ export function DropdownNavigation({ navItems }: Props) {
               {openMenu === navItem.label && navItem.subMenus && (
                 <div className="w-auto absolute left-0 top-full pt-2 z-50">
                   <motion.div
-                    className="border p-4 w-max shadow-xl"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="border p-4 w-max shadow-2xl"
                     style={{
-                      borderRadius: 16,
+                      borderRadius: 12,
                       background: 'var(--bg-1)',
                       borderColor: 'var(--border-1)',
                     }}
-                    layoutId="menu"
                   >
-                    <div className="w-fit shrink-0 flex space-x-9 overflow-hidden">
+                    <div className="w-fit shrink-0 flex space-x-8 overflow-hidden">
                       {navItem.subMenus.map((sub) => (
-                        <motion.div layout className="w-full" key={sub.title}>
-                          <h3 className="mb-4 text-micro font-medium uppercase tracking-wider text-fg-3">
+                        <div className="w-full" key={sub.title}>
+                          <h3 className="mb-3 text-micro font-medium uppercase tracking-wider text-fg-3">
                             {sub.title}
                           </h3>
-                          <ul className="space-y-4">
+                          <ul className="space-y-3">
                             {sub.items.map((item) => {
                               const Icon = item.icon
                               const itemActive =
@@ -125,30 +126,30 @@ export function DropdownNavigation({ navItems }: Props) {
                                 <li key={item.label}>
                                   <Link
                                     href={item.href}
-                                    className="flex items-start space-x-3 group"
+                                    className="flex items-start space-x-3 group hover:opacity-90"
                                     onClick={() => setOpenMenu(null)}
                                   >
                                     <div
-                                      className="rounded-md flex items-center justify-center size-9 shrink-0 transition-colors duration-300 border"
+                                      className="rounded-md flex items-center justify-center size-9 shrink-0 transition-colors duration-200 border"
                                       style={{
                                         borderColor: 'var(--border-1)',
-                                        background: itemActive ? 'var(--accent)' : 'transparent',
+                                        background: itemActive ? 'var(--accent)' : 'var(--bg-2)',
                                         color: itemActive
                                           ? 'var(--accent-ink)'
                                           : 'var(--fg-1)',
                                       }}
                                     >
-                                      <Icon className="h-5 w-5 flex-none" />
+                                      <Icon className="h-4.5 w-4.5 flex-none" />
                                     </div>
-                                    <div className="leading-5 w-max">
+                                    <div className="leading-tight">
                                       <p
-                                        className={`text-small font-medium shrink-0 ${
+                                        className={`text-small font-medium ${
                                           itemActive ? 'text-accent' : 'text-fg-1'
                                         }`}
                                       >
                                         {item.label}
                                       </p>
-                                      <p className="text-micro text-fg-3 shrink-0 group-hover:text-fg-1 transition-colors duration-300">
+                                      <p className="text-micro text-fg-3 group-hover:text-fg-2 transition-colors duration-200 mt-0.5">
                                         {item.description}
                                       </p>
                                     </div>
@@ -157,7 +158,7 @@ export function DropdownNavigation({ navItems }: Props) {
                               )
                             })}
                           </ul>
-                        </motion.div>
+                        </div>
                       ))}
                     </div>
                   </motion.div>
