@@ -41,7 +41,7 @@ function fmtDate(iso: string) {
 export default function FuturoDetailPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
-  const { toast } = useToast()
+  const toast = useToast()
   const [futuro, setFuturo] = useState<Futuro | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -52,7 +52,7 @@ export default function FuturoDetailPage() {
     fetch(`/api/futuros/${id}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r)))
       .then((data) => setFuturo(data))
-      .catch(() => toast({ type: 'error', message: 'Contrato futuro não encontrado' }))
+      .catch(() => toast.error('Contrato futuro não encontrado'))
       .finally(() => setLoading(false))
   }, [id, toast])
 
@@ -62,10 +62,10 @@ export default function FuturoDetailPage() {
     try {
       const r = await fetch(`/api/futuros/${id}`, { method: 'DELETE' })
       if (!r.ok) throw new Error()
-      toast({ type: 'success', message: 'Contrato cancelado' })
+      toast.success('Contrato cancelado')
       router.push('/futuros')
     } catch {
-      toast({ type: 'error', message: 'Falha ao cancelar' })
+      toast.error('Falha ao cancelar')
     } finally {
       setDeleting(false)
     }
@@ -124,13 +124,11 @@ export default function FuturoDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <KPICard
           eyebrow="Status"
-          highlightValue={
-            <Chip variant={statusVariant as any}>{futuro.status.toUpperCase()}</Chip>
-          }
+          value={futuro.status.toUpperCase()}
         />
-        <KPICard eyebrow="Preço por saca" highlightValue={fmtBRL(futuro.precoSc)} />
-        <KPICard eyebrow="Volume" highlightValue={`${futuro.volumeSc.toLocaleString('pt-BR')} sc`} />
-        <KPICard eyebrow="Total" highlightValue={fmtBRL(valorTotal)} />
+        <KPICard eyebrow="Preço por saca" value={fmtBRL(futuro.precoSc)} />
+        <KPICard eyebrow="Volume" value={`${futuro.volumeSc.toLocaleString('pt-BR')} sc`} />
+        <KPICard eyebrow="Total" value={fmtBRL(valorTotal)} />
       </div>
 
       <Card className="p-6 space-y-4">

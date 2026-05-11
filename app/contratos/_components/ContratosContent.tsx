@@ -69,6 +69,7 @@ export function ContratosContent() {
 
   if (error) return <ErrorBanner message={error} />
 
+  const router = useRouter()
   const stages = funil?.items || []
   const rows: ContractRow[] = (contratos || []).map((c: any) => {
     const grainArr = Array.isArray(c?.proposta?.graos) ? c.proposta.graos : []

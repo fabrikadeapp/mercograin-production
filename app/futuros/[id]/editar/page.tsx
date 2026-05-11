@@ -39,7 +39,7 @@ const STATUS = [
 export default function EditarFuturoPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
-  const { toast } = useToast()
+  const toast = useToast()
 
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
@@ -63,7 +63,7 @@ export default function EditarFuturoPage() {
     ])
       .then(([f, c]) => {
         if (!f) {
-          toast({ type: 'error', message: 'Contrato não encontrado' })
+          toast.error('Contrato não encontrado')
           router.push('/futuros')
           return
         }
@@ -101,10 +101,10 @@ export default function EditarFuturoPage() {
         }),
       })
       if (!r.ok) throw new Error()
-      toast({ type: 'success', message: 'Contrato atualizado' })
+      toast.success('Contrato atualizado')
       router.push(`/futuros/${id}`)
     } catch {
-      toast({ type: 'error', message: 'Falha ao atualizar contrato' })
+      toast.error('Falha ao atualizar contrato')
     } finally {
       setSaving(false)
     }
