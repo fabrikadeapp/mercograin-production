@@ -164,6 +164,10 @@ model Workspace {
   /// Modelo OpenAI preferido (default gpt-4o-mini)
   aiModel String @default("gpt-4o-mini")
 
+  /// Lista de IDs de commodities visíveis no widget do dashboard.
+  /// null/vazio = usa DEFAULT_DASHBOARD_IDS (lib/commodities/catalog.ts).
+  dashboardSymbols Json?
+
   onboardingCompletedAt DateTime?
 
   createdAt DateTime @default(now())

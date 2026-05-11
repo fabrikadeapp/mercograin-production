@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { AppShell, PageHeader } from '@/components/ui/phb'
-import { Image as ImageIcon, Sparkles } from 'lucide-react'
+import { Image as ImageIcon, Sparkles, LineChart } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +19,13 @@ const SECTIONS = [
     description:
       'Configure o modo (gerenciado ou BYOK), modelo OpenAI e chave própria para o agente AI.',
     icon: Sparkles,
+  },
+  {
+    href: '/configuracoes/cotacoes',
+    title: 'Commodities no dashboard',
+    description:
+      'Escolha quais futures aparecem no widget de cotações em tempo real do dashboard.',
+    icon: LineChart,
   },
 ]
 

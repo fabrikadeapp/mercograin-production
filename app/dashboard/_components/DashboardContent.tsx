@@ -32,6 +32,7 @@ import {
 } from '@/lib/mocks/phb'
 import { useLiveQuotes, type LiveQuotePayload } from '@/lib/quotes/useLiveQuotes'
 import { FuturosBook } from './FuturosBook'
+import { CommodityFuturesPanel } from '@/components/cotacoes/CommodityFuturesPanel'
 
 const CURVE_TABS = [
   { value: 'fisico', label: 'À Vista' },
@@ -311,6 +312,9 @@ export function DashboardContent() {
 
       {/* Book de Futuros (B3 próprio + CBOT proxy) */}
       <FuturosBook />
+
+      {/* Painel de Commodities Futures — 5 tabs (Price/Performance/Technical/Specification/Charts) */}
+      <CommodityFuturesPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 p-6">
