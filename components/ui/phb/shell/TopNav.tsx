@@ -314,7 +314,7 @@ export function TopNav() {
     <header className="sticky top-0 z-30 border-b border-border-1 bg-bg-0/90 backdrop-blur-md">
       <div className="mx-auto max-w-[1440px] flex items-center px-4 md:px-6 py-2 gap-6">
         <Brand />
-        <nav className="hidden md:flex items-center min-w-0 overflow-x-auto">
+        <nav className="hidden md:flex items-center min-w-0">
           <DropdownNavigation navItems={NAV_ITEMS} />
         </nav>
         <div className="flex items-center gap-2 ml-auto shrink-0">
