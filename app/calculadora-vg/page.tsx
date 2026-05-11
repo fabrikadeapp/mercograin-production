@@ -1,24 +1,25 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import { Calculator } from 'lucide-react'
-import { AppShell, PageHeader } from '@/components/ui/phb'
+import { VgAppShell, VgPageHeader } from '@/components/ui/visionglass'
 import { db as prisma } from '@/lib/db'
-import { CalculadoraContent } from './_components/CalculadoraContent'
+import { CalculadoraContent } from '../calculadora/_components/CalculadoraContent'
 
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
-  searchParams?: { from?: string; id?: string; preco?: string; quantidade?: string; grao?: string }
+  searchParams?: {
+    from?: string
+    id?: string
+    preco?: string
+    quantidade?: string
+    grao?: string
+  }
 }
-
-import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export default async function Page({ searchParams }: PageProps) {
   const session = await auth()
   if (!session?.user) redirect('/auth/login')
-  await redirectIfVgEnabled('/calculadora-vg')
 
-  // Buscar comissao padrão do workspace ativo (best-effort)
   let comissaoPadrao = 1.5
   try {
     const userId = (session.user as { id?: string }).id
@@ -27,17 +28,21 @@ export default async function Page({ searchParams }: PageProps) {
         where: { userId },
         include: { workspace: { include: { empresa: true } } },
       })
-      // comissaoPadrao adicionado via migration; client Prisma pode ainda não conhecer
-      const empresa = member?.workspace?.empresa as { comissaoPadrao?: number | null } | null | undefined
+      const empresa = member?.workspace?.empresa as
+        | { comissaoPadrao?: number | null }
+        | null
+        | undefined
       const c = empresa?.comissaoPadrao
       if (typeof c === 'number') comissaoPadrao = c
     }
   } catch {
-    // schema pode não estar migrado ainda — usa default
+    /* default */
   }
 
   const presetGrao =
-    searchParams?.grao === 'milho' || searchParams?.grao === 'trigo' || searchParams?.grao === 'soja'
+    searchParams?.grao === 'milho' ||
+    searchParams?.grao === 'trigo' ||
+    searchParams?.grao === 'soja'
       ? searchParams.grao
       : 'soja'
 
@@ -49,13 +54,13 @@ export default async function Page({ searchParams }: PageProps) {
   }
 
   return (
-    <AppShell>
-      <PageHeader
+    <VgAppShell>
+      <VgPageHeader
         eyebrow="Mesa · Ferramenta"
         title="Calculadora de Preço Líquido"
-        subtitle="Líquido ao produtor com toggles para frete, comissão, FUNRURAL, classificação, armazenagem e ICMS"
+        subtitle="Líquido ao produtor com toggles para frete, comissão, FUNRURAL, classificação, armazenagem e ICMS."
       />
       <CalculadoraContent comissaoPadrao={comissaoPadrao} preset={preset} />
-    </AppShell>
+    </VgAppShell>
   )
 }

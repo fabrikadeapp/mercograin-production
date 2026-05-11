@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { Plus, Globe2 } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { OfertasHub } from './_components/OfertasHub'
+import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/auth/login')
+  await redirectIfVgEnabled('/ofertas-vg')
   return (
     <AppShell>
       <PageHeader

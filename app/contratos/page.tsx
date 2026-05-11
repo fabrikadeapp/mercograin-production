@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { Filter, Plus, FileText } from 'lucide-react'
 import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { ContratosContent } from './_components/ContratosContent'
+import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/auth/login')
+  await redirectIfVgEnabled('/contratos-vg')
 
   return (
     <AppShell>

@@ -2,16 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  LayoutGrid,
-  Wallet,
-  Clock4,
-  Settings,
-  ArrowUpRight,
-  Plus,
-  Sparkles,
-  ChevronDown,
-} from 'lucide-react'
+import { ArrowUpRight, Plus, Sparkles, ChevronDown } from 'lucide-react'
 
 interface Props {
   fullName: string
@@ -93,15 +84,8 @@ export function DashboardVgContent({
     .slice(0, 4)
 
   return (
-    <div
-      className="min-h-screen w-full p-6 md:p-8 pb-32"
-      style={{
-        background:
-          'radial-gradient(circle at 20% 30%, rgba(50,40,30,0.6), transparent 40%), radial-gradient(circle at 80% 70%, rgba(40,30,25,0.5), transparent 50%), linear-gradient(135deg, #2A2620 0%, #1A1814 100%)',
-        color: 'var(--vg-fg-primary)',
-      }}
-    >
-      <div className="mx-auto max-w-[1400px] grid grid-cols-12 gap-4">
+    <div className="w-full">
+      <div className="grid grid-cols-12 gap-4">
         {/* ===== Welcome row ===== */}
         <header className="col-span-12 flex items-end justify-between mb-2">
           <div>
@@ -339,23 +323,6 @@ export function DashboardVgContent({
         </button>
       </div>
 
-      {/* ===== Dock ===== */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        <div className="vg-dock">
-          <Link href="/dashboard-vg" className="vg-dock-item is-active">
-            <LayoutGrid className="w-4 h-4" /> Dashboard
-          </Link>
-          <Link href="/financeiro" className="vg-dock-item">
-            <Wallet className="w-4 h-4" /> Financeiro
-          </Link>
-          <Link href="/contratos" className="vg-dock-item">
-            <Clock4 className="w-4 h-4" /> Contratos
-          </Link>
-          <Link href="/configuracoes" className="vg-dock-item">
-            <Settings className="w-4 h-4" /> Configurações
-          </Link>
-        </div>
-      </nav>
     </div>
   )
 }

@@ -16,9 +16,12 @@ function fmtBRL(n: number): string {
   return `R$ ${Math.round(n).toLocaleString('pt-BR')}`
 }
 
+import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
+
 export default async function HedgeHubPage() {
   const session = await auth()
   if (!session) redirect('/auth/login')
+  await redirectIfVgEnabled('/hedge-vg')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
 

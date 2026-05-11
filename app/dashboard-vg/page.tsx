@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { VgAppShell } from '@/components/ui/visionglass'
 import { DashboardVgContent } from './_components/DashboardVgContent'
 
 export const dynamic = 'force-dynamic'
@@ -39,12 +40,14 @@ export default async function DashboardVgPage() {
     'Operador'
 
   return (
-    <DashboardVgContent
-      fullName={user?.nome ?? user?.email ?? 'Operador'}
-      firstName={firstName}
-      workspaceName={workspace?.name ?? 'Workspace'}
-      contratosAbertos={contratosAbertos}
-      ofertasAtivas={ofertasAtivas}
-    />
+    <VgAppShell>
+      <DashboardVgContent
+        fullName={user?.nome ?? user?.email ?? 'Operador'}
+        firstName={firstName}
+        workspaceName={workspace?.name ?? 'Workspace'}
+        contratosAbertos={contratosAbertos}
+        ofertasAtivas={ofertasAtivas}
+      />
+    </VgAppShell>
   )
 }

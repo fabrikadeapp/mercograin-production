@@ -1,31 +1,31 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { Filter, Plus } from 'lucide-react'
-import { AppShell, PageHeader, Button } from '@/components/ui/phb'
-import { CotacoesContent } from './_components/CotacoesContent'
+import { VgAppShell, VgPageHeader } from '@/components/ui/visionglass'
+import { CotacoesContent } from '../cotacoes/_components/CotacoesContent'
 import { HistoricoAvancado } from '@/components/cotacoes/HistoricoAvancado'
 import { MesaShortcutsClient } from '@/components/cotacoes/MesaShortcutsClient'
-import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/auth/login')
-  await redirectIfVgEnabled('/cotacoes-vg')
 
   return (
-    <AppShell>
-      <PageHeader
+    <VgAppShell>
+      <VgPageHeader
         eyebrow="Mesa · CEPEA + B3 + USDA"
         title="Cotações"
         subtitle="Watchlist customizada · streaming ativo"
         actions={
           <>
-            <Button variant="secondary" leftIcon={<Filter className="h-4 w-4" />}>
-              Filtros
-            </Button>
-            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo alerta</Button>
+            <button className="vg-btn vg-btn--secondary">
+              <Filter className="w-4 h-4" /> Filtros
+            </button>
+            <button className="vg-btn vg-btn--primary">
+              <Plus className="w-4 h-4" /> Novo alerta
+            </button>
           </>
         }
       />
@@ -34,6 +34,6 @@ export default async function Page() {
         <HistoricoAvancado />
       </div>
       <MesaShortcutsClient />
-    </AppShell>
+    </VgAppShell>
   )
 }
