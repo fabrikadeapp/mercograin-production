@@ -1,7 +1,7 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Plus, BarChart3, Users, TrendingUp } from 'lucide-react'
+import { Calendar, BarChart3, Users, TrendingUp } from 'lucide-react'
 import { AppShell, PageHeader, Button, Card } from '@/components/ui/phb'
 import { RelatoriosContent } from './_components/RelatoriosContent'
 
@@ -47,7 +47,6 @@ export default async function Page() {
               Safra 24/25
             </Button>
             <Button variant="ghost">PDF</Button>
-            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo relatório</Button>
           </>
         }
       />

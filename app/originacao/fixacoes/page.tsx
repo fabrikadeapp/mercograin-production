@@ -110,8 +110,14 @@ export default async function FixacoesPage({
           <tbody>
             {fixacoes.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-fg-3">
-                  Nenhum contrato a fixar.
+                <td colSpan={8} className="px-4 py-10 text-center text-fg-3">
+                  <p className="text-fg-2 font-medium mb-1">Nenhum contrato a fixar</p>
+                  <p className="text-micro text-fg-3">
+                    Fixações são geradas automaticamente quando você cria um contrato com modalidade <strong>&quot;Preço a fixar&quot;</strong>. <br />
+                    <Link href="/contratos/novo" className="text-accent hover:underline">
+                      → Criar contrato a fixar
+                    </Link>
+                  </p>
                 </td>
               </tr>
             )}

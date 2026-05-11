@@ -75,7 +75,8 @@ const NAV_ITEMS: NavItem[] = [
         title: 'Pipeline',
         items: [
           { label: 'Propostas', description: 'Cotação enviada e em negociação', icon: ListChecks, href: '/propostas' },
-          { label: 'Contratos', description: 'Templates, cláusulas e assinatura digital', icon: FileText, href: '/contratos' },
+          { label: 'Contratos', description: 'Contratos ativos e em assinatura', icon: FileText, href: '/contratos' },
+          { label: 'Templates', description: 'Personalize cláusulas e modelos da sua empresa', icon: FileText, href: '/contratos/templates' },
         ],
       },
     ],

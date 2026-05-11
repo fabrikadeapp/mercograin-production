@@ -27,7 +27,9 @@ export default async function Page() {
             <Button variant="secondary" leftIcon={<Filter className="h-4 w-4" />}>
               Filtros (3)
             </Button>
-            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo contrato</Button>
+            <Link href="/contratos/novo">
+              <Button leftIcon={<Plus className="h-4 w-4" />}>Novo contrato</Button>
+            </Link>
           </>
         }
       />
