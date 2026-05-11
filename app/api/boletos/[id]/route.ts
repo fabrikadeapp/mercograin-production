@@ -1,6 +1,17 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const updateBoletoSchema = z.object({
+  numero: z.string().optional(),
+  banco: z.string().optional(),
+  valor: z.number().optional(),
+  vencimento: z.string().optional(),
+  status: z.enum(['aberto', 'pago', 'vencido', 'cancelado']).optional(),
+  linkBoleto: z.string().url().optional(),
+  braspagId: z.string().optional(),
+})
 
 export async function GET(
   request: NextRequest,
@@ -15,23 +26,7 @@ export async function GET(
 
     const boleto = await db.boleto.findFirst({
       where: { id: params.id, ...scope.whereOwn() },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nome: true,
-            cnpj: true,
-            email: true,
-            workspaceId: true,
-          },
-        },
-        contrato: {
-          select: {
-            id: true,
-            numero: true,
-          },
-        },
-      },
+      include: { cliente: true },
     })
 
     if (!boleto) {
@@ -73,24 +68,31 @@ export async function PUT(
     }
 
     const body = await request.json()
+    const data = updateBoletoSchema.parse(body)
 
     const updated = await db.boleto.update({
       where: { id: params.id },
       data: {
-        ...(body.numero && { numero: body.numero }),
-        ...(body.banco && { banco: body.banco }),
-        ...(body.valor !== undefined && { valor: body.valor }),
-        ...(body.vencimento && { vencimento: new Date(body.vencimento) }),
-        ...(body.status && { status: body.status }),
+        numero: data.numero,
+        banco: data.banco,
+        valor: data.valor ? String(data.valor) : undefined,
+        vencimento: data.vencimento ? new Date(data.vencimento) : undefined,
+        status: data.status,
+        linkBoleto: data.linkBoleto,
+        braspagId: data.braspagId,
       },
-      include: {
-        cliente: true,
-        contrato: true,
-      },
+      include: { cliente: true },
     })
 
     return NextResponse.json(updated)
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
     console.error('Update boleto error:', error)
     return NextResponse.json(
       { error: 'Erro ao atualizar boleto' },
@@ -120,13 +122,6 @@ export async function DELETE(
       )
     }
 
-    if (boleto.status !== 'aberto') {
-      return NextResponse.json(
-        { error: 'Só é possível deletar boletos abertos' },
-        { status: 400 }
-      )
-    }
-
     await db.boleto.delete({
       where: { id: params.id },
     })
@@ -136,6 +131,55 @@ export async function DELETE(
     console.error('Delete boleto error:', error)
     return NextResponse.json(
       { error: 'Erro ao deletar boleto' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const scope = await getScope()
+    if (!scope) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    const boleto = await db.boleto.findFirst({
+      where: { id: params.id, ...scope.whereOwn() },
+    })
+
+    if (!boleto) {
+      return NextResponse.json(
+        { error: 'Boleto não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+    const { status } = z.object({
+      status: z.enum(['aberto', 'pago', 'vencido', 'cancelado']),
+    }).parse(body)
+
+    const updated = await db.boleto.update({
+      where: { id: params.id },
+      data: { status },
+      include: { cliente: true },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    console.error('Patch boleto error:', error)
+    return NextResponse.json(
+      { error: 'Erro ao atualizar boleto' },
       { status: 500 }
     )
   }
