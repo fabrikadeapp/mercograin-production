@@ -95,8 +95,9 @@ const TIERS: Tier[] = [
     slug: 'enterprise',
     name: 'Enterprise',
     subtitle: 'TRADINGS GRANDES',
-    price: 'Sob consulta',
-    description: 'Para tradings com volume alto, SSO, SLA dedicado e integrações sob medida.',
+    price: 'R$ 4.997',
+    period: '/mês +',
+    description: 'A partir de — base + add-ons conforme volume e integrações.',
     features: [
       { text: 'Tudo do Business +', included: true },
       { text: 'Usuários ilimitados', included: true },
@@ -214,6 +215,64 @@ export async function Pricing() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Enterprise add-ons — transparência de precificação */}
+        <div className="mx-auto mt-16 max-w-4xl">
+          <div
+            className="overflow-hidden"
+            style={{
+              background: 'var(--bg-1)',
+              border: '1px solid var(--border-1)',
+              borderRadius: 'var(--r-lg)',
+              backdropFilter: 'var(--blur-glass)',
+              WebkitBackdropFilter: 'var(--blur-glass)',
+            }}
+          >
+            <div
+              className="px-6 py-4"
+              style={{ borderBottom: '1px solid var(--border-1)' }}
+            >
+              <p className="eyebrow mb-1 text-fg-3">ENTERPRISE · ADICIONAIS</p>
+              <h3 className="text-h3 font-semibold text-fg-1">
+                Como compomos o preço do Enterprise
+              </h3>
+              <p className="mt-1 text-small text-fg-2">
+                Base R$ 4.997/mês (até 50 operadores) + agregadores conforme uso e necessidade.
+              </p>
+            </div>
+            <table className="w-full text-small">
+              <tbody>
+                {[
+                  ['Volume operado acima de R$ 50M/mês', '+ 0,02% sobre excedente'],
+                  ['Usuários adicionais (após 50)', '+ R$ 79 / usuário / mês'],
+                  ['SSO / SAML + provisionamento SCIM', '+ R$ 497 / mês'],
+                  ['SLA 99,9% + suporte 24/7 dedicado', '+ R$ 997 / mês'],
+                  ['Workspace single-tenant (compliance)', '+ R$ 2.500 / mês'],
+                  ['Integração ERP customizada (SAP / TOTVS / Senior)', 'R$ 15–50k + R$ 1.500/mês'],
+                  ['Onboarding presencial + training', 'R$ 5–15k (one-time)'],
+                ].map(([label, value], i, arr) => (
+                  <tr
+                    key={label}
+                    style={
+                      i < arr.length - 1
+                        ? { borderBottom: '1px solid var(--border-1)' }
+                        : undefined
+                    }
+                  >
+                    <td className="px-6 py-3 text-fg-1">{label}</td>
+                    <td className="px-6 py-3 text-right t-num text-fg-2">{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div
+              className="px-6 py-3 text-micro text-fg-3"
+              style={{ borderTop: '1px solid var(--border-1)', background: 'var(--bg-2)' }}
+            >
+              Volume-based bidding garante alinhamento de valor — você só paga mais conforme cresce.
+            </div>
+          </div>
         </div>
       </div>
     </section>
