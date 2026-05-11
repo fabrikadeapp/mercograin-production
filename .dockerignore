@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+__tests__
+*.test.ts
+*.test.js
+*.test.tsx
+.playwright-mcp
+prisma/migrations/manual_*.sql.bak
+.env
+.env.local
+*.log
+landing-atual.jpeg
+precos-novo.jpeg

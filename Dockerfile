@@ -1,41 +1,40 @@
-# Use Node.js official image (slim has better library support than alpine)
-FROM node:20-slim
-
+# BH Grain — Dockerfile produção
+# Multi-stage para reduzir tamanho final
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json* .npmrc* ./
+# Força legacy-peer-deps para next-auth@5-beta
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
-# Install OpenSSL for Prisma compatibility
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy Prisma schema and generate client
-COPY prisma ./prisma
-RUN npx prisma generate
-
-# Copy rest of application
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build Next.js app
+RUN npx prisma generate
 RUN npm run build
 
-# Create entrypoint script for migrations and seed
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "Running database migrations..."\n\
-npx prisma migrate deploy || echo "Migrations already applied"\n\
-echo "Seeding database..."\n\
-npx prisma db seed || echo "Seed already applied"\n\
-echo "Starting application..."\n\
-npm run start' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Expose port
+# Cria usuário não-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copia artifacts
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+
+USER nextjs
+
 EXPOSE 3000
 
-# Start with migrations
-CMD ["/app/entrypoint.sh"]
+# Healthcheck nativo Docker
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+CMD ["npm", "run", "start"]
