@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { AppShell, PageHeader, Card, Button } from '@/components/ui/phb'
 import { GuiasClient } from './GuiasClient'
 
 export const dynamic = 'force-dynamic'
@@ -42,6 +44,11 @@ export default async function GuiasPage({ searchParams }: { searchParams: { tipo
         eyebrow="Fiscal · Guias"
         title="Guias de Arrecadação"
         subtitle="DARF (federal) · GNRE (ICMS interestadual) · GARE-ICMS (SP). Linha digitável e código de barras gerados localmente."
+        actions={
+          <Link href="/fiscal/guias/nova">
+            <Button leftIcon={<Plus className="h-4 w-4" />}>Nova guia</Button>
+          </Link>
+        }
       />
       <Card className="p-5">
         <GuiasClient

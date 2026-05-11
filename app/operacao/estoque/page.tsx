@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { Plus } from 'lucide-react'
 import { AppShell, PageHeader, Card, Chip, Button } from '@/components/ui/phb'
 
 export const dynamic = 'force-dynamic'
@@ -50,6 +51,11 @@ export default async function EstoquePage({
         eyebrow="Operação · Estoque"
         title="Lotes de estoque"
         subtitle="Saldo por armazém + cultura + safra. Quebras, transferências e rebaixe."
+        actions={
+          <Link href="/operacao/estoque/novo">
+            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo lote</Button>
+          </Link>
+        }
       />
 
       <Card className="mb-4">

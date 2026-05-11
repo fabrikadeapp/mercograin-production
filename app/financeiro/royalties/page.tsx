@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { AppShell, PageHeader, Card, Button } from '@/components/ui/phb'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +37,11 @@ export default async function RoyaltiesPage() {
       <PageHeader
         title="Royalties"
         subtitle={`Apurado: R$ ${(totais.apurado || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} · Pago: R$ ${(totais.pago || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+        actions={
+          <Link href="/financeiro/royalties/novo">
+            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo royalty</Button>
+          </Link>
+        }
       />
       <Card>
         <div className="p-4 overflow-x-auto">
