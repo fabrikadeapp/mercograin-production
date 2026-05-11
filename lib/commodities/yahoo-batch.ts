@@ -42,8 +42,8 @@ export interface PerformanceData {
   year3: number | null
 }
 
-const QUOTE_TTL_MS = 60_000 // 1 min
-const PERF_TTL_MS = 10 * 60_000 // 10 min
+const QUOTE_TTL_MS = 10_000 // 10s — máximo refresh útil do Yahoo
+const PERF_TTL_MS = 10 * 60_000 // 10 min (performance é histórico, não muda em 10s)
 const HIST_TTL_MS = 10 * 60_000
 
 const quoteCache = new Map<string, { data: CommodityQuote; at: number }>()
