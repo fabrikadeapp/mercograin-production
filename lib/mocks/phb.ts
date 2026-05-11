@@ -218,6 +218,7 @@ export const PIPELINE_STAGES = [
 import type { BadgeStatus, GrainVariant } from '@/components/ui/phb'
 
 export interface ContractRow {
+  id?: string
   numero: string
   cliente: string
   grao: GrainVariant

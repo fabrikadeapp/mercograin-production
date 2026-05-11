@@ -32,9 +32,18 @@ import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 
 interface GraoItem {
   grao: string
-  quantidade: number
-  preco: number
-  subtotal: number
+  quantidade?: number
+  quantidadeSc?: number  // formato Epic 1 (sacas)
+  preco?: number
+  precoSc?: number       // formato Epic 1 (R$/saca)
+  subtotal?: number
+}
+
+function normalizeGrao(g: GraoItem): { grao: string; quantidade: number; preco: number; subtotal: number } {
+  const quantidade = Number(g.quantidade ?? g.quantidadeSc ?? 0)
+  const preco = Number(g.preco ?? g.precoSc ?? 0)
+  const subtotal = Number(g.subtotal ?? quantidade * preco)
+  return { grao: g.grao || '—', quantidade, preco, subtotal }
 }
 
 interface Proposta {
@@ -180,21 +189,21 @@ export default function PropostaDetalhesPage() {
       header: 'Qtd (t)',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => g.quantidade.toLocaleString('pt-BR'),
+      accessor: (g) => normalizeGrao(g).quantidade.toLocaleString('pt-BR'),
     },
     {
       key: 'preco',
       header: 'Preço (R$/t)',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => formatCurrency(g.preco),
+      accessor: (g) => formatCurrency(normalizeGrao(g).preco),
     },
     {
       key: 'subtotal',
       header: 'Subtotal',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => <span className="text-fg-1 font-semibold">{formatCurrency(g.subtotal)}</span>,
+      accessor: (g) => <span className="text-fg-1 font-semibold">{formatCurrency(normalizeGrao(g).subtotal)}</span>,
     },
   ]
 

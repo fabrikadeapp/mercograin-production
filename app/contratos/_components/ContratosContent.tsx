@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { Download, MoreHorizontal, Inbox } from 'lucide-react'
 import {
   Card,
@@ -76,6 +77,7 @@ export function ContratosContent() {
     const valor = Number(c?.proposta?.valorTotal || 0)
     const preco = totalSc > 0 ? valor / totalSc : 0
     return {
+      id: c.id,
       numero: c.numero,
       cliente: c?.cliente?.nome || '—',
       grao: firstGrao,
@@ -128,7 +130,15 @@ export function ContratosContent() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={Inbox} title="Sem contratos" description="Crie seu primeiro contrato a partir de uma proposta aceita." />
         ) : (
-          <DenseTable columns={cols} rows={filtered} rowKey={(r) => r.numero} className="!border-0 !shadow-none !bg-transparent" />
+          <DenseTable
+            columns={cols}
+            rows={filtered}
+            rowKey={(r) => r.numero}
+            onRowClick={(r) => {
+              if (r.id) router.push(`/contratos/${r.id}`)
+            }}
+            className="!border-0 !shadow-none !bg-transparent"
+          />
         )}
       </Card>
     </div>
