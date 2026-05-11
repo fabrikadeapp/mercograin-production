@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { AppShell, PageHeader, Card, Button } from '@/components/ui/phb'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +29,11 @@ export default async function MovimentosPage() {
       <PageHeader
         title="Movimentos financeiros"
         subtitle={`${movimentos.length} movimento(s) recentes`}
+        actions={
+          <Link href="/financeiro/movimentos/novo">
+            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo lançamento</Button>
+          </Link>
+        }
       />
       <Card>
         <div className="p-4 overflow-x-auto">

@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import { AppShell, PageHeader, Card, Button } from '@/components/ui/phb'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,11 +42,29 @@ export default async function CentrosCustoPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Centros de custo" subtitle={`${centros.length} centro(s)`} />
+      <PageHeader
+        title="Centros de custo"
+        subtitle={`${centros.length} centro(s)`}
+        actions={
+          <Link href="/financeiro/centros-custo/novo">
+            <Button leftIcon={<Plus className="h-4 w-4" />}>Novo centro</Button>
+          </Link>
+        }
+      />
       <Card>
         <div className="p-4">
           {centros.length === 0 ? (
-            <p className="text-sm text-zinc-500">Nenhum centro cadastrado.</p>
+            <div className="text-center py-10">
+              <p className="text-fg-2 font-medium mb-1">Nenhum centro cadastrado</p>
+              <p className="text-micro text-fg-3 mb-4">
+                Centros de custo organizam suas despesas e receitas em uma árvore hierárquica.
+              </p>
+              <Link href="/financeiro/centros-custo/novo">
+                <Button leftIcon={<Plus className="h-4 w-4" />}>
+                  Criar primeiro centro
+                </Button>
+              </Link>
+            </div>
           ) : (
             <ul>{render(null)}</ul>
           )}
