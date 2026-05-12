@@ -67,7 +67,7 @@ export async function VgAppShell({
         workspaceName={workspace?.name ?? null}
       />
 
-      <main className="pt-[72px] pb-4 px-4 md:px-6 relative z-0">
+      <main className="pt-24 pb-4 px-4 md:px-6 relative z-0">
         <div className="mx-auto w-full" style={{ maxWidth }}>
           {children}
         </div>

@@ -86,7 +86,7 @@ export function DashboardVgContent({
   return (
     <div className="w-full">
       {/* Grid 12 cols / 2 rows — toda altura útil sem scroll */}
-      <div className="grid grid-cols-12 grid-rows-[1fr_1fr] gap-3 h-[calc(100vh-6rem)] min-h-[520px]">
+      <div className="grid grid-cols-12 grid-rows-[1fr_1fr] gap-3 h-[calc(100vh-8.5rem)] min-h-[520px]">
 
         {/* ===== Row 1: Operação | Cotações | Aguardando ===== */}
 
