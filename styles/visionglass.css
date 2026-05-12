@@ -62,10 +62,10 @@
   --vg-shadow-focus: 0 0 0 3px rgba(10, 132, 255, 0.40);
   --vg-shadow-glow: 0 0 24px rgba(10, 132, 255, 0.32);
 
-  /* ===== Blur ===== */
-  --vg-blur-card: 32px;
-  --vg-blur-dock: 40px;
-  --vg-blur-scrim: 20px;
+  /* ===== Blur (otimizado para GPU; era 32/40/20) ===== */
+  --vg-blur-card: 18px;
+  --vg-blur-dock: 24px;
+  --vg-blur-scrim: 12px;
 
   /* ===== Motion ===== */
   --vg-dur-instant: 80ms;

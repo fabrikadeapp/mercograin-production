@@ -72,7 +72,7 @@ export function DashboardVgContent({
       }
     }
     load()
-    const id = setInterval(load, 10_000)
+    const id = setInterval(load, 30_000)
     return () => {
       cancelled = true
       clearInterval(id)
@@ -128,7 +128,7 @@ export function DashboardVgContent({
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-vg-h3">Cotações ao vivo</div>
-              <div className="text-vg-caption text-vg-fg-3 mt-0.5">Atualiza 10s · CBOT/USD</div>
+              <div className="text-vg-caption text-vg-fg-3 mt-0.5">Atualiza 30s · CBOT/USD</div>
             </div>
             <span
               className="w-2 h-2 rounded-full"

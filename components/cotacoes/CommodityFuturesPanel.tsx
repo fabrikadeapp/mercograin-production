@@ -170,7 +170,7 @@ export function CommodityFuturesPanel() {
     }
     load()
     if (tab === 'price') {
-      timer = setInterval(load, 10_000)
+      timer = setInterval(load, 30_000)
     }
     return () => {
       cancelled = true
@@ -201,7 +201,7 @@ export function CommodityFuturesPanel() {
             Real Time Commodity Futures Prices
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Auto-refresh 10s · Yahoo Finance · Personalize em Configurações &rsaquo; Cotações
+            Auto-refresh 30s · Yahoo Finance · Personalize em Configurações &rsaquo; Cotações
           </p>
         </div>
         <div className="flex items-center gap-1">

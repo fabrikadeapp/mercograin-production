@@ -42,7 +42,7 @@ export interface PerformanceData {
   year3: number | null
 }
 
-const QUOTE_TTL_MS = 10_000 // 10s — máximo refresh útil do Yahoo
+const QUOTE_TTL_MS = 30_000 // 30s — balanceia frescor com carga do servidor
 const PERF_TTL_MS = 10 * 60_000 // 10 min (performance é histórico, não muda em 10s)
 const HIST_TTL_MS = 10 * 60_000
 

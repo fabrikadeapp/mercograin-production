@@ -24,7 +24,7 @@ interface Props {
 
 export async function VgAppShell({
   children,
-  backgroundImage = '/visionglass/bg-hero.png',
+  backgroundImage = '/visionglass/bg-hero.jpg',
   maxWidth = '1400px',
 }: Props) {
   const session = await auth()
@@ -53,10 +53,11 @@ export async function VgAppShell({
     <div
       className="min-h-screen w-full relative"
       style={{
+        // backgroundAttachment: scroll (mais leve que fixed em scroll na GPU)
         backgroundImage: `linear-gradient(180deg, rgba(14,15,18,0.55) 0%, rgba(14,15,18,0.85) 100%), url('${backgroundImage}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
         color: 'var(--vg-fg-primary)',
       }}
     >
