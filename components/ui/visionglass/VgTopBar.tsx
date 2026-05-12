@@ -15,6 +15,25 @@ import {
   ChevronDown,
   LogOut,
   Settings,
+  TrendingUp,
+  Store,
+  ShoppingCart,
+  Coins,
+  BarChart3,
+  Users,
+  Package,
+  ListChecks,
+  Truck,
+  Scale,
+  Target,
+  Shield,
+  AlertTriangle,
+  Receipt,
+  CheckSquare,
+  Leaf,
+  Banknote,
+  MessageCircle,
+  MoreHorizontal,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
@@ -31,13 +50,63 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
 }
 
-const NAV: NavItem[] = [
+const NAV_PRIMARY: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/contratos', label: 'Contratos', icon: FileText },
   { href: '/ofertas', label: 'Ofertas', icon: Tag },
   { href: '/calculadora', label: 'Calculadora', icon: Calculator },
   { href: '/hedge', label: 'Hedge', icon: LineChart },
   { href: '/financeiro', label: 'Financeiro', icon: Wallet },
+]
+
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
+const NAV_MORE: NavGroup[] = [
+  {
+    label: 'Mesa & Mercado',
+    items: [
+      { href: '/cotacoes', label: 'Cotações', icon: TrendingUp },
+      { href: '/futuros', label: 'Futuros', icon: LineChart },
+      { href: '/classificados', label: 'Classificados', icon: Store },
+    ],
+  },
+  {
+    label: 'Cadastros',
+    items: [
+      { href: '/clientes', label: 'Clientes & CRM', icon: Users },
+      { href: '/fornecedores', label: 'Fornecedores', icon: Package },
+      { href: '/propostas', label: 'Propostas', icon: ListChecks },
+    ],
+  },
+  {
+    label: 'Operação',
+    items: [
+      { href: '/originacao', label: 'Originação', icon: Target },
+      { href: '/logistica', label: 'Logística', icon: Truck },
+      { href: '/operacao', label: 'Operação', icon: Scale },
+      { href: '/boletos', label: 'Boletos', icon: Wallet },
+    ],
+  },
+  {
+    label: 'Risco & Compliance',
+    items: [
+      { href: '/risco', label: 'Risco', icon: AlertTriangle },
+      { href: '/fiscal', label: 'Fiscal', icon: Receipt },
+      { href: '/aprovacoes', label: 'Aprovações', icon: CheckSquare },
+      { href: '/eudr', label: 'EUDR', icon: Leaf },
+    ],
+  },
+  {
+    label: 'Outros',
+    items: [
+      { href: '/fluxo-de-caixa', label: 'Fluxo de Caixa', icon: Coins },
+      { href: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+      { href: '/whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    ],
+  },
 ]
 
 function initials(s: string | null): string {
@@ -51,12 +120,13 @@ function initials(s: string | null): string {
 export function VgTopBar({ userName, userEmail, userRole, workspaceName }: Props) {
   const pathname = usePathname() ?? ''
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 px-6 md:px-8 pt-4">
       <div
-        className="mx-auto flex items-center gap-4 px-4 py-2.5"
+        className="mx-auto flex items-center gap-3 px-4 py-2.5"
         style={{
           maxWidth: '1400px',
           background: 'var(--vg-glass-dock)',
@@ -80,7 +150,7 @@ export function VgTopBar({ userName, userEmail, userRole, workspaceName }: Props
               <span className="text-[10px] uppercase tracking-wider text-vg-fg-3">
                 Workspace
               </span>
-              <span className="text-sm font-semibold text-vg-fg truncate max-w-[160px]">
+              <span className="text-sm font-semibold text-vg-fg truncate max-w-[140px]">
                 {workspaceName}
               </span>
             </div>
@@ -88,14 +158,14 @@ export function VgTopBar({ userName, userEmail, userRole, workspaceName }: Props
         </Link>
 
         {/* Nav primário */}
-        <nav className="flex items-center gap-1 flex-1 justify-center">
-          {NAV.map(({ href, label, icon: Icon }) => {
+        <nav className="flex items-center gap-0.5 flex-1 justify-center">
+          {NAV_PRIMARY.map(({ href, label, icon: Icon }) => {
             const active = isActive(href)
             return (
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all"
+                className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-full text-[13px] font-medium transition-all"
                 style={{
                   background: active ? 'var(--vg-glass-card-hover)' : 'transparent',
                   color: active ? 'var(--vg-fg-primary)' : 'var(--vg-fg-secondary)',
@@ -106,6 +176,74 @@ export function VgTopBar({ userName, userEmail, userRole, workspaceName }: Props
               </Link>
             )
           })}
+
+          {/* "Mais" dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-full text-[13px] font-medium transition-all"
+              style={{
+                background: moreOpen ? 'var(--vg-glass-card-hover)' : 'transparent',
+                color: moreOpen ? 'var(--vg-fg-primary)' : 'var(--vg-fg-secondary)',
+              }}
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Mais</span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {moreOpen ? (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setMoreOpen(false)}
+                  aria-hidden
+                />
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 mt-2 w-[640px] z-50 overflow-hidden"
+                  style={{
+                    background: 'var(--vg-glass-dock)',
+                    border: '1px solid var(--vg-glass-dock-border)',
+                    borderRadius: 'var(--vg-radius-lg)',
+                    boxShadow: 'var(--vg-shadow-dock)',
+                    backdropFilter: 'blur(40px)',
+                    WebkitBackdropFilter: 'blur(40px)',
+                  }}
+                >
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-3 p-4">
+                    {NAV_MORE.map((group) => (
+                      <div key={group.label}>
+                        <div className="text-[10px] uppercase tracking-wider text-vg-fg-3 px-2 mb-1.5 font-semibold">
+                          {group.label}
+                        </div>
+                        <div className="space-y-0.5">
+                          {group.items.map(({ href, label, icon: Icon }) => {
+                            const active = isActive(href)
+                            return (
+                              <Link
+                                key={href}
+                                href={href}
+                                onClick={() => setMoreOpen(false)}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px]"
+                                style={{
+                                  background: active ? 'var(--vg-glass-card-hover)' : 'transparent',
+                                  color: active ? 'var(--vg-fg-primary)' : 'var(--vg-fg-secondary)',
+                                }}
+                              >
+                                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                                {label}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
         </nav>
 
         {/* Busca */}
@@ -195,7 +333,7 @@ export function VgTopBar({ userName, userEmail, userRole, workspaceName }: Props
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-vg-fg hover:bg-white/5"
                     >
-                      <LayoutDashboard className="w-4 h-4" /> Admin
+                      <Shield className="w-4 h-4" /> Admin
                     </Link>
                   ) : null}
                   <button
