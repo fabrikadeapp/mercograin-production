@@ -1,0 +1,27 @@
+name: BH Grain · Alertas comerciais
+
+# Gera CommercialAlert (cotação vencida, margem baixa, concentração, meta em risco,
+# propostas paradas). Notifica admins/owners por email quando crítico.
+# Endpoint: /api/cron/bhgrain-alertas (skip se feature flag bhgrain.v1 off)
+# Idempotente — não duplica alertas abertos do mesmo (category, entity).
+
+on:
+  schedule:
+    # A cada 30 minutos, horário comercial estendido (8h-22h BRT, seg-sex)
+    # = 11h-01h UTC. Crons UTC: 11-23 nos dias da semana + 0-1 nas madrugadas seg-sex.
+    - cron: '*/30 11-23 * * 1-5'
+    - cron: '*/30 0-1 * * 2-6'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger bhgrain-alertas endpoint
+        run: |
+          curl -fsSL --max-time 120 \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/bhgrain-alertas

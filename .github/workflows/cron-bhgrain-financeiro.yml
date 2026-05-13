@@ -1,0 +1,28 @@
+name: BH Grain · Previsão financeira
+
+# Materializa previsão de receita ponderada como MovimentoFinanceiro previsto.
+# - Cria movimento previsto para cada proposta em aberto (valor × probabilidade)
+# - Marca como conciliado quando a proposta vira sucesso/concluido
+# - Remove movimento quando proposta é recusada/cancelada
+# Endpoint: /api/cron/bhgrain-financeiro (skip se feature flag bhgrain.v1 off)
+# Idempotente — usa descricao prefix "Previsão BH Grain · {numero}" como chave lógica.
+
+on:
+  schedule:
+    # A cada 1 hora durante horário comercial (8h-20h BRT, seg-sex)
+    # = 11h-23h UTC seg-sex
+    - cron: '0 11-23 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger bhgrain-financeiro endpoint
+        run: |
+          curl -fsSL --max-time 180 \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/bhgrain-financeiro

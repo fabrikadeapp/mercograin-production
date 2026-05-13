@@ -1,7 +1,12 @@
 # BH Grain — Crons
 
-Os 3 endpoints abaixo precisam ser disparados periodicamente.
-Sem agendamento, eles **não rodam** — apenas existem como HTTP endpoints.
+Os 4 endpoints abaixo são agendados via **GitHub Actions**
+(`.github/workflows/cron-bhgrain-*.yml`) — mesmo padrão dos demais crons do
+projeto (`cron-price-alerts.yml`, etc).
+
+**Pré-requisito:** secret `CRON_SECRET` no repositório GitHub
+(`Settings → Secrets and variables → Actions`). Valor deve bater com a env
+`CRON_SECRET` no Railway. ✅ Railway production já tem (64 chars).
 
 | Endpoint | Frequência sugerida | Função |
 |---|---|---|
