@@ -1,0 +1,23 @@
+name: BH Grain · Health checks
+
+# Popula IntegrationHealth (probes WhatsApp, Email, Instagram, Portal, Preços, IA, Financeiro)
+# Endpoint: /api/cron/bhgrain-health (skip se feature flag bhgrain.v1 off)
+
+on:
+  schedule:
+    # A cada 10 minutos, 24/7 (health não pode ter cegueira em horário não-comercial)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger bhgrain-health endpoint
+        run: |
+          curl -fsSL --max-time 90 \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/bhgrain-health

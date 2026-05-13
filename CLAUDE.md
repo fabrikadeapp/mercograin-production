@@ -48,3 +48,19 @@
 - Simplicity First: Make every change as simple as possible. Impact minimal code.
 - No Laziness: Find root causes. No temporary fixes. Senior developer standards.
 - Minimal Impact: Only touch what's necessary. No side effects with new bugs.
+
+# REGRA PERMANENTE DE IMPLEMENTAÇÃO
+
+Sempre implemente funcionalidades completas, reais e integradas.
+
+Não entregue apenas interface visual. Todo botão, formulário, modal, dashboard, filtro, importação, exportação, PDF, CSV, impressão, integração e processo exibido na UI deve funcionar de verdade, com handler, validação, API/service, persistência real, tratamento de erro, loading state, feedback de sucesso e testes quando relevante.
+
+É proibido usar mocks, snapshots, dados hardcoded ou placeholders como substitutos de funcionalidade de produção.
+
+Antes de finalizar qualquer tarefa, audite a cadeia completa:
+
+UI → ação → service/API → backend → banco ou integração → resposta → atualização da interface → erro/sucesso → teste.
+
+Se alguma parte não puder funcionar por falta de credencial, regra de negócio ou decisão externa, documente claramente como pendência real. Não finja funcionamento.
+
+Preserve a arquitetura atual, não quebre funcionalidades existentes, não crie arquivos desnecessários, reutilize padrões do projeto e implemente com máxima qualidade economizando tokens, sem reduzir a precisão, robustez ou completude da programação.

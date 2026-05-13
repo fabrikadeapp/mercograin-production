@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Plus, Sparkles, ChevronDown } from 'lucide-react'
+import { BhGrainCards } from './BhGrainCards'
 
 interface Props {
   fullName: string
@@ -269,6 +270,9 @@ export function DashboardVgContent({
           </div>
         </section>
       </div>
+
+      {/* BH Grain — cards adicionais (condicionais à feature flag bhgrain.v1) */}
+      <BhGrainCards />
     </div>
   )
 }

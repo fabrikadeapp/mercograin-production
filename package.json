@@ -17,7 +17,8 @@
     "backup:list": "curl -s http://localhost:3000/api/backups -H \"Authorization: Bearer YOUR_TOKEN\" | jq",
     "test": "node __tests__/simple.test.js",
     "test:e2e": "node --test __tests__/e2e/*.e2e.test.js",
-    "test:all": "npm test && npm run test:e2e",
+    "test:bhgrain": "node --import tsx --test __tests__/bhgrain/*.test.ts",
+    "test:all": "npm test && npm run test:e2e && npm run test:bhgrain",
     "audit:compliance": "node --experimental-strip-types --no-warnings scripts/audit-compliance.ts"
   },
   "dependencies": {
@@ -46,6 +47,7 @@
     "exceljs": "^4.4.0",
     "framer-motion": "^12.38.0",
     "geist": "^1.7.0",
+    "imapflow": "^1.3.3",
     "ioredis": "^5.3.0",
     "lucide-react": "^1.14.0",
     "next": "^14.2.35",
@@ -77,6 +79,7 @@
     "postcss": "^8.4.0",
     "prisma": "^5.8.0",
     "tailwindcss": "^3.3.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.0"
   },
   "engines": {

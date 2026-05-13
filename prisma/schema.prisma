@@ -147,6 +147,15 @@ model Workspace {
   produtorAccessos       ProdutorAccess[]
   documentosProdutor     DocumentoProdutor[]
   mensagensProdutor      MensagemProdutor[]
+  // BH Grain (Lote 2) — Inbox unificado, metas, alertas, regras, health
+  conversations          Conversation[]
+  conversationMessages   ConversationMessage[]
+  metasComerciais        MetaComercial[]
+  commercialAlerts       CommercialAlert[]
+  commercialRules        CommercialRule[]
+  integrationHealth      IntegrationHealth[]
+  // BH Grain (Lote 15) — credenciais de integração por canal (1:N — possível múltiplas contas no futuro, mas uniqueness por canal)
+  integrationCredentials IntegrationCredential[]
 
   /// Moeda padrão da corretora (BRL é default; USD/ARS pra exportadoras)
   moedaPadrao String @default("BRL") // 'BRL' | 'USD' | 'ARS'
@@ -185,6 +194,10 @@ model WorkspaceMember {
   email       String
   role        String // 'owner' | 'admin' | 'member' | 'viewer'
   status      String    @default("active") // 'active' | 'invited' | 'suspended'
+  /// BH Grain — perfil comercial granular (opcional, ortogonal ao role).
+  /// 'gestor' | 'trader' | 'vendedor' | 'financeiro' | 'operador' | 'leitura'
+  /// null = sem perfil específico; permissões caem para role base.
+  commercialRole String?
   inviteToken String?   @unique
   invitedAt   DateTime?
   acceptedAt  DateTime?
@@ -521,6 +534,9 @@ model Cotacao {
   close     Decimal? @db.Decimal(10, 2)
   data      DateTime @default(now())
 
+  // BH Grain — back-relation: propostas que referenciam esta cotação
+  propostasRef Proposta[] @relation("PropostaCotacaoRef")
+
   @@unique([grao, data])
   @@index([grao])
   @@index([data])
@@ -564,10 +580,53 @@ model Proposta {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // BH Grain — campos opcionais aditivos (Lote 2). UI exibe '—' quando null.
+  scoreInterno          Int?
+  scoreLabel            String?  // 'alta' | 'media' | 'baixa' | 'risco'
+  custoEstimado         Decimal? @db.Decimal(15, 2)
+  margemPercent         Decimal? @db.Decimal(6, 3)
+  lucroBrutoEstimado    Decimal? @db.Decimal(15, 2)
+  cotacaoRefId          String?
+  cotacaoRef            Cotacao? @relation("PropostaCotacaoRef", fields: [cotacaoRefId], references: [id], onDelete: SetNull)
+  cotacaoFonte          String?  @db.VarChar(60)
+  cotacaoCapturadaEm    DateTime?
+  validadeCotacao       DateTime?
+  marketPriceAtCreation Decimal? @db.Decimal(15, 4)
+  lossReason            String?  @db.VarChar(60)
+  nextBestAction        String?  @db.VarChar(60)
+  nextBestActionReason  String?  @db.Text
+
+  // BH Grain — Logística (Lote 12 / Fase F)
+  origem            String?  @db.VarChar(120)
+  destino           String?  @db.VarChar(120)
+  localEntrega      String?  @db.VarChar(120)
+  modalTransporte   String?  @db.VarChar(20)  // 'rodoviario' | 'ferroviario' | 'hidroviario' | 'multimodal'
+  freteTipo         String?  @db.VarChar(20)  // 'incluso' | 'comprador' | 'vendedor' | 'definir'
+  freteCustoTotal   Decimal? @db.Decimal(15, 2)
+  freteCustoUnit    Decimal? @db.Decimal(15, 4)
+  prazoLogistico    DateTime?
+  incoterm          String?  @db.VarChar(10)
+  armazemOrigemRefId  String?
+  armazemOrigemRef    Armazem? @relation("PropostaArmazemOrigem", fields: [armazemOrigemRefId], references: [id], onDelete: SetNull)
+  armazemDestinoRefId String?
+  armazemDestinoRef   Armazem? @relation("PropostaArmazemDestino", fields: [armazemDestinoRefId], references: [id], onDelete: SetNull)
+
+  // BH Grain — Estoque vinculado (Lote 12 / Fase F)
+  loteEstoqueRefId String?
+  loteEstoqueRef   LoteEstoque? @relation("PropostaLoteEstoque", fields: [loteEstoqueRefId], references: [id], onDelete: SetNull)
+
+  // BH Grain — Qualidade (Lote 12 / Fase F)
+  /// JSON estruturado: { umidadeMax?, impurezaMax?, ph?, proteinaMin?, ardidosMax?, avariadosMax?, padraoComercial?, observacoes? }
+  qualidadeSpec    Json?
+
   @@index([clienteId])
   @@index([status])
   @@index([validadeEm])
   @@index([workspaceId])
+  @@index([cotacaoRefId])
+  @@index([armazemOrigemRefId])
+  @@index([armazemDestinoRefId])
+  @@index([loteEstoqueRefId])
 
   // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
   ofertaOrigem Oferta?
@@ -894,6 +953,9 @@ model Armazem {
   // Operação Física (Epic 2)
   balancas      Balanca[]
   lotesEstoque  LoteEstoque[]
+  // BH Grain (Fase F) — propostas que indicam este armazém como origem/destino
+  propostasOrigem  Proposta[] @relation("PropostaArmazemOrigem")
+  propostasDestino Proposta[] @relation("PropostaArmazemDestino")
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -1088,6 +1150,8 @@ model LoteEstoque {
   movimentacoes  MovimentacaoLote[]
   // S5 M9 EUDR
   talhaoLotes    TalhaoLote[]
+  // BH Grain (Fase F) — propostas que reservam volume deste lote
+  propostasRef   Proposta[]   @relation("PropostaLoteEstoque")
 
   @@unique([workspaceId, numero])
   @@index([workspaceId, cultura, status])
@@ -2732,5 +2796,191 @@ model SystemConfig {
   value     Json
   updatedAt DateTime @updatedAt
   updatedBy String?
+}
+
+// ============================================================================
+// BH GRAIN — Lote 2 (aditivo, sem quebra de contratos existentes)
+// Feature flag: SystemConfig.key = 'bhgrain.v1' → { enabled: boolean }
+// ============================================================================
+
+/// Inbox unificado — adapter canal-agnóstico sobre WhatsApp/Email/Instagram/Portal.
+/// Uma Conversation = uma thread com um cliente/lead num canal específico.
+model Conversation {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  channel       String  @db.VarChar(20) // 'whatsapp' | 'email' | 'instagram' | 'portal'
+  externalRef   String? @db.VarChar(255) // jid/threadId/conversationId no provedor
+  clienteId     String?
+  contactName   String?
+  contactHandle String? // telefone, e-mail, @instagram
+
+  lastMessageAt DateTime?
+  unreadCount   Int       @default(0)
+  aiStatus      String    @default("aguardando") // 'aguardando' | 'lida' | 'classificado' | 'pronta_para_proposta' | 'pendente_info' | 'nao_comercial' | 'erro_leitura'
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ConversationMessage[]
+
+  @@unique([workspaceId, channel, externalRef])
+  @@index([workspaceId, lastMessageAt])
+  @@index([workspaceId, aiStatus])
+  @@index([clienteId])
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  externalRef String? @db.VarChar(255)
+  direction   String  @db.VarChar(10) // 'in' | 'out'
+  text        String? @db.Text
+  mediaUrl    String?
+  mediaType   String? @db.VarChar(30)
+
+  // Dados extraídos pela IA (JSON livre — score, commodity, qty, etc.)
+  aiExtraction Json?
+  aiScore      Int?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([conversationId, occurredAt])
+  @@index([workspaceId, occurredAt])
+}
+
+/// Meta comercial mensal por workspace (e opcionalmente por usuário/commodity).
+model MetaComercial {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  periodo   String  @db.VarChar(7) // 'YYYY-MM'
+  userId    String? // null = meta agregada do workspace
+  commodity String? @db.VarChar(40) // null = meta geral
+
+  valorMeta Decimal @db.Decimal(15, 2)
+  moeda     String  @default("BRL") @db.VarChar(3)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, periodo, userId, commodity])
+  @@index([workspaceId, periodo])
+}
+
+/// Alertas comerciais (margem baixa, cotação vencida, follow-up pendente, etc.).
+/// Distinto de AlertaPreco (que é alerta de mercado, não comercial).
+model CommercialAlert {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  severity    String  @db.VarChar(15) // 'critico' | 'atencao' | 'informativo'
+  category    String  @db.VarChar(40) // 'preco_vencido' | 'margem_baixa' | 'follow_up' | 'concentracao' | 'meta_risco' | 'integracao_erro' | ...
+  title       String  @db.VarChar(255)
+  description String? @db.Text
+
+  relatedEntityType String? @db.VarChar(30) // 'Proposta' | 'Cliente' | 'Cotacao' | 'Integration' | 'Meta'
+  relatedEntityId   String?
+
+  status      String   @default("aberto") @db.VarChar(15) // 'aberto' | 'resolvido' | 'ignorado'
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, severity, status])
+  @@index([relatedEntityType, relatedEntityId])
+}
+
+/// Regras comerciais configuráveis no /admin (margem mín, validade default, etc.).
+model CommercialRule {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name      String  @db.VarChar(120)
+  type      String  @db.VarChar(40) // 'margem_minima' | 'validade_proposta' | 'desconto_max' | 'aprovacao_valor' | 'aprovacao_margem' | 'bloqueio_preco_vencido' | 'follow_up' | 'canal_preferencial'
+  commodity String? @db.VarChar(40)
+  threshold Decimal? @db.Decimal(15, 4)
+  action    String  @db.VarChar(20) // 'alertar' | 'bloquear' | 'aprovar' | 'sugerir'
+  params    Json?
+
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@index([workspaceId, type, active])
+}
+
+/// Health check de integrações (WhatsApp/Email/Instagram/Portal/Preços/IA/Financeiro).
+model IntegrationHealth {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  integration String @db.VarChar(30) // 'whatsapp' | 'email' | 'instagram' | 'portal' | 'precos' | 'ia' | 'financeiro'
+  status      String @db.VarChar(15) // 'online' | 'instavel' | 'atraso' | 'erro' | 'desconectada'
+
+  lastSuccessAt    DateTime?
+  lastFailureAt    DateTime?
+  responseTimeMs   Int?
+  pendingEvents    Int       @default(0)
+  processedEvents  Int       @default(0)
+  lastErrorMessage String?   @db.Text
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, integration])
+  @@index([workspaceId, status])
+}
+
+/// BH Grain Lote 15 — Credenciais de integração por canal × workspace.
+/// Segredos (senhas, tokens, apiKeys) ficam em `secretsEncrypted` (JSON map).
+/// Cada valor segue formato `iv:tag:cipher` produzido por lib/bhgrain/crypto-secret.
+/// Configs públicas (host, porta, usuário, modo) ficam em `config` (Json plain).
+///
+/// channel valores:
+///   'email_imap_smtp' — host, porta, user, useTls + senhas SMTP/IMAP
+///   'instagram'       — pageId, instagramBusinessId + pageAccessToken
+///   'whatsapp'        — modo central/byo, instanceName, baseUrl, apiKey
+model IntegrationCredential {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  channel String @db.VarChar(30)
+
+  /// Configurações não-sensíveis. Ex.: { imapHost, imapPort, imapUser, smtpHost, smtpPort, smtpUser, useTls, fromName }
+  config Json
+
+  /// Segredos criptografados. Map { fieldName: 'iv:tag:cipher' }
+  /// Ex.: { imapPassword: 'a1b2c3:...', smtpPassword: 'd4e5f6:...' }
+  secretsEncrypted Json
+
+  /// Marcador para UI: usuário ativou esta integração (ou está só salva como rascunho).
+  enabled Boolean @default(false)
+
+  /// Última validação bem-sucedida (Test Connection)
+  lastTestedAt    DateTime?
+  lastTestSuccess Boolean?
+  lastTestError   String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, enabled])
 }
 

@@ -11,6 +11,7 @@ import type { PrismaClient } from '@prisma/client'
 import { db as defaultDb } from '@/lib/db'
 import { processCommand } from './bot-commands'
 import { captureError } from '@/lib/observability/capture'
+import { wireBhGrainFromWhatsApp } from '@/lib/bhgrain/wire-whatsapp'
 
 export interface InstanceCtx {
   id: string
@@ -190,6 +191,21 @@ export async function processMessage(
       })
     }
   }
+
+  // BH Grain — wiring async (não bloqueia o webhook).
+  // Classifica via IA, atualiza Conversation/ConversationMessage, e cria
+  // Rascunho IA se for pedido de cotação com dados completos.
+  void wireBhGrainFromWhatsApp({
+    workspaceId: instance.workspaceId,
+    contactId: contact.id,
+    jid: remoteJid,
+    contactName: pushName,
+    contactPhone: phone || null,
+    messageId,
+    text,
+    timestamp,
+    fromMe,
+  })
 }
 
 async function handleConnectionUpdate(

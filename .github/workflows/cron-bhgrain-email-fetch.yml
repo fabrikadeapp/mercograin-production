@@ -1,0 +1,27 @@
+name: BH Grain · IMAP email fetch
+
+# Polla mailbox dos workspaces com credencial de email habilitada (enabled=true)
+# e popula Conversation(channel='email') + ConversationMessage.
+# Endpoint: /api/cron/bhgrain-email-fetch (skip se feature flag bhgrain.v1 off)
+# Idempotente — usa uidValidity + lastSeenUid como cursor (armazenado em
+# IntegrationCredential.config). Limita 50 mensagens por workspace por execução.
+
+on:
+  schedule:
+    # A cada 10 minutos durante horário comercial estendido (7h-21h BRT, seg-sex)
+    # = 10h-00h UTC seg-sex
+    - cron: '*/10 10-23 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger bhgrain-email-fetch endpoint
+        run: |
+          curl -fsSL --max-time 300 \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/bhgrain-email-fetch
