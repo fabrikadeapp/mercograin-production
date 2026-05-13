@@ -59,24 +59,36 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header NewDB v2 — eyebrow mono + greeting com <em> serif italic */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="dash-title">
-          <div className="eyebrow">MESA OPERACIONAL · {eyebrowTimestamp}</div>
-          <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', margin: '4px 0' }}>
-            {greeting}, {firstName}. <em className="t-serif" style={{ color: 'var(--text-mute)' }}>Aqui está o que importa hoje.</em>
-          </h1>
-          <div style={{ color: 'var(--text-mute)', fontSize: 13 }}>{workspaceName}</div>
+      {/* Header NewDB v2
+          - Linha 1: eyebrow mono + "Bom dia, Admin." + workspace + alertas
+          - Linha 2: "Aqui está o que importa hoje." em Instrument Serif italic */}
+      <header className="space-y-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="eyebrow">MESA OPERACIONAL · {eyebrowTimestamp}</div>
+            <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', margin: '4px 0 0' }}>
+              {greeting}, {firstName}.
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <span style={{ color: 'var(--text-mute)', fontSize: 13 }}>{workspaceName}</span>
+            {alertasCount > 0 && (
+              <Link
+                href="/admin/bhgrain/alertas"
+                className="badge danger"
+                style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
+              >
+                <Bell className="w-3 h-3" /> {alertasCount} alertas
+              </Link>
+            )}
+          </div>
         </div>
-        {alertasCount > 0 && (
-          <Link
-            href="/admin/bhgrain/alertas"
-            className="badge danger"
-            style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
-          >
-            <Bell className="w-3 h-3" /> {alertasCount} alertas
-          </Link>
-        )}
+        <div
+          className="t-serif"
+          style={{ fontSize: 18, color: 'var(--text-mute)', letterSpacing: '-0.01em' }}
+        >
+          Aqui está o que importa hoje.
+        </div>
       </header>
 
       {/* Insight bar — lime translúcido, "what to do now" */}
@@ -122,30 +134,38 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
       </FilterBar>
 
       {/*
-        Linha 1: 4 cards operacionais
-        Mobile: Inbox 1º, Propostas 2º, Clientes 3º, Preços 4º.
-        Desktop: Clientes/Inbox/Preços/Propostas.
+        Nova organização (conforme briefing):
+        - Linha 1: Inbox unificado (esq) + Preços ao vivo (dir)
+        - Linha 2: Pipeline de propostas (esq, span 2) + Indicadores comerciais (dir)
+        - Linha 3: Clientes + Propostas + Faturamento & Meta (3 col)
+        - Linha 4: Health de integrações (horizontal full-width)
+
+        Mobile mantém ordem priorizada: Inbox → Propostas → Pipeline → Preços → Clientes → Indicadores → Faturamento.
       */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="order-3 md:order-1"><ClientesCard /></div>
-        <div className="order-1 md:order-2"><InboxCard onOpenConversa={setConversaId} /></div>
-        <div className="order-4 md:order-3"><PrecosCard /></div>
-        <div className="order-2 md:order-4"><PropostasCard onOpenProposta={openProposta} /></div>
+
+      {/* Linha 1 — Inbox + Preços */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <InboxCard onOpenConversa={setConversaId} />
+        <PrecosCard />
       </div>
 
-      {/* Linha 2: pipeline (2 col xl) + indicadores + faturamento */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-        <div className="xl:col-span-2 order-1">
+      {/* Linha 2 — Pipeline (span 2) + Indicadores */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
           <PipelineCard onOpenProposta={openProposta} />
         </div>
-        <div className="order-3 md:order-2"><IndicadoresCard /></div>
-        <div className="order-2 md:order-3"><FaturamentoMetaCard /></div>
+        <IndicadoresCard />
       </div>
 
-      {/* Linha 3: health compacto (full-width) */}
-      <div className="grid grid-cols-1 gap-4">
-        <HealthCard />
+      {/* Linha 3 — Clientes + Propostas + Faturamento & Meta */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <ClientesCard />
+        <PropostasCard onOpenProposta={openProposta} />
+        <FaturamentoMetaCard />
       </div>
+
+      {/* Linha 4 — Health (horizontal) */}
+      <HealthCard />
 
       <PropostaDetailDrawer propostaId={propostaId} onClose={() => setPropostaId(null)} />
       <ConversaDrawer conversationId={conversaId} onClose={() => setConversaId(null)} />
