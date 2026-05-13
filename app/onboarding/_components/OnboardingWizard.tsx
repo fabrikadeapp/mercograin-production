@@ -7,6 +7,7 @@ import { Step2Equipe } from './Step2Equipe'
 import { Step3Clientes } from './Step3Clientes'
 import { Step4Fornecedores } from './Step4Fornecedores'
 import { Step5Template } from './Step5Template'
+import { Step6BhGrain } from './Step6BhGrain'
 import { Step6Tour } from './Step6Tour'
 
 export interface EmpresaInitial {
@@ -35,7 +36,7 @@ export function OnboardingWizard({ workspace, initialEmpresa }: Props) {
   const router = useRouter()
 
   async function next() {
-    if (step < 6) {
+    if (step < 7) {
       setStep(step + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
@@ -61,7 +62,7 @@ export function OnboardingWizard({ workspace, initialEmpresa }: Props) {
   }
 
   return (
-    <OnboardingShell step={step} totalSteps={6} ownerName={workspace.ownerName}>
+    <OnboardingShell step={step} totalSteps={7} ownerName={workspace.ownerName}>
       {step === 1 && (
         <Step1Empresa
           workspaceId={workspace.id}
@@ -102,6 +103,14 @@ export function OnboardingWizard({ workspace, initialEmpresa }: Props) {
         />
       )}
       {step === 6 && (
+        <Step6BhGrain
+          workspaceId={workspace.id}
+          onNext={next}
+          onSkip={next}
+          onBack={back}
+        />
+      )}
+      {step === 7 && (
         <Step6Tour
           ownerName={workspace.ownerName}
           onComplete={next}
