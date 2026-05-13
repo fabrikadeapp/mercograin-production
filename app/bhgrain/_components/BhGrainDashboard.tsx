@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { Bell } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Bell, Sparkles, Zap, Filter as FilterIcon } from 'lucide-react'
 import Link from 'next/link'
 import { ClientesCard } from './ClientesCard'
 import { InboxCard } from './InboxCard'
@@ -13,16 +13,30 @@ import { FaturamentoMetaCard } from './FaturamentoMetaCard'
 import { HealthCard } from './HealthCard'
 import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { ConversaDrawer } from './ConversaDrawer'
+import { Chip, FilterBar, FilterLabel, InsightBar, Button } from '@/components/ui/newdb'
 
 interface Props {
   firstName: string
   workspaceName: string
 }
 
+type Periodo = 'hoje' | '7d' | '15d' | '30d'
+type Commodity = 'todas' | 'soja' | 'milho' | 'trigo'
+
+const PERIOD_LABEL: Record<Periodo, string> = {
+  hoje: 'Hoje',
+  '7d': '7 dias',
+  '15d': '15 dias',
+  '30d': '30 dias',
+}
+
 export function BhGrainDashboard({ firstName, workspaceName }: Props) {
   const [propostaId, setPropostaId] = useState<string | null>(null)
   const [conversaId, setConversaId] = useState<string | null>(null)
   const [alertasCount, setAlertasCount] = useState<number>(0)
+  const [periodo, setPeriodo] = useState<Periodo>('hoje')
+  const [commodity, setCommodity] = useState<Commodity>('todas')
+  const [insightDismissed, setInsightDismissed] = useState(false)
 
   useEffect(() => {
     fetch('/api/dashboard/resumo')
@@ -35,34 +49,82 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
 
   const openProposta = useCallback((id: string) => setPropostaId(id), [])
 
+  const eyebrowTimestamp = useMemo(() => {
+    const d = new Date()
+    return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}, ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+  }, [])
+
+  const greetingHour = new Date().getHours()
+  const greeting = greetingHour < 12 ? 'Bom dia' : greetingHour < 18 ? 'Boa tarde' : 'Boa noite'
+
   return (
     <div className="space-y-4">
-      {/* Cabeçalho compacto da página (topbar global vem do BhGrainShell) */}
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="text-[11px] text-vg-fg-3 uppercase tracking-wider">Mesa operacional</div>
-          <h1 className="text-[20px] font-semibold tracking-tight">Bom dia, {firstName}</h1>
-          <div className="text-[12px] text-vg-fg-3">{workspaceName}</div>
+      {/* Header NewDB v2 — eyebrow mono + greeting com <em> serif italic */}
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="dash-title">
+          <div className="eyebrow">MESA OPERACIONAL · {eyebrowTimestamp}</div>
+          <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', margin: '4px 0' }}>
+            {greeting}, {firstName}. <em className="t-serif" style={{ color: 'var(--text-mute)' }}>Aqui está o que importa hoje.</em>
+          </h1>
+          <div style={{ color: 'var(--text-mute)', fontSize: 13 }}>{workspaceName}</div>
         </div>
         {alertasCount > 0 && (
           <Link
             href="/admin/bhgrain/alertas"
-            className="text-[11px] px-2.5 py-1.5 rounded-lg flex items-center gap-1.5"
-            style={{
-              background: 'rgba(239,68,68,0.15)',
-              color: 'var(--vg-destructive, #ef4444)',
-              border: '1px solid rgba(239,68,68,0.3)',
-            }}
+            className="badge danger"
+            style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
           >
             <Bell className="w-3 h-3" /> {alertasCount} alertas
           </Link>
         )}
       </header>
 
+      {/* Insight bar — lime translúcido, "what to do now" */}
+      {!insightDismissed && (
+        <InsightBar
+          icon={<Zap style={{ width: 16, height: 16 }} fill="currentColor" />}
+          title="Reveja propostas com prioridade IA antes de fechar o dia"
+          description="A IA destacou propostas com alta chance de fechamento — abra Prioridades para a lista priorizada"
+          actions={
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setInsightDismissed(true)}>
+                Ignorar
+              </Button>
+              <Link href="#" className="btn primary" style={{ textDecoration: 'none', fontSize: 12 }}>
+                <Sparkles style={{ width: 12, height: 12 }} /> Ver prioridades
+              </Link>
+            </>
+          }
+        />
+      )}
+
+      {/* Filter bar — chips período + commodity */}
+      <FilterBar
+        right={
+          <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }}>
+            <FilterIcon style={{ width: 12, height: 12 }} /> Filtros avançados
+          </button>
+        }
+      >
+        <FilterLabel>PERÍODO</FilterLabel>
+        {(Object.keys(PERIOD_LABEL) as Periodo[]).map((p) => (
+          <Chip key={p} active={periodo === p} onClick={() => setPeriodo(p)}>
+            {PERIOD_LABEL[p]}
+          </Chip>
+        ))}
+        <div className="sep" />
+        <FilterLabel>COMMODITY</FilterLabel>
+        {(['todas', 'soja', 'milho', 'trigo'] as Commodity[]).map((c) => (
+          <Chip key={c} active={commodity === c} onClick={() => setCommodity(c)}>
+            {c === 'todas' ? 'Todas' : c[0].toUpperCase() + c.slice(1)}
+          </Chip>
+        ))}
+      </FilterBar>
+
       {/*
         Linha 1: 4 cards operacionais
-        Mobile (single col): Inbox 1º, Propostas 2º, Clientes 3º, Preços 4º (§35).
-        Desktop: ordem natural Clientes/Inbox/Preços/Propostas.
+        Mobile: Inbox 1º, Propostas 2º, Clientes 3º, Preços 4º.
+        Desktop: Clientes/Inbox/Preços/Propostas.
       */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="order-3 md:order-1"><ClientesCard /></div>

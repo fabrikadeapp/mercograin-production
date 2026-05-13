@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 
+/**
+ * GlassCard — reskin NewDB v2.
+ * Usa .sec-card (do styles/newdb.css). Header com title/subtitle e action area.
+ * Mantém API original para compatibilidade com os 8 cards do BH Grain.
+ */
 export function GlassCard({
   title,
   subtitle,
@@ -19,18 +24,22 @@ export function GlassCard({
   className?: string
 }) {
   return (
-    <section className={`vg-glass-card rounded-2xl p-4 flex flex-col ${className}`}>
-      <header className="flex items-start justify-between mb-3">
+    <section className={`sec-card flex flex-col ${className}`}>
+      <header className="sec-head">
         <div className="min-w-0">
-          <h2 className="text-[13px] font-semibold tracking-tight truncate">{title}</h2>
-          {subtitle && <p className="text-[11px] text-vg-fg-3 mt-0.5 truncate">{subtitle}</p>}
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{title}</h3>
+          {subtitle && (
+            <div className="sub" style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
+              {subtitle}
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="actions flex items-center gap-2 shrink-0">
           {status && (
-            <span className="flex items-center gap-1 text-[11px] text-vg-fg-3">
+            <span className="flex items-center gap-1.5" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
               <span
                 className="w-1.5 h-1.5 rounded-full"
-                style={{ background: status.online ? 'var(--vg-success, #10b981)' : 'var(--vg-fg-3)' }}
+                style={{ background: status.online ? 'var(--success)' : 'var(--text-dim)' }}
               />
               {status.label ?? (status.online ? 'Online' : 'Offline')}
             </span>
@@ -38,7 +47,7 @@ export function GlassCard({
           {action}
         </div>
       </header>
-      <div className="flex-1 min-h-0">{children}</div>
+      <div className="flex-1 min-h-0" style={{ padding: '16px 20px 18px' }}>{children}</div>
     </section>
   )
 }
@@ -48,8 +57,9 @@ export function Avatar({ initials, hot }: { initials: string; hot?: boolean }) {
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
       style={{
-        background: hot ? 'var(--vg-accent-primary)' : 'var(--vg-glass-card-hover)',
-        color: hot ? '#fff' : 'var(--vg-fg-primary)',
+        background: hot ? 'var(--accent)' : 'var(--surface-2)',
+        color: hot ? 'var(--accent-ink)' : 'var(--text)',
+        border: '1px solid var(--border)',
       }}
     >
       {initials}
@@ -64,25 +74,20 @@ export function Badge({
   label: string
   tone?: 'neutral' | 'success' | 'warn' | 'danger' | 'info'
 }) {
-  const map: Record<string, string> = {
-    neutral: 'var(--vg-glass-pill-track)',
-    success: 'rgba(16,185,129,0.15)',
-    warn: 'rgba(245,158,11,0.15)',
-    danger: 'rgba(239,68,68,0.15)',
-    info: 'rgba(59,130,246,0.15)',
-  }
-  const textMap: Record<string, string> = {
-    neutral: 'var(--vg-fg-2)',
-    success: 'var(--vg-success, #10b981)',
-    warn: '#f59e0b',
-    danger: 'var(--vg-destructive, #ef4444)',
-    info: 'var(--vg-accent-primary)',
-  }
+  // NewDB v2: usa classes .badge.{tone} do newdb.css quando possível
+  const cls =
+    tone === 'success'
+      ? 'badge success'
+      : tone === 'warn'
+        ? 'badge warning'
+        : tone === 'danger'
+          ? 'badge danger'
+          : tone === 'info'
+            ? 'badge info'
+            : 'badge neutral'
   return (
-    <span
-      className="text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-flex items-center"
-      style={{ background: map[tone], color: textMap[tone] }}
-    >
+    <span className={cls} style={{ fontSize: 10 }}>
+      {tone !== 'neutral' && <span className="dot" />}
       {label}
     </span>
   )
@@ -120,12 +125,22 @@ export function fmtRelativeMin(min: number | null): string {
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`vg-glass-card rounded animate-pulse ${className}`} style={{ background: 'var(--vg-glass-card-hover)' }} />
+  return (
+    <div
+      className={`skel rounded animate-pulse ${className}`}
+      style={{
+        background:
+          'linear-gradient(90deg, var(--skel-1) 0%, var(--skel-2) 50%, var(--skel-1) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'skel-shimmer 1.6s ease-in-out infinite',
+      }}
+    />
+  )
 }
 
 export function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex items-center gap-2 text-[12px] text-vg-destructive py-4">
+    <div className="flex items-center gap-2 py-4" style={{ fontSize: 12, color: 'var(--danger)' }}>
       <AlertTriangle className="w-4 h-4 shrink-0" />
       <span>{message}</span>
     </div>
@@ -134,7 +149,7 @@ export function ErrorState({ message }: { message: string }) {
 
 export function EmptyState({ message, action }: { message: string; action?: React.ReactNode }) {
   return (
-    <div className="text-center py-6 text-[12px] text-vg-fg-3">
+    <div className="text-center py-6" style={{ fontSize: 12, color: 'var(--text-dim)' }}>
       <div>{message}</div>
       {action && <div className="mt-2">{action}</div>}
     </div>

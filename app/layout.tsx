@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Urbanist } from 'next/font/google'
+import { Urbanist, Inter, JetBrains_Mono, Instrument_Serif } from 'next/font/google'
 import './globals.css'
 
 const urbanist = Urbanist({
@@ -9,6 +9,27 @@ const urbanist = Urbanist({
   display: 'swap',
   variable: '--font-urbanist',
   weight: ['300', '400', '500', '600', '700'],
+})
+
+// Design v2 — fontes NewDB
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+  weight: ['400', '500', '600', '700'],
+})
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-jetbrains-mono',
+  weight: ['400', '500', '600'],
+})
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-instrument-serif',
+  weight: ['400'],
+  style: ['normal', 'italic'],
 })
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProviderClient } from '@/contexts/SessionProviderClient'
@@ -93,7 +114,7 @@ export default async function RootLayout({
       lang="pt-BR"
       data-palette="synthex"
       data-theme={theme}
-      className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable} ${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
     >
       <body className="bg-bg-0 text-fg-1 font-sans antialiased min-h-screen">
         <SessionProviderClient>

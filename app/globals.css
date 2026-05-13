@@ -6,6 +6,7 @@
 @tailwind utilities;
 
 @import '../styles/system.css';
+@import '../styles/newdb.css';
 
 html {
   scroll-behavior: smooth;

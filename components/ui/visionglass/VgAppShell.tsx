@@ -53,12 +53,12 @@ export async function VgAppShell({
     <div
       className="min-h-screen w-full relative"
       style={{
-        // backgroundAttachment: scroll (mais leve que fixed em scroll na GPU)
-        backgroundImage: `linear-gradient(180deg, rgba(14,15,18,0.55) 0%, rgba(14,15,18,0.85) 100%), url('${backgroundImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        color: 'var(--vg-fg-primary)',
+        // NewDB v2: fundo sólido com radial gradients suaves (sem foto).
+        background:
+          'radial-gradient(1200px 700px at 10% -10%, var(--accent-soft), transparent 60%), ' +
+          'radial-gradient(900px 500px at 100% 0%, var(--accent-2-soft), transparent 60%), ' +
+          'var(--bg)',
+        color: 'var(--text)',
       }}
     >
       <VgTopBar
