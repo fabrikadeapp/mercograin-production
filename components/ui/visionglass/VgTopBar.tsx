@@ -51,6 +51,7 @@ interface NavItem {
 }
 
 const NAV_PRIMARY: NavItem[] = [
+  { href: '/bhgrain', label: 'BH Grain', icon: Sparkles },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/contratos', label: 'Contratos', icon: FileText },
   { href: '/ofertas', label: 'Ofertas', icon: Tag },
