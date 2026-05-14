@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ClientesCard } from './ClientesCard'
 import { InboxCard } from './InboxCard'
 import { PrecosCard } from './PrecosCard'
+import { CbotCard } from './CbotCard'
 import { PropostasCard } from './PropostasCard'
 import { PipelineCard } from './PipelineCard'
 import { IndicadoresCard } from './IndicadoresCard'
@@ -210,6 +211,9 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
         <InboxCard onOpenConversa={setConversaId} />
         <PrecosCard />
       </div>
+
+      {/* Linha 1.5 — Chicago CBOT (full-width, com seletor de unidade) */}
+      <CbotCard />
 
       {/* Linha 2 — Pipeline (span 2) + Indicadores */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

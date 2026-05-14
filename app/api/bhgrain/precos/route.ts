@@ -36,7 +36,15 @@ const FUTUROS = {
   trigo: 'ZW=F',
 } as const
 
-const BU_POR_SC60 = 60 / 27.2155 // ≈ 2.20462
+// Densidade kg/bushel padrão USDA por grão:
+//  - Soja  : 27,2155 kg/bu (60 lb)
+//  - Milho : 25,4012 kg/bu (56 lb)  ← antes usávamos 27,2155 errado
+//  - Trigo : 27,2155 kg/bu (60 lb)
+const KG_POR_BU = {
+  soja: 27.2155,
+  milho: 25.4012,
+  trigo: 27.2155,
+} as const
 
 type Grao = keyof typeof FUTUROS
 
@@ -119,7 +127,11 @@ async function getSpotCepea(): Promise<Partial<Record<Grao, { precoBrlSc: number
   }
 }
 
-function futuroBrl(fut: CommodityQuote | null, usdbrl: number | null): PrecoCombinado['futuro'] {
+function futuroBrl(
+  grao: Grao,
+  fut: CommodityQuote | null,
+  usdbrl: number | null
+): PrecoCombinado['futuro'] {
   if (!fut || fut.price == null) {
     return {
       precoBrlSc: null,
@@ -133,7 +145,8 @@ function futuroBrl(fut: CommodityQuote | null, usdbrl: number | null): PrecoComb
   }
   // Yahoo retorna cents/bushel para ZS/ZC/ZW. Convertendo:
   const usdBu = fut.price / 100
-  const brlSc = usdbrl != null ? usdBu * usdbrl * BU_POR_SC60 : null
+  const buPorSc60 = 60 / KG_POR_BU[grao]
+  const brlSc = usdbrl != null ? usdBu * usdbrl * buPorSc60 : null
   return {
     precoBrlSc: brlSc != null ? Math.round(brlSc * 100) / 100 : null,
     precoUsdBu: Math.round(usdBu * 100) / 100,
@@ -179,7 +192,7 @@ export async function GET() {
               changePct: null,
               marketState: null,
             },
-        futuro: futuroBrl(fut ?? null, usdbrl.price),
+        futuro: futuroBrl(grao, fut ?? null, usdbrl.price),
       }
     })
 

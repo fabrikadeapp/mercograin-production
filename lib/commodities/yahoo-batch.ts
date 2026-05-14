@@ -62,6 +62,14 @@ function formatContractMonth(epochSeconds: number | null | undefined): string | 
   return `${months[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`
 }
 
+function formatContractFromIso(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  return `${months[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`
+}
+
 /**
  * Snapshot atual em batch. Yahoo aceita lista de símbolos no quote() —
  * mas o tipo é union; tratamos como any.
@@ -99,7 +107,9 @@ export async function getQuotesBatch(symbols: string[]): Promise<Record<string, 
         currency: typeof q.currency === 'string' ? q.currency : null,
         exchangeName: typeof q.fullExchangeName === 'string' ? q.fullExchangeName : null,
         marketState: typeof q.marketState === 'string' ? q.marketState : null,
-        contractMonth: formatContractMonth(q.contractSymbolExpireDate ?? null),
+        contractMonth:
+          formatContractFromIso(q.expireIsoDate ?? q.expireDate ?? null) ??
+          formatContractMonth(q.contractSymbolExpireDate ?? null),
         regularMarketTime: num(q.regularMarketTime),
         fetchedAt: new Date(now).toISOString(),
       }
