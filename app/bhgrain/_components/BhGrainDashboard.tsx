@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Bell, Sparkles, Zap, Filter as FilterIcon } from 'lucide-react'
+import { Bell, Sparkles, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { ClientesCard } from './ClientesCard'
 import { InboxCard } from './InboxCard'
@@ -13,7 +13,7 @@ import { FaturamentoMetaCard } from './FaturamentoMetaCard'
 import { HealthCard } from './HealthCard'
 import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { ConversaDrawer } from './ConversaDrawer'
-import { Chip, FilterBar, FilterLabel, InsightBar, Button } from '@/components/ui/newdb'
+import { Chip, InsightBar, Button } from '@/components/ui/newdb'
 
 interface Props {
   firstName: string
@@ -59,35 +59,47 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Header NewDB v2
-          - Linha 1: eyebrow mono + "Bom dia, Admin." + workspace + alertas
-          - Linha 2: "Aqui está o que importa hoje." em Instrument Serif italic */}
-      <header className="space-y-1">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="eyebrow">MESA OPERACIONAL · {eyebrowTimestamp}</div>
-            <h1 style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.02em', margin: '4px 0 0' }}>
-              {greeting}, {firstName}.
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span style={{ color: 'var(--text-mute)', fontSize: 13 }}>{workspaceName}</span>
-            {alertasCount > 0 && (
-              <Link
-                href="/admin/bhgrain/alertas"
-                className="badge danger"
-                style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
-              >
-                <Bell className="w-3 h-3" /> {alertasCount} alertas
-              </Link>
-            )}
-          </div>
+      {/* Header NewDB v2 — uma linha compacta com tudo:
+          eyebrow + saudação + serifa subtítulo + chips filtros + alertas */}
+      <header className="flex flex-wrap items-center gap-x-5 gap-y-2 py-1">
+        <div className="flex items-baseline gap-3 min-w-0">
+          <div className="eyebrow shrink-0">{eyebrowTimestamp}</div>
+          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
+            {greeting}, {firstName}.
+          </h1>
+          <span
+            className="t-serif hidden md:inline"
+            style={{ fontSize: 14, color: 'var(--text-mute)', letterSpacing: '-0.005em' }}
+          >
+            Aqui está o que importa hoje.
+          </span>
         </div>
-        <div
-          className="t-serif"
-          style={{ fontSize: 18, color: 'var(--text-mute)', letterSpacing: '-0.01em' }}
-        >
-          Aqui está o que importa hoje.
+
+        {/* Chips filtros — inline no header */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {(Object.keys(PERIOD_LABEL) as Periodo[]).map((p) => (
+            <Chip key={p} active={periodo === p} onClick={() => setPeriodo(p)}>
+              {PERIOD_LABEL[p]}
+            </Chip>
+          ))}
+          <span style={{ width: 1, height: 14, background: 'var(--border)', margin: '0 4px' }} />
+          {(['todas', 'soja', 'milho', 'trigo'] as Commodity[]).map((c) => (
+            <Chip key={c} active={commodity === c} onClick={() => setCommodity(c)}>
+              {c === 'todas' ? 'Todas' : c[0].toUpperCase() + c.slice(1)}
+            </Chip>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 ml-auto shrink-0">
+          {alertasCount > 0 && (
+            <Link
+              href="/admin/bhgrain/alertas"
+              className="badge danger"
+              style={{ textDecoration: 'none', padding: '5px 10px', fontSize: 12 }}
+            >
+              <Bell className="w-3 h-3" /> {alertasCount} alertas
+            </Link>
+          )}
         </div>
       </header>
 
@@ -102,36 +114,13 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
               <Button variant="ghost" size="sm" onClick={() => setInsightDismissed(true)}>
                 Ignorar
               </Button>
-              <Link href="#" className="btn primary" style={{ textDecoration: 'none', fontSize: 12 }}>
+              <Link href="/admin/bhgrain/prioridades" className="btn primary" style={{ textDecoration: 'none', fontSize: 12 }}>
                 <Sparkles style={{ width: 12, height: 12 }} /> Ver prioridades
               </Link>
             </>
           }
         />
       )}
-
-      {/* Filter bar — chips período + commodity */}
-      <FilterBar
-        right={
-          <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }}>
-            <FilterIcon style={{ width: 12, height: 12 }} /> Filtros avançados
-          </button>
-        }
-      >
-        <FilterLabel>PERÍODO</FilterLabel>
-        {(Object.keys(PERIOD_LABEL) as Periodo[]).map((p) => (
-          <Chip key={p} active={periodo === p} onClick={() => setPeriodo(p)}>
-            {PERIOD_LABEL[p]}
-          </Chip>
-        ))}
-        <div className="sep" />
-        <FilterLabel>COMMODITY</FilterLabel>
-        {(['todas', 'soja', 'milho', 'trigo'] as Commodity[]).map((c) => (
-          <Chip key={c} active={commodity === c} onClick={() => setCommodity(c)}>
-            {c === 'todas' ? 'Todas' : c[0].toUpperCase() + c.slice(1)}
-          </Chip>
-        ))}
-      </FilterBar>
 
       {/*
         Nova organização (conforme briefing):

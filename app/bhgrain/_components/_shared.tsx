@@ -188,7 +188,43 @@ export function StatusBadge({ status }: { status: string }) {
   return <Badge tone={tone} label={labelMap[s] ?? status} />
 }
 
-// Hook simples para fetch JSON com loading/error
+/**
+ * Cache in-memory por URL com 2 garantias:
+ *  1. Dedup de requests in-flight (N cards → 1 fetch real)
+ *  2. Cache de 5s — recarregar o componente reaproveita o resultado
+ *
+ * Isso é crítico no dashboard porque /api/dashboard/resumo é consumido
+ * por 4 cards simultâneos (Propostas, Pipeline, Indicadores, Faturamento).
+ */
+const _inflight = new Map<string, Promise<any>>()
+const _cache = new Map<string, { at: number; data: any }>()
+const CACHE_TTL_MS = 5_000
+
+function fetchJsonShared<T>(url: string, signal: AbortSignal): Promise<T> {
+  const cached = _cache.get(url)
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    return Promise.resolve(cached.data as T)
+  }
+  const existing = _inflight.get(url)
+  if (existing) return existing as Promise<T>
+
+  const p = fetch(url, { signal })
+    .then((r) => {
+      if (!r.ok) throw new Error(`${r.status}`)
+      return r.json() as Promise<T>
+    })
+    .then((j) => {
+      _cache.set(url, { at: Date.now(), data: j })
+      return j
+    })
+    .finally(() => {
+      _inflight.delete(url)
+    })
+  _inflight.set(url, p)
+  return p
+}
+
+// Hook simples para fetch JSON com loading/error + dedup global
 export function useJson<T>(
   url: string | null,
   deps: React.DependencyList = [],
@@ -205,17 +241,22 @@ export function useJson<T>(
       return
     }
 
+    // Hit imediato de cache evita o "loading skeleton" piscando
+    const cached = _cache.get(url)
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      setData(cached.data as T)
+      setLoading(false)
+    }
+
     const load = (silent: boolean) => {
-      if (!silent) setLoading(true)
+      if (!silent && !(_cache.get(url) && Date.now() - (_cache.get(url)?.at ?? 0) < CACHE_TTL_MS)) {
+        setLoading(true)
+      }
       setError(null)
       const ctrl = new AbortController()
       ctrlRef.current?.abort()
       ctrlRef.current = ctrl
-      return fetch(url, { signal: ctrl.signal })
-        .then((r) => {
-          if (!r.ok) throw new Error(`${r.status}`)
-          return r.json()
-        })
+      return fetchJsonShared<T>(url, ctrl.signal)
         .then((j) => setData(j))
         .catch((e: unknown) => {
           if (e instanceof Error && e.name === 'AbortError') return

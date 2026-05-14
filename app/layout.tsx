@@ -109,6 +109,9 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const theme = await getUiTheme().catch(() => 'phb' as const)
+  // Script anti-FOUC: aplica preferência do localStorage antes do hydrate.
+  // Evita flash dark→light no carregamento.
+  const themeBootScript = `(function(){try{var t=localStorage.getItem('bhg-theme');var r=document.documentElement;if(t==='light'){r.setAttribute('data-theme','light');}else{r.setAttribute('data-theme','phb');}}catch(e){}})();`
   return (
     <html
       lang="pt-BR"
@@ -116,6 +119,9 @@ export default async function RootLayout({
       data-theme={theme}
       className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable} ${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="bg-bg-0 text-fg-1 font-sans antialiased min-h-screen">
         <SessionProviderClient>
           <ToastProvider position="top-right">{children}</ToastProvider>

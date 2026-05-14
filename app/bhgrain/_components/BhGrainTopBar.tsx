@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Search, Plus, Sparkles } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/newdb'
 
 interface Props {
   userName: string | null
@@ -157,6 +158,8 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
             <span style={{ flex: 1, textAlign: 'left' }}>Buscar clientes, propostas, mensagens…</span>
             <span className="kbd">⌘K</span>
           </button>
+
+          <ThemeToggle />
 
           <button onClick={onOpenPrioridades} className="btn" title="O que fazer agora">
             <Sparkles className="w-3.5 h-3.5" />
