@@ -1,12 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { GlassCard, Skeleton, ErrorState, fmtBRL, fmtPct, useJson } from './_shared'
-import { Chip } from '@/components/ui/newdb'
-
-type Unidade = 'centsBu' | 'usdBu' | 'brlSc60' | 'brlTon'
+import { GlassCard, Skeleton, ErrorState, fmtPct, useJson } from './_shared'
+import { Cotacao, UnidadeSelector, CotacoesFooterNote } from '@/components/ui/cotacoes'
+import type { Grao } from '@/lib/cotacoes/unidades'
 
 interface CbotItem {
   grao: 'soja' | 'milho' | 'trigo'
@@ -38,45 +36,6 @@ interface Resp {
   fetchedAt: string
 }
 
-const UNIDADE_LABEL: Record<Unidade, string> = {
-  centsBu: '¢/bu',
-  usdBu: 'US$/bu',
-  brlSc60: 'R$/sc',
-  brlTon: 'R$/t',
-}
-
-const UNIDADE_DESC: Record<Unidade, string> = {
-  centsBu: 'Nativo CBOT (cents por bushel)',
-  usdBu: 'Dólar por bushel',
-  brlSc60: 'Real por saca de 60 kg',
-  brlTon: 'Real por tonelada',
-}
-
-function formatValor(item: CbotItem, unidade: Unidade): string {
-  switch (unidade) {
-    case 'centsBu':
-      return item.centsBu != null ? item.centsBu.toFixed(2) + ' ¢' : '—'
-    case 'usdBu':
-      return item.usdBu != null ? 'US$ ' + item.usdBu.toFixed(4) : '—'
-    case 'brlSc60':
-      return item.brlSc60 != null ? fmtBRL(item.brlSc60, 2) : '—'
-    case 'brlTon':
-      return item.brlTon != null ? fmtBRL(item.brlTon, 2) : '—'
-  }
-}
-
-function formatRange(item: CbotItem, unidade: Unidade): string {
-  if (item.lowBu == null || item.highBu == null) return '—'
-  if (unidade === 'centsBu') {
-    return `${(item.lowBu * 100).toFixed(1)}¢ – ${(item.highBu * 100).toFixed(1)}¢`
-  }
-  if (unidade === 'usdBu') {
-    return `${item.lowBu.toFixed(2)} – ${item.highBu.toFixed(2)}`
-  }
-  // Para R$ não temos hi/lo convertido no payload; mostra US$ como referência
-  return `${item.lowBu.toFixed(2)} – ${item.highBu.toFixed(2)} US$/bu`
-}
-
 function marketStateLabel(s: string | null): string {
   switch (s) {
     case 'REGULAR':
@@ -94,7 +53,6 @@ function marketStateLabel(s: string | null): string {
 }
 
 export function CbotCard() {
-  const [unidade, setUnidade] = useState<Unidade>('brlSc60')
   const { data, error, loading } = useJson<Resp>('/api/bhgrain/cbot', [], { pollMs: 30_000 })
 
   return (
@@ -111,13 +69,10 @@ export function CbotCard() {
         </Link>
       }
     >
-      {/* Seletor de unidade */}
-      <div className="flex items-center gap-1.5 flex-wrap mb-3" title={UNIDADE_DESC[unidade]}>
-        {(Object.keys(UNIDADE_LABEL) as Unidade[]).map((u) => (
-          <Chip key={u} active={unidade === u} onClick={() => setUnidade(u)}>
-            {UNIDADE_LABEL[u]}
-          </Chip>
-        ))}
+      {/* Seletor global de unidade — sincroniza com outros cards via localStorage */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <span className="eyebrow">Unidade</span>
+        <UnidadeSelector />
       </div>
 
       {loading ? (
@@ -134,7 +89,7 @@ export function CbotCard() {
             <thead>
               <tr className="text-left" style={{ color: 'var(--text-dim)' }}>
                 <th className="font-normal pb-2 eyebrow">Contrato</th>
-                <th className="font-normal pb-2 eyebrow text-right">{UNIDADE_LABEL[unidade]}</th>
+                <th className="font-normal pb-2 eyebrow text-right">Cotação</th>
                 <th className="font-normal pb-2 eyebrow text-right">Var. dia</th>
                 <th className="font-normal pb-2 eyebrow text-right hidden sm:table-cell">
                   Range (US$/bu)
@@ -156,17 +111,21 @@ export function CbotCard() {
                         {item.vencimento ?? '—'}
                       </div>
                     </td>
-                    <td className="py-2 text-right tabular-nums">
-                      <div className="font-semibold">{formatValor(item, unidade)}</div>
-                      {(unidade === 'centsBu' || unidade === 'usdBu') &&
-                      item.previousClose != null ? (
+                    <td className="py-2 text-right">
+                      <Cotacao
+                        grao={item.grao as Grao}
+                        unidadeEntrada="brlSc60"
+                        valor={item.brlSc60}
+                        usdbrl={data.usdbrl?.price ?? null}
+                        fonte={`CBOT · ${item.vencimento ?? '—'}`}
+                        contexto={`Hi/Lo: ${item.highBu?.toFixed(2) ?? '—'} / ${item.lowBu?.toFixed(2) ?? '—'} US$/bu`}
+                        size="sm"
+                      />
+                      {item.previousClose != null && (
                         <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
-                          ant.{' '}
-                          {unidade === 'centsBu'
-                            ? `${item.previousClose.toFixed(2)}¢`
-                            : `$${(item.previousClose / 100).toFixed(2)}`}
+                          ant. ${(item.previousClose / 100).toFixed(2)}/bu
                         </div>
-                      ) : null}
+                      )}
                     </td>
                     <td className="py-2 text-right tabular-nums">
                       {item.changePct != null ? (
@@ -186,7 +145,9 @@ export function CbotCard() {
                       className="py-2 text-right tabular-nums hidden sm:table-cell"
                       style={{ color: 'var(--text-dim)' }}
                     >
-                      {formatRange(item, unidade)}
+                      {item.lowBu != null && item.highBu != null
+                        ? `${item.lowBu.toFixed(2)} – ${item.highBu.toFixed(2)}`
+                        : '—'}
                     </td>
                   </tr>
                 )
@@ -194,28 +155,40 @@ export function CbotCard() {
             </tbody>
           </table>
 
-          {/* Linha do USD/BRL */}
+          {/* Câmbio USD/BRL — fonte sempre visível */}
           {data.usdbrl?.price != null && (
             <div
               className="mt-3 pt-3 flex items-center justify-between text-[11px]"
               style={{ borderTop: '1px solid var(--border)' }}
             >
               <div>
-                <span style={{ color: 'var(--text-dim)' }}>Câmbio usado · </span>
+                <span style={{ color: 'var(--text-dim)' }}>Câmbio · </span>
                 <span style={{ color: data.usdbrl.intraday ? 'var(--success)' : 'var(--warning)' }}>
                   {data.usdbrl.fonte}
                 </span>
                 {!data.usdbrl.intraday && (
-                  <span style={{ color: 'var(--text-dim)' }}> (pode estar desatualizado)</span>
+                  <span style={{ color: 'var(--text-dim)' }}> (fechamento, pode estar defasado)</span>
                 )}
               </div>
               <div className="font-semibold tabular-nums">
-                US$/R$ {data.usdbrl.price.toFixed(4)}
+                <span>R$ {data.usdbrl.price.toFixed(4)}</span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--text-mute)',
+                    fontFamily: 'var(--f-mono)',
+                    marginLeft: 4,
+                  }}
+                >
+                  /US$
+                </span>
               </div>
             </div>
           )}
         </>
       )}
+
+      <CotacoesFooterNote />
     </GlassCard>
   )
 }

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { GlassCard, Badge, Skeleton, ErrorState, EmptyState, fmtBRL, fmtPct, useJson } from './_shared'
+import { Cotacao, UnidadeSelector, CotacoesFooterNote } from '@/components/ui/cotacoes'
+import type { Grao } from '@/lib/cotacoes/unidades'
 
 interface PrecoCombinado {
   grao: 'soja' | 'milho' | 'trigo'
@@ -49,6 +51,12 @@ export function PrecosCard() {
         </Link>
       }
     >
+      {/* Seletor global de unidade — afeta todo Cotacao na página via localStorage */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <span className="eyebrow">Unidade</span>
+        <UnidadeSelector />
+      </div>
+
       {loading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
@@ -62,10 +70,10 @@ export function PrecosCard() {
       ) : (
         <table className="w-full text-[11px]">
           <thead>
-            <tr className="text-vg-fg-3 text-left">
-              <th className="font-normal pb-1.5">Produto</th>
-              <th className="font-normal pb-1.5 text-right">Spot (R$/sc)</th>
-              <th className="font-normal pb-1.5 text-right">Futuro (R$/sc)</th>
+            <tr className="text-left" style={{ color: 'var(--text-dim)' }}>
+              <th className="font-normal pb-1.5 eyebrow">Produto</th>
+              <th className="font-normal pb-1.5 eyebrow text-right">Spot</th>
+              <th className="font-normal pb-1.5 eyebrow text-right">Futuro CBOT</th>
             </tr>
           </thead>
           <tbody>
@@ -73,41 +81,66 @@ export function PrecosCard() {
               const min = ageMinutes(g.spot.capturadaEm)
               const ss = sourceStatus(min)
               return (
-                <tr key={g.grao} className="border-t border-white/5">
-                  <td className="py-1.5">
+                <tr key={g.grao} className="border-t" style={{ borderColor: 'var(--border)' }}>
+                  <td className="py-2">
                     <div className="font-medium">{LABEL[g.grao]}</div>
-                    <div className="text-[10px] text-vg-fg-3 truncate">
+                    <div className="text-[10px] truncate" style={{ color: 'var(--text-dim)' }}>
                       {g.spot.fonte} <span className="mx-0.5">·</span>
                       <span
                         style={{
                           color:
                             ss.tone === 'success'
-                              ? 'var(--vg-success, #10b981)'
+                              ? 'var(--success)'
                               : ss.tone === 'warn'
-                                ? '#f59e0b'
+                                ? 'var(--warning)'
                                 : ss.tone === 'danger'
-                                  ? 'var(--vg-destructive, #ef4444)'
-                                  : 'var(--vg-fg-3)',
+                                  ? 'var(--danger)'
+                                  : 'var(--text-dim)',
                         }}
                       >
                         {ss.label}
                       </span>
                     </div>
                   </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    <div className="font-semibold">{g.spot.precoBrlSc != null ? fmtBRL(g.spot.precoBrlSc, 2) : '—'}</div>
+                  <td className="py-2 text-right">
+                    <Cotacao
+                      grao={g.grao as Grao}
+                      unidadeEntrada="brlSc60"
+                      valor={g.spot.precoBrlSc}
+                      usdbrl={data.usdbrl?.price ?? null}
+                      fonte={g.spot.fonte}
+                      contexto={`Spot ${LABEL[g.grao]}`}
+                      size="sm"
+                    />
                     {g.spot.changePct != null && (
-                      <div>
-                        <Badge tone={g.spot.changePct >= 0 ? 'success' : 'danger'} label={fmtPct(g.spot.changePct, 2)} />
+                      <div className="mt-0.5">
+                        <Badge
+                          tone={g.spot.changePct >= 0 ? 'success' : 'danger'}
+                          label={fmtPct(g.spot.changePct, 2)}
+                        />
                       </div>
                     )}
                   </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    <div className="font-semibold">{g.futuro.precoBrlSc != null ? fmtBRL(g.futuro.precoBrlSc, 2) : '—'}</div>
-                    <div className="text-[10px] text-vg-fg-3">
+                  <td className="py-2 text-right">
+                    <Cotacao
+                      grao={g.grao as Grao}
+                      unidadeEntrada="brlSc60"
+                      valor={g.futuro.precoBrlSc}
+                      usdbrl={data.usdbrl?.price ?? null}
+                      fonte={`${g.futuro.fonte} · ${g.futuro.vencimento ?? '—'}`}
+                      contexto={`Futuro CBOT ${LABEL[g.grao]}`}
+                      size="sm"
+                    />
+                    <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
                       {g.futuro.vencimento ?? '—'}
                       {g.futuro.changePct != null && (
-                        <span className="ml-1" style={{ color: g.futuro.changePct >= 0 ? 'var(--vg-success, #10b981)' : 'var(--vg-destructive, #ef4444)' }}>
+                        <span
+                          className="ml-1"
+                          style={{
+                            color:
+                              g.futuro.changePct >= 0 ? 'var(--success)' : 'var(--danger)',
+                          }}
+                        >
                           {fmtPct(g.futuro.changePct, 2)}
                         </span>
                       )}
@@ -117,16 +150,33 @@ export function PrecosCard() {
               )
             })}
             {data.usdbrl?.price != null && (
-              <tr className="border-t border-white/5">
-                <td className="py-1.5">
-                  <div className="font-medium text-vg-fg-2">USD/BRL</div>
-                  <div className="text-[10px] text-vg-fg-3">{data.usdbrl.fonte ?? '—'}</div>
+              <tr className="border-t" style={{ borderColor: 'var(--border)' }}>
+                <td className="py-2">
+                  <div className="font-medium" style={{ color: 'var(--text-mute)' }}>
+                    USD/BRL
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>
+                    {data.usdbrl.fonte ?? '—'}
+                  </div>
                 </td>
-                <td colSpan={2} className="py-1.5 text-right tabular-nums">
+                <td colSpan={2} className="py-2 text-right tabular-nums">
                   <span className="font-semibold">R$ {fmtBRL(data.usdbrl.price, 4)}</span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: 'var(--text-mute)',
+                      fontFamily: 'var(--f-mono)',
+                      marginLeft: 4,
+                    }}
+                  >
+                    /US$
+                  </span>
                   {data.usdbrl.changePct != null && (
                     <span className="ml-2">
-                      <Badge tone={data.usdbrl.changePct >= 0 ? 'success' : 'danger'} label={fmtPct(data.usdbrl.changePct, 2)} />
+                      <Badge
+                        tone={data.usdbrl.changePct >= 0 ? 'success' : 'danger'}
+                        label={fmtPct(data.usdbrl.changePct, 2)}
+                      />
                     </span>
                   )}
                 </td>
@@ -135,6 +185,8 @@ export function PrecosCard() {
           </tbody>
         </table>
       )}
+
+      <CotacoesFooterNote />
     </GlassCard>
   )
 }
