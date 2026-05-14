@@ -101,13 +101,13 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
         </div>
       ) : null}
       {success ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-accent-soft text-emerald-700 text-sm">
           <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
         </div>
       ) : null}
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-5">
+      <section className="rounded-lg border border-border bg-surface-1 p-6 space-y-5">
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Provider primário</h3>
           <div className="space-y-2">
@@ -116,8 +116,8 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
                 key={p.id}
                 className={`flex items-start gap-3 p-3 rounded border cursor-pointer ${
                   primary === p.id
-                    ? 'border-[#0a8a3a] bg-emerald-50/50'
-                    : 'border-gray-200 hover:bg-gray-50'
+                    ? 'border-accent bg-accent-soft'
+                    : 'border-border hover:bg-gray-50'
                 }`}
               >
                 <input
@@ -163,7 +163,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
                   <div
                     key={p.id}
                     className={`flex items-center gap-3 p-3 rounded border ${
-                      enabled ? 'border-gray-300 bg-gray-50' : 'border-gray-200'
+                      enabled ? 'border-border bg-gray-50' : 'border-border'
                     }`}
                   >
                     <input
@@ -186,7 +186,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
                           type="button"
                           disabled={idx === 0}
                           onClick={() => moveFallback(p.id, -1)}
-                          className="px-2 py-0.5 text-xs rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30"
+                          className="px-2 py-0.5 text-xs rounded border border-border hover:bg-gray-100 disabled:opacity-30"
                         >
                           ↑
                         </button>
@@ -194,7 +194,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
                           type="button"
                           disabled={idx === fallbacks.length - 1}
                           onClick={() => moveFallback(p.id, 1)}
-                          className="px-2 py-0.5 text-xs rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-30"
+                          className="px-2 py-0.5 text-xs rounded border border-border hover:bg-gray-100 disabled:opacity-30"
                         >
                           ↓
                         </button>
@@ -216,7 +216,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
             max={60}
             value={cacheMinutes}
             onChange={(e) => setCacheMinutes(Math.max(0, Number(e.target.value) || 0))}
-            className="w-32 px-3 py-2 rounded border border-gray-300 text-sm"
+            className="w-32 px-3 py-2 rounded border border-border text-sm"
           />
           <p className="text-xs text-gray-500 mt-1">
             Tempo em memória que o resultado é reaproveitado entre requests. 0 = sem cache.
@@ -228,7 +228,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
             type="button"
             onClick={handleSave}
             disabled={busy}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0a8a3a] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {busy ? 'Salvando…' : 'Salvar configuração'}
           </button>
@@ -236,7 +236,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
             type="button"
             onClick={handleTest}
             disabled={testing}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded border border-gray-300 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded border border-border text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
             {testing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -249,7 +249,7 @@ export function CotacoesProvidersForm({ initialConfig, providers }: Props) {
       </section>
 
       {tests ? (
-        <section className="rounded-lg border border-gray-200 bg-white p-6">
+        <section className="rounded-lg border border-border bg-surface-1 p-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Resultado do teste</h3>
           <div className="divide-y divide-gray-100">
             {tests.map((t) => (

@@ -46,9 +46,9 @@ export default async function ConfiguracoesPage() {
           <Link
             key={href}
             href={href}
-            className="group flex items-start gap-4 p-5 rounded-lg border border-gray-200 bg-white hover:border-[#0a8a3a] hover:shadow-sm transition"
+            className="group flex items-start gap-4 p-5 rounded-lg border border-border bg-surface-1 hover:border-accent hover:shadow-sm transition"
           >
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-emerald-50 text-[#0a8a3a] flex items-center justify-center group-hover:bg-emerald-100 transition">
+            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-accent-soft text-accent flex items-center justify-center group-hover:bg-accent-soft transition">
               <Icon className="w-5 h-5" />
             </div>
             <div>

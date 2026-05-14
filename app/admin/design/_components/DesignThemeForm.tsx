@@ -56,13 +56,13 @@ export function DesignThemeForm({ initialTheme, options }: Props) {
         </div>
       ) : null}
       {success ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-accent-soft text-emerald-700 text-sm">
           <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
         </div>
       ) : null}
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
+      <section className="rounded-lg border border-border bg-surface-1 p-6 space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">Tema global</h3>
         <div className="space-y-2">
           {options.map((opt) => (
@@ -70,8 +70,8 @@ export function DesignThemeForm({ initialTheme, options }: Props) {
               key={opt.id}
               className={`flex items-start gap-3 p-3 rounded border cursor-pointer ${
                 theme === opt.id
-                  ? 'border-[#0a8a3a] bg-emerald-50/50'
-                  : 'border-gray-200 hover:bg-gray-50'
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-border hover:bg-gray-50'
               }`}
             >
               <input
@@ -95,7 +95,7 @@ export function DesignThemeForm({ initialTheme, options }: Props) {
             type="button"
             onClick={handleSave}
             disabled={busy || theme === initialTheme}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0a8a3a] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {busy ? 'Salvando…' : 'Salvar tema'}
           </button>

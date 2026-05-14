@@ -4,17 +4,14 @@ import { ArrowRight, Sparkles } from 'lucide-react'
 export function Hero() {
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Base gradient — top-to-bottom suave */}
+      {/* Base — dark NewDB */}
       <div
         aria-hidden
         className="absolute inset-0 -z-30"
-        style={{
-          background:
-            'linear-gradient(180deg, #F4F8F5 0%, #E8EEF0 45%, #DDE5DC 100%)',
-        }}
+        style={{ background: 'var(--bg)' }}
       />
 
-      {/* Aurora blobs — gradients verde+teal flutuantes */}
+      {/* Aurora blobs NewDB — lime + electric blue */}
       <div
         aria-hidden
         className="absolute -z-20 pointer-events-none"
@@ -24,7 +21,7 @@ export function Hero() {
           width: '700px',
           height: '700px',
           background:
-            'radial-gradient(circle at 50% 50%, rgba(15, 115, 5, 0.25) 0%, rgba(15, 115, 5, 0.10) 35%, transparent 70%)',
+            'radial-gradient(circle at 50% 50%, rgba(200, 240, 81, 0.22) 0%, rgba(200, 240, 81, 0.08) 35%, transparent 70%)',
           filter: 'blur(60px)',
         }}
       />
@@ -37,7 +34,7 @@ export function Hero() {
           width: '600px',
           height: '600px',
           background:
-            'radial-gradient(circle at 50% 50%, rgba(27, 77, 91, 0.28) 0%, rgba(27, 77, 91, 0.12) 35%, transparent 70%)',
+            'radial-gradient(circle at 50% 50%, rgba(127, 168, 255, 0.20) 0%, rgba(127, 168, 255, 0.08) 35%, transparent 70%)',
           filter: 'blur(80px)',
         }}
       />
@@ -50,7 +47,7 @@ export function Hero() {
           width: '800px',
           height: '500px',
           background:
-            'radial-gradient(ellipse at 50% 50%, rgba(143, 168, 84, 0.30) 0%, rgba(143, 168, 84, 0.10) 40%, transparent 75%)',
+            'radial-gradient(ellipse at 50% 50%, rgba(200, 240, 81, 0.18) 0%, rgba(200, 240, 81, 0.06) 40%, transparent 75%)',
           filter: 'blur(70px)',
         }}
       />
@@ -61,8 +58,8 @@ export function Hero() {
         className="absolute inset-0 -z-10 opacity-[0.18]"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(27, 77, 91, 0.12) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(27, 77, 91, 0.12) 1px, transparent 1px)
+            linear-gradient(to right, rgba(127, 168, 255, 0.10) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(127, 168, 255, 0.10) 1px, transparent 1px)
           `,
           backgroundSize: '64px 64px',
           maskImage:
@@ -87,7 +84,7 @@ export function Hero() {
         <div
           className="mb-8 inline-flex items-center gap-2 rounded-pill px-4 py-1.5 text-micro font-medium"
           style={{
-            background: 'rgba(255, 255, 255, 0.7)',
+            background: 'var(--glass)',
             border: '1px solid var(--border-1)',
             color: 'var(--fg-2)',
             backdropFilter: 'blur(12px)',
@@ -98,15 +95,23 @@ export function Hero() {
           Mesa de operações para tradings de grãos
         </div>
 
-        <h1 className="max-w-5xl font-sans text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] text-fg-1 sm:text-[64px] md:text-[88px]">
+        <h1
+          className="max-w-5xl font-semibold leading-[1.02] sm:text-[64px] md:text-[88px]"
+          style={{
+            fontFamily: 'var(--f-sans)',
+            fontSize: 44,
+            letterSpacing: '-0.03em',
+            color: 'var(--text)',
+          }}
+        >
           Sua{' '}
           <span
+            className="t-serif"
             style={{
-              background:
-                'linear-gradient(120deg, #0F7305 0%, #1B4D5B 60%, #0F7305 100%)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              color: 'var(--accent)',
+              fontFamily: 'var(--f-serif)',
             }}
           >
             mesa de operações

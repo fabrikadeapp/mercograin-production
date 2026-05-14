@@ -62,27 +62,27 @@ function tipoBadge(tipo: Tipo): React.ReactNode {
   const styles: Record<Tipo, { bg: string; fg: string; label: string }> = {
     transportadora: {
       bg: 'rgba(59,130,246,0.15)',
-      fg: '#60a5fa',
+      fg: 'var(--info)',
       label: 'Transportadora',
     },
     armazem: {
       bg: 'rgba(234,179,8,0.18)',
-      fg: '#fbbf24',
+      fg: 'var(--warning)',
       label: 'Armazém',
     },
     insumos: {
       bg: 'rgba(245,158,11,0.18)',
-      fg: '#f59e0b',
+      fg: 'var(--warning)',
       label: 'Insumos',
     },
     certificadora: {
       bg: 'rgba(168,85,247,0.18)',
-      fg: '#c084fc',
+      fg: 'var(--data-4)',
       label: 'Certificadora',
     },
     outros: {
       bg: 'rgba(148,163,184,0.18)',
-      fg: '#cbd5e1',
+      fg: 'var(--text-mute)',
       label: 'Outros',
     },
   }
