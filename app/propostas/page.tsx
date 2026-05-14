@@ -32,7 +32,7 @@ interface Proposta {
   id: string
   numero: string
   tipo: 'venda' | 'compra'
-  status: 'rascunho' | 'enviada' | 'aceita' | 'rejeitada'
+  status: string
   valorTotal: string
   validadeEm: string
   criadaEm: string
@@ -58,11 +58,20 @@ const STATUS_OPTIONS = [
   { value: 'rejeitada', label: 'Rejeitada' },
 ]
 
-const STATUS_TO_BADGE: Record<Proposta['status'], BadgeStatus> = {
+// Mapeia status do banco para variantes do Badge.
+// Status legados/variações do banco também caem em algo razoável (não quebram).
+const STATUS_TO_BADGE: Record<string, BadgeStatus> = {
   rascunho: 'rascunho',
-  enviada: 'em-negociacao',
+  enviada: 'pendente',
+  em_negociacao: 'em-negociacao',
+  'em negociação': 'em-negociacao',
   aceita: 'assinado',
+  aprovada: 'assinado',
   rejeitada: 'cancelado',
+  recusada: 'cancelado',
+  expirada: 'cancelado',
+  fechado: 'fechado',
+  sucesso: 'assinado',
 }
 
 export default function PropostasPage() {

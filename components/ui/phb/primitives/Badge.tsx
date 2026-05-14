@@ -19,22 +19,27 @@ const statusToChip: Record<BadgeStatus, ChipVariant> = {
   'em-negociacao': 'accent',
 }
 
-function titleCase(input: string): string {
+function titleCase(input: string | null | undefined): string {
+  if (!input || typeof input !== 'string') return '—'
   return input
-    .split('-')
+    .split(/[-_]/)
     .map((w) => (w.length === 0 ? w : w[0].toUpperCase() + w.slice(1)))
     .join(' ')
 }
 
 export interface BadgeProps {
-  variant: BadgeStatus
+  /** Se receber valor não mapeado, renderiza o próprio valor com chip neutro. */
+  variant: BadgeStatus | string | undefined | null
   className?: string
 }
 
 export function Badge({ variant, className }: BadgeProps) {
+  const safeVariant = typeof variant === 'string' ? variant : ''
+  const chipVariant: ChipVariant =
+    (statusToChip as Record<string, ChipVariant>)[safeVariant] ?? 'neutral'
   return (
-    <Chip variant={statusToChip[variant]} className={className}>
-      {titleCase(variant)}
+    <Chip variant={chipVariant} className={className}>
+      {titleCase(safeVariant)}
     </Chip>
   )
 }

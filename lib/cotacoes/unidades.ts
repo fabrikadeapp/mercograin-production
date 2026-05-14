@@ -129,22 +129,33 @@ export function expandirCotacao(args: {
  *   formatCotacao(12.2575, 'usdBu')   → 'US$ 12,2575 /bu'
  *   formatCotacao(2.18, 'brlKg')      → 'R$ 2,18 /kg'
  */
+/** Verifica se um valor arbitrário é uma Unidade válida. */
+export function isUnidade(v: unknown): v is Unidade {
+  return v === 'brlSc60' || v === 'brlTon' || v === 'usdBu' || v === 'brlKg'
+}
+
 export function formatCotacao(
   valor: number | null,
   unidade: Unidade,
   opts: { showSuffix?: boolean; digitsOverride?: number } = {}
 ): { valor: string; sufixo: string; full: string } {
   const showSuffix = opts.showSuffix ?? true
+  // Defensive: se chegou uma unidade inválida (legacy localStorage etc),
+  // cai pro default 'brlSc60' em vez de quebrar com .split de undefined.
+  const u: Unidade = isUnidade(unidade) ? unidade : 'brlSc60'
+  const label = UNIDADE_LABEL[u]
+  const sufixo = '/' + (label.split('/')[1] ?? 'sc')
+
   if (valor == null || !Number.isFinite(valor)) {
-    return { valor: '—', sufixo: showSuffix ? UNIDADE_LABEL[unidade].split('/')[1] : '', full: '—' }
+    return { valor: '—', sufixo: showSuffix ? sufixo : '', full: '—' }
   }
 
   let digits = 2
   let prefix = 'R$'
-  if (unidade === 'usdBu') {
+  if (u === 'usdBu') {
     digits = 4
     prefix = 'US$'
-  } else if (unidade === 'brlKg') {
+  } else if (u === 'brlKg') {
     digits = 4
   }
   if (opts.digitsOverride != null) digits = opts.digitsOverride
@@ -153,7 +164,6 @@ export function formatCotacao(
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   })
-  const sufixo = '/' + UNIDADE_LABEL[unidade].split('/')[1]
   const full = showSuffix ? `${prefix} ${num} ${sufixo}` : `${prefix} ${num}`
   return { valor: `${prefix} ${num}`, sufixo, full }
 }

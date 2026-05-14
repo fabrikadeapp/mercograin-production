@@ -15,6 +15,10 @@ export interface DashboardResumo {
     previsaoReceita: number
     clientesAtivos: number
     propostasAbertas: number
+    /** Margem média ponderada das propostas abertas (% — duplica indicadores.qualidade.margemMedia para facilitar acesso na pipeline) */
+    margemMedia: number | null
+    /** Ticket médio = valorTotalProposto / propostasAbertas (R$) */
+    ticketMedio: number | null
   }
   pipeline: PipelineRow[]
   indicadores: {
@@ -60,6 +64,8 @@ export interface DashboardResumo {
 export interface PipelineRow {
   id: string
   clienteNome: string
+  /** Subtítulo do cliente (ex.: 'Trader · GO', 'Produtor · MS'). Calculado a partir de Cliente.tipo + UF do endereço. */
+  clienteSubtitulo: string | null
   commodity: string
   quantidade: number | null
   unidade: string | null
@@ -86,7 +92,7 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
       where: { workspaceId },
       orderBy: { atualizadaEm: 'desc' },
       take: 200,
-      include: { cliente: { select: { id: true, nome: true } } },
+      include: { cliente: { select: { id: true, nome: true, tipo: true, endereco: true } } },
     }),
     db.cliente.count({ where: { workspaceId, ativo: true } }),
     db.metaComercial.findFirst({
@@ -202,12 +208,18 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
     },
   }
 
+  const ticketMedio = propostasAbertasArr.length > 0
+    ? round2(valorTotalProposto / propostasAbertasArr.length)
+    : null
+
   return {
     kpis: {
       valorTotalProposto,
       previsaoReceita: prev.ponderado,
       clientesAtivos: clientesCount,
       propostasAbertas: propostasAbertasArr.length,
+      margemMedia: indicadores.qualidade.margemMedia,
+      ticketMedio,
     },
     pipeline,
     indicadores,
@@ -226,7 +238,35 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
 
 type PropostaWithCliente = Awaited<ReturnType<typeof loadPropostaSample>>[number]
 async function loadPropostaSample() {
-  return db.proposta.findMany({ take: 1, include: { cliente: { select: { id: true, nome: true } } } })
+  return db.proposta.findMany({
+    take: 1,
+    include: { cliente: { select: { id: true, nome: true, tipo: true, endereco: true } } },
+  })
+}
+
+const TIPO_CLIENTE_LABEL: Record<string, string> = {
+  comprador: 'Comprador',
+  vendedor: 'Produtor',
+  ambos: 'Trader',
+}
+
+/** Extrai UF (2 letras maiúsculas) do final do endereço, se existir. */
+function extrairUf(endereco: string | null | undefined): string | null {
+  if (!endereco || typeof endereco !== 'string') return null
+  // Padrões: "..., Cidade - MG", "..., Goiânia/GO", "... GO 74000"
+  const m = endereco.match(/[\s\-/,]([A-Z]{2})(?:\s|$|[,.\-])/)
+  if (m) return m[1]
+  // Fallback: 2 letras maiúsculas em qualquer lugar no fim
+  const m2 = endereco.trim().match(/([A-Z]{2})\s*\d*\s*$/)
+  return m2 ? m2[1] : null
+}
+
+function buildSubtituloCliente(cliente: { tipo?: string | null; endereco?: string | null }): string | null {
+  const tipoLabel = cliente.tipo ? TIPO_CLIENTE_LABEL[cliente.tipo] ?? null : null
+  const uf = extrairUf(cliente.endereco)
+  if (!tipoLabel && !uf) return null
+  if (tipoLabel && uf) return `${tipoLabel} · ${uf}`
+  return tipoLabel ?? uf
 }
 
 function buildPipelineRow(p: PropostaWithCliente): PipelineRow {
@@ -247,6 +287,7 @@ function buildPipelineRow(p: PropostaWithCliente): PipelineRow {
   return {
     id: p.id,
     clienteNome: p.cliente.nome,
+    clienteSubtitulo: buildSubtituloCliente(p.cliente),
     commodity,
     quantidade,
     unidade,
