@@ -25,6 +25,12 @@ interface Resumo {
   resumo?: {
     kpis: { valorTotalProposto: number; previsaoReceita: number }
     pipeline: PipelineRow[]
+    indicadores?: {
+      qualidade?: {
+        tempoMedioRespostaH: number | null
+        scoreMedio: number | null
+      }
+    }
   }
 }
 
@@ -63,21 +69,57 @@ export function PipelineCard({ onOpenProposta }: { onOpenProposta: (id: string) 
         </div>
       }
     >
-      {/* KPIs */}
-      {data?.resumo && (
-        <div className="grid grid-cols-2 gap-3 mb-3 pb-3 border-b" style={{ borderColor: 'var(--vg-border-subtle)' }}>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-vg-fg-3">Valor total proposto</div>
-            <div className="text-[18px] font-semibold tabular-nums">R$ {fmtBRL(data.resumo.kpis.valorTotalProposto)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-vg-fg-3">Previsão de receita</div>
-            <div className="text-[18px] font-semibold tabular-nums" style={{ color: 'var(--vg-success, #10b981)' }}>
-              R$ {fmtBRL(data.resumo.kpis.previsaoReceita)}
+      {/* KPIs — Valor proposto + Previsão de receita + Tempo médio de resposta (discreto) */}
+      {data?.resumo && (() => {
+        const tempo = data.resumo.indicadores?.qualidade?.tempoMedioRespostaH ?? null
+        const tempoLabel = tempo == null
+          ? '—'
+          : tempo < 1
+            ? `${Math.round(tempo * 60)} min`
+            : tempo < 48
+              ? `${tempo.toFixed(1).replace('.', ',')} h`
+              : `${Math.round(tempo / 24)} d`
+        return (
+          <div
+            className="mb-3 pb-3 border-b"
+            style={{
+              borderColor: 'var(--border)',
+              display: 'grid',
+              gridTemplateColumns: '1.4fr 1.4fr 1fr',
+              gap: 16,
+              alignItems: 'end',
+            }}
+          >
+            <div>
+              <div className="t-label" style={{ marginBottom: 2 }}>Valor total proposto</div>
+              <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }} className="t-num">
+                R$ {fmtBRL(data.resumo.kpis.valorTotalProposto)}
+              </div>
+            </div>
+            <div>
+              <div className="t-label" style={{ marginBottom: 2 }}>Previsão de receita</div>
+              <div className="t-num" style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--accent)' }}>
+                R$ {fmtBRL(data.resumo.kpis.previsaoReceita)}
+              </div>
+            </div>
+            <div
+              style={{
+                padding: '8px 12px',
+                background: 'var(--tint-2pct)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r-md)',
+                textAlign: 'right',
+              }}
+              title="Tempo médio entre envio da proposta e primeira progressão de status"
+            >
+              <div className="t-label" style={{ fontSize: 10 }}>Tempo médio resposta</div>
+              <div className="t-num" style={{ fontSize: 16, fontWeight: 600, marginTop: 2 }}>
+                {tempoLabel}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {loading ? (
         <div className="space-y-1">

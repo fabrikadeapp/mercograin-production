@@ -64,9 +64,9 @@ export default async function CurvaABCPage({ searchParams }: Props) {
   }
 
   const curva = calcularCurvaABC(itens, (x) => x.total)
-  const corA = '#10b981'
-  const corB = '#f59e0b'
-  const corC = '#ef4444'
+  const corA = 'var(--success)'
+  const corB = 'var(--warning)'
+  const corC = 'var(--danger)'
   const cor = (c: 'A' | 'B' | 'C') => (c === 'A' ? corA : c === 'B' ? corB : corC)
 
   return (

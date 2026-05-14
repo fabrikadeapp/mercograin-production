@@ -28,6 +28,8 @@ export interface DashboardResumo {
     qualidade: {
       scoreMedio: number | null
       margemMedia: number | null
+      /** Tempo médio entre envio e primeira resposta/atualização da proposta (horas) */
+      tempoMedioRespostaH: number | null
       propostasCotacaoVencida: number
       followUpsPendentes: number
     }
@@ -140,7 +142,7 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
   noventa.setDate(noventa.getDate() - 90)
   const propostasFunil = await db.proposta.findMany({
     where: { workspaceId, criadaEm: { gte: noventa } },
-    select: { status: true, scoreInterno: true, margemPercent: true, validadeCotacao: true, enviadaEm: true, clienteId: true },
+    select: { status: true, scoreInterno: true, margemPercent: true, validadeCotacao: true, enviadaEm: true, atualizadaEm: true, clienteId: true },
   })
   const funil = {
     totalRecebidos: propostasFunil.length,
@@ -164,11 +166,27 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
   // Clientes sem resposta = distinct dos follow-up pendentes
   const clientesSemRespostaSet = new Set(propostasFollowUp.map((p) => p.clienteId))
 
+  // Tempo médio de resposta = horas entre enviadaEm e atualizadaEm para propostas
+  // que progrediram além do envio (em_negociacao, sucesso, recusada).
+  const propostasComResposta = propostasFunil.filter((p) => {
+    if (!p.enviadaEm) return false
+    const s = p.status.toLowerCase()
+    if (/^(rascunho|pendente|enviada|pronta)/.test(s)) return false
+    return p.atualizadaEm.getTime() > p.enviadaEm.getTime()
+  })
+  const temposResposta = propostasComResposta.map(
+    (p) => (p.atualizadaEm.getTime() - p.enviadaEm!.getTime()) / 1000 / 60 / 60
+  )
+  const tempoMedioRespostaH = temposResposta.length > 0
+    ? round2(temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length)
+    : null
+
   const indicadores = {
     funil,
     qualidade: {
       scoreMedio: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
       margemMedia: margens.length > 0 ? round2(margens.reduce((a, b) => a + b, 0) / margens.length) : null,
+      tempoMedioRespostaH,
       propostasCotacaoVencida,
       followUpsPendentes: propostasFollowUp.length,
     },

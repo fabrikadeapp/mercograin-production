@@ -64,9 +64,9 @@ export function MarcaForm({ initialLogoUrl, initialUploadedAt, canEdit }: Props)
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-border bg-surface-1 p-6">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">Logo atual</h3>
-        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded border border-gray-200 min-h-[96px]">
+        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded border border-border min-h-[96px]">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -76,11 +76,11 @@ export function MarcaForm({ initialLogoUrl, initialUploadedAt, canEdit }: Props)
             />
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-[#0a8a3a] text-white font-bold flex items-center justify-center text-xs">
+              <div className="w-10 h-10 rounded-md bg-accent text-accent-ink text-white font-bold flex items-center justify-center text-xs">
                 BH
               </div>
               <span className="text-base font-bold text-gray-900">
-                BH <span className="font-normal text-[#0a8a3a]">Grain</span>
+                BH <span className="font-normal text-accent">Grain</span>
               </span>
               <span className="text-xs text-gray-500 ml-2">(logo padrão)</span>
             </div>
@@ -101,14 +101,14 @@ export function MarcaForm({ initialLogoUrl, initialUploadedAt, canEdit }: Props)
       ) : null}
 
       {canEdit ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-border bg-surface-1 p-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Ações</h3>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
               disabled={busy}
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0a8a3a] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
               {busy ? 'Enviando...' : logoUrl ? 'Trocar logo' : 'Fazer upload'}

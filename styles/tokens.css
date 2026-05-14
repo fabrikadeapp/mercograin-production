@@ -1,42 +1,59 @@
 /* ============================================================================
- * BH Grain — Design Tokens
- * Default palette: Verde Pulse (data-palette="pulse")
- * Switchable via [data-palette="..."] on <html>
+ * BH Grain — Design Tokens v2 ("NewDB / Lead")
+ * Source of truth: design2/BH Grain - Design v2.html
+ *
+ * Default = tema dark.
+ * Tema light "Lead" (chumbo) ativado via [data-theme="light"] no <html>.
+ *
+ * Tokens legados (--bg-0/1/2, --fg-1/2/3, --vg-*, etc) mapeados como aliases
+ * no fim para preservar componentes PHB/VisionGlass durante a migração.
+ * Remover aliases em L7/L8.
  * ============================================================================ */
 
-:root,
-[data-palette="pulse"] {
-  /* Backgrounds */
-  --bg-0: #06120B;
-  --bg-1: #0B1A12;
-  --bg-2: #112418;
-  --bg-3: #163020;
-  --bg-inset: #050D08;
+:root {
+  /* =========================== Surfaces =========================== */
+  --bg:            #0A0B0E;
+  --bg-elev:       #0E1015;
+  --surface-1:     #14171D;
+  --surface-2:     #1B1F27;
+  --surface-3:     #232831;
+  --glass:         rgba(28, 32, 40, 0.55);
+  --glass-strong:  rgba(28, 32, 40, 0.78);
 
-  /* Foregrounds */
-  --fg-1: #ECFCEF;
-  --fg-2: rgba(236, 252, 239, 0.72);
-  --fg-3: rgba(236, 252, 239, 0.50);
-  --fg-4: rgba(236, 252, 239, 0.32);
+  /* =========================== Borders =========================== */
+  --border:        rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.12);
+  --border-glass:  rgba(255,255,255,0.10);
 
-  /* Accent */
-  --accent: #1FE08C;
-  --accent-ink: #001A0B;
-  --accent-glow: rgba(31, 224, 140, 0.35);
+  /* =========================== Text =========================== */
+  --text:          #ECEEF2;
+  --text-mute:     #9AA0AB;
+  --text-dim:      #5C6370;
+  --text-faint:    #3C4049;
 
-  /* Semantic */
-  --pos: #00E676;
-  --neg: #FF5471;
-  --warn: #FFB020;
-  --info: #4DA8FF;
+  /* =========================== Brand / accents =========================== */
+  --accent:        #C8F051;   /* lime — KPI hero, primary CTA */
+  --accent-ink:    #0A0B0E;   /* text on lime */
+  --accent-soft:   rgba(200, 240, 81, 0.14);
+  --accent-2:      #7FA8FF;   /* electric blue — secondary highlight */
+  --accent-2-soft: rgba(127, 168, 255, 0.14);
+  --accent-3:      #FFB07C;   /* warm — alerts, agro context */
 
-  /* Grain Tokens */
-  --grain-soja: #C5E861;
-  --grain-milho: #FFB020;
-  --grain-trigo: #E8843D;
-  --grain-usd: #4DD9B0;
+  /* Data viz extras */
+  --data-4:        #C4A6FF;
+  --data-5:        #5EEAD4;
 
-  /* Radius */
+  /* =========================== States =========================== */
+  --success:       #4ADE80;
+  --success-soft:  rgba(74, 222, 128, 0.12);
+  --warning:       #FBBF24;
+  --warning-soft:  rgba(251, 191, 36, 0.12);
+  --danger:        #F87171;
+  --danger-soft:   rgba(248, 113, 113, 0.14);
+  --info:          #60A5FA;
+  --info-soft:     rgba(96, 165, 250, 0.14);
+
+  /* =========================== Radii =========================== */
   --r-xs: 6px;
   --r-sm: 10px;
   --r-md: 14px;
@@ -44,7 +61,34 @@
   --r-xl: 28px;
   --r-pill: 999px;
 
-  /* Spacing */
+  /* =========================== Shadows (4 fixed levels) =========================== */
+  --sh-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 2px rgba(0,0,0,0.4);
+  --sh-2: 0 1px 0 rgba(255,255,255,0.05) inset, 0 6px 18px rgba(0,0,0,0.45);
+  --sh-3: 0 1px 0 rgba(255,255,255,0.06) inset, 0 24px 60px rgba(0,0,0,0.55);
+  --sh-glow: 0 0 0 1px rgba(200,240,81,0.35), 0 8px 30px rgba(200,240,81,0.18);
+
+  /* =========================== Blurs =========================== */
+  --blur-card:   blur(20px) saturate(140%);
+  --blur-strong: blur(30px) saturate(160%);
+
+  /* =========================== Chart =========================== */
+  --chart-grid:    rgba(255,255,255,0.05);
+  --chart-axis:    rgba(255,255,255,0.1);
+  --tooltip-bg:    #1B1F27;
+  --tooltip-border: rgba(255,255,255,0.08);
+
+  /* =========================== Typography =========================== */
+  --f-sans:    var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  --f-mono:    var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --f-display: var(--font-inter), 'Inter', sans-serif;
+  --f-serif:   var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
+
+  /* =========================== Motion =========================== */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --ease:  cubic-bezier(0.2, 0.7, 0.1, 1);
+
+  /* =========================== Spacing (preserved system) =========================== */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -55,252 +99,142 @@
   --space-8: 40px;
   --space-9: 56px;
 
-  /* Shadows */
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --shadow-pop: 0 24px 64px -16px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 0 1px rgba(31, 224, 140, 0.28), 0 8px 32px -8px var(--accent-glow);
+  /* =========================== Tints / utilities =========================== */
+  --tint-1pct: rgba(255,255,255,0.01);
+  --tint-2pct: rgba(255,255,255,0.02);
+  --tint-4pct: rgba(255,255,255,0.04);
+  --tint-8pct: rgba(255,255,255,0.08);
 
-  /* Borders */
-  --border-1: rgba(236, 252, 239, 0.06);
-  --border-2: rgba(236, 252, 239, 0.10);
+  /* Skeleton shimmer */
+  --skel-1: rgba(255,255,255,0.04);
+  --skel-2: rgba(255,255,255,0.08);
 
-  /* Typography */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+  /* ============================================================================
+   * LEGACY ALIASES — Preservação de componentes PHB/VisionGlass durante migração.
+   * Mapeiam tokens antigos → tokens novos. Remover progressivamente em L7/L8.
+   * ============================================================================ */
+
+  /* PHB tokens */
+  --bg-0:        var(--bg);
+  --bg-1:        var(--bg-elev);
+  --bg-2:        var(--surface-1);
+  --bg-3:        var(--surface-2);
+  --bg-inset:    var(--bg);
+  --fg-1:        var(--text);
+  --fg-2:        var(--text-mute);
+  --fg-3:        var(--text-dim);
+  --fg-4:        var(--text-faint);
+  --accent-glow: rgba(200, 240, 81, 0.35);
+  --pos:         var(--success);
+  --neg:         var(--danger);
+  --warn:        var(--warning);
+
+  /* Grain tokens (preservados — usados em widgets de commodity) */
+  --grain-soja:  #C5E861;
+  --grain-milho: #FFB020;
+  --grain-trigo: #E8843D;
+  --grain-usd:   #4DD9B0;
+
+  --shadow-card: var(--sh-2);
+  --shadow-pop:  var(--sh-3);
+  --shadow-glow: var(--sh-glow);
+  --border-1:    var(--border);
+  --border-2:    var(--border-strong);
+
+  --font-sans:   var(--f-sans);
+  --font-mono:   var(--f-mono);
+
+  /* VisionGlass tokens */
+  --vg-bg-primary:         var(--bg);
+  --vg-fg-primary:         var(--text);
+  --vg-fg-secondary:       var(--text-mute);
+  --vg-fg-2:               var(--text-mute);
+  --vg-fg-3:               var(--text-dim);
+  --vg-accent:             var(--accent);
+  --vg-accent-primary:     var(--accent);
+  --vg-accent-destructive: var(--danger);
+  --vg-success:            var(--success);
+  --vg-destructive:        var(--danger);
+  --vg-border-subtle:      var(--border);
+  --vg-glass-card:         var(--glass);
+  --vg-glass-card-hover:   rgba(255,255,255,0.04);
+  --vg-glass-pill-track:   rgba(255,255,255,0.05);
+  --vg-glass-dock:         var(--glass-strong);
+  --vg-glass-dock-border:  var(--border-glass);
+  --vg-shadow-dock:        var(--sh-2);
+  --vg-radius-dock:        var(--r-lg);
+
+  color-scheme: dark;
 }
 
-/* ---------- Floresta ---------- */
+/* Legacy palette switches são neutralizados — NewDB é única paleta */
+[data-palette="pulse"],
 [data-palette="floresta"] {
-  --bg-0: #07100C;
-  --bg-1: #0C1813;
-  --bg-2: #11211A;
-  --bg-3: #182E24;
-  --bg-inset: #050C09;
-
-  --fg-1: #E8F2EC;
-  --fg-2: rgba(232, 242, 236, 0.72);
-  --fg-3: rgba(232, 242, 236, 0.50);
-  --fg-4: rgba(232, 242, 236, 0.32);
-
-  --accent: #2E8B5A;
-  --accent-ink: #04150C;
-  --accent-glow: rgba(46, 139, 90, 0.30);
-
-  --pos: #3CB371;
-  --neg: #E55570;
-  --warn: #D9A441;
-  --info: #5C9FD6;
-
-  --border-1: rgba(232, 242, 236, 0.06);
-  --border-2: rgba(232, 242, 236, 0.10);
-
-  --shadow-glow: 0 0 0 1px rgba(46, 139, 90, 0.28), 0 8px 32px -8px var(--accent-glow);
+  /* sem overrides — herda :root */
 }
 
-/* ---------- Oliva ---------- */
-[data-palette="oliva"] {
-  --bg-0: #0F100A;
-  --bg-1: #16180F;
-  --bg-2: #1D2014;
-  --bg-3: #28291A;
-  --bg-inset: #0A0B07;
+/* ============================================================================
+ * LIGHT THEME "LEAD" v2 — Fundo chumbo para o lime saltar
+ * Ativar via <html data-theme="light">
+ * ============================================================================ */
+[data-theme="light"] {
+  --bg:            #8E8D85;
+  --bg-elev:       #82817A;
+  --surface-1:     #B0AEA4;
+  --surface-2:     #A3A198;
+  --surface-3:     #95938A;
+  --glass:         rgba(176,174,164,0.66);
+  --glass-strong:  rgba(176,174,164,0.84);
 
-  --fg-1: #F2EFE0;
-  --fg-2: rgba(242, 239, 224, 0.72);
-  --fg-3: rgba(242, 239, 224, 0.50);
-  --fg-4: rgba(242, 239, 224, 0.32);
+  --border:        rgba(15,14,8,0.18);
+  --border-strong: rgba(15,14,8,0.28);
+  --border-glass:  rgba(15,14,8,0.22);
 
-  --accent: #B8C24E;
-  --accent-ink: #1A1B08;
-  --accent-glow: rgba(184, 194, 78, 0.32);
+  --text:          #0D0D08;
+  --text-mute:     #2E2E26;
+  --text-dim:      #4D4C43;
+  --text-faint:    #6D6C62;
 
-  --pos: #A8C24E;
-  --neg: #D9614A;
-  --warn: #E8A33C;
-  --info: #80A87A;
+  --accent-soft:   rgba(132, 170, 28, 0.22);
+  --accent-2-soft: rgba(76, 116, 200, 0.18);
 
-  --border-1: rgba(242, 239, 224, 0.06);
-  --border-2: rgba(242, 239, 224, 0.10);
+  --success-soft:  rgba(22, 130, 60, 0.18);
+  --warning-soft:  rgba(190, 130, 0, 0.20);
+  --danger-soft:   rgba(180, 50, 50, 0.18);
+  --info-soft:     rgba(50, 110, 200, 0.18);
 
-  --shadow-glow: 0 0 0 1px rgba(184, 194, 78, 0.28), 0 8px 32px -8px var(--accent-glow);
+  --sh-1: 0 1px 0 rgba(255,255,250,0.45) inset, 0 1px 2px rgba(15,14,8,0.18);
+  --sh-2: 0 1px 0 rgba(255,255,250,0.55) inset, 0 6px 18px rgba(15,14,8,0.22);
+  --sh-3: 0 1px 0 rgba(255,255,250,0.65) inset, 0 18px 50px rgba(15,14,8,0.28);
+  --sh-glow: 0 0 0 1px rgba(132,170,28,0.45), 0 8px 30px rgba(132,170,28,0.22);
+
+  --chart-grid:    rgba(15,14,8,0.10);
+  --chart-axis:    rgba(15,14,8,0.18);
+  --tooltip-bg:    #1B1F27;
+  --tooltip-border: rgba(15,14,8,0.30);
+
+  --tint-2pct: rgba(15,14,8,0.05);
+  --tint-4pct: rgba(15,14,8,0.10);
+  --tint-8pct: rgba(15,14,8,0.17);
+
+  color-scheme: light;
 }
 
-/* ---------- Mar ---------- */
-[data-palette="mar"] {
-  --bg-0: #061212;
-  --bg-1: #0A1A1A;
-  --bg-2: #102525;
-  --bg-3: #163232;
-  --bg-inset: #040D0D;
+/* In light v2, tooltip stays dark for max readability */
+[data-theme="light"] .chart-svg text { fill: var(--text); }
 
-  --fg-1: #E6FAF7;
-  --fg-2: rgba(230, 250, 247, 0.72);
-  --fg-3: rgba(230, 250, 247, 0.50);
-  --fg-4: rgba(230, 250, 247, 0.32);
+/* meta dashed line a bit stronger over lead bg */
+[data-theme="light"] .chart-svg .meta-line { stroke-opacity: 0.75; }
 
-  --accent: #1FD9C4;
-  --accent-ink: #001818;
-  --accent-glow: rgba(31, 217, 196, 0.34);
-
-  --pos: #34D9B0;
-  --neg: #FF6080;
-  --warn: #FFB833;
-  --info: #4DC2E8;
-
-  --border-1: rgba(230, 250, 247, 0.06);
-  --border-2: rgba(230, 250, 247, 0.10);
-
-  --shadow-glow: 0 0 0 1px rgba(31, 217, 196, 0.28), 0 8px 32px -8px var(--accent-glow);
+/* KPI hero — lime now really pops over lead paper */
+[data-theme="light"] .kpi.hero {
+  background: linear-gradient(180deg, rgba(200,240,81,0.45), rgba(200,240,81,0.10)), var(--surface-1);
+  border-color: rgba(132,170,28,0.85);
+  box-shadow: 0 0 0 1px rgba(200,240,81,0.25), var(--sh-2);
 }
 
-/* ---------- Sage ---------- */
-[data-palette="sage"] {
-  --bg-0: #0C100C;
-  --bg-1: #131811;
-  --bg-2: #1A2018;
-  --bg-3: #242C20;
-  --bg-inset: #080B08;
-
-  --fg-1: #EEF2E8;
-  --fg-2: rgba(238, 242, 232, 0.72);
-  --fg-3: rgba(238, 242, 232, 0.50);
-  --fg-4: rgba(238, 242, 232, 0.32);
-
-  --accent: #E8A33C;
-  --accent-ink: #1A0E03;
-  --accent-glow: rgba(232, 163, 60, 0.34);
-
-  --pos: #8FB87A;
-  --neg: #D86060;
-  --warn: #E8A33C;
-  --info: #7AA8B0;
-
-  --border-1: rgba(238, 242, 232, 0.06);
-  --border-2: rgba(238, 242, 232, 0.10);
-
-  --shadow-glow: 0 0 0 1px rgba(232, 163, 60, 0.28), 0 8px 32px -8px var(--accent-glow);
-}
-
-/* ---------- Mono ---------- */
-[data-palette="mono"] {
-  --bg-0: #0B0E10;
-  --bg-1: #11161A;
-  --bg-2: #161D22;
-  --bg-3: #1F272E;
-  --bg-inset: #07090B;
-
-  --fg-1: #ECF1F4;
-  --fg-2: rgba(236, 241, 244, 0.72);
-  --fg-3: rgba(236, 241, 244, 0.50);
-  --fg-4: rgba(236, 241, 244, 0.32);
-
-  --accent: #4ADE9A;
-  --accent-ink: #04140C;
-  --accent-glow: rgba(74, 222, 154, 0.28);
-
-  --pos: #4ADE9A;
-  --neg: #F26A7E;
-  --warn: #E5B458;
-  --info: #6FA8E0;
-
-  --border-1: rgba(236, 241, 244, 0.06);
-  --border-2: rgba(236, 241, 244, 0.10);
-
-  --shadow-glow: 0 0 0 1px rgba(74, 222, 154, 0.28), 0 8px 32px -8px var(--accent-glow);
-}
-
-/* ---------- Synthex (light glassmorphic, baseado no Synthex UI Dribbble) ---------- */
-[data-palette="synthex"],
-:root[data-palette="synthex"] {
-  /* Backgrounds — gradient water suave */
-  --bg-0: #E8EEF0;
-  --bg-1: rgba(255, 255, 255, 0.65);
-  --bg-2: rgba(255, 255, 255, 0.85);
-  --bg-3: #FFFFFF;
-  --bg-inset: #D4DCDE;
-
-  /* Foregrounds — teal deep */
-  --fg-1: #1B4D5B;
-  --fg-2: rgba(27, 77, 91, 0.72);
-  --fg-3: rgba(27, 77, 91, 0.55);
-  --fg-4: rgba(27, 77, 91, 0.38);
-
-  /* Accent — green deep */
-  --accent: #0F7305;
-  --accent-ink: #FFFFFF;
-  --accent-glow: rgba(15, 115, 5, 0.25);
-
-  /* Semantic */
-  --pos: #0F7305;
-  --neg: #D32F2F;
-  --warn: #E89F2A;
-  --info: #1B4D5B;
-
-  /* Grain Tokens (mantidos similar, adaptados pro light) */
-  --grain-soja: #8FA854;
-  --grain-milho: #C9931E;
-  --grain-trigo: #B86839;
-  --grain-usd: #2A8973;
-
-  /* Radius — pill dominante (DESIGN.md §5) */
-  --r-xs: 8px;
-  --r-sm: 12px;
-  --r-md: 16px;
-  --r-lg: 24px;
-  --r-xl: 32px;
-  --r-pill: 999px;
-
-  /* Spacing — mantido base 4px */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-7: 32px;
-  --space-8: 40px;
-  --space-9: 56px;
-
-  /* Shadows — glass cards do DESIGN.md §6 */
-  --shadow-card: 0 1px 2px rgba(22, 34, 68, 0.04), 0 4px 16px rgba(22, 34, 68, 0.06);
-  --shadow-pop: 0 4px 8px rgba(22, 34, 68, 0.08), 0 16px 32px rgba(22, 34, 68, 0.10);
-  --shadow-glow: 0 0 0 1px rgba(15, 115, 5, 0.20), 0 8px 24px -8px var(--accent-glow);
-  --shadow-floating: 0 24px 48px rgba(22, 34, 68, 0.18);
-
-  /* Borders — sutis (vidro) */
-  --border-1: rgba(22, 34, 68, 0.08);
-  --border-2: rgba(22, 34, 68, 0.14);
-
-  /* Typography — Urbanist */
-  --font-sans: var(--font-urbanist), 'Urbanist', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
-
-  /* Glass effect helpers */
-  --blur-glass: blur(16px);
-  --bg-app-gradient: linear-gradient(180deg, #E8EEF0 0%, #D4DCDE 100%);
-}
-
-/* Aplica fundo gradiente em html/body quando palette=synthex */
-:root[data-palette="synthex"] body,
-html[data-palette="synthex"] body {
-  background: var(--bg-app-gradient);
-  background-attachment: fixed;
-  color: var(--fg-1);
-}
-
-/* Glass card utility */
-.glass-card {
-  background: var(--bg-1);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-}
-
-/* Numerals: tabular + alt stylistic set */
-.font-mono,
-[class*="font-mono"] {
-  font-feature-settings: "tnum", "ss01";
-  font-variant-numeric: tabular-nums;
+/* Insight bar over lead needs strong lime presence */
+[data-theme="light"] .insight {
+  background: linear-gradient(90deg, rgba(200,240,81,0.40), rgba(200,240,81,0.08));
+  border-color: rgba(132,170,28,0.75);
 }

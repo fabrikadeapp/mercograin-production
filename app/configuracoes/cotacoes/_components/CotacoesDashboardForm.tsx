@@ -92,7 +92,7 @@ export function CotacoesDashboardForm({
 
   return (
     <div className="max-w-4xl space-y-4">
-      <div className="flex items-center justify-between p-3 rounded border border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between p-3 rounded border border-border bg-gray-50">
         <div className="text-sm text-gray-700">
           {selected.size} commodities selecionadas {custom ? '· lista personalizada' : '· lista padrão'}
         </div>
@@ -101,7 +101,7 @@ export function CotacoesDashboardForm({
             type="button"
             onClick={handleReset}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded border border-gray-300"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded border border-border"
           >
             <RotateCcw className="w-3 h-3" />
             Resetar ao padrão
@@ -116,7 +116,7 @@ export function CotacoesDashboardForm({
         </div>
       ) : null}
       {success ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-accent-soft text-emerald-700 text-sm">
           <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
         </div>
@@ -127,7 +127,7 @@ export function CotacoesDashboardForm({
           const allOn = g.items.every((i) => selected.has(i.id))
           const someOn = g.items.some((i) => selected.has(i.id))
           return (
-            <div key={g.category} className="rounded-lg border border-gray-200 bg-white">
+            <div key={g.category} className="rounded-lg border border-border bg-surface-1">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-800">{g.label}</h3>
                 <button
@@ -162,7 +162,7 @@ export function CotacoesDashboardForm({
             type="button"
             onClick={handleSave}
             disabled={busy || !canEdit}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0a8a3a] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {busy ? 'Salvando…' : `Salvar (${selected.size} commodities)`}
           </button>

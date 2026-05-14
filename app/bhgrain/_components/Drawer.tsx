@@ -39,26 +39,45 @@ export function Drawer({
         onClick={onClose}
       />
       <aside
-        className={`relative ml-auto w-full ${width} h-full overflow-y-auto vg-glass-card rounded-l-2xl shadow-2xl`}
-        style={{ background: 'var(--vg-bg-primary, #0a0a0a)' }}
+        className={`relative ml-auto w-full ${width} h-full overflow-y-auto`}
+        style={{
+          background: 'var(--surface-1)',
+          borderLeft: '1px solid var(--border)',
+          borderTopLeftRadius: 'var(--r-lg)',
+          borderBottomLeftRadius: 'var(--r-lg)',
+          boxShadow: 'var(--sh-3)',
+        }}
       >
         <header
-          className="sticky top-0 z-10 flex items-center justify-between p-4 border-b"
-          style={{ borderColor: 'var(--vg-border-subtle)', background: 'var(--vg-bg-primary, #0a0a0a)' }}
+          className="sticky top-0 z-10 flex items-center justify-between"
+          style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--surface-1)',
+          }}
         >
           <div className="min-w-0">
-            <h2 className="text-[15px] font-semibold tracking-tight truncate">{title}</h2>
-            {subtitle && <div className="text-[11px] text-vg-fg-3 truncate">{subtitle}</div>}
+            <h2 style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }} className="truncate">
+              {title}
+            </h2>
+            {subtitle && (
+              <div className="truncate" style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                {subtitle}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition"
+            className="rounded-lg transition"
+            style={{ padding: 6, background: 'transparent', border: 0, color: 'var(--text-mute)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--tint-4pct)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
         </header>
-        <div className="p-4">{children}</div>
+        <div style={{ padding: 20 }}>{children}</div>
       </aside>
     </div>
   )

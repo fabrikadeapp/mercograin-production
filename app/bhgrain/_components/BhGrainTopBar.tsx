@@ -63,53 +63,70 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
       .join('') || 'AM'
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 px-4 md:px-6 pt-3">
+    <header
+      className="sticky top-0 z-40"
+      style={{
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        background: 'var(--glass-strong)',
+        borderBottom: '1px solid var(--border)',
+      }}
+    >
       <nav
-        className="mx-auto flex items-center gap-3 px-3 py-2 rounded-2xl backdrop-blur-xl"
-        style={{
-          maxWidth: '1400px',
-          background: 'var(--vg-glass-dock, rgba(20,20,24,0.65))',
-          border: '1px solid var(--vg-glass-dock-border, rgba(255,255,255,0.08))',
-          boxShadow: 'var(--vg-shadow-dock, 0 8px 32px rgba(0,0,0,0.25))',
-        }}
+        className="mx-auto flex items-center gap-7 px-6 md:px-14 py-3.5"
+        style={{ maxWidth: '1440px' }}
       >
-        {/* Logo BH Grain */}
-        <Link href="/bhgrain" className="flex items-center gap-2 shrink-0">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold"
+        {/* Brand mark NewDB — lime "B" mono */}
+        <Link href="/bhgrain" className="brand flex items-center gap-2.5 shrink-0">
+          <span
+            className="brand-mark"
             style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              color: '#fff',
-              boxShadow: '0 0 12px rgba(59,130,246,0.4)',
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, var(--accent) 0%, #8fd900 100%)',
+              display: 'grid',
+              placeItems: 'center',
+              color: 'var(--accent-ink)',
+              fontFamily: 'var(--f-mono)',
+              fontWeight: 700,
+              fontSize: 13,
             }}
           >
-            BH
-          </div>
-          <span className="text-[14px] font-semibold tracking-tight hidden sm:block">BH Grain</span>
+            B
+          </span>
+          <span className="text-[14px] font-semibold tracking-tight hidden sm:block" style={{ letterSpacing: '-0.01em' }}>
+            BH Grain
+          </span>
         </Link>
 
-        {/* Menu */}
-        <ul className="flex items-center gap-1 ml-2 overflow-x-auto">
+        {/* Menu — usa estilo .topnav nav a do newdb.css (pílulas) */}
+        <ul className="flex items-center gap-1 ml-2 overflow-x-auto" style={{ flex: 1 }}>
           {MENU.map((m) => {
             const active = pathname === m.href || (m.href === '/bhgrain' && pathname?.startsWith('/bhgrain'))
             return (
               <li key={m.href}>
                 <Link
                   href={m.href}
-                  className="relative text-[12px] px-2.5 py-1.5 rounded-lg whitespace-nowrap transition flex items-center gap-1.5"
+                  className="relative whitespace-nowrap flex items-center gap-1.5"
                   style={{
-                    background: active ? 'var(--vg-glass-card-hover, rgba(255,255,255,0.08))' : 'transparent',
-                    color: active ? 'var(--vg-fg-primary)' : 'var(--vg-fg-secondary, rgba(255,255,255,0.7))',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--r-pill)',
+                    fontSize: 13,
+                    color: active ? 'var(--text)' : 'var(--text-mute)',
+                    background: active ? 'var(--tint-4pct)' : 'transparent',
+                    transition: '120ms ease',
                     fontWeight: active ? 600 : 400,
                   }}
                 >
                   {m.label}
                   {m.badgeKey === 'inbox' && inboxBadge > 0 && (
                     <span
-                      className="text-[9px] font-semibold rounded-full px-1.5 py-0.5"
+                      className="font-semibold rounded-full px-1.5 py-0.5"
                       style={{
-                        background: 'var(--vg-accent-primary, #3b82f6)',
-                        color: '#fff',
+                        fontSize: 10,
+                        background: 'var(--accent)',
+                        color: 'var(--accent-ink)',
                       }}
                     >
                       {inboxBadge}
@@ -121,45 +138,34 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
           })}
         </ul>
 
-        {/* Search ⌘K */}
-        <div className="ml-auto flex items-center gap-2">
+        {/* Search ⌘K + ações à direita */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 text-[11px] px-2.5 py-1.5 rounded-lg transition"
+            className="hidden md:flex items-center gap-2 transition"
             style={{
-              background: 'var(--vg-glass-pill-track, rgba(255,255,255,0.05))',
-              color: 'var(--vg-fg-3, rgba(255,255,255,0.5))',
-              border: '1px solid rgba(255,255,255,0.06)',
+              padding: '8px 12px',
+              borderRadius: 'var(--r-pill)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              fontSize: 13,
+              minWidth: 320,
             }}
           >
-            <Search className="w-3 h-3" />
-            <span>Buscar clientes, propostas, mensagens...</span>
-            <kbd className="ml-2 px-1.5 py-0.5 rounded text-[9px]" style={{ background: 'rgba(255,255,255,0.08)' }}>
-              ⌘K
-            </kbd>
+            <Search className="w-3.5 h-3.5" />
+            <span style={{ flex: 1, textAlign: 'left' }}>Buscar clientes, propostas, mensagens…</span>
+            <span className="kbd">⌘K</span>
           </button>
 
-          <button
-            onClick={onOpenPrioridades}
-            className="text-[11px] px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5"
-            style={{
-              background: 'var(--vg-glass-pill-track, rgba(255,255,255,0.05))',
-              color: 'var(--vg-fg-2, rgba(255,255,255,0.8))',
-            }}
-            title="O que fazer agora"
-          >
-            <Sparkles className="w-3 h-3" /> <span className="hidden lg:inline">Prioridades IA</span>
+          <button onClick={onOpenPrioridades} className="btn" title="O que fazer agora">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Prioridades IA</span>
           </button>
 
-          <Link
-            href="/propostas/nova"
-            className="text-[11px] px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold"
-            style={{
-              background: 'var(--vg-accent-primary, #3b82f6)',
-              color: '#fff',
-            }}
-          >
-            <Plus className="w-3 h-3" /> Nova proposta
+          <Link href="/propostas/nova" className="btn primary" style={{ textDecoration: 'none' }}>
+            <Plus className="w-3.5 h-3.5" />
+            Nova proposta
           </Link>
 
           {/* Avatar */}

@@ -30,8 +30,33 @@ export function PageHeader({
     <header className={cn('space-y-1 mb-8', className)}>
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="space-y-1 min-w-0">
-          {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-          <h1 className="text-h1 font-sans tracking-tight text-fg-1">{title}</h1>
+          {eyebrow ? (
+            <p
+              style={{
+                fontFamily: 'var(--f-mono)',
+                fontSize: 11,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                margin: 0,
+              }}
+            >
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'var(--text)',
+              fontFamily: 'var(--f-sans)',
+              margin: '4px 0 0',
+            }}
+            className="tracking-tight"
+          >
+            {title}
+          </h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {search ? (
@@ -48,7 +73,21 @@ export function PageHeader({
           {actions}
         </div>
       </div>
-      {subtitle ? <p className="text-fg-3 text-small">{subtitle}</p> : null}
+      {subtitle ? (
+        <p
+          style={{
+            fontFamily: 'var(--f-serif)',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            fontSize: 16,
+            color: 'var(--text-mute)',
+            margin: '4px 0 0',
+            letterSpacing: '-0.005em',
+          }}
+        >
+          {subtitle}
+        </p>
+      ) : null}
     </header>
   )
 }

@@ -1,0 +1,255 @@
+/* ============================================================================
+ * BH Grain — Overlay NewDB v2 GLOBAL
+ *
+ * Reescreve visualmente todos os componentes legados (PHB system.css + VG)
+ * para que telas que NÃO foram refatoradas ainda recebam a identidade NewDB
+ * automaticamente — sem precisar tocar nos arquivos individualmente.
+ *
+ * Carregado por último em globals.css → vence specificity de system.css.
+ * ============================================================================ */
+
+/* ---------- Base global ---------- */
+html, body {
+  font-family: var(--f-sans) !important;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  background:
+    radial-gradient(1200px 700px at 10% -10%, var(--accent-soft), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, var(--accent-2-soft), transparent 60%),
+    var(--bg);
+}
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--f-sans);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* ---------- Cards (sobrescreve PHB .card / .panel) ---------- */
+.panel,
+.card {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--sh-1) !important;
+}
+
+/* ---------- Buttons (PHB → NewDB) ---------- */
+.btn-primary {
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--r-pill) !important;
+  font-family: var(--f-sans) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em !important;
+  padding: 9px 14px !important;
+  height: auto !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: 120ms ease;
+}
+.btn-primary:hover {
+  background: #d4f95f !important;
+  box-shadow: 0 0 0 4px var(--accent-soft) !important;
+}
+.btn-primary:active { transform: translateY(1px); }
+
+.btn-secondary {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-pill) !important;
+  font-family: var(--f-sans) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  padding: 9px 14px !important;
+  height: auto !important;
+  transition: 120ms ease;
+}
+.btn-secondary:hover { background: var(--surface-3) !important; }
+
+.btn-ghost {
+  background: transparent !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-pill) !important;
+  font-size: 13px !important;
+  padding: 9px 14px !important;
+}
+.btn-ghost:hover { background: var(--tint-4pct) !important; }
+
+.btn-icon {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-sm) !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+}
+
+.btn-sm { font-size: 12px !important; padding: 6px 10px !important; }
+
+/* ---------- Inputs / selects / textareas globais ---------- */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+select,
+textarea {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-sm) !important;
+  color: var(--text) !important;
+  font-family: var(--f-sans) !important;
+  font-size: 13px !important;
+  padding: 9px 12px !important;
+  transition: 120ms ease;
+}
+
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: rgba(200, 240, 81, 0.4) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+input::placeholder,
+textarea::placeholder { color: var(--text-dim); }
+
+/* ---------- Pills / chips legados ---------- */
+.pill,
+.chip {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-pill) !important;
+  color: var(--text-mute) !important;
+  font-family: var(--f-sans) !important;
+  font-size: 12px !important;
+  padding: 7px 12px !important;
+}
+.chip-pos { color: var(--success) !important; background: var(--success-soft) !important; border-color: rgba(74,222,128,0.2) !important; }
+.chip-neg { color: var(--danger) !important; background: var(--danger-soft) !important; border-color: rgba(248,113,113,0.22) !important; }
+.chip-warn { color: var(--warning) !important; background: var(--warning-soft) !important; border-color: rgba(251,191,36,0.2) !important; }
+
+/* ---------- Labels / eyebrows ---------- */
+.eyebrow {
+  font-family: var(--f-mono) !important;
+  font-size: 11px !important;
+  color: var(--text-dim) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* ---------- Sidebar / nav legados ---------- */
+.sidebar {
+  background: var(--surface-1) !important;
+  border-color: var(--border) !important;
+}
+.nav-item {
+  color: var(--text-mute) !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+}
+.nav-item:hover {
+  background: var(--tint-4pct) !important;
+  color: var(--text) !important;
+}
+.nav-item-active {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-left: 3px solid var(--accent) !important;
+}
+
+/* ---------- Tabular numbers globais (todo number cell) ---------- */
+.t-num,
+.t-num-lg,
+.tabular-nums {
+  font-family: var(--f-sans);
+  font-feature-settings: "tnum", "ss01";
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tables (PHB DenseTable + qualquer <table>) ---------- */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+table thead th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 14px;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+table tbody td {
+  font-size: 13px;
+  color: var(--text);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+table tbody tr:hover { background: var(--tint-2pct); }
+
+/* ---------- Scrollbar (dark) ---------- */
+* { scrollbar-color: var(--surface-3) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 999px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Links ---------- */
+a { color: inherit; }
+a:hover { color: var(--accent); }
+
+/* ---------- KBD ---------- */
+kbd {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-mute);
+}
+
+/* ---------- Acent overrides (componentes que usam classe accent diretamente) ---------- */
+.bg-accent,
+[class*="bg-accent"] { background-color: var(--accent) !important; }
+.text-accent { color: var(--accent) !important; }
+
+/* ---------- Disable phb-pulse keyframe (legacy verde) ---------- */
+@keyframes phb-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.4); }
+}
+
+/* ---------- VisionGlass card classes (sobrescreve para não ficarem inconsistentes) ---------- */
+.vg-glass-card {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-lg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: var(--sh-1) !important;
+}
+
+/* ---------- Em telas legadas, esconder backgrounds fotográficos ---------- */
+[style*="bg-hero"],
+[style*="bg-hero.jpg"] {
+  /* não aplicamos — só evitamos que o fundo da foto sobreponha */
+}
+
+/* ---------- Container max-width consistente ---------- */
+/* Não tocamos para evitar quebra de layouts específicos */

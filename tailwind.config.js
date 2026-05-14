@@ -8,6 +8,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ===== NewDB v2 (canonical) =====
+        bg: 'var(--bg)',
+        'bg-elev': 'var(--bg-elev)',
+        'surface-1': 'var(--surface-1)',
+        'surface-2': 'var(--surface-2)',
+        'surface-3': 'var(--surface-3)',
+        glass: 'var(--glass)',
+        'glass-strong': 'var(--glass-strong)',
+
+        text: 'var(--text)',
+        'text-mute': 'var(--text-mute)',
+        'text-dim': 'var(--text-dim)',
+        'text-faint': 'var(--text-faint)',
+
+        'accent-soft': 'var(--accent-soft)',
+        'accent-2': 'var(--accent-2)',
+        'accent-2-soft': 'var(--accent-2-soft)',
+        'accent-3': 'var(--accent-3)',
+        'data-4': 'var(--data-4)',
+        'data-5': 'var(--data-5)',
+
+        success: 'var(--success)',
+        'success-soft': 'var(--success-soft)',
+        warning: 'var(--warning)',
+        'warning-soft': 'var(--warning-soft)',
+        danger: 'var(--danger)',
+        'danger-soft': 'var(--danger-soft)',
+        'info-soft': 'var(--info-soft)',
+
+        // ===== Legacy aliases (preservados, mapeiam para NewDB via :root) =====
         'bg-0': 'var(--bg-0)',
         'bg-1': 'var(--bg-1)',
         'bg-2': 'var(--bg-2)',
@@ -54,12 +84,19 @@ module.exports = {
         'vg-warning': 'var(--vg-accent-warning)',
       },
       borderColor: {
+        // NewDB
+        DEFAULT: 'var(--border)',
+        strong: 'var(--border-strong)',
+        glass: 'var(--border-glass)',
+        // Legacy
         'border-1': 'var(--border-1)',
         'border-2': 'var(--border-2)',
         'vg-border': 'var(--vg-glass-card-border)',
         'vg-border-strong': 'var(--vg-glass-card-border-strong)',
       },
       backdropBlur: {
+        card: '20px',
+        strong: '30px',
         'vg-card': '32px',
         'vg-dock': '40px',
       },
@@ -86,6 +123,10 @@ module.exports = {
         9: 'var(--space-9)',
       },
       boxShadow: {
+        'sh-1': 'var(--sh-1)',
+        'sh-2': 'var(--sh-2)',
+        'sh-3': 'var(--sh-3)',
+        'sh-glow': 'var(--sh-glow)',
         card: 'var(--shadow-card)',
         pop: 'var(--shadow-pop)',
         glow: 'var(--shadow-glow)',
@@ -96,8 +137,17 @@ module.exports = {
         'vg-glow': 'var(--vg-shadow-glow)',
       },
       fontFamily: {
-        sans: 'var(--font-sans)',
-        mono: 'var(--font-mono)',
+        sans: ['var(--f-sans)', 'sans-serif'],
+        mono: ['var(--f-mono)', 'monospace'],
+        display: ['var(--f-display)', 'sans-serif'],
+        serif: ['var(--f-serif)', 'serif'],
+      },
+      transitionTimingFunction: {
+        'newdb': 'cubic-bezier(0.2, 0.7, 0.1, 1)',
+      },
+      transitionDuration: {
+        '120': '120ms',
+        '200': '200ms',
       },
       fontSize: {
         display: ['56px', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '600' }],

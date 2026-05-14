@@ -13,8 +13,8 @@ interface Props {
 }
 
 /**
- * Shell BH Grain — topbar dedicada (BH azul + menu mínimo + ⌘K + Prioridades IA).
- * Bg agrícola dark herda de /visionglass/bg-hero.jpg (mesmo asset).
+ * Shell BH Grain — design v2 NewDB.
+ * Fundo sólido NewDB com radial gradients suaves (sem foto agrícola — clareza primeiro).
  */
 export function BhGrainShell({ children, userName, workspaceName }: Props) {
   const [prioridadesOpen, setPrioridadesOpen] = useState(false)
@@ -24,14 +24,11 @@ export function BhGrainShell({ children, userName, workspaceName }: Props) {
     <div
       className="min-h-screen w-full relative"
       style={{
-        // Pôr-do-sol agrícola: laranja quente no topo → escuro embaixo + foto de fundo
-        backgroundImage:
-          "linear-gradient(180deg, rgba(245,158,11,0.10) 0%, rgba(20,15,10,0.85) 35%, rgba(10,10,12,0.95) 100%), url('/visionglass/bg-hero.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        backgroundRepeat: 'no-repeat',
-        color: 'var(--vg-fg-primary)',
+        background:
+          'radial-gradient(1200px 700px at 10% -10%, var(--accent-soft), transparent 60%), ' +
+          'radial-gradient(900px 500px at 100% 0%, var(--accent-2-soft), transparent 60%), ' +
+          'var(--bg)',
+        color: 'var(--text)',
       }}
     >
       <DemoBanner />

@@ -159,7 +159,7 @@ export function AiSettingsForm({
       ) : null}
 
       {success ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm">
+        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-accent-soft text-emerald-700 text-sm">
           <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
         </div>
@@ -167,12 +167,12 @@ export function AiSettingsForm({
 
       <fieldset
         disabled={!canEdit || busy}
-        className="rounded-lg border border-gray-200 bg-white p-6 space-y-5 disabled:opacity-60"
+        className="rounded-lg border border-border bg-surface-1 p-6 space-y-5 disabled:opacity-60"
       >
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Modo de operação</h3>
           <div className="space-y-2">
-            <label className="flex items-start gap-3 p-3 rounded border border-gray-200 hover:bg-gray-50 cursor-pointer">
+            <label className="flex items-start gap-3 p-3 rounded border border-border hover:bg-gray-50 cursor-pointer">
               <input
                 type="radio"
                 name="mode"
@@ -191,7 +191,7 @@ export function AiSettingsForm({
 
             <label
               className={`flex items-start gap-3 p-3 rounded border ${
-                byokAllowed ? 'border-gray-200 hover:bg-gray-50 cursor-pointer' : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-60'
+                byokAllowed ? 'border-border hover:bg-gray-50 cursor-pointer' : 'border-gray-100 bg-gray-50 cursor-not-allowed opacity-60'
               }`}
             >
               <input
@@ -224,7 +224,7 @@ export function AiSettingsForm({
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full px-3 py-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#0a8a3a]"
+            className="w-full px-3 py-2 rounded border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           >
             {MODELS.map((m) => (
               <option key={m.value} value={m.value}>
@@ -240,7 +240,7 @@ export function AiSettingsForm({
               Chave OpenAI
             </label>
             {hasKey ? (
-              <div className="flex items-center gap-3 p-3 rounded border border-emerald-200 bg-emerald-50 mb-3">
+              <div className="flex items-center gap-3 p-3 rounded border border-emerald-200 bg-accent-soft mb-3">
                 <KeyRound className="w-4 h-4 text-emerald-700" />
                 <span className="text-sm text-emerald-800 flex-1">
                   Chave configurada (criptografada).
@@ -262,7 +262,7 @@ export function AiSettingsForm({
               placeholder={hasKey ? 'Cole nova chave para substituir' : 'sk-proj-...'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="w-full px-3 py-2 rounded border border-gray-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0a8a3a]"
+              className="w-full px-3 py-2 rounded border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent"
             />
             <p className="text-xs text-gray-500 mt-1.5">
               Gere em{' '}
@@ -284,7 +284,7 @@ export function AiSettingsForm({
             type="button"
             onClick={handleSave}
             disabled={!canEdit || busy}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0a8a3a] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {busy ? 'Salvando…' : 'Salvar configuração'}
           </button>
