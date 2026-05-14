@@ -5,19 +5,22 @@ import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
 
 const propostaSchema = z.object({
-  clienteId: z.string().min(1),
-  numero: z.string().min(1),
-  tipo: z.enum(['venda', 'compra']),
-  assunto: z.string().min(3),
+  clienteId: z.string().min(1, 'Cliente é obrigatório'),
+  numero: z.string().min(1, 'Número da proposta é obrigatório'),
+  tipo: z.enum(['venda', 'compra'], { errorMap: () => ({ message: 'Tipo inválido (venda/compra)' }) }),
   descricao: z.string().optional(),
-  valor: z.number().positive(),
-  graos: z.array(z.object({
-    grao: z.string(),
-    quantidade: z.number().positive(),
-    preco: z.number().positive(),
-    subtotal: z.number().positive(),
-  })).default([]),
-  validadeEm: z.string(),
+  valor: z.number().positive('Valor total deve ser maior que zero'),
+  graos: z
+    .array(
+      z.object({
+        grao: z.string().min(1, 'Grão obrigatório'),
+        quantidade: z.number().positive('Quantidade > 0'),
+        preco: z.number().positive('Preço > 0'),
+        subtotal: z.number().positive('Subtotal > 0'),
+      })
+    )
+    .min(1, 'Adicione pelo menos um grão'),
+  validadeEm: z.string().min(1, 'Data de validade é obrigatória'),
 })
 
 // GET - Listar propostas (com paginação e filtros)
@@ -153,8 +156,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(proposta, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Mensagem com nome do campo + erro (em vez de só "Required")
+      const labels: Record<string, string> = {
+        clienteId: 'Cliente',
+        numero: 'Número da proposta',
+        tipo: 'Tipo',
+        valor: 'Valor total',
+        validadeEm: 'Data de validade',
+        graos: 'Grãos',
+      }
+      const issues = error.errors.map((e) => {
+        const root = e.path[0]
+        const label = typeof root === 'string' ? labels[root] ?? root : 'Campo'
+        return `${label}: ${e.message}`
+      })
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: issues.join(' · '), issues: error.errors },
         { status: 400 }
       )
     }

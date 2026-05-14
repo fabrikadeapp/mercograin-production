@@ -124,9 +124,39 @@ export default function NovaPropostaPage() {
 
   const valorTotal = graos.reduce((acc, g) => acc + g.subtotal, 0)
 
+  const onInvalid = (errs: typeof errors) => {
+    const labels: Record<string, string> = {
+      clienteId: 'Cliente',
+      numero: 'Número da proposta',
+      tipo: 'Tipo',
+      validadeEm: 'Data de validade',
+    }
+    const missing = Object.keys(errs)
+      .map((k) => labels[k] ?? k)
+      .filter(Boolean)
+    if (missing.length > 0) {
+      showError(`Preencha: ${missing.join(', ')}`)
+    }
+    // Scroll até o primeiro campo com erro
+    setTimeout(() => {
+      const firstError = document.querySelector('[aria-invalid="true"]') as HTMLElement | null
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        firstError.focus?.()
+      }
+    }, 50)
+  }
+
   const onSubmit = async (data: PropostaFormData) => {
     if (graos.length === 0) {
       showError('Adicione pelo menos um grão')
+      return
+    }
+
+    // Valida grãos individualmente (não vão pelo zod porque estão em state separado)
+    const graoInvalido = graos.findIndex((g) => !g.grao || g.quantidade <= 0 || g.preco <= 0)
+    if (graoInvalido >= 0) {
+      showError(`Grão #${graoInvalido + 1}: preencha grão, quantidade e preço (> 0)`)
       return
     }
 
@@ -215,7 +245,7 @@ export default function NovaPropostaPage() {
           </div>
         </Card>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
           <Card className="space-y-6">
             <section className="space-y-4">
               <p className="eyebrow">Dados da proposta</p>
@@ -346,6 +376,26 @@ export default function NovaPropostaPage() {
               <p className="t-num-lg text-accent">{formatCurrency(valorTotal)}</p>
             </div>
           </Card>
+
+          {/* Resumo de erros — mostra todos os campos faltando antes do botão */}
+          {Object.keys(errors).length > 0 && (
+            <div
+              className="rounded-md p-4"
+              style={{
+                background: 'var(--danger-soft)',
+                border: '1px solid rgba(248,113,113,0.25)',
+                color: 'var(--danger)',
+              }}
+            >
+              <p className="font-medium mb-1">Preencha os campos obrigatórios:</p>
+              <ul className="text-sm list-disc list-inside space-y-0.5">
+                {errors.clienteId && <li>Cliente</li>}
+                {errors.numero && <li>Número da proposta</li>}
+                {errors.tipo && <li>Tipo (venda/compra)</li>}
+                {errors.validadeEm && <li>Data de validade</li>}
+              </ul>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Link href="/propostas">
