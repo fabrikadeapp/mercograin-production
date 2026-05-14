@@ -38,7 +38,7 @@ export function BhGrainShell({ children, userName, workspaceName }: Props) {
         onOpenPrioridades={() => setPrioridadesOpen(true)}
       />
 
-      <main className="pt-24 pb-12 md:pb-8 px-3 md:px-6 relative z-0">
+      <main className="pt-4 pb-12 md:pb-8 px-3 md:px-6 relative z-0">
         <div className="mx-auto w-full" style={{ maxWidth: '1400px' }}>
           {children}
         </div>
