@@ -12,7 +12,10 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   X,
+  List,
+  LayoutGrid,
 } from 'lucide-react'
+import { PropostasKanban } from './_components/PropostasKanban'
 import {
   AppShell,
   PageHeader,
@@ -39,6 +42,36 @@ interface Proposta {
   cliente: {
     id: string
     nome: string
+  }
+  /** JSON serializado dos grãos da proposta (para extrair qtd/commodity no Kanban) */
+  graos?: unknown
+  scoreInterno?: number | null
+}
+
+type ViewMode = 'list' | 'kanban'
+
+interface GraoItem {
+  grao?: string
+  commodity?: string
+  quantidade?: number
+  quantidadeSc?: number
+}
+
+function extractKanbanFields(p: Proposta): {
+  quantidadeSc: number | null
+  commodity: string | null
+} {
+  const arr = Array.isArray(p.graos) ? (p.graos as GraoItem[]) : []
+  if (arr.length === 0) return { quantidadeSc: null, commodity: null }
+  // Quantidade total em sacas (somatório se múltiplos grãos)
+  const qtd = arr.reduce((acc, g) => {
+    const v = g.quantidadeSc ?? g.quantidade ?? 0
+    return acc + (typeof v === 'number' ? v : 0)
+  }, 0)
+  const c = arr[0]?.commodity ?? arr[0]?.grao ?? null
+  return {
+    quantidadeSc: qtd > 0 ? qtd : null,
+    commodity: c ? String(c).charAt(0).toUpperCase() + String(c).slice(1) : null,
   }
 }
 
@@ -87,8 +120,29 @@ export default function PropostasPage() {
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
+  const [view, setView] = useState<ViewMode>('list')
 
-  const limit = 25
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('bhg-propostas-view')
+      if (stored === 'kanban' || stored === 'list') setView(stored)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const applyView = (v: ViewMode) => {
+    setView(v)
+    try {
+      window.localStorage.setItem('bhg-propostas-view', v)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Kanban precisa de todas as propostas (não 25 por página) para distribuir
+  // corretamente entre as 5 colunas.
+  const limit = view === 'kanban' ? 200 : 25
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -137,6 +191,14 @@ export default function PropostasPage() {
     }, 300)
     return () => clearTimeout(timer)
   }, [search, statusFilter])
+
+  // Refetch ao trocar de view (limit muda)
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchPropostas()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -209,6 +271,64 @@ export default function PropostasPage() {
             }}
             containerClassName="w-56"
           />
+
+          {/* Toggle Lista / Kanban */}
+          <div
+            className="inline-flex items-center gap-0.5"
+            style={{
+              padding: 3,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 999,
+            }}
+            role="group"
+            aria-label="Visualização"
+          >
+            <button
+              type="button"
+              onClick={() => applyView('list')}
+              aria-pressed={view === 'list'}
+              title="Visualização em lista"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: view === 'list' ? 600 : 400,
+                background: view === 'list' ? 'var(--surface-1)' : 'transparent',
+                color: view === 'list' ? 'var(--text)' : 'var(--text-mute)',
+                boxShadow: view === 'list' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+                transition: '120ms ease',
+              }}
+            >
+              <List className="h-3.5 w-3.5" />
+              Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => applyView('kanban')}
+              aria-pressed={view === 'kanban'}
+              title="Visualização em kanban por status"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: view === 'kanban' ? 600 : 400,
+                background: view === 'kanban' ? 'var(--surface-1)' : 'transparent',
+                color: view === 'kanban' ? 'var(--text)' : 'var(--text-mute)',
+                boxShadow: view === 'kanban' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+                transition: '120ms ease',
+              }}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Kanban
+            </button>
+          </div>
         </div>
 
         {(search || statusFilter) && (
@@ -264,6 +384,22 @@ export default function PropostasPage() {
             </Link>
           </div>
         </Card>
+      ) : view === 'kanban' ? (
+        <PropostasKanban
+          propostas={propostas.map((p) => {
+            const { quantidadeSc, commodity } = extractKanbanFields(p)
+            return {
+              id: p.id,
+              numero: p.numero,
+              status: p.status,
+              valorTotal: p.valorTotal,
+              cliente: p.cliente,
+              quantidadeSc,
+              commodity,
+              scoreInterno: p.scoreInterno ?? null,
+            }
+          })}
+        />
       ) : (
         <>
           <div className="space-y-3">
