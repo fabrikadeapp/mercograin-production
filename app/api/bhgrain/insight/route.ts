@@ -59,10 +59,6 @@ export async function GET() {
       }
     }
 
-    if (!topVariacao || Math.abs(topVariacao.pct) < MIN_VARIACAO_PCT) {
-      return NextResponse.json({ show: false })
-    }
-
     // 2. Propostas em aberto desse workspace (filtragem por commodity feita em memória,
     //    já que `graos` é JSON e o filtro estruturado dependeria de dialeto Postgres).
     const propostasAbertas = await db.proposta.findMany({
@@ -77,7 +73,39 @@ export async function GET() {
       },
       take: 200,
       orderBy: { atualizadaEm: 'desc' },
-    }).catch(() => [])
+    }).catch(() => [] as Array<{ id: string; graos: unknown; cliente: { nome: string } | null }>)
+
+    // Fallback: se não houve variação relevante OU não conseguimos cotação,
+    // mas há propostas em rascunho, ainda mostramos um insight "geral" — para
+    // o dashboard não ficar vazio (e seguir o mockup do design).
+    const totalRascunho = propostasAbertas.length
+
+    if (!topVariacao || Math.abs(topVariacao.pct) < MIN_VARIACAO_PCT) {
+      if (totalRascunho === 0) return NextResponse.json({ show: false })
+      // Fallback estável quando não há variação significativa
+      const nomesAll = Array.from(
+        new Set(propostasAbertas.map((p) => p.cliente?.nome).filter(Boolean) as string[])
+      ).slice(0, 3)
+      const nomesText =
+        nomesAll.length === 0
+          ? ''
+          : nomesAll.length === 1
+            ? nomesAll[0]
+            : nomesAll.length === 2
+              ? `${nomesAll[0]} e ${nomesAll[1]}`
+              : `${nomesAll[0]}, ${nomesAll[1]} e ${nomesAll[2]}`
+      return NextResponse.json({
+        show: true,
+        title: `${totalRascunho} ${totalRascunho === 1 ? 'proposta em aberto pode' : 'propostas em aberto podem'} ser priorizada${totalRascunho === 1 ? '' : 's'}`,
+        description: nomesText
+          ? `${nomesText}${nomesAll.length < propostasAbertas.length ? ' e outros' : ''} aguardam follow-up`
+          : 'Revise propostas em rascunho antes de fechar o dia',
+        commodity: null,
+        variacaoPct: null,
+        propostasCount: totalRascunho,
+        propostaIds: propostasAbertas.slice(0, 10).map((p) => p.id),
+      })
+    }
 
     const matched = propostasAbertas.filter((p) => {
       const graos = p.graos as PropostaGrao[] | null
@@ -86,7 +114,20 @@ export async function GET() {
     })
 
     if (matched.length === 0) {
-      return NextResponse.json({ show: false })
+      // Tem variação mas nenhuma proposta na commodity afetada — ainda assim
+      // vale comunicar para o operador (para abrir nova oportunidade).
+      const commodityNome = COMMODITY_PT[topVariacao.commodity]
+      const subiu = topVariacao.pct > 0
+      const pctFmt = Math.abs(topVariacao.pct).toFixed(2).replace('.', ',')
+      return NextResponse.json({
+        show: true,
+        title: `${commodityNome} ${subiu ? 'subiu' : 'caiu'} ${pctFmt}% hoje`,
+        description: `Sem propostas em aberto de ${commodityNome.toLowerCase()} — pode ser oportunidade de prospecção`,
+        commodity: topVariacao.commodity,
+        variacaoPct: topVariacao.pct,
+        propostasCount: 0,
+        propostaIds: [],
+      })
     }
 
     // 3. Nomes únicos (até 3)

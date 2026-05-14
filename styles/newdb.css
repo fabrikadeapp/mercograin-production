@@ -98,6 +98,20 @@
 .hero h1 .lime { color: var(--accent); }
 
 /* Components — buttons / inputs / badges / chips / toggles */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: var(--r-pill); font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  transition: 120ms ease;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: var(--f-sans);
+  line-height: 1;
+}
+.btn:hover { background: var(--surface-3); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { background: #d4f95f; box-shadow: 0 0 0 4px var(--accent-soft); }
+.btn.ghost { background: transparent; border-color: var(--border); }
 .btn.ghost:hover { background: var(--tint-4pct); }
 .btn.danger { background: var(--danger-soft); color: var(--danger); border-color: rgba(248,113,113,0.25); }
 .btn.icon { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: var(--r-sm); }
