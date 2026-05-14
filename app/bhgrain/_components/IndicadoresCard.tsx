@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { GlassCard, Skeleton, ErrorState, fmtPct, useJson } from './_shared'
+import { useDashboardFilters } from './DashboardFiltersContext'
 
 interface Resumo {
   enabled?: boolean
@@ -40,7 +41,11 @@ const TAB_LABEL: Record<Tab, string> = {
 }
 
 export function IndicadoresCard() {
-  const { data, error, loading } = useJson<Resumo>('/api/dashboard/resumo')
+  const filtros = useDashboardFilters()
+  const { data, error, loading } = useJson<Resumo>(
+    `/api/dashboard/resumo${filtros.qs}`,
+    [filtros.params]
+  )
   const [tab, setTab] = useState<Tab>('funil')
 
   const ind = data?.resumo?.indicadores

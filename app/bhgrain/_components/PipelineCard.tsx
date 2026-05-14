@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Download } from 'lucide-react'
 import { GlassCard, Skeleton, ErrorState, EmptyState, fmtBRL, useJson } from './_shared'
+import { useDashboardFilters } from './DashboardFiltersContext'
 
 interface PipelineRow {
   id: string
@@ -93,7 +94,11 @@ function fmtCompactBRL(v: number): string {
 type SortKey = 'valor' | 'margem' | 'score' | 'previsao' | 'status' | 'cliente' | 'commodity'
 
 export function PipelineCard({ onOpenProposta }: { onOpenProposta: (id: string) => void }) {
-  const { data, error, loading } = useJson<Resumo>('/api/dashboard/resumo')
+  const filtros = useDashboardFilters()
+  const { data, error, loading } = useJson<Resumo>(
+    `/api/dashboard/resumo${filtros.qs}`,
+    [filtros.params]
+  )
   const [sortKey, setSortKey] = useState<SortKey>('valor')
 
   const rows = useMemo(() => {

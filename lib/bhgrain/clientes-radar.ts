@@ -54,7 +54,58 @@ function clienteStatus(c: { ativo: boolean; statusCadastral: string; createdAt: 
   return 'ativo'
 }
 
-export async function listClientesRadar(workspaceId: string, limit = 8): Promise<ClienteRadarItem[]> {
+export interface ListClientesRadarOpts {
+  periodo?: 'hoje' | '7d' | '15d' | '30d' | 'custom' | null
+  commodity?: 'soja' | 'milho' | 'trigo' | null
+  dataInicio?: string | null
+  dataFim?: string | null
+}
+
+/** Resolve janela [start, end] a partir das opts de período. */
+function janelaFromOpts(opts: ListClientesRadarOpts): { start: Date; end: Date } | null {
+  if (!opts.periodo) return null
+  const end = new Date()
+  if (opts.periodo === 'custom' && opts.dataInicio && opts.dataFim) {
+    const s = new Date(opts.dataInicio + 'T00:00:00')
+    const e = new Date(opts.dataFim + 'T23:59:59')
+    if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) return { start: s, end: e }
+  }
+  const start = new Date(end)
+  switch (opts.periodo) {
+    case 'hoje':
+      start.setHours(0, 0, 0, 0)
+      break
+    case '7d':
+      start.setDate(start.getDate() - 7)
+      break
+    case '15d':
+      start.setDate(start.getDate() - 15)
+      break
+    case '30d':
+      start.setDate(start.getDate() - 30)
+      break
+    default:
+      return null
+  }
+  return { start, end }
+}
+
+export async function listClientesRadar(
+  workspaceId: string,
+  limit = 8,
+  opts: ListClientesRadarOpts = {}
+): Promise<ClienteRadarItem[]> {
+  const janela = janelaFromOpts(opts)
+  const propostasWhere = janela
+    ? {
+        status: { in: ['rascunho', 'rascunho_ia', 'pendente', 'pronta_para_enviar', 'enviada', 'em_negociacao'] },
+        OR: [
+          { criadaEm: { gte: janela.start, lte: janela.end } },
+          { atualizadaEm: { gte: janela.start, lte: janela.end } },
+        ],
+      }
+    : { status: { in: ['rascunho', 'rascunho_ia', 'pendente', 'pronta_para_enviar', 'enviada', 'em_negociacao'] } }
+
   const clientes = await db.cliente.findMany({
     where: { workspaceId },
     take: 100, // pega N e ordena depois
@@ -68,16 +119,27 @@ export async function listClientesRadar(workspaceId: string, limit = 8): Promise
       scoreRelacionamento: true,
       createdAt: true,
       propostas: {
-        where: { status: { in: ['rascunho', 'rascunho_ia', 'pendente', 'pronta_para_enviar', 'enviada', 'em_negociacao'] } },
-        select: { id: true, scoreInterno: true, enviadaEm: true, status: true },
+        where: propostasWhere,
+        select: { id: true, scoreInterno: true, enviadaEm: true, status: true, graos: true },
         take: 50,
       },
     },
   })
 
+  const filtroCommodity = opts.commodity
   const items: ClienteRadarItem[] = clientes.map((c) => {
     const { cidade, uf } = parseEndereco(c.endereco)
-    const scores = c.propostas.map((p) => p.scoreInterno).filter((s): s is number => s != null)
+    // Aplica filtro de commodity em memória (graos é JSON)
+    const propostasFiltradas = filtroCommodity
+      ? c.propostas.filter((p) => {
+          const graos = p.graos as Array<{ grao?: string; commodity?: string }> | null
+          if (!Array.isArray(graos)) return false
+          return graos.some(
+            (g) => (g?.commodity ?? g?.grao ?? '').toLowerCase() === filtroCommodity
+          )
+        })
+      : c.propostas
+    const scores = propostasFiltradas.map((p) => p.scoreInterno).filter((s): s is number => s != null)
     const scoreMedio = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null
 
     let tag: RadarTag | null = null
@@ -86,11 +148,11 @@ export async function listClientesRadar(workspaceId: string, limit = 8): Promise
     if (status === 'novo') tag = 'novo_lead'
 
     // Sem resposta: tem proposta enviada há >7d e nenhuma resposta
-    const enviadaAntiga = c.propostas.find((p) => p.enviadaEm && (Date.now() - p.enviadaEm.getTime()) / 86400000 > 7)
+    const enviadaAntiga = propostasFiltradas.find((p) => p.enviadaEm && (Date.now() - p.enviadaEm.getTime()) / 86400000 > 7)
     if (enviadaAntiga) tag = 'sem_resposta'
 
     // Follow-up pendente: enviada há 4-24h sem outra atualização
-    const enviadaRecente = c.propostas.find((p) => {
+    const enviadaRecente = propostasFiltradas.find((p) => {
       if (!p.enviadaEm) return false
       const h = (Date.now() - p.enviadaEm.getTime()) / 3600000
       return h >= 4 && h < 168 // 1 semana
@@ -101,7 +163,7 @@ export async function listClientesRadar(workspaceId: string, limit = 8): Promise
     if (scoreMedio != null && scoreMedio >= 75) tag = 'quente'
 
     // Em risco: score médio < 40 com propostas abertas
-    if (scoreMedio != null && scoreMedio < 40 && c.propostas.length > 0) tag = 'em_risco'
+    if (scoreMedio != null && scoreMedio < 40 && propostasFiltradas.length > 0) tag = 'em_risco'
 
     // Recorrente: ranking de relacionamento alto
     if (!tag && c.scoreRelacionamento != null && c.scoreRelacionamento >= 700) tag = 'recorrente'
@@ -115,7 +177,7 @@ export async function listClientesRadar(workspaceId: string, limit = 8): Promise
       status,
       tag,
       scoreMedio,
-      propostasAbertas: c.propostas.length,
+      propostasAbertas: propostasFiltradas.length,
     }
   })
 

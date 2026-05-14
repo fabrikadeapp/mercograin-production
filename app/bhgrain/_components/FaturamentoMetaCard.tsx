@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { GlassCard, Skeleton, ErrorState, EmptyState, fmtBRL, useJson } from './_shared'
+import { useDashboardFilters } from './DashboardFiltersContext'
 
 interface Resumo {
   enabled?: boolean
@@ -28,7 +29,11 @@ const riscoLabel: Record<string, { label: string; color: string }> = {
 }
 
 export function FaturamentoMetaCard() {
-  const { data, error, loading } = useJson<Resumo>('/api/dashboard/resumo')
+  const filtros = useDashboardFilters()
+  const { data, error, loading } = useJson<Resumo>(
+    `/api/dashboard/resumo${filtros.qs}`,
+    [filtros.params]
+  )
   const [periodo, setPeriodo] = useState<Periodo>('7d')
 
   const fm = data?.resumo?.faturamentoMeta

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowUpRight, Plus } from 'lucide-react'
 import { GlassCard, Avatar, Badge, Skeleton, ErrorState, EmptyState, useJson } from './_shared'
+import { useDashboardFilters } from './DashboardFiltersContext'
 
 interface ClienteRadar {
   id: string
@@ -32,7 +33,12 @@ const statusLabel: Record<string, string> = {
 }
 
 export function ClientesCard() {
-  const { data, error, loading } = useJson<{ clientes: ClienteRadar[] }>('/api/bhgrain/clientes-radar?limit=5')
+  const filtros = useDashboardFilters()
+  // Concatena params do filtro à query existente
+  const url = filtros.params
+    ? `/api/bhgrain/clientes-radar?limit=5&${filtros.params}`
+    : '/api/bhgrain/clientes-radar?limit=5'
+  const { data, error, loading } = useJson<{ clientes: ClienteRadar[] }>(url, [filtros.params])
 
   return (
     <GlassCard

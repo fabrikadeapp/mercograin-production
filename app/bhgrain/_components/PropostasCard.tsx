@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowUpRight, ChevronRight } from 'lucide-react'
 import { GlassCard, Avatar, ScoreBadge, StatusBadge, Skeleton, ErrorState, EmptyState, fmtBRL, fmtRelativeMin, useJson } from './_shared'
+import { useDashboardFilters } from './DashboardFiltersContext'
 
 interface PipelineRow {
   id: string
@@ -38,7 +39,11 @@ function validadeMin(validadeEm: string | null): number | null {
 }
 
 export function PropostasCard({ onOpenProposta }: { onOpenProposta: (id: string) => void }) {
-  const { data, error, loading } = useJson<Resumo>('/api/dashboard/resumo')
+  const filtros = useDashboardFilters()
+  const { data, error, loading } = useJson<Resumo>(
+    `/api/dashboard/resumo${filtros.qs}`,
+    [filtros.params]
+  )
 
   const rows = data?.resumo?.pipeline ?? []
   const count = data?.resumo?.kpis.propostasAbertas ?? 0

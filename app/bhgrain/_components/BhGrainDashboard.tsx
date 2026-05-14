@@ -16,6 +16,7 @@ import { ConversaDrawer } from './ConversaDrawer'
 import { DateRangePopover } from './DateRangePopover'
 import { FiltrosAvancadosDrawer, FILTROS_VAZIO, countFiltrosAvancadosAtivos, type FiltrosAvancados } from './FiltrosAvancadosDrawer'
 import { Chip, FilterBar, FilterLabel, InsightBar, Button } from '@/components/ui/newdb'
+import { DashboardFiltersProvider } from './DashboardFiltersContext'
 
 interface Props {
   firstName: string
@@ -44,7 +45,7 @@ interface InsightData {
 export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: Props) {
   const [propostaId, setPropostaId] = useState<string | null>(null)
   const [conversaId, setConversaId] = useState<string | null>(null)
-  const [periodo, setPeriodo] = useState<Periodo>('hoje')
+  const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [commodity, setCommodity] = useState<Commodity>('todas')
   const [insightDismissed, setInsightDismissed] = useState(false)
   const [insight, setInsight] = useState<InsightData | null>(null)
@@ -183,7 +184,7 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
           }}
           onClear={() => {
             setCustomRange(null)
-            setPeriodo('hoje')
+            setPeriodo('30d')
           }}
         />
         <div className="sep" />
@@ -205,28 +206,33 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
         Mobile mantém ordem priorizada: Inbox → Propostas → Pipeline → Preços → Clientes → Indicadores → Faturamento.
       */}
 
-      {/* Linha 1 — Inbox + Preços (com abas Spot/CBOT/Câmbio integradas) */}
+      {/* Linha 1 — Inbox + Preços (com abas Spot/CBOT/Câmbio integradas).
+          Não reagem aos filtros do dashboard (são streams independentes). */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InboxCard onOpenConversa={setConversaId} />
         <PrecosCard />
       </div>
 
-      {/* Linha 2 — Pipeline (span 2) + Indicadores */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <PipelineCard onOpenProposta={openProposta} />
+      {/* Cards que reagem ao FilterBar: Pipeline, Indicadores, Clientes,
+          Propostas, Faturamento. Tudo dentro do Provider compartilhado. */}
+      <DashboardFiltersProvider state={{ periodo, commodity, customRange }}>
+        {/* Linha 2 — Pipeline (span 2) + Indicadores */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <PipelineCard onOpenProposta={openProposta} />
+          </div>
+          <IndicadoresCard />
         </div>
-        <IndicadoresCard />
-      </div>
 
-      {/* Linha 3 — Clientes + Propostas + Faturamento & Meta */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <ClientesCard />
-        <PropostasCard onOpenProposta={openProposta} />
-        <FaturamentoMetaCard />
-      </div>
+        {/* Linha 3 — Clientes + Propostas + Faturamento & Meta */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ClientesCard />
+          <PropostasCard onOpenProposta={openProposta} />
+          <FaturamentoMetaCard />
+        </div>
+      </DashboardFiltersProvider>
 
-      {/* Linha 4 — Health (horizontal) */}
+      {/* Linha 4 — Health (horizontal). Não filtra. */}
       <HealthCard />
 
       <PropostaDetailDrawer propostaId={propostaId} onClose={() => setPropostaId(null)} />

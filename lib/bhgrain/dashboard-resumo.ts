@@ -81,25 +81,99 @@ export interface PipelineRow {
 
 const STATUS_ABERTOS = ['rascunho', 'rascunho_ia', 'pendente', 'pronta_para_enviar', 'enviada', 'em_negociacao']
 
-export async function buildDashboardResumo(workspaceId: string): Promise<DashboardResumo> {
+/**
+ * Filtros aplicáveis ao dashboard via /api/dashboard/resumo?periodo=...&commodity=...
+ * Todos opcionais. Default: período '30d', todas commodities.
+ */
+export interface DashboardFiltros {
+  periodo: 'hoje' | '7d' | '15d' | '30d' | 'custom'
+  commodity: 'soja' | 'milho' | 'trigo' | null
+  dataInicio: string | null // ISO yyyy-mm-dd
+  dataFim: string | null    // ISO yyyy-mm-dd
+}
+
+const DEFAULT_FILTROS: DashboardFiltros = {
+  periodo: '30d',
+  commodity: null,
+  dataInicio: null,
+  dataFim: null,
+}
+
+/** Resolve período → janela [start, end). */
+function resolveJanela(filtros: DashboardFiltros): { start: Date; end: Date } {
+  const end = new Date()
+  if (filtros.periodo === 'custom' && filtros.dataInicio && filtros.dataFim) {
+    const s = new Date(filtros.dataInicio + 'T00:00:00')
+    const e = new Date(filtros.dataFim + 'T23:59:59')
+    if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && s.getTime() <= e.getTime()) {
+      return { start: s, end: e }
+    }
+  }
+  const start = new Date(end)
+  switch (filtros.periodo) {
+    case 'hoje':
+      start.setHours(0, 0, 0, 0)
+      break
+    case '7d':
+      start.setDate(start.getDate() - 7)
+      break
+    case '15d':
+      start.setDate(start.getDate() - 15)
+      break
+    case '30d':
+    default:
+      start.setDate(start.getDate() - 30)
+      break
+  }
+  return { start, end }
+}
+
+/** Verifica se a proposta contém a commodity-alvo (graos é JSON array). */
+function propostaTemCommodity(p: { graos: unknown }, commodity: string | null): boolean {
+  if (!commodity) return true
+  const graos = p.graos as Array<{ grao?: string; commodity?: string }> | null
+  if (!Array.isArray(graos)) return false
+  const target = commodity.toLowerCase()
+  return graos.some((g) => {
+    const c = (g?.commodity ?? g?.grao ?? '').toLowerCase()
+    return c === target
+  })
+}
+
+export async function buildDashboardResumo(
+  workspaceId: string,
+  filtrosInput: Partial<DashboardFiltros> = {}
+): Promise<DashboardResumo> {
+  const filtros: DashboardFiltros = { ...DEFAULT_FILTROS, ...filtrosInput }
+  const janela = resolveJanela(filtros)
   const inicioMes = new Date()
   inicioMes.setDate(1)
   inicioMes.setHours(0, 0, 0, 0)
-  const periodo = `${inicioMes.getFullYear()}-${String(inicioMes.getMonth() + 1).padStart(2, '0')}`
+  const periodoLabel = `${inicioMes.getFullYear()}-${String(inicioMes.getMonth() + 1).padStart(2, '0')}`
 
-  const [propostas, clientesCount, metaRow, alertasCount] = await Promise.all([
+  const [propostasTodas, clientesCount, metaRow, alertasCount] = await Promise.all([
+    // Carrega propostas dentro da janela (criadas OU atualizadas no intervalo)
     db.proposta.findMany({
-      where: { workspaceId },
+      where: {
+        workspaceId,
+        OR: [
+          { criadaEm: { gte: janela.start, lte: janela.end } },
+          { atualizadaEm: { gte: janela.start, lte: janela.end } },
+        ],
+      },
       orderBy: { atualizadaEm: 'desc' },
-      take: 200,
+      take: 500,
       include: { cliente: { select: { id: true, nome: true, tipo: true, endereco: true } } },
     }),
     db.cliente.count({ where: { workspaceId, ativo: true } }),
     db.metaComercial.findFirst({
-      where: { workspaceId, periodo, userId: null, commodity: null },
+      where: { workspaceId, periodo: periodoLabel, userId: null, commodity: filtros.commodity },
     }),
     db.commercialAlert.count({ where: { workspaceId, status: 'aberto' } }),
   ])
+
+  // Filtra por commodity em memória (graos é JSON, não dá pra filtrar no SQL portável)
+  const propostas = propostasTodas.filter((p) => propostaTemCommodity(p, filtros.commodity))
 
   const propostasAbertasArr = propostas.filter((p) => STATUS_ABERTOS.includes(p.status.toLowerCase()))
   const valorTotalProposto = sum(propostasAbertasArr.map((p) => Number(p.valorTotal)))
@@ -113,20 +187,23 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
 
   const pipeline: PipelineRow[] = propostasAbertasArr.slice(0, 50).map((p) => buildPipelineRow(p))
 
-  // Faturamento diário (últimos 7 dias) — somente propostas com status 'sucesso'/'concluido'/'faturado'
+  // Faturamento diário (últimos 7 dias) — sempre janela fixa de 7 dias
+  // independente do filtro de período (gráfico esparkline sempre mostra última semana).
+  // Mas respeita commodity.
   const seteDiasAtras = new Date()
   seteDiasAtras.setDate(seteDiasAtras.getDate() - 6)
   seteDiasAtras.setHours(0, 0, 0, 0)
-  const fechadas = await db.proposta.findMany({
+  const fechadasRaw = await db.proposta.findMany({
     where: {
       workspaceId,
       status: { in: ['sucesso', 'concluido', 'faturado'] },
       atualizadaEm: { gte: seteDiasAtras },
     },
-    select: { atualizadaEm: true, valorTotal: true },
+    select: { atualizadaEm: true, valorTotal: true, graos: true },
   })
+  const fechadas = fechadasRaw.filter((p) => propostaTemCommodity(p, filtros.commodity))
   const diario = aggregateByDay(fechadas, seteDiasAtras)
-  const atingidoMes = await sumFechadasNoMes(workspaceId, inicioMes)
+  const atingidoMes = await sumFechadasNoMes(workspaceId, inicioMes, filtros.commodity)
 
   const metaMensal = metaRow ? Number(metaRow.valorMeta) : 0
   const percentualMeta = metaMensal > 0 ? Math.round((atingidoMes / metaMensal) * 1000) / 10 : 0
@@ -143,13 +220,22 @@ export async function buildDashboardResumo(workspaceId: string): Promise<Dashboa
         })
       : null
 
-  // Funil — usa propostas dos últimos 90 dias para indicadores
-  const noventa = new Date()
-  noventa.setDate(noventa.getDate() - 90)
-  const propostasFunil = await db.proposta.findMany({
-    where: { workspaceId, criadaEm: { gte: noventa } },
-    select: { status: true, scoreInterno: true, margemPercent: true, validadeCotacao: true, enviadaEm: true, atualizadaEm: true, clienteId: true },
+  // Funil — usa propostas dentro da janela do filtro (não mais 90 dias fixo).
+  // Respeita commodity também.
+  const propostasFunilRaw = await db.proposta.findMany({
+    where: { workspaceId, criadaEm: { gte: janela.start, lte: janela.end } },
+    select: {
+      status: true,
+      scoreInterno: true,
+      margemPercent: true,
+      validadeCotacao: true,
+      enviadaEm: true,
+      atualizadaEm: true,
+      clienteId: true,
+      graos: true,
+    },
   })
+  const propostasFunil = propostasFunilRaw.filter((p) => propostaTemCommodity(p, filtros.commodity))
   const funil = {
     totalRecebidos: propostasFunil.length,
     enviadas: propostasFunil.filter((p) => p.enviadaEm != null).length,
@@ -302,16 +388,40 @@ function buildPipelineRow(p: PropostaWithCliente): PipelineRow {
   }
 }
 
-async function sumFechadasNoMes(workspaceId: string, inicioMes: Date): Promise<number> {
-  const r = await db.proposta.aggregate({
+async function sumFechadasNoMes(
+  workspaceId: string,
+  inicioMes: Date,
+  commodity: string | null = null
+): Promise<number> {
+  // Sem filtro de commodity: aggregate direto (mais rápido).
+  if (!commodity) {
+    const r = await db.proposta.aggregate({
+      where: {
+        workspaceId,
+        status: { in: ['sucesso', 'concluido', 'faturado'] },
+        atualizadaEm: { gte: inicioMes },
+      },
+      _sum: { valorTotal: true },
+    })
+    return r._sum.valorTotal ? Number(r._sum.valorTotal) : 0
+  }
+  // Com commodity: precisa filtrar JSON em memória.
+  const rows = await db.proposta.findMany({
     where: {
       workspaceId,
       status: { in: ['sucesso', 'concluido', 'faturado'] },
       atualizadaEm: { gte: inicioMes },
     },
-    _sum: { valorTotal: true },
+    select: { valorTotal: true, graos: true },
   })
-  return r._sum.valorTotal ? Number(r._sum.valorTotal) : 0
+  const filtradas = rows.filter((p) => {
+    const graos = p.graos as Array<{ grao?: string; commodity?: string }> | null
+    if (!Array.isArray(graos)) return false
+    return graos.some(
+      (g) => (g?.commodity ?? g?.grao ?? '').toLowerCase() === commodity.toLowerCase()
+    )
+  })
+  return filtradas.reduce((acc, p) => acc + Number(p.valorTotal), 0)
 }
 
 function aggregateByDay(rows: { atualizadaEm: Date; valorTotal: { toString(): string } }[], from: Date): { date: string; value: number }[] {
