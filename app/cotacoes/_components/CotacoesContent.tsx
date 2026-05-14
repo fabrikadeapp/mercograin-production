@@ -90,34 +90,46 @@ export function CotacoesContent() {
   const sojaChange = sojaItem?.changePct ?? null
   const trend: 'pos' | 'neg' = (sojaChange ?? 0) >= 0 ? 'pos' : 'neg'
 
+  const fmtUsd = (n: number | null) => (n != null ? `US$ ${fmtBRL(n)}` : '—')
   const STATS = [
-    { eyebrow: 'ABERTURA', value: fmtBRL((sojaItem as any)?.open) },
-    { eyebrow: 'MÁXIMA', value: fmtBRL((sojaItem as any)?.high) },
-    { eyebrow: 'MÍNIMA', value: fmtBRL((sojaItem as any)?.low) },
+    { eyebrow: 'ABERTURA', value: fmtUsd((sojaItem as any)?.open) },
+    { eyebrow: 'MÁXIMA', value: fmtUsd((sojaItem as any)?.high) },
+    { eyebrow: 'MÍNIMA', value: fmtUsd((sojaItem as any)?.low) },
     { eyebrow: 'VOLUME', value: '—' },
     { eyebrow: 'SPREAD', value: '—' },
     { eyebrow: 'VWAP', value: '—' },
   ]
 
-  const watchlistItems = (watchlist || []).map((w: any) => ({
-    symbol: w.label,
-    ticker: w.ticker,
-    value: fmtBRL(w.price),
-    delta: {
-      value: w.changePct !== null ? `${w.changePct >= 0 ? '+' : ''}${w.changePct.toFixed(2)}%` : '—',
-      trend: (w.changePct ?? 0) >= 0 ? ('pos' as const) : ('neg' as const),
-    },
-    sparklineData: w.sparkline || [],
-  }))
+  // SOYB/CORN/WEAT são ETFs USD. USD/BRL e similares R$. Diferenciar por símbolo.
+  const usdSymbols = new Set(['SOYB', 'CORN', 'WEAT'])
+  const watchlistItems = (watchlist || []).map((w: any) => {
+    const sym = String(w.symbol ?? '').toUpperCase()
+    const isUsd = usdSymbols.has(sym)
+    const prefix = isUsd ? 'US$' : sym.endsWith('/BRL') ? 'R$' : ''
+    return {
+      symbol: w.label,
+      ticker: w.ticker,
+      value: w.price != null ? `${prefix} ${fmtBRL(w.price)}`.trim() : '—',
+      delta: {
+        value: w.changePct !== null ? `${w.changePct >= 0 ? '+' : ''}${w.changePct.toFixed(2)}%` : '—',
+        trend: (w.changePct ?? 0) >= 0 ? ('pos' as const) : ('neg' as const),
+      },
+      sparklineData: w.sparkline || [],
+    }
+  })
 
-  const fxRows: FxRow[] = (fx || []).map((it: any) => ({
-    par: it.symbol,  // Twelve Data já entrega "USD/BRL"
-    preco: fmtBRL(it.price ?? it.previousClose),
-    delta: it.changePct !== null && it.changePct !== undefined
-      ? `${it.changePct >= 0 ? '+' : ''}${it.changePct.toFixed(2)}%`
-      : '—',
-    trend: (it.changePct ?? 0) >= 0 ? 'pos' : 'neg',
-  }))
+  const fxRows: FxRow[] = (fx || []).map((it: any) => {
+    const price = it.price ?? it.previousClose
+    return {
+      par: it.symbol, // Twelve Data já entrega "USD/BRL"
+      preco: price != null ? `R$ ${fmtBRL(price)}` : '—',
+      delta:
+        it.changePct !== null && it.changePct !== undefined
+          ? `${it.changePct >= 0 ? '+' : ''}${it.changePct.toFixed(2)}%`
+          : '—',
+      trend: (it.changePct ?? 0) >= 0 ? 'pos' : 'neg',
+    }
+  })
 
   const fxCols: DenseTableColumn<FxRow>[] = [
     { key: 'par', header: 'PAR', accessor: (r) => <span className="text-fg-1 text-small">{r.par}</span> },
@@ -139,8 +151,33 @@ export function CotacoesContent() {
             </div>
             <Tabs options={TIMEFRAMES} value={tf} onChange={setTf} size="sm" />
           </CardHeader>
-          <p className="font-mono text-fg-1 mb-6 t-num" style={{ fontSize: '56px', lineHeight: 1, color: 'var(--accent)' }}>
-            {sojaPrice !== null ? `R$ ${fmtBRL(sojaPrice)}` : '—'}
+          <p
+            className="font-mono text-fg-1 mb-6 t-num"
+            style={{ fontSize: '56px', lineHeight: 1, color: 'var(--accent)' }}
+            title="SOYB · Teucrium Soybean Fund (ETF proxy soja CBOT) · cotado em US$"
+          >
+            {sojaPrice !== null ? (
+              <>
+                US$ {fmtBRL(sojaPrice)}
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: 'var(--text-mute)',
+                    fontFamily: 'var(--f-mono)',
+                    marginLeft: 8,
+                    letterSpacing: 0,
+                  }}
+                >
+                  /cota ETF
+                </span>
+              </>
+            ) : (
+              '—'
+            )}
+          </p>
+          <p className="text-fg-3 text-small mb-4">
+            SOYB · Teucrium Soybean Fund (ETF) — proxy USD para soja CBOT. Para preço nativo
+            em cents/bushel ou R$/sc, ver dashboard <code>/bhgrain</code>.
           </p>
           {!historico ? (
             <Skeleton height={320} />

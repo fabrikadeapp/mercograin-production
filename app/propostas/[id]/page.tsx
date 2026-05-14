@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
+import { Cotacao } from '@/components/ui/cotacoes'
+import type { Grao as GraoKey } from '@/lib/cotacoes/unidades'
 
 interface GraoItem {
   grao: string
@@ -186,24 +188,45 @@ export default function PropostaDetalhesPage() {
     },
     {
       key: 'quantidade',
-      header: 'Qtd (t)',
+      header: 'Quantidade',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => normalizeGrao(g).quantidade.toLocaleString('pt-BR'),
+      accessor: (g) => (
+        <span className="tabular-nums">
+          {normalizeGrao(g).quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 3 })}
+          <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)', marginLeft: 4 }}>
+            t
+          </span>
+        </span>
+      ),
     },
     {
       key: 'preco',
-      header: 'Preço (R$/t)',
+      header: 'Preço',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => formatCurrency(normalizeGrao(g).preco),
+      accessor: (g) => {
+        const { grao, preco } = normalizeGrao(g)
+        return (
+          <Cotacao
+            grao={(grao.toLowerCase() as GraoKey) || 'soja'}
+            unidadeEntrada="brlTon"
+            valor={preco}
+            size="sm"
+          />
+        )
+      },
     },
     {
       key: 'subtotal',
       header: 'Subtotal',
       align: 'right',
       isNumeric: true,
-      accessor: (g) => <span className="text-fg-1 font-semibold">{formatCurrency(normalizeGrao(g).subtotal)}</span>,
+      accessor: (g) => (
+        <span className="text-fg-1 font-semibold tabular-nums">
+          {formatCurrency(normalizeGrao(g).subtotal)}
+        </span>
+      ),
     },
   ]
 

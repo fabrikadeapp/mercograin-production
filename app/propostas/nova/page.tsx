@@ -17,17 +17,90 @@ import {
 } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { KG_POR_BU, KG_POR_SC, type Grao as GraoKey } from '@/lib/cotacoes/unidades'
 
 interface Cliente {
   id: string
   nome: string
 }
 
+// Unidades suportadas no formulário de proposta.
+// Internamente sempre armazenamos quantidade em TONELADAS e preço em R$/T.
+// As variantes de display são convertidas no momento do input/output.
+type UnidadeQtd = 't' | 'sc60' | 'kg'
+type UnidadePreco = 'brlTon' | 'brlSc60' | 'brlKg' | 'usdBu'
+
 interface GraoItem {
   grao: string
+  /** Sempre em toneladas (canônico). */
   quantidade: number
+  /** Sempre em R$/t (canônico). */
   preco: number
+  /** R$ total (qtde × preco). */
   subtotal: number
+  /** Unidade exibida no input de quantidade (não afeta storage). */
+  unidadeQtd?: UnidadeQtd
+  /** Unidade exibida no input de preço (não afeta storage). */
+  unidadePreco?: UnidadePreco
+}
+
+const UNIDADE_QTD_LABEL: Record<UnidadeQtd, string> = {
+  t: 't',
+  sc60: 'sc 60kg',
+  kg: 'kg',
+}
+
+const UNIDADE_PRECO_LABEL: Record<UnidadePreco, string> = {
+  brlTon: 'R$/t',
+  brlSc60: 'R$/sc',
+  brlKg: 'R$/kg',
+  usdBu: 'US$/bu',
+}
+
+/** Converte quantidade exibida → toneladas canônicas. */
+function qtdParaTon(valor: number, unidade: UnidadeQtd, grao: string): number {
+  if (unidade === 't') return valor
+  const kgPorSc = KG_POR_SC[grao as GraoKey] ?? 60
+  if (unidade === 'sc60') return (valor * kgPorSc) / 1000
+  if (unidade === 'kg') return valor / 1000
+  return valor
+}
+
+/** Converte toneladas canônicas → unidade exibida. */
+function tonParaQtd(ton: number, unidade: UnidadeQtd, grao: string): number {
+  if (unidade === 't') return ton
+  const kgPorSc = KG_POR_SC[grao as GraoKey] ?? 60
+  if (unidade === 'sc60') return (ton * 1000) / kgPorSc
+  if (unidade === 'kg') return ton * 1000
+  return ton
+}
+
+/** Converte preço exibido → R$/t canônico (precisa USDBRL para US$/bu). */
+function precoParaBrlTon(valor: number, unidade: UnidadePreco, grao: string, usdbrl: number | null): number {
+  if (unidade === 'brlTon') return valor
+  const kgPorSc = KG_POR_SC[grao as GraoKey] ?? 60
+  const kgPorBu = KG_POR_BU[grao as GraoKey] ?? 27.2155
+  if (unidade === 'brlSc60') return (valor / kgPorSc) * 1000 // R$/sc → R$/kg → R$/t
+  if (unidade === 'brlKg') return valor * 1000
+  if (unidade === 'usdBu') {
+    if (!usdbrl || usdbrl <= 0) return 0
+    return (valor * usdbrl * 1000) / kgPorBu
+  }
+  return valor
+}
+
+/** Converte R$/t canônico → unidade exibida. */
+function brlTonParaPreco(brlTon: number, unidade: UnidadePreco, grao: string, usdbrl: number | null): number {
+  if (unidade === 'brlTon') return brlTon
+  const kgPorSc = KG_POR_SC[grao as GraoKey] ?? 60
+  const kgPorBu = KG_POR_BU[grao as GraoKey] ?? 27.2155
+  if (unidade === 'brlSc60') return (brlTon / 1000) * kgPorSc
+  if (unidade === 'brlKg') return brlTon / 1000
+  if (unidade === 'usdBu') {
+    if (!usdbrl || usdbrl <= 0) return 0
+    return ((brlTon / 1000) * kgPorBu) / usdbrl
+  }
+  return brlTon
 }
 
 const propostaSchema = z.object({
@@ -62,6 +135,7 @@ export default function NovaPropostaPage() {
   const [graos, setGraos] = useState<GraoItem[]>([])
   const [loadingClientes, setLoadingClientes] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [usdbrl, setUsdbrl] = useState<number | null>(null)
 
   const {
     register,
@@ -74,6 +148,14 @@ export default function NovaPropostaPage() {
 
   useEffect(() => {
     fetchClientes()
+    // Câmbio USDBRL leve — só pra conversão US$/bu ↔ R$ no form.
+    // Falha silenciosa: se não carregar, US$/bu não funciona mas R$/* sim.
+    fetch('/api/bhgrain/cbot')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.usdbrl?.price) setUsdbrl(j.usdbrl.price)
+      })
+      .catch(() => {})
   }, [])
 
   const fetchClientes = async () => {
@@ -93,7 +175,26 @@ export default function NovaPropostaPage() {
   }
 
   const handleAddGrao = () => {
-    setGraos((prev) => [...prev, { grao: 'soja', quantidade: 0, preco: 0, subtotal: 0 }])
+    setGraos((prev) => [
+      ...prev,
+      { grao: 'soja', quantidade: 0, preco: 0, subtotal: 0, unidadeQtd: 't', unidadePreco: 'brlTon' },
+    ])
+  }
+
+  const handleUnidadeQtdChange = (index: number, novaUnidade: UnidadeQtd) => {
+    setGraos((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], unidadeQtd: novaUnidade }
+      return updated
+    })
+  }
+
+  const handleUnidadePrecoChange = (index: number, novaUnidade: UnidadePreco) => {
+    setGraos((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], unidadePreco: novaUnidade }
+      return updated
+    })
   }
 
   const handleRemoveGrao = (index: number) => {
@@ -312,57 +413,121 @@ export default function NovaPropostaPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {graos.map((grao, index) => (
-                  <div
-                    key={index}
-                    className="rounded-md bg-bg-2 border border-border-1 p-4 space-y-3"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Select
-                        label="Grão"
-                        options={GRAOS_DISPONIVEIS}
-                        value={grao.grao}
-                        onChange={(e) => handleGraoChange(index, 'grao', e.target.value)}
-                      />
-                      <Input
-                        label="Quantidade (t)"
-                        type="number"
-                        step="0.1"
-                        value={grao.quantidade || ''}
-                        onChange={(e) =>
-                          handleGraoChange(index, 'quantidade', parseFloat(e.target.value) || 0)
-                        }
-                      />
-                      <Input
-                        label="Preço (R$/t)"
-                        type="number"
-                        step="0.01"
-                        value={grao.preco || ''}
-                        onChange={(e) =>
-                          handleGraoChange(index, 'preco', parseFloat(e.target.value) || 0)
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-border-1">
-                      <div>
-                        <p className="eyebrow">Subtotal</p>
-                        <p className="t-num text-fg-1 font-semibold">
-                          {formatCurrency(grao.subtotal)}
-                        </p>
+                {graos.map((grao, index) => {
+                  const uQtd: UnidadeQtd = grao.unidadeQtd ?? 't'
+                  const uPreco: UnidadePreco = grao.unidadePreco ?? 'brlTon'
+                  const qtdExibida = tonParaQtd(grao.quantidade, uQtd, grao.grao)
+                  const precoExibido = brlTonParaPreco(grao.preco, uPreco, grao.grao, usdbrl)
+                  return (
+                    <div
+                      key={index}
+                      className="rounded-md bg-bg-2 border border-border-1 p-4 space-y-3"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Select
+                          label="Grão"
+                          options={GRAOS_DISPONIVEIS}
+                          value={grao.grao}
+                          onChange={(e) => handleGraoChange(index, 'grao', e.target.value)}
+                        />
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="eyebrow">
+                              Quantidade ({UNIDADE_QTD_LABEL[uQtd]})
+                            </label>
+                            <div className="flex gap-1">
+                              {(['t', 'sc60', 'kg'] as UnidadeQtd[]).map((u) => (
+                                <button
+                                  key={u}
+                                  type="button"
+                                  onClick={() => handleUnidadeQtdChange(index, u)}
+                                  className={uQtd === u ? 'chip active' : 'chip'}
+                                  style={{ fontSize: 10, padding: '2px 6px' }}
+                                  title={`Mostrar em ${UNIDADE_QTD_LABEL[u]}`}
+                                >
+                                  {UNIDADE_QTD_LABEL[u]}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={qtdExibida ? Number(qtdExibida.toFixed(4)) : ''}
+                            onChange={(e) => {
+                              const novoExibido = parseFloat(e.target.value) || 0
+                              const novoTon = qtdParaTon(novoExibido, uQtd, grao.grao)
+                              handleGraoChange(index, 'quantidade', Math.round(novoTon * 10000) / 10000)
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="eyebrow">
+                              Preço ({UNIDADE_PRECO_LABEL[uPreco]})
+                            </label>
+                            <div className="flex gap-1 flex-wrap">
+                              {(['brlTon', 'brlSc60', 'brlKg', 'usdBu'] as UnidadePreco[]).map((u) => (
+                                <button
+                                  key={u}
+                                  type="button"
+                                  onClick={() => handleUnidadePrecoChange(index, u)}
+                                  className={uPreco === u ? 'chip active' : 'chip'}
+                                  style={{ fontSize: 10, padding: '2px 6px' }}
+                                  disabled={u === 'usdBu' && usdbrl == null}
+                                  title={u === 'usdBu' && usdbrl == null ? 'Aguardando câmbio USD/BRL' : UNIDADE_PRECO_LABEL[u]}
+                                >
+                                  {UNIDADE_PRECO_LABEL[u]}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={precoExibido ? Number(precoExibido.toFixed(uPreco === 'usdBu' ? 4 : 2)) : ''}
+                            onChange={(e) => {
+                              const novoExibido = parseFloat(e.target.value) || 0
+                              const novoBrlTon = precoParaBrlTon(novoExibido, uPreco, grao.grao, usdbrl)
+                              handleGraoChange(index, 'preco', Math.round(novoBrlTon * 100) / 100)
+                            }}
+                          />
+                          {uPreco === 'usdBu' && usdbrl != null && (
+                            <p className="text-[10px] mt-1" style={{ color: 'var(--text-dim)' }}>
+                              câmbio · R$ {usdbrl.toFixed(4)} /US$
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-                        onClick={() => handleRemoveGrao(index)}
-                        className="text-neg hover:text-neg"
+                      {/* Equivalência sempre visível: mostra qtd × preço internos */}
+                      <div
+                        className="text-[10px]"
+                        style={{ color: 'var(--text-dim)', fontFamily: 'var(--f-mono)' }}
                       >
-                        Remover
-                      </Button>
+                        ≡ {grao.quantidade.toFixed(3)} t × R${' '}
+                        {grao.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} /t
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-border-1">
+                        <div>
+                          <p className="eyebrow">Subtotal</p>
+                          <p className="t-num text-fg-1 font-semibold">
+                            {formatCurrency(grao.subtotal)}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                          onClick={() => handleRemoveGrao(index)}
+                          className="text-neg hover:text-neg"
+                        >
+                          Remover
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Card>

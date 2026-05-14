@@ -110,15 +110,44 @@ export function PropostaDetailDrawer({
           <Section title="Resumo">
             <div className="grid grid-cols-2 gap-3 text-[12px]">
               <KV label="Status" value={<StatusBadge status={data.resumo.status} />} />
-              <KV label="Valor total" value={`R$ ${fmtBRL(data.resumo.valorTotal)}`} />
+              <KV
+                label="Valor total"
+                value={
+                  <span className="tabular-nums">
+                    R$ {fmtBRL(data.resumo.valorTotal, 2)}
+                  </span>
+                }
+              />
               <KV label="Commodity" value={data.resumo.commodity} />
               <KV
                 label="Quantidade"
-                value={data.resumo.quantidade != null ? `${fmtBRL(data.resumo.quantidade)} ${data.resumo.unidade ?? ''}` : '—'}
+                value={
+                  data.resumo.quantidade != null ? (
+                    <span className="tabular-nums">
+                      {fmtBRL(data.resumo.quantidade, 2)}{' '}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)' }}>
+                        {data.resumo.unidade ?? 't'}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <KV
                 label="Preço cotado"
-                value={data.resumo.precoCotado != null ? `R$ ${fmtBRL(data.resumo.precoCotado, 2)}/${data.resumo.unidade ?? 'sc'}` : '—'}
+                value={
+                  data.resumo.precoCotado != null ? (
+                    <span className="tabular-nums">
+                      R$ {fmtBRL(data.resumo.precoCotado, 2)}{' '}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)' }}>
+                        /{data.resumo.unidade ?? 'sc'}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <KV
                 label="Previsão de caixa"
@@ -157,10 +186,28 @@ export function PropostaDetailDrawer({
           {/* Margem */}
           <Section title="Margem">
             <div className="grid grid-cols-2 gap-3 text-[12px]">
-              <KV label="Preço proposto" value={data.margem.precoProposto != null ? `R$ ${fmtBRL(data.margem.precoProposto, 2)}` : '—'} />
-              <KV label="Custo estimado" value={data.margem.custoEstimado != null ? `R$ ${fmtBRL(data.margem.custoEstimado, 2)}` : '—'} />
-              <KV label="Lucro bruto" value={data.margem.lucroBruto != null ? `R$ ${fmtBRL(data.margem.lucroBruto, 2)}` : '—'} />
-              <KV label="Margem %" value={fmtPct(data.margem.margemPercent)} />
+              {(() => {
+                const unidade = data.resumo.unidade ?? 'sc'
+                const PrecoUnit = ({ valor }: { valor: number | null }) =>
+                  valor != null ? (
+                    <span className="tabular-nums">
+                      R$ {fmtBRL(valor, 2)}{' '}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)' }}>
+                        /{unidade}
+                      </span>
+                    </span>
+                  ) : (
+                    <>—</>
+                  )
+                return (
+                  <>
+                    <KV label="Preço proposto" value={<PrecoUnit valor={data.margem.precoProposto} />} />
+                    <KV label="Custo estimado" value={<PrecoUnit valor={data.margem.custoEstimado} />} />
+                    <KV label="Lucro bruto" value={<PrecoUnit valor={data.margem.lucroBruto} />} />
+                    <KV label="Margem %" value={fmtPct(data.margem.margemPercent)} />
+                  </>
+                )
+              })()}
             </div>
             {data.margem.abaixoDoMinimo && (
               <div className="mt-2 text-[11px] font-semibold" style={{ color: 'var(--vg-destructive, #ef4444)' }}>
@@ -195,11 +242,33 @@ export function PropostaDetailDrawer({
             <div className="grid grid-cols-2 gap-3 text-[12px]">
               <KV
                 label="Preço mercado"
-                value={data.mercado.precoMercadoAtual != null ? `R$ ${fmtBRL(data.mercado.precoMercadoAtual, 2)}` : '—'}
+                value={
+                  data.mercado.precoMercadoAtual != null ? (
+                    <span className="tabular-nums">
+                      R$ {fmtBRL(data.mercado.precoMercadoAtual, 2)}{' '}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)' }}>
+                        /{data.resumo.unidade ?? 'sc'}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <KV
                 label="Preço proposto"
-                value={data.mercado.precoProposto != null ? `R$ ${fmtBRL(data.mercado.precoProposto, 2)}` : '—'}
+                value={
+                  data.mercado.precoProposto != null ? (
+                    <span className="tabular-nums">
+                      R$ {fmtBRL(data.mercado.precoProposto, 2)}{' '}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)', fontFamily: 'var(--f-mono)' }}>
+                        /{data.resumo.unidade ?? 'sc'}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <KV
                 label="Diferença"
