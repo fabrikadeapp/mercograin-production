@@ -5,14 +5,12 @@ import { AppShell, PageHeader, Button } from '@/components/ui/phb'
 import { CotacoesContent } from './_components/CotacoesContent'
 import { HistoricoAvancado } from '@/components/cotacoes/HistoricoAvancado'
 import { MesaShortcutsClient } from '@/components/cotacoes/MesaShortcutsClient'
-import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/auth/login')
-  await redirectIfVgEnabled('/cotacoes-vg')
 
   return (
     <AppShell>

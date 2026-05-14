@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { AlertCircle, CheckCircle2, ExternalLink } from 'lucide-react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import type { UiTheme } from '@/lib/ui/theme'
 
 interface ThemeOption {
@@ -90,33 +89,24 @@ export function DesignThemeForm({ initialTheme, options }: Props) {
           ))}
         </div>
 
-        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+        <div className="flex items-center gap-3 pt-2 border-t border-border">
           <button
             type="button"
             onClick={handleSave}
             disabled={busy || theme === initialTheme}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-sm font-medium hover:opacity-90 disabled:opacity-50"
           >
             {busy ? 'Salvando…' : 'Salvar tema'}
           </button>
-          <Link
-            href="/dashboard-vg"
-            target="_blank"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-          >
-            <ExternalLink className="w-3.5 h-3.5" /> Abrir preview VisionGlass
-          </Link>
         </div>
       </section>
 
-      <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <p className="font-medium mb-1">Sobre o tema VisionGlass</p>
+      <section className="rounded-lg border border-border bg-surface-1 p-4 text-sm text-text-mute">
+        <p className="font-medium mb-1 text-text">Tema único — NewDB v2</p>
         <p className="text-xs leading-relaxed">
-          Atualmente o tema VisionGlass é aplicado de forma <strong>parcial</strong>: somente na
-          rota <code>/dashboard-vg</code> (preview) e em componentes que opt-in via classes{' '}
-          <code>vg-*</code>. Selecionar VisionGlass aqui apenas marca a preferência global e
-          aplica o atributo <code>data-theme="visionglass"</code> no <code>&lt;html&gt;</code> —
-          pronto para futura migração full do app.
+          O produto opera com um único tema global (NewDB v2: lime accent sobre dark, tipografia
+          Inter/JetBrains Mono/Instrument Serif). Light theme e variantes futuras serão expostas
+          aqui.
         </p>
       </section>
     </div>

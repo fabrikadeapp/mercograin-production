@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
   if (!u) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = (await req.json().catch(() => null)) as { theme?: string } | null
-  if (!body || (body.theme !== 'phb' && body.theme !== 'visionglass')) {
+  if (!body || body.theme !== 'phb') {
     return NextResponse.json({ error: 'invalid_theme' }, { status: 400 })
   }
 

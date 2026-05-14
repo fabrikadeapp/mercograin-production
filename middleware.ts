@@ -3,11 +3,10 @@ import { NextResponse } from 'next/server'
 
 export const config = {
   // Exclui rotas que não devem passar pelo middleware (assets públicos + auth).
-  // /visionglass — fotos de fundo do tema VisionGlass
   // /landing — assets da landing page
   // /icons, /logos — assets diversos
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|auth|visionglass|landing|icons|logos|manifest.json|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|auth|landing|icons|logos|manifest.json|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)$).*)',
   ],
 }
 

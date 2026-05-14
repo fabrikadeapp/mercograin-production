@@ -11,12 +11,9 @@ interface PageProps {
   searchParams?: { from?: string; id?: string; preco?: string; quantidade?: string; grao?: string }
 }
 
-import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
-
 export default async function Page({ searchParams }: PageProps) {
   const session = await auth()
   if (!session?.user) redirect('/auth/login')
-  await redirectIfVgEnabled('/calculadora-vg')
 
   // Buscar comissao padrão do workspace ativo (best-effort)
   let comissaoPadrao = 1.5

@@ -235,7 +235,7 @@ kbd {
   50%      { opacity: 0.55; transform: scale(1.4); }
 }
 
-/* ---------- VisionGlass card classes (sobrescreve para não ficarem inconsistentes) ---------- */
+/* ---------- Legacy .vg-glass-card alias (mantido até refactor completo dos cards) ---------- */
 .vg-glass-card {
   background: var(--surface-1) !important;
   border: 1px solid var(--border) !important;

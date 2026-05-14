@@ -2,7 +2,6 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
-import { redirectIfVgEnabled } from '@/lib/ui/redirect-vg'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +41,6 @@ const SECTIONS = [
 export default async function FinanceiroHub() {
   const session = await auth()
   if (!session) redirect('/auth/login')
-  await redirectIfVgEnabled('/financeiro-vg')
   return (
     <AppShell>
       <PageHeader title="Financeiro & Compliance" subtitle="Centro de custo, DRE, conciliação, royalties." />
