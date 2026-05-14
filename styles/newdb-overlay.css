@@ -99,10 +99,16 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-sm { font-size: 12px !important; padding: 6px 10px !important; }
 
-/* ---------- Inputs / selects / textareas globais ---------- */
-input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
-select,
-textarea {
+/* ---------- Inputs / selects / textareas globais ----------
+   Exceções:
+   - [data-phb-input]    : Input/Select do design PHB (já têm wrapper próprio
+                           com background/border; só queremos color/font)
+   - .input input        : Input NewDB nativo (já tem wrapper com tudo)
+   - input.no-overlay    : escape hatch manual
+*/
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([data-phb-input]):not(.no-overlay),
+select:not([data-phb-input]):not(.no-overlay),
+textarea:not([data-phb-input]):not(.no-overlay) {
   background: var(--surface-2) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--r-sm) !important;
@@ -113,12 +119,21 @@ textarea {
   transition: 120ms ease;
 }
 
-input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):focus,
-select:focus,
-textarea:focus {
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([data-phb-input]):not(.no-overlay):focus,
+select:not([data-phb-input]):not(.no-overlay):focus,
+textarea:not([data-phb-input]):not(.no-overlay):focus {
   outline: none !important;
   border-color: rgba(200, 240, 81, 0.4) !important;
   box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Inputs PHB: aplica só tipografia/cor (wrapper PHB já tem background/border).
+   Importante: NÃO mexer em padding (Tailwind pl-10/pr-16 precisa ganhar). */
+input[data-phb-input],
+select[data-phb-input],
+textarea[data-phb-input] {
+  color: var(--text) !important;
+  font-family: var(--f-sans) !important;
 }
 
 input::placeholder,

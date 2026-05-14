@@ -55,6 +55,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             aria-invalid={error ? 'true' : undefined}
+            data-phb-input
             className={cn(
               'bg-transparent w-full h-full text-fg-1 text-body placeholder:text-fg-3 outline-none px-4',
               leftIcon ? 'pl-10' : '',

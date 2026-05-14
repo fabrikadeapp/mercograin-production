@@ -63,6 +63,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             aria-invalid={error ? 'true' : undefined}
+            data-phb-input
             className={cn(
               'appearance-none bg-transparent w-full h-full text-fg-1 text-body outline-none px-4 pr-10',
               leftIcon ? 'pl-10' : '',
