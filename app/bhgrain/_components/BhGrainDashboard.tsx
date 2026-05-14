@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Bell, Sparkles, Zap } from 'lucide-react'
+import { Sparkles, Zap, Filter as FilterIcon } from 'lucide-react'
 import Link from 'next/link'
 import { ClientesCard } from './ClientesCard'
 import { InboxCard } from './InboxCard'
@@ -13,114 +13,187 @@ import { FaturamentoMetaCard } from './FaturamentoMetaCard'
 import { HealthCard } from './HealthCard'
 import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { ConversaDrawer } from './ConversaDrawer'
-import { Chip, InsightBar, Button } from '@/components/ui/newdb'
+import { DateRangePopover } from './DateRangePopover'
+import { FiltrosAvancadosDrawer, FILTROS_VAZIO, countFiltrosAvancadosAtivos, type FiltrosAvancados } from './FiltrosAvancadosDrawer'
+import { Chip, FilterBar, FilterLabel, InsightBar, Button } from '@/components/ui/newdb'
 
 interface Props {
   firstName: string
   workspaceName: string
 }
 
-type Periodo = 'hoje' | '7d' | '15d' | '30d'
+type Periodo = 'hoje' | '7d' | '15d' | '30d' | 'custom'
 type Commodity = 'todas' | 'soja' | 'milho' | 'trigo'
 
-const PERIOD_LABEL: Record<Periodo, string> = {
+const PERIOD_LABEL: Record<Exclude<Periodo, 'custom'>, string> = {
   hoje: 'Hoje',
   '7d': '7 dias',
   '15d': '15 dias',
   '30d': '30 dias',
 }
 
-export function BhGrainDashboard({ firstName, workspaceName }: Props) {
+interface InsightData {
+  show: boolean
+  title?: string
+  description?: string
+  commodity?: string
+  variacaoPct?: number
+  propostasCount?: number
+}
+
+export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: Props) {
   const [propostaId, setPropostaId] = useState<string | null>(null)
   const [conversaId, setConversaId] = useState<string | null>(null)
-  const [alertasCount, setAlertasCount] = useState<number>(0)
   const [periodo, setPeriodo] = useState<Periodo>('hoje')
   const [commodity, setCommodity] = useState<Commodity>('todas')
   const [insightDismissed, setInsightDismissed] = useState(false)
+  const [insight, setInsight] = useState<InsightData | null>(null)
+  const [customRange, setCustomRange] = useState<{ start: string; end: string } | null>(null)
+  const [filtrosAvancados, setFiltrosAvancados] = useState<FiltrosAvancados>(FILTROS_VAZIO)
+  const [drawerAvancadoOpen, setDrawerAvancadoOpen] = useState(false)
 
+  // Insight dinâmico
   useEffect(() => {
-    fetch('/api/dashboard/resumo')
+    fetch('/api/bhgrain/insight')
       .then((r) => r.json())
-      .then((j) => {
-        if (j.enabled && j.resumo) setAlertasCount(j.resumo.alertasAbertos ?? 0)
-      })
-      .catch(() => {})
+      .then((j) => setInsight(j as InsightData))
+      .catch(() => setInsight({ show: false }))
   }, [])
 
   const openProposta = useCallback((id: string) => setPropostaId(id), [])
 
   const eyebrowTimestamp = useMemo(() => {
     const d = new Date()
-    return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}, ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return `${data.toUpperCase()}, ${hora}`
   }, [])
 
   const greetingHour = new Date().getHours()
   const greeting = greetingHour < 12 ? 'Bom dia' : greetingHour < 18 ? 'Boa tarde' : 'Boa noite'
+  const filtrosCount = countFiltrosAvancadosAtivos(filtrosAvancados)
 
   return (
     <div className="space-y-4">
-      {/* Header NewDB v2 — uma linha compacta com tudo:
-          eyebrow + saudação + serifa subtítulo + chips filtros + alertas */}
-      <header className="flex flex-wrap items-center gap-x-5 gap-y-2 py-1">
-        <div className="flex items-baseline gap-3 min-w-0">
-          <div className="eyebrow shrink-0">{eyebrowTimestamp}</div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
+      {/* Header — conforme design v2: eyebrow + saudação + serifa inline */}
+      <header style={{ paddingTop: 4 }}>
+        <div className="eyebrow" style={{ marginBottom: 6 }}>
+          MESA OPERACIONAL · {eyebrowTimestamp}
+        </div>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1
+            style={{
+              fontSize: 36,
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              margin: 0,
+              lineHeight: 1.1,
+            }}
+          >
             {greeting}, {firstName}.
           </h1>
           <span
-            className="t-serif hidden md:inline"
-            style={{ fontSize: 14, color: 'var(--text-mute)', letterSpacing: '-0.005em' }}
+            className="t-serif"
+            style={{
+              fontSize: 28,
+              fontFamily: 'var(--f-serif)',
+              fontStyle: 'italic',
+              color: 'var(--text-mute)',
+              lineHeight: 1.2,
+              letterSpacing: '-0.01em',
+            }}
           >
             Aqui está o que importa hoje.
           </span>
         </div>
-
-        {/* Chips filtros — inline no header */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {(Object.keys(PERIOD_LABEL) as Periodo[]).map((p) => (
-            <Chip key={p} active={periodo === p} onClick={() => setPeriodo(p)}>
-              {PERIOD_LABEL[p]}
-            </Chip>
-          ))}
-          <span style={{ width: 1, height: 14, background: 'var(--border)', margin: '0 4px' }} />
-          {(['todas', 'soja', 'milho', 'trigo'] as Commodity[]).map((c) => (
-            <Chip key={c} active={commodity === c} onClick={() => setCommodity(c)}>
-              {c === 'todas' ? 'Todas' : c[0].toUpperCase() + c.slice(1)}
-            </Chip>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto shrink-0">
-          {alertasCount > 0 && (
-            <Link
-              href="/admin/bhgrain/alertas"
-              className="badge danger"
-              style={{ textDecoration: 'none', padding: '5px 10px', fontSize: 12 }}
-            >
-              <Bell className="w-3 h-3" /> {alertasCount} alertas
-            </Link>
-          )}
-        </div>
       </header>
 
-      {/* Insight bar — lime translúcido, "what to do now" */}
-      {!insightDismissed && (
+      {/* InsightBar dinâmico — só renderiza se houver insight relevante */}
+      {!insightDismissed && insight?.show && insight.title && (
         <InsightBar
           icon={<Zap style={{ width: 16, height: 16 }} fill="currentColor" />}
-          title="Reveja propostas com prioridade IA antes de fechar o dia"
-          description="A IA destacou propostas com alta chance de fechamento — abra Prioridades para a lista priorizada"
+          title={insight.title}
+          description={insight.description ?? ''}
           actions={
             <>
               <Button variant="ghost" size="sm" onClick={() => setInsightDismissed(true)}>
                 Ignorar
               </Button>
-              <Link href="/admin/bhgrain/prioridades" className="btn primary" style={{ textDecoration: 'none', fontSize: 12 }}>
-                <Sparkles style={{ width: 12, height: 12 }} /> Ver prioridades
+              <Link
+                href={`/admin/bhgrain/prioridades${insight.commodity ? `?commodity=${insight.commodity}` : ''}`}
+                className="btn primary"
+                style={{ textDecoration: 'none', fontSize: 12 }}
+              >
+                <Sparkles style={{ width: 12, height: 12 }} /> Revisar
               </Link>
             </>
           }
         />
       )}
+
+      {/* FilterBar — conforme design: período (incl. Personalizar) + commodity + Filtros avançados */}
+      <FilterBar
+        right={
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => setDrawerAvancadoOpen(true)}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+          >
+            <FilterIcon style={{ width: 12, height: 12 }} />
+            Filtros avançados
+            {filtrosCount > 0 && (
+              <span
+                style={{
+                  marginLeft: 4,
+                  background: 'var(--accent)',
+                  color: 'var(--accent-ink)',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  borderRadius: 999,
+                  padding: '1px 6px',
+                }}
+              >
+                {filtrosCount}
+              </span>
+            )}
+          </button>
+        }
+      >
+        <FilterLabel>PERÍODO</FilterLabel>
+        {(Object.keys(PERIOD_LABEL) as (keyof typeof PERIOD_LABEL)[]).map((p) => (
+          <Chip
+            key={p}
+            active={periodo === p}
+            onClick={() => {
+              setPeriodo(p)
+              setCustomRange(null)
+            }}
+          >
+            {PERIOD_LABEL[p]}
+          </Chip>
+        ))}
+        <DateRangePopover
+          active={periodo === 'custom' && !!customRange}
+          startDate={customRange?.start ?? null}
+          endDate={customRange?.end ?? null}
+          onApply={(start, end) => {
+            setCustomRange({ start, end })
+            setPeriodo('custom')
+          }}
+          onClear={() => {
+            setCustomRange(null)
+            setPeriodo('hoje')
+          }}
+        />
+        <div className="sep" />
+        <FilterLabel>COMMODITY</FilterLabel>
+        {(['todas', 'soja', 'milho', 'trigo'] as Commodity[]).map((c) => (
+          <Chip key={c} active={commodity === c} onClick={() => setCommodity(c)}>
+            {c === 'todas' ? 'Todas' : c[0].toUpperCase() + c.slice(1)}
+          </Chip>
+        ))}
+      </FilterBar>
 
       {/*
         Nova organização (conforme briefing):
@@ -158,6 +231,12 @@ export function BhGrainDashboard({ firstName, workspaceName }: Props) {
 
       <PropostaDetailDrawer propostaId={propostaId} onClose={() => setPropostaId(null)} />
       <ConversaDrawer conversationId={conversaId} onClose={() => setConversaId(null)} />
+      <FiltrosAvancadosDrawer
+        open={drawerAvancadoOpen}
+        onClose={() => setDrawerAvancadoOpen(false)}
+        initial={filtrosAvancados}
+        onApply={setFiltrosAvancados}
+      />
     </div>
   )
 }

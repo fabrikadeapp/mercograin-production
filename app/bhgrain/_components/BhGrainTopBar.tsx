@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Search, Plus, Sparkles } from 'lucide-react'
+import { Search, Plus, Bell, Crosshair } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/newdb'
 
 interface Props {
@@ -159,10 +159,19 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
             <span className="kbd">⌘K</span>
           </button>
 
-          <ThemeToggle />
+          {/* Sino discreto (alertas) */}
+          <Link
+            href="/admin/bhgrain/alertas"
+            aria-label="Alertas"
+            className="btn icon"
+            style={{ textDecoration: 'none' }}
+            title="Alertas"
+          >
+            <Bell className="w-3.5 h-3.5" />
+          </Link>
 
           <button onClick={onOpenPrioridades} className="btn" title="O que fazer agora">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Crosshair className="w-3.5 h-3.5" />
             <span className="hidden lg:inline">Prioridades IA</span>
           </button>
 
@@ -171,12 +180,15 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
             Nova proposta
           </Link>
 
+          <ThemeToggle />
+
           {/* Avatar */}
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
             style={{
-              background: 'var(--vg-glass-card-hover, rgba(255,255,255,0.08))',
-              color: 'var(--vg-fg-primary)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
             }}
             title={userName ?? workspaceName ?? ''}
           >
