@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { listAllForWorkspace } from '@/lib/bhgrain/credentials'
+import { isCentralEvolutionEnabled } from '@/lib/whatsapp/evolution-central'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
-import { InstagramForm, WhatsappForm, DeleteChannelButton } from './_ui'
+import { InstagramForm, DeleteChannelButton } from './_ui'
 import { EmailAccountsCard } from './_email-accounts-ui'
+import { WhatsappAccountsCard } from './_whatsapp-accounts-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,18 +68,35 @@ export default async function IntegracoesPage() {
         </Card>
 
         <Card className="p-4 lg:col-span-2">
-          <h2 className="text-base font-semibold mb-1">WhatsApp</h2>
-          <p className="text-xs opacity-70 mb-3">
-            {whatsMode === 'central' && 'Modo central — sua instância é provisionada automaticamente no servidor BH Grain.'}
-            {whatsMode === 'byo' && 'Modo BYO — você fornece o servidor Evolution e a chave de API.'}
-            {whatsMode === 'hybrid' && 'Modo híbrido — escolha entre usar o servidor central do BH Grain ou trazer o seu próprio Evolution.'}
-          </p>
-          <WhatsappForm initial={creds.whatsapp} mode={whatsMode} centralBaseUrl={whatsModeValue?.centralBaseUrl ?? null} />
-          {creds.whatsapp && (
-            <div className="mt-3 pt-3 border-t border-white/10 flex justify-end">
-              <DeleteChannelButton channel="whatsapp" />
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div>
+              <h2 className="text-base font-semibold">WhatsApp</h2>
+              <p className="text-xs opacity-70 mt-1">
+                Conecte WhatsApp Business de graça via QR code (Baileys + Evolution).
+                Pode adicionar mais de um número (vendas, suporte, etc).
+                {whatsModeValue?.centralBaseUrl
+                  ? ' Servidor central provisionado pela BH Grain.'
+                  : ''}
+              </p>
             </div>
-          )}
+            <div className="text-[11px] opacity-60">
+              {creds.whatsapps.length} {creds.whatsapps.length === 1 ? 'conta conectada' : 'contas conectadas'}
+            </div>
+          </div>
+          <WhatsappAccountsCard
+            accounts={creds.whatsapps.map((c) => ({
+              id: c.id,
+              provider: c.provider,
+              displayName: c.displayName,
+              identifier: c.identifier,
+              config: c.config,
+              enabled: c.enabled,
+              lastTestedAt: c.lastTestedAt,
+              lastTestSuccess: c.lastTestSuccess,
+              lastTestError: c.lastTestError,
+            }))}
+            centralAvailable={isCentralEvolutionEnabled()}
+          />
         </Card>
       </div>
 
