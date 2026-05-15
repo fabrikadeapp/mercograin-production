@@ -151,6 +151,7 @@ model Workspace {
   conversations          Conversation[]
   conversationMessages   ConversationMessage[]
   metasComerciais        MetaComercial[]
+  commodityMarginRules   CommodityMarginRule[]
   commercialAlerts       CommercialAlert[]
   commercialRules        CommercialRule[]
   integrationHealth      IntegrationHealth[]
@@ -2873,6 +2874,43 @@ model MetaComercial {
 
   @@unique([workspaceId, periodo, userId, commodity])
   @@index([workspaceId, periodo])
+}
+
+/// Margem comercial padrão por workspace × commodity.
+///
+/// Cliente cadastra em /configuracoes/fluxo-trabalho. Cada proposta nova
+/// herda este % automaticamente; pode ser sobrescrito caso a caso. O score
+/// IA também usa esta margem como referência para classificar 'margem baixa'.
+///
+/// Exemplo do BH Grain: Soja 0.3%, Milho 0.4%, Trigo 0.5%.
+model CommodityMarginRule {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// 'soja' | 'milho' | 'trigo' | 'sorgo' | 'algodao' | 'cafe' etc.
+  commodity String @db.VarChar(40)
+
+  /// Margem alvo em % do preço (ex.: 0.3 = 0,3%). Decimal(6,3) permite
+  /// até 999.999% (overkill mas evita precisão pobre em valores baixos).
+  margemPercent Decimal @db.Decimal(6, 3)
+
+  /// Margem mínima aceitável (abaixo dela dispara alerta vermelho na proposta).
+  /// Null = sem mínimo definido (só o target).
+  margemMinima Decimal? @db.Decimal(6, 3)
+
+  /// Permite documentação interna: "Negociar abaixo de 0,2% requer aprovação."
+  observacoes String? @db.Text
+
+  /// Marcador 'ativa' permite manter histórico sem aplicar.
+  ativa Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  @@unique([workspaceId, commodity])
+  @@index([workspaceId, ativa])
 }
 
 /// Alertas comerciais (margem baixa, cotação vencida, follow-up pendente, etc.).

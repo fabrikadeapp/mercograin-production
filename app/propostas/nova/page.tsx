@@ -136,6 +136,8 @@ export default function NovaPropostaPage() {
   const [loadingClientes, setLoadingClientes] = useState(true)
   const [saving, setSaving] = useState(false)
   const [usdbrl, setUsdbrl] = useState<number | null>(null)
+  /** Map { soja: 0.3, milho: 0.4 } vindo de /api/bhgrain/margins */
+  const [marginsMap, setMarginsMap] = useState<Record<string, number>>({})
 
   const {
     register,
@@ -149,11 +151,18 @@ export default function NovaPropostaPage() {
   useEffect(() => {
     fetchClientes()
     // Câmbio USDBRL leve — só pra conversão US$/bu ↔ R$ no form.
-    // Falha silenciosa: se não carregar, US$/bu não funciona mas R$/* sim.
     fetch('/api/bhgrain/cbot')
       .then((r) => r.json())
       .then((j) => {
         if (j?.usdbrl?.price) setUsdbrl(j.usdbrl.price)
+      })
+      .catch(() => {})
+    // Margens default por commodity — preenche o campo automaticamente
+    // quando o cliente seleciona o grão.
+    fetch('/api/bhgrain/margins')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.margins) setMarginsMap(j.margins as Record<string, number>)
       })
       .catch(() => {})
   }, [])
@@ -507,6 +516,47 @@ export default function NovaPropostaPage() {
                         ≡ {grao.quantidade.toFixed(3)} t × R${' '}
                         {grao.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} /t
                       </div>
+
+                      {/* Banner de margem default (vindo de /configuracoes/fluxo-trabalho) */}
+                      {(() => {
+                        const margemPercent = marginsMap[grao.grao]
+                        if (margemPercent == null || margemPercent <= 0 || grao.preco <= 0) return null
+                        const margemPorTon = grao.preco * (margemPercent / 100)
+                        const margemPorSc = margemPorTon / (1000 / 60) // sacas de 60kg
+                        const margemTotal = margemPorTon * grao.quantidade
+                        return (
+                          <div
+                            style={{
+                              marginTop: 6,
+                              padding: '8px 12px',
+                              background: 'var(--accent-soft)',
+                              border: '1px solid rgba(200, 240, 81, 0.25)',
+                              borderRadius: 8,
+                              fontSize: 11,
+                              color: 'var(--text)',
+                            }}
+                          >
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <span>
+                                <strong style={{ color: 'var(--accent)' }}>
+                                  Margem {margemPercent.toFixed(3).replace(/\.?0+$/, '').replace('.', ',')}%
+                                </strong>{' '}
+                                <span style={{ color: 'var(--text-dim)' }}>
+                                  · padrão configurado em Fluxo de trabalho
+                                </span>
+                              </span>
+                              <span className="tabular-nums" style={{ color: 'var(--text-mute)' }}>
+                                R$ {margemPorSc.toFixed(2).replace('.', ',')}/sc · R${' '}
+                                {margemPorTon.toFixed(2).replace('.', ',')}/t · total{' '}
+                                <strong style={{ color: 'var(--text)' }}>
+                                  R$ {margemTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
                       <div className="flex items-center justify-between pt-2 border-t border-border-1">
                         <div>
                           <p className="eyebrow">Subtotal</p>
@@ -533,13 +583,60 @@ export default function NovaPropostaPage() {
           </Card>
 
           <Card>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="eyebrow">Valor total</p>
                 <p className="text-fg-3 text-small">Soma dos subtotais</p>
               </div>
               <p className="t-num-lg text-accent">{formatCurrency(valorTotal)}</p>
             </div>
+
+            {/* Resultado financeiro projetado (margem total) */}
+            {(() => {
+              let margemTotalBrl = 0
+              let temAlgumaMargem = false
+              for (const g of graos) {
+                const m = marginsMap[g.grao]
+                if (m != null && m > 0 && g.preco > 0) {
+                  margemTotalBrl += g.preco * (m / 100) * g.quantidade
+                  temAlgumaMargem = true
+                }
+              }
+              if (!temAlgumaMargem || margemTotalBrl <= 0) return null
+              const pctOverall = valorTotal > 0 ? (margemTotalBrl / valorTotal) * 100 : 0
+              return (
+                <div
+                  style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
+                  <div>
+                    <p className="eyebrow" style={{ marginBottom: 2 }}>Resultado projetado</p>
+                    <p className="text-fg-3 text-small">
+                      Margem agregada · {pctOverall.toFixed(2).replace('.', ',')}% sobre o valor total
+                    </p>
+                  </div>
+                  <p
+                    className="tabular-nums"
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 600,
+                      color: 'var(--success)',
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    R$ {margemTotalBrl.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )
+            })()}
           </Card>
 
           {/* Resumo de erros — mostra todos os campos faltando antes do botão */}

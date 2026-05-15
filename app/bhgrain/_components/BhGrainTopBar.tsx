@@ -13,6 +13,7 @@ import {
   LogOut,
   CreditCard,
   Plug,
+  Workflow,
   User as UserIcon,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
@@ -46,6 +47,7 @@ const MAIS_MENU = [
 const USER_MENU = [
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
   { href: '/configuracoes/integracoes', label: 'Integrações', icon: Plug },
+  { href: '/configuracoes/fluxo-trabalho', label: 'Fluxo de trabalho', icon: Workflow },
   { href: '/assinatura', label: 'Minha assinatura', icon: CreditCard },
   { href: '/profile', label: 'Meu perfil', icon: UserIcon },
 ]
