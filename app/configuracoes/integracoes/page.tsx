@@ -4,7 +4,8 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { listAllForWorkspace } from '@/lib/bhgrain/credentials'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
-import { EmailForm, InstagramForm, WhatsappForm, DeleteChannelButton } from './_ui'
+import { InstagramForm, WhatsappForm, DeleteChannelButton } from './_ui'
+import { EmailAccountsCard } from './_email-accounts-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,17 +36,20 @@ export default async function IntegracoesPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        <Card className="p-4">
-          <h2 className="text-base font-semibold mb-1">E-mail (IMAP + SMTP)</h2>
-          <p className="text-xs opacity-70 mb-3">
-            Leitura de inbox via IMAP + envio via SMTP. Compatível com Gmail (com senha de app), Outlook, ProtonMail, servidores corporativos.
-          </p>
-          <EmailForm initial={creds.email} />
-          {creds.email && (
-            <div className="mt-3 pt-3 border-t border-white/10 flex justify-end">
-              <DeleteChannelButton channel="email_imap_smtp" />
+        <Card className="p-4 lg:col-span-2">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div>
+              <h2 className="text-base font-semibold">E-mail (IMAP + SMTP)</h2>
+              <p className="text-xs opacity-70 mt-1">
+                Conecte uma ou mais caixas — Gmail, Outlook, Hotmail ou qualquer servidor próprio.
+                Senhas são criptografadas em repouso. Inbox unificado combina todas.
+              </p>
             </div>
-          )}
+            <div className="text-[11px] opacity-60">
+              {creds.emails.length} {creds.emails.length === 1 ? 'conta conectada' : 'contas conectadas'}
+            </div>
+          </div>
+          <EmailAccountsCard accounts={creds.emails} />
         </Card>
 
         <Card className="p-4">

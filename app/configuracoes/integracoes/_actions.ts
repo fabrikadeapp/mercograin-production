@@ -105,8 +105,10 @@ export async function saveEmail(fd: FormData): Promise<void> {
 
 export async function testEmail(fd: FormData): Promise<void> {
   const scope = await requireWorkspaceAdmin()
-  const cred = await db.integrationCredential.findUnique({
-    where: { workspaceId_channel: { workspaceId: scope.workspaceId, channel: 'email_imap_smtp' } },
+  // Legacy: testa a primeira credencial de email do workspace.
+  const cred = await db.integrationCredential.findFirst({
+    where: { workspaceId: scope.workspaceId, channel: 'email_imap_smtp' },
+    orderBy: [{ enabled: 'desc' }, { createdAt: 'asc' }],
   })
   if (!cred) throw new Error('Configure as credenciais antes de testar')
   const cfg = cred.config as {
@@ -275,8 +277,10 @@ export async function saveWhatsapp(fd: FormData): Promise<void> {
 
 export async function testWhatsappAction(): Promise<void> {
   const scope = await requireWorkspaceAdmin()
-  const cred = await db.integrationCredential.findUnique({
-    where: { workspaceId_channel: { workspaceId: scope.workspaceId, channel: 'whatsapp' } },
+  // Legacy: testa a primeira credencial WhatsApp do workspace.
+  const cred = await db.integrationCredential.findFirst({
+    where: { workspaceId: scope.workspaceId, channel: 'whatsapp' },
+    orderBy: [{ enabled: 'desc' }, { createdAt: 'asc' }],
   })
   if (!cred) throw new Error('Configure WhatsApp antes de testar')
   const cfg = cred.config as unknown as WhatsappConfig

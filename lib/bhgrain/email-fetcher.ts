@@ -58,13 +58,34 @@ function snippet(body: string, max = 240): string {
   return body.replace(/\s+/g, ' ').trim().slice(0, max)
 }
 
+/**
+ * Legacy wrapper: itera a PRIMEIRA credencial do workspace.
+ * Mantido para compat com callers que ainda pensam por workspace.
+ * Para multi-conta, use fetchCredentialEmail(credentialId).
+ */
 export async function fetchWorkspaceEmail(workspaceId: string): Promise<FetchStats> {
-  const cred = await db.integrationCredential.findUnique({
-    where: { workspaceId_channel: { workspaceId, channel: 'email_imap_smtp' } },
+  const cred = await db.integrationCredential.findFirst({
+    where: { workspaceId, channel: 'email_imap_smtp', enabled: true },
+    orderBy: [{ createdAt: 'asc' }],
   })
+  if (!cred) {
+    return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true }
+  }
+  return fetchCredentialEmail(cred.id)
+}
 
-  // Sem credencial habilitada → skip silencioso
-  if (!cred || !cred.enabled) {
+/**
+ * Sincroniza UMA credencial específica de e-mail. Suporta multi-conta:
+ * o cursor (lastSeenUid/lastSeenUidValidity) fica na credencial individual,
+ * então N contas no mesmo workspace mantêm cursores independentes.
+ */
+export async function fetchCredentialEmail(credentialId: string): Promise<FetchStats> {
+  const cred = await db.integrationCredential.findUnique({ where: { id: credentialId } })
+  if (!cred || cred.channel !== 'email_imap_smtp') {
+    return { workspaceId: cred?.workspaceId ?? '', novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: false, error: 'credencial inexistente' }
+  }
+  const { workspaceId } = cred
+  if (!cred.enabled) {
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true }
   }
   const cfg = asEmailConfig(cred.config)
@@ -72,9 +93,16 @@ export async function fetchWorkspaceEmail(workspaceId: string): Promise<FetchSta
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: false, error: 'config inválida' }
   }
 
-  const password = await getSecret(workspaceId, 'email_imap_smtp', 'imapPassword')
+  // Decripta senha desta credencial específica (não a 1ª do workspace).
+  const password = await (async () => {
+    const secrets = (cred.secretsEncrypted ?? {}) as Record<string, string>
+    const enc = secrets.imapPassword
+    if (!enc) return null
+    const { decryptSecret } = await import('./crypto-secret')
+    return decryptSecret(enc, { workspaceId, channel: 'email_imap_smtp', field: 'imapPassword' })
+  })()
   if (!password) {
-    await markHealthError(workspaceId, 'Senha IMAP não cadastrada')
+    await markHealthError(workspaceId, `Senha IMAP não cadastrada (${cred.identifier ?? cred.id})`)
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: false, error: 'senha IMAP ausente' }
   }
 
@@ -156,8 +184,10 @@ export async function fetchWorkspaceEmail(workspaceId: string): Promise<FetchSta
           select: { id: true },
         })
 
-        // Upsert Conversation (1 conversa por remetente email no workspace)
-        const externalRef = fromEmail // unique key
+        // Upsert Conversation: chave única inclui o ID da credencial para isolar
+        // contas distintas no mesmo workspace (ex.: vendas@x e suporte@x recebem
+        // do mesmo remetente). Formato: '<credId>:<fromEmail>'.
+        const externalRef = `${cred.id}:${fromEmail}`
         const conv = await db.conversation.upsert({
           where: {
             workspaceId_channel_externalRef: {
@@ -279,19 +309,24 @@ async function markHealthError(workspaceId: string, errorMsg: string): Promise<v
  * Roda fetchWorkspaceEmail para todos workspaces com credencial enabled.
  * Tolerante a falha por workspace.
  */
+/**
+ * Itera TODAS as credenciais de e-mail habilitadas — multi-conta.
+ * Um workspace pode ter N contas; cada uma é sincronizada com cursor próprio.
+ *
+ * Sequencial — IMAP é I/O bound mas servidores remotos rate-limitam conexões
+ * paralelas do mesmo IP. Sequencial é previsível e estável.
+ */
 export async function fetchAllWorkspacesEmail(): Promise<FetchStats[]> {
   const credenciais = await db.integrationCredential.findMany({
     where: { channel: 'email_imap_smtp', enabled: true },
-    select: { workspaceId: true },
+    select: { id: true, workspaceId: true },
     take: 500,
   })
 
   const stats: FetchStats[] = []
-  // Sequencial — IMAP é I/O bound mas servidores remotos podem rate-limitar conexões paralelas
-  // do mesmo IP. Sequencial = previsível.
   for (const c of credenciais) {
     try {
-      const s = await fetchWorkspaceEmail(c.workspaceId)
+      const s = await fetchCredentialEmail(c.id)
       stats.push(s)
     } catch (e) {
       stats.push({

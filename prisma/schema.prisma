@@ -2961,6 +2961,20 @@ model IntegrationCredential {
 
   channel String @db.VarChar(30)
 
+  /// Provedor configurado. Ex.: 'gmail' | 'outlook' | 'hotmail' | 'custom' (email),
+  /// 'meta' (instagram/whatsapp), 'evolution' (whatsapp BYO).
+  /// Nulo nas credenciais legadas (migration backfill: 'custom').
+  provider String? @db.VarChar(30)
+
+  /// Nome amigável escolhido pelo cliente (ex.: 'Vendas BH', 'Suporte').
+  /// Aparece na lista de contas e como tag nas mensagens recebidas.
+  displayName String? @db.VarChar(120)
+
+  /// Identificador único da conta dentro do canal: e-mail (IMAP user),
+  /// telefone (WhatsApp), pageId (Instagram). Usado no @@unique para
+  /// permitir N contas por workspace×canal.
+  identifier String? @db.VarChar(255)
+
   /// Configurações não-sensíveis. Ex.: { imapHost, imapPort, imapUser, smtpHost, smtpPort, smtpUser, useTls, fromName }
   config Json
 
@@ -2980,7 +2994,10 @@ model IntegrationCredential {
   updatedAt DateTime @updatedAt
   createdBy String?
 
-  @@unique([workspaceId, channel])
+  /// Multi-conta por (workspace, canal, identifier). Quando identifier é null
+  /// (credenciais legadas single-account), o service layer trata como única.
+  @@unique([workspaceId, channel, identifier])
   @@index([workspaceId, enabled])
+  @@index([workspaceId, channel, enabled])
 }
 
