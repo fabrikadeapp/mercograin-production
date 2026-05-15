@@ -2,29 +2,72 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Search, Plus, Bell, Crosshair } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  Search,
+  Plus,
+  Bell,
+  Crosshair,
+  ChevronDown,
+  Settings,
+  LogOut,
+  CreditCard,
+  Plug,
+  User as UserIcon,
+} from 'lucide-react'
+import { signOut } from 'next-auth/react'
 import { ThemeToggle } from '@/components/ui/newdb'
 
 interface Props {
   userName: string | null
   workspaceName: string | null
   onOpenPrioridades: () => void
+  userEmail?: string | null
+  userRole?: string | null
 }
 
+// Menu principal — mantém os 5 itens mais usados.
+// O 6º+ migram para o dropdown "Mais" para não estourar a barra.
 const MENU = [
   { href: '/bhgrain', label: 'Dashboard' },
   { href: '/clientes', label: 'Clientes' },
   { href: '/bhgrain/inbox', label: 'Inbox', badgeKey: 'inbox' as const },
-  { href: '/precos', label: 'Preços' },
   { href: '/propostas', label: 'Propostas' },
-  { href: '/financeiro', label: 'Financeiro' },
 ]
 
-export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Props) {
+const MAIS_MENU = [
+  { href: '/precos', label: 'Cotações ao vivo' },
+  { href: '/financeiro', label: 'Financeiro' },
+  { href: '/contratos', label: 'Contratos' },
+  { href: '/cotacoes', label: 'Mesa de cotações' },
+  { href: '/relatorios', label: 'Relatórios' },
+]
+
+const USER_MENU = [
+  { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/integracoes', label: 'Integrações', icon: Plug },
+  { href: '/assinatura', label: 'Minha assinatura', icon: CreditCard },
+  { href: '/profile', label: 'Meu perfil', icon: UserIcon },
+]
+
+export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades, userEmail, userRole }: Props) {
   const pathname = usePathname()
   const [inboxBadge, setInboxBadge] = useState<number>(0)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const moreRef = useRef<HTMLLIElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fecha dropdowns no click outside
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false)
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -101,8 +144,8 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
           </span>
         </Link>
 
-        {/* Menu — usa estilo .topnav nav a do newdb.css (pílulas) */}
-        <ul className="flex items-center gap-1 ml-2 overflow-x-auto" style={{ flex: 1 }}>
+        {/* Menu principal + dropdown "Mais" */}
+        <ul className="flex items-center gap-1 ml-2" style={{ flex: 1, minWidth: 0 }}>
           {MENU.map((m) => {
             const active = pathname === m.href || (m.href === '/bhgrain' && pathname?.startsWith('/bhgrain'))
             return (
@@ -137,13 +180,83 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
               </li>
             )
           })}
+          {/* Dropdown "Mais" — itens secundários */}
+          <li ref={moreRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              className="relative whitespace-nowrap flex items-center gap-1"
+              style={{
+                padding: '8px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: 13,
+                color: 'var(--text-mute)',
+                background: moreOpen ? 'var(--tint-4pct)' : 'transparent',
+                transition: '120ms ease',
+                cursor: 'pointer',
+                border: 0,
+                fontWeight: MAIS_MENU.some((i) => pathname?.startsWith(i.href)) ? 600 : 400,
+              }}
+            >
+              Mais <ChevronDown className="w-3 h-3" />
+            </button>
+            {moreOpen && (
+              <div
+                role="menu"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  left: 0,
+                  minWidth: 220,
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--r-md)',
+                  boxShadow: 'var(--sh-3)',
+                  padding: 6,
+                  zIndex: 50,
+                }}
+              >
+                {MAIS_MENU.map((item) => {
+                  const active = pathname?.startsWith(item.href)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMoreOpen(false)}
+                      role="menuitem"
+                      style={{
+                        display: 'block',
+                        padding: '8px 12px',
+                        fontSize: 13,
+                        color: active ? 'var(--text)' : 'var(--text-mute)',
+                        background: active ? 'var(--tint-4pct)' : 'transparent',
+                        borderRadius: 'var(--r-sm)',
+                        textDecoration: 'none',
+                        fontWeight: active ? 600 : 400,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) e.currentTarget.style.background = 'var(--tint-2pct)'
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) e.currentTarget.style.background = 'transparent'
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </li>
         </ul>
 
         {/* Search ⌘K + ações à direita */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 transition"
+            className="hidden xl:flex items-center gap-2 transition"
             style={{
               padding: '8px 12px',
               borderRadius: 'var(--r-pill)',
@@ -151,12 +264,22 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
               border: '1px solid var(--border)',
               color: 'var(--text-dim)',
               fontSize: 13,
-              minWidth: 320,
+              minWidth: 260,
             }}
           >
             <Search className="w-3.5 h-3.5" />
-            <span style={{ flex: 1, textAlign: 'left' }}>Buscar clientes, propostas, mensagens…</span>
+            <span style={{ flex: 1, textAlign: 'left' }}>Buscar…</span>
             <span className="kbd">⌘K</span>
+          </button>
+
+          {/* Em telas menores, apenas o ícone */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="xl:hidden btn icon"
+            aria-label="Buscar"
+            title="Buscar (⌘K)"
+          >
+            <Search className="w-3.5 h-3.5" />
           </button>
 
           {/* Sino discreto (alertas) */}
@@ -182,17 +305,178 @@ export function BhGrainTopBar({ userName, workspaceName, onOpenPrioridades }: Pr
 
           <ThemeToggle />
 
-          {/* Avatar */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
-            style={{
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-            }}
-            title={userName ?? workspaceName ?? ''}
-          >
-            {initials}
+          {/* Avatar + dropdown de usuário */}
+          <div ref={userMenuRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 transition"
+              style={{
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                cursor: 'pointer',
+              }}
+              title="Menu do usuário"
+            >
+              {initials}
+            </button>
+            {userMenuOpen && (
+              <div
+                role="menu"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  right: 0,
+                  minWidth: 240,
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--r-md)',
+                  boxShadow: 'var(--sh-3)',
+                  padding: 6,
+                  zIndex: 50,
+                }}
+              >
+                {/* Header do usuário */}
+                <div
+                  style={{
+                    padding: '8px 12px 10px',
+                    borderBottom: '1px solid var(--border)',
+                    marginBottom: 4,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                    {userName ?? 'Usuário'}
+                  </div>
+                  {userEmail && (
+                    <div
+                      className="truncate"
+                      style={{ fontSize: 11, color: 'var(--text-dim)' }}
+                    >
+                      {userEmail}
+                    </div>
+                  )}
+                  {workspaceName && (
+                    <div
+                      style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}
+                    >
+                      Workspace: <strong style={{ color: 'var(--text-mute)' }}>{workspaceName}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Items */}
+                {USER_MENU.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setUserMenuOpen(false)}
+                      role="menuitem"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        fontSize: 13,
+                        color: 'var(--text-mute)',
+                        borderRadius: 'var(--r-sm)',
+                        textDecoration: 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--tint-2pct)'
+                        e.currentTarget.style.color = 'var(--text)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = 'var(--text-mute)'
+                      }}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+
+                {/* Admin global (super-admin) — só se role=admin */}
+                {userRole === 'admin' && (
+                  <>
+                    <div
+                      style={{
+                        borderTop: '1px solid var(--border)',
+                        margin: '4px 0',
+                      }}
+                    />
+                    <Link
+                      href="/admin"
+                      onClick={() => setUserMenuOpen(false)}
+                      role="menuitem"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        fontSize: 13,
+                        color: 'var(--accent)',
+                        borderRadius: 'var(--r-sm)',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--accent-soft)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                      }}
+                    >
+                      <Crosshair className="w-3.5 h-3.5" />
+                      Painel super-admin
+                    </Link>
+                  </>
+                )}
+
+                {/* Sair */}
+                <div
+                  style={{
+                    borderTop: '1px solid var(--border)',
+                    margin: '4px 0',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false)
+                    signOut({ callbackUrl: '/auth/login' })
+                  }}
+                  role="menuitem"
+                  className="w-full text-left"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--danger)',
+                    borderRadius: 'var(--r-sm)',
+                    background: 'transparent',
+                    border: 0,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--danger-soft)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sair
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>

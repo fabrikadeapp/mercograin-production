@@ -10,13 +10,15 @@ interface Props {
   children: React.ReactNode
   userName: string | null
   workspaceName: string | null
+  userEmail?: string | null
+  userRole?: string | null
 }
 
 /**
  * Shell BH Grain — design v2 NewDB.
  * Fundo sólido NewDB com radial gradients suaves (sem foto agrícola — clareza primeiro).
  */
-export function BhGrainShell({ children, userName, workspaceName }: Props) {
+export function BhGrainShell({ children, userName, workspaceName, userEmail, userRole }: Props) {
   const [prioridadesOpen, setPrioridadesOpen] = useState(false)
   const [propostaId, setPropostaId] = useState<string | null>(null)
 
@@ -35,6 +37,8 @@ export function BhGrainShell({ children, userName, workspaceName }: Props) {
       <BhGrainTopBar
         userName={userName}
         workspaceName={workspaceName}
+        userEmail={userEmail ?? null}
+        userRole={userRole ?? null}
         onOpenPrioridades={() => setPrioridadesOpen(true)}
       />
 
