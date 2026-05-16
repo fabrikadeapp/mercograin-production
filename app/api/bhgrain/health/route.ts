@@ -27,6 +27,11 @@ export async function GET() {
         pendingEvents: r.pendingEvents,
         processedEvents: r.processedEvents,
         lastErrorMessage: r.lastErrorMessage,
+        // Toggle pausar/retomar
+        paused: r.paused,
+        pausedUntil: r.pausedUntil?.toISOString() ?? null,
+        pausedBy: r.pausedBy,
+        pausedReason: r.pausedReason,
         updatedAt: r.updatedAt.toISOString(),
       })),
     })

@@ -2977,10 +2977,22 @@ model IntegrationHealth {
   processedEvents  Int       @default(0)
   lastErrorMessage String?   @db.Text
 
+  /// Toggle do usuário: quando true, workers e webhooks PARAM de ingerir
+  /// eventos desta integração. UI fica cinza. Não deleta credencial,
+  /// só bloqueia ingestão temporariamente.
+  paused      Boolean   @default(false)
+  /// Quando pausedUntil > now, considera-se ainda em pausa.
+  /// Permite "pausar até segunda" sem precisar lembrar de reativar.
+  /// Null + paused=true = pausa indefinida.
+  pausedUntil DateTime?
+  pausedBy    String?   // userId que pausou
+  pausedReason String?  @db.VarChar(255) // motivo livre opcional
+
   updatedAt DateTime @updatedAt
 
   @@unique([workspaceId, integration])
   @@index([workspaceId, status])
+  @@index([workspaceId, paused])
 }
 
 /// BH Grain Lote 15 — Credenciais de integração por canal × workspace.

@@ -88,6 +88,13 @@ export async function fetchCredentialEmail(credentialId: string): Promise<FetchS
   if (!cred.enabled) {
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true }
   }
+
+  // Respeita toggle "Pausar e-mail" do health: cliente pode parar ingestão
+  // temporariamente sem deletar credencial.
+  const { isIntegrationPaused } = await import('./integration-pause')
+  if (await isIntegrationPaused(workspaceId, 'email')) {
+    return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true, error: 'paused' }
+  }
   const cfg = asEmailConfig(cred.config)
   if (!cfg) {
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: false, error: 'config inválida' }
