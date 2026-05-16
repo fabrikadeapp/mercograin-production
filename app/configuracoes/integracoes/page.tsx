@@ -3,11 +3,9 @@ import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { listAllForWorkspace } from '@/lib/bhgrain/credentials'
-import { isCentralEvolutionEnabled } from '@/lib/whatsapp/evolution-central'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
 import { InstagramForm, DeleteChannelButton } from './_ui'
 import { EmailAccountsCard } from './_email-accounts-ui'
-import { WhatsappAccountsCard } from './_whatsapp-accounts-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,33 +68,47 @@ export default async function IntegracoesPage() {
         <Card className="p-4 lg:col-span-2">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
             <div>
-              <h2 className="text-base font-semibold">WhatsApp</h2>
+              <h2 className="text-base font-semibold">WhatsApp Business</h2>
               <p className="text-xs opacity-70 mt-1">
-                Conecte WhatsApp Business de graça via QR code (Baileys + Evolution).
-                Pode adicionar mais de um número (vendas, suporte, etc).
-                {whatsModeValue?.centralBaseUrl
-                  ? ' Servidor central provisionado pela BH Grain.'
-                  : ''}
+                Receba e responda mensagens do WhatsApp direto no seu Inbox unificado.
               </p>
             </div>
-            <div className="text-[11px] opacity-60">
-              {creds.whatsapps.length} {creds.whatsapps.length === 1 ? 'conta conectada' : 'contas conectadas'}
+            <div className="text-[11px]" style={{ color: 'var(--warning)' }}>
+              ⚙ Em adequação para Cloud API
             </div>
           </div>
-          <WhatsappAccountsCard
-            accounts={creds.whatsapps.map((c) => ({
-              id: c.id,
-              provider: c.provider,
-              displayName: c.displayName,
-              identifier: c.identifier,
-              config: c.config,
-              enabled: c.enabled,
-              lastTestedAt: c.lastTestedAt,
-              lastTestSuccess: c.lastTestSuccess,
-              lastTestError: c.lastTestError,
-            }))}
-            centralAvailable={isCentralEvolutionEnabled()}
-          />
+          <div
+            style={{
+              padding: 16,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              fontSize: 13,
+              color: 'var(--text-mute)',
+              lineHeight: 1.6,
+            }}
+          >
+            <p className="mb-2">
+              <strong style={{ color: 'var(--text)' }}>Migrando para WhatsApp Cloud API oficial Meta.</strong>
+            </p>
+            <p className="mb-2">
+              A integração gratuita via QR code (Baileys) foi descontinuada porque o WhatsApp passou a
+              rejeitar protocolos não-oficiais. Estamos finalizando a integração via Cloud API oficial
+              que oferece mais estabilidade, deliverability garantida e suporte a templates aprovados.
+            </p>
+            <p className="mb-1">
+              <strong style={{ color: 'var(--text)' }}>O que vai mudar:</strong>
+            </p>
+            <ul className="list-disc pl-5 space-y-0.5 text-xs">
+              <li>Cadastro de número no Meta Business Manager (1x apenas)</li>
+              <li>Free tier: 1.000 conversas/mês de graça</li>
+              <li>Acima disso: ~R$ 0,03 por mensagem de marketing, R$ 0,02 por utilidade</li>
+              <li>Conversas iniciadas pelo cliente são sempre gratuitas (24h)</li>
+            </ul>
+            <p className="mt-3 text-xs" style={{ color: 'var(--text-dim)' }}>
+              Aguarde a conclusão. Enquanto isso, configure suas contas de e-mail acima.
+            </p>
+          </div>
         </Card>
       </div>
 
