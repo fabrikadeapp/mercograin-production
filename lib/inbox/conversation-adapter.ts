@@ -20,6 +20,7 @@ export type UnifiedAiStatus =
   | 'pendente_info'
   | 'nao_comercial'
   | 'erro_leitura'
+  | 'silenciada'
 
 export interface UnifiedConversation {
   id: string
@@ -32,6 +33,8 @@ export interface UnifiedConversation {
   lastMessageText: string | null
   unreadCount: number
   aiStatus: UnifiedAiStatus
+  /** A última mensagem foi silenciada (recebida durante pausa do canal). */
+  silenced: boolean
 }
 
 export interface UnifiedMessage {
@@ -93,7 +96,8 @@ export async function listUnifiedConversations(
         lastMessageAt: c.lastMessageAt?.toISOString() ?? null,
         lastMessageText: last?.text ?? null,
         unreadCount: c.unreadCount,
-        aiStatus: 'aguardando',
+        aiStatus: last?.silenced ? 'silenciada' : 'aguardando',
+        silenced: !!last?.silenced,
       })
     }
   }
@@ -135,6 +139,7 @@ export async function listUnifiedConversations(
           lastMessageText: last?.texto ?? null,
           unreadCount: !lidaEm && last?.remetente === 'produtor' ? 1 : 0,
           aiStatus: 'aguardando',
+          silenced: false,
         })
       }
     }
@@ -154,6 +159,7 @@ export async function listUnifiedConversations(
     })
     for (const c of convs) {
       const last = c.messages[0]
+      const lastSilenced = !!last?.silenced
       buckets.push({
         id: `cv:${c.id}`,
         source: 'conversation',
@@ -164,7 +170,8 @@ export async function listUnifiedConversations(
         lastMessageAt: c.lastMessageAt?.toISOString() ?? null,
         lastMessageText: last?.text ?? null,
         unreadCount: c.unreadCount,
-        aiStatus: (c.aiStatus as UnifiedAiStatus) ?? 'aguardando',
+        aiStatus: lastSilenced ? 'silenciada' : ((c.aiStatus as UnifiedAiStatus) ?? 'aguardando'),
+        silenced: lastSilenced,
       })
     }
   }
@@ -210,7 +217,8 @@ export async function getUnifiedMessages(
         lastMessageAt: contact.lastMessageAt?.toISOString() ?? null,
         lastMessageText: contact.messages[0]?.text ?? null,
         unreadCount: contact.unreadCount,
-        aiStatus: 'aguardando',
+        aiStatus: contact.messages[0]?.silenced ? 'silenciada' : 'aguardando',
+        silenced: !!contact.messages[0]?.silenced,
       },
       messages: contact.messages.map((m) => ({
         id: m.id,
@@ -250,6 +258,7 @@ export async function getUnifiedMessages(
         lastMessageText: msgs[0]?.texto ?? null,
         unreadCount: 0,
         aiStatus: 'aguardando',
+        silenced: false,
       },
       messages: msgs.map((m) => ({
         id: m.id,
@@ -272,6 +281,7 @@ export async function getUnifiedMessages(
       },
     })
     if (!conv) return { conversation: null, messages: [] }
+    const lastSilencedCv = !!conv.messages[0]?.silenced
     return {
       conversation: {
         id: `cv:${conv.id}`,
@@ -283,7 +293,10 @@ export async function getUnifiedMessages(
         lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
         lastMessageText: conv.messages[0]?.text ?? null,
         unreadCount: conv.unreadCount,
-        aiStatus: (conv.aiStatus as UnifiedAiStatus) ?? 'aguardando',
+        aiStatus: lastSilencedCv
+          ? 'silenciada'
+          : ((conv.aiStatus as UnifiedAiStatus) ?? 'aguardando'),
+        silenced: lastSilencedCv,
       },
       messages: conv.messages.map((m) => ({
         id: m.id,

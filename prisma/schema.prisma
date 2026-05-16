@@ -1399,6 +1399,12 @@ model WhatsAppMessage {
 
   status String @default("delivered") // pending|sent|delivered|read|failed
 
+  /// Recebida durante pausa da integração WhatsApp. UI exibe estilo opaco,
+  /// IA/scoring/alertas IGNORAM até o admin "processar tudo".
+  silenced         Boolean   @default(false)
+  silencedBatchId  String?   @db.VarChar(40)
+  silencedAt       DateTime?
+
   // Timestamps
   timestamp DateTime // timestamp do WhatsApp
   createdAt DateTime @default(now())
@@ -1406,6 +1412,7 @@ model WhatsAppMessage {
   @@unique([workspaceId, messageId]) // idempotência
   @@index([workspaceId, contactId, timestamp])
   @@index([workspaceId, timestamp])
+  @@index([workspaceId, silenced])
 }
 
 // ============================================
@@ -2849,11 +2856,20 @@ model ConversationMessage {
   aiExtraction Json?
   aiScore      Int?
 
+  /// Recebida durante pausa da integração. UI exibe estilo opaco,
+  /// IA/scoring/alertas IGNORAM até o admin "processar tudo".
+  silenced         Boolean   @default(false)
+  /// ID da sessão de pausa em que essa mensagem caiu. Permite agrupar
+  /// "todas as silenciadas durante a pausa de ontem" ao reativar.
+  silencedBatchId  String?   @db.VarChar(40)
+  silencedAt       DateTime?
+
   occurredAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
   @@index([conversationId, occurredAt])
   @@index([workspaceId, occurredAt])
+  @@index([workspaceId, silenced])
 }
 
 /// Meta comercial mensal por workspace (e opcionalmente por usuário/commodity).

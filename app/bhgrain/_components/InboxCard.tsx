@@ -15,6 +15,7 @@ interface Conv {
   lastMessageAt: string | null
   unreadCount: number
   aiStatus: string
+  silenced?: boolean
 }
 
 interface Resp {
@@ -160,6 +161,9 @@ export function InboxCard({ onOpenConversa }: InboxCardProps = {}) {
                   paddingRight: 4,
                   borderTop: idx === 0 ? '1px solid var(--border)' : 'none',
                   borderBottom: '1px solid var(--border)',
+                  // Silenciada: estilo opaco — chegou durante pausa do canal
+                  opacity: c.silenced ? 0.5 : 1,
+                  fontStyle: c.silenced ? 'italic' : 'normal',
                 }}
               >
                 {/* Ícone do canal, quadrado arredondado colorido */}
@@ -185,11 +189,32 @@ export function InboxCard({ onOpenConversa }: InboxCardProps = {}) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <div
-                      className="truncate"
+                      className="truncate flex items-center gap-2"
                       style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}
                     >
-                      {nome}
-                      {sufixoNome}
+                      <span className="truncate">
+                        {nome}
+                        {sufixoNome}
+                      </span>
+                      {c.silenced && (
+                        <span
+                          style={{
+                            fontSize: 9,
+                            fontWeight: 600,
+                            padding: '1px 6px',
+                            borderRadius: 999,
+                            background: 'var(--surface-3)',
+                            color: 'var(--text-dim)',
+                            fontStyle: 'normal',
+                            fontFamily: 'var(--f-mono)',
+                            letterSpacing: '0.03em',
+                            textTransform: 'uppercase',
+                          }}
+                          title="Recebida com o canal pausado — não passou pela IA. Reative o canal para processar."
+                        >
+                          Silenciada
+                        </span>
+                      )}
                     </div>
                     <div
                       className="shrink-0"
@@ -206,8 +231,8 @@ export function InboxCard({ onOpenConversa }: InboxCardProps = {}) {
                   </div>
                 </div>
 
-                {/* Badge unread, discreto */}
-                {c.unreadCount > 0 && (
+                {/* Badge unread, discreto — só quando NÃO silenciada */}
+                {c.unreadCount > 0 && !c.silenced && (
                   <div
                     className="tabular-nums shrink-0"
                     style={{

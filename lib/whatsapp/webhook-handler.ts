@@ -22,6 +22,13 @@ export interface InstanceCtx {
    * silenciosamente ignorados.
    */
   instanceName?: string
+  /**
+   * Quando a integração WhatsApp está PAUSADA pelo cliente, mensagens
+   * recebidas viram silenced=true + recebem este batchId. IA/bot/wiring
+   * são pulados — admin vê o backlog e decide ao reativar.
+   * Null/undefined = ingestão normal.
+   */
+  silencedBatchId?: string | null
 }
 
 export interface EvolutionWebhookPayload {
@@ -129,6 +136,8 @@ export async function processMessage(
   const replyToMessageId =
     msg.message?.extendedTextMessage?.contextInfo?.stanzaId || null
 
+  const isSilenced = !!instance.silencedBatchId
+
   const contact = await db.whatsAppContact.upsert({
     where: {
       workspaceId_jid: {
@@ -142,12 +151,13 @@ export async function processMessage(
       phone: phone || null,
       pushName,
       lastMessageAt: timestamp,
-      unreadCount: fromMe ? 0 : 1,
+      // Silenciada: não conta no badge de não-lidas
+      unreadCount: fromMe || isSilenced ? 0 : 1,
     },
     update: {
       pushName: pushName || undefined,
       lastMessageAt: timestamp,
-      unreadCount: fromMe ? undefined : { increment: 1 },
+      unreadCount: fromMe || isSilenced ? undefined : { increment: 1 },
     },
   })
 
@@ -166,6 +176,9 @@ export async function processMessage(
         replyToMessageId,
         timestamp,
         status: fromMe ? 'sent' : 'delivered',
+        silenced: isSilenced,
+        silencedBatchId: instance.silencedBatchId ?? null,
+        silencedAt: isSilenced ? new Date() : null,
       },
     })
   } catch (e: any) {
@@ -174,6 +187,9 @@ export async function processMessage(
     // duplicate: NÃO disparar bot novamente (evita resposta dupla em retry)
     return
   }
+
+  // Silenciada: pula bot/wiring/IA. Cliente decide ao reativar a integração.
+  if (isSilenced) return
 
   // Bot commands: só pra mensagens inbound novas com texto.
   // Falhas no bot NUNCA propagam — webhook precisa retornar 200.

@@ -142,6 +142,7 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
   const [pending, startTransition] = useTransition()
   const [optimistic, setOptimistic] = useState<boolean | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [reviewBacklog, setReviewBacklog] = useState<{ count: number } | null>(null)
 
   // Estado efetivo: optimistic (em-flight) ou do server
   const paused = optimistic !== null ? optimistic : h.paused
@@ -150,6 +151,7 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
   const color = h.paused ? 'var(--text-dim)' : dotColor(h)
 
   const toggle = (pausedUntil?: Date | null, pausedReason?: string) => {
+    const wasPaused = paused
     const nextPaused = !paused
     setOptimistic(nextPaused)
     startTransition(async () => {
@@ -165,11 +167,35 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
           }),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        // Mantém optimistic até próximo poll do useJson refletir o estado
+        // Acabou de REATIVAR (paused → ON)? Conferir se há silenciadas
+        if (wasPaused && !nextPaused) {
+          try {
+            const r = await fetch('/api/bhgrain/health/silenced')
+            const j = (await r.json()) as { byChannel?: Record<string, number> }
+            const count = j.byChannel?.[h.integration] ?? 0
+            if (count > 0) setReviewBacklog({ count })
+          } catch {
+            /* silencioso */
+          }
+        }
       } catch {
         setOptimistic(null) // reverte
       }
     })
+  }
+
+  const processBacklog = async (action: 'process' | 'mark_read' | 'discard') => {
+    try {
+      await fetch('/api/bhgrain/health/silenced', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integration: h.integration, action }),
+      })
+    } catch {
+      /* silencioso */
+    } finally {
+      setReviewBacklog(null)
+    }
   }
 
   const tooltip = [
@@ -281,7 +307,155 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
           currentlyPaused={paused}
         />
       )}
+
+      {/* Modal de revisão do backlog silenciado — aparece ao REATIVAR */}
+      {reviewBacklog && (
+        <ReviewBacklogModal
+          label={label}
+          count={reviewBacklog.count}
+          onAction={processBacklog}
+          onClose={() => setReviewBacklog(null)}
+        />
+      )}
     </li>
+  )
+}
+
+function ReviewBacklogModal({
+  label,
+  count,
+  onAction,
+  onClose,
+}: {
+  label: string
+  count: number
+  onAction: (a: 'process' | 'mark_read' | 'discard') => void
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header
+          className="px-5 py-4"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <div className="eyebrow" style={{ marginBottom: 4 }}>
+            {label} reativado
+          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 600 }}>
+            {count} {count === 1 ? 'mensagem silenciada' : 'mensagens silenciadas'} durante a pausa
+          </h3>
+          <p
+            className="mt-1"
+            style={{ fontSize: 12, color: 'var(--text-mute)' }}
+          >
+            O que fazer com essas mensagens?
+          </p>
+        </header>
+
+        <div className="p-5 space-y-2">
+          <button
+            type="button"
+            onClick={() => onAction('process')}
+            className="w-full text-left transition"
+            style={{
+              padding: 14,
+              borderRadius: 'var(--r-md)',
+              background: 'var(--accent-soft)',
+              border: '1px solid rgba(200, 240, 81, 0.25)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.borderColor = 'rgba(200, 240, 81, 0.25)')
+            }
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>
+              Processar tudo
+            </div>
+            <div className="mt-1" style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+              Marcar todas como não-lidas, IA classifica e elas voltam ao Inbox normalmente.
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onAction('mark_read')}
+            className="w-full text-left transition"
+            style={{
+              padding: 14,
+              borderRadius: 'var(--r-md)',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              Marcar todas como lidas
+            </div>
+            <div className="mt-1" style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+              Tira o silêncio e marca como lida — ainda ficam no Inbox para revisar manualmente.
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                confirm(
+                  `Descartar ${count} mensagens? Esta ação é irrecuperável.`
+                )
+              ) {
+                onAction('discard')
+              }
+            }}
+            className="w-full text-left transition"
+            style={{
+              padding: 14,
+              borderRadius: 'var(--r-md)',
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = 'var(--danger-soft)')
+            }
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--danger)' }}>
+              Descartar tudo
+            </div>
+            <div className="mt-1" style={{ fontSize: 11, color: 'var(--text-mute)' }}>
+              Apaga permanentemente. Útil se eram spam ou avisos automáticos irrelevantes.
+            </div>
+          </button>
+        </div>
+
+        <footer
+          className="px-5 py-3 flex items-center justify-end"
+          style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn ghost"
+            style={{ fontSize: 12 }}
+          >
+            Decidir depois
+          </button>
+        </footer>
+      </div>
+    </div>
   )
 }
 

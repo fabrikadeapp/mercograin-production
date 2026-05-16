@@ -63,6 +63,28 @@ export async function isIntegrationPaused(
 }
 
 /**
+ * Retorna o `silencedBatchId` ATIVO para mensagens recebidas durante pausa.
+ * Composto por `<integration>:<startedAtIso>` (ex.: 'whatsapp:2026-05-16T12:34:00Z').
+ *
+ * Quando a pausa é reativada, esse ID muda — então o admin consegue saber
+ * "tudo que caiu durante a pausa específica de ontem" mesmo após várias
+ * pausas/retomadas. Retorna null se NÃO está pausado (não deve marcar).
+ */
+export async function getActiveSilencedBatchId(
+  workspaceId: string,
+  integration: IntegrationKey | string
+): Promise<string | null> {
+  const row = await db.integrationHealth.findUnique({
+    where: { workspaceId_integration: { workspaceId, integration } },
+    select: { paused: true, pausedUntil: true, updatedAt: true },
+  })
+  if (!row || !row.paused) return null
+  if (row.pausedUntil && row.pausedUntil <= new Date()) return null
+  // updatedAt aproxima a data do último toggle — bom o suficiente como agrupador
+  return `${integration}:${row.updatedAt.toISOString()}`
+}
+
+/**
  * Liga ou desliga a pausa de uma integração.
  *
  * @param pausedUntil opcional — pausar até essa data. Sem isso = pausa indefinida.

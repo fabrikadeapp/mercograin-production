@@ -72,15 +72,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: 'unknown_instance' }, { status: 200 })
   }
 
-  // Respeita toggle "Pausar WhatsApp" do health. Mensagens recebidas durante
-  // a pausa são descartadas (cliente não quer ver) — exceto eventos de
-  // conexão, que sempre processamos pra manter estado correto.
-  const { isIntegrationPaused } = await import('@/lib/bhgrain/integration-pause')
-  const evtLower = (body.event ?? '').toLowerCase()
-  const isConnectionEvent = evtLower === 'connection.update' || evtLower === 'connection_update'
-  if (!isConnectionEvent && (await isIntegrationPaused(cred.workspaceId, 'whatsapp'))) {
-    return NextResponse.json({ ok: true, reason: 'paused' }, { status: 200 })
-  }
+  // Respeita toggle "Pausar WhatsApp" do health. Em pausa, mensagens NÃO são
+  // descartadas — são persistidas com silenced=true (estilo opaco no Inbox,
+  // IA/bot/wiring pulados) para o admin revisar ao reativar.
+  const { getActiveSilencedBatchId } = await import('@/lib/bhgrain/integration-pause')
+  const silencedBatchId = await getActiveSilencedBatchId(cred.workspaceId, 'whatsapp')
 
   // Conexão atualizada: persiste phoneNumber + enabled
   const evt = (body.event ?? '').toLowerCase()
@@ -153,7 +149,12 @@ export async function POST(req: Request) {
 
   try {
     await handleEvolutionEvent(
-      { id: waInstance.id, workspaceId: waInstance.workspaceId, instanceName },
+      {
+        id: waInstance.id,
+        workspaceId: waInstance.workspaceId,
+        instanceName,
+        silencedBatchId,
+      },
       body as EvolutionWebhookPayload
     )
   } catch (err) {

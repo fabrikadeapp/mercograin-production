@@ -89,12 +89,11 @@ export async function fetchCredentialEmail(credentialId: string): Promise<FetchS
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true }
   }
 
-  // Respeita toggle "Pausar e-mail" do health: cliente pode parar ingestão
-  // temporariamente sem deletar credencial.
-  const { isIntegrationPaused } = await import('./integration-pause')
-  if (await isIntegrationPaused(workspaceId, 'email')) {
-    return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: true, error: 'paused' }
-  }
+  // Respeita toggle "Pausar e-mail" do health: cliente pode pausar ingestão
+  // temporariamente. Mensagens NÃO são descartadas — entram normalmente mas
+  // marcadas como silenced=true para o admin revisar ao reativar.
+  const { getActiveSilencedBatchId } = await import('./integration-pause')
+  const silencedBatchId = await getActiveSilencedBatchId(workspaceId, 'email')
   const cfg = asEmailConfig(cred.config)
   if (!cfg) {
     return { workspaceId, novasMensagens: 0, conversasCriadas: 0, conversasAtualizadas: 0, ok: false, error: 'config inválida' }
@@ -195,6 +194,8 @@ export async function fetchCredentialEmail(credentialId: string): Promise<FetchS
         // contas distintas no mesmo workspace (ex.: vendas@x e suporte@x recebem
         // do mesmo remetente). Formato: '<credId>:<fromEmail>'.
         const externalRef = `${cred.id}:${fromEmail}`
+        // Quando silenciado, NÃO incrementa unreadCount nem dispara IA:
+        // aiStatus fica como 'silenciada' para a UI tratar diferente.
         const conv = await db.conversation.upsert({
           where: {
             workspaceId_channel_externalRef: {
@@ -211,21 +212,23 @@ export async function fetchCredentialEmail(credentialId: string): Promise<FetchS
             contactName: fromName,
             contactHandle: fromEmail,
             lastMessageAt: date,
-            unreadCount: 1,
-            aiStatus: 'aguardando',
+            unreadCount: silencedBatchId ? 0 : 1,
+            aiStatus: silencedBatchId ? 'silenciada' : 'aguardando',
           },
           update: {
             contactName: fromName ?? undefined,
             clienteId: cliente?.id ?? undefined,
             lastMessageAt: date,
-            unreadCount: { increment: 1 },
+            unreadCount: silencedBatchId ? undefined : { increment: 1 },
           },
         })
         // Conta criadas vs atualizadas (heurística: createdAt == updatedAt ± 100ms)
         if (Math.abs(conv.createdAt.getTime() - conv.updatedAt.getTime()) < 200) criadas++
         else atualizadas++
 
-        // Persiste ConversationMessage idempotente (externalRef = messageId)
+        // Persiste ConversationMessage idempotente (externalRef = messageId).
+        // Quando pausa ativa: silenced=true + batchId para o admin revisar
+        // ao reativar a integração.
         await db.conversationMessage
           .create({
             data: {
@@ -235,6 +238,9 @@ export async function fetchCredentialEmail(credentialId: string): Promise<FetchS
               direction: 'in',
               text: displayText,
               occurredAt: date,
+              silenced: !!silencedBatchId,
+              silencedBatchId: silencedBatchId ?? null,
+              silencedAt: silencedBatchId ? new Date() : null,
             },
           })
           .catch((e: { code?: string }) => {
