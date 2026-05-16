@@ -114,7 +114,7 @@ export function HealthCard() {
           ) : !data?.integrations || data.integrations.length === 0 ? (
             <EmptyState message="Aguardando primeiro cron…" />
           ) : (
-            <ul className="flex items-center gap-2 flex-wrap">
+            <ul className="flex items-center gap-1.5 flex-wrap">
               {data.integrations.map((h) => (
                 <IntegrationChip key={h.integration} health={h} />
               ))}
@@ -189,17 +189,17 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '5px 10px 5px 6px',
+          gap: 6,
+          padding: '3px 9px 3px 4px',
           borderRadius: 'var(--r-pill)',
-          background: paused ? 'var(--surface-2)' : 'var(--surface-2)',
-          border: `1px solid ${paused ? 'var(--border)' : 'rgba(74, 222, 128, 0.18)'}`,
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
           fontSize: 11,
-          opacity: paused ? 0.7 : 1,
+          opacity: paused ? 0.6 : 1,
           transition: '150ms ease',
         }}
       >
-        {/* Toggle switch (tubo) — clicável */}
+        {/* Toggle switch — micro, alinhado ao design NewDB */}
         <button
           type="button"
           role="switch"
@@ -213,49 +213,61 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
           disabled={pending}
           style={{
             position: 'relative',
-            width: 28,
-            height: 16,
+            width: 22,
+            height: 12,
             borderRadius: 999,
             background: isOn ? color : 'var(--surface-3)',
-            border: '1px solid var(--border)',
+            border: 0,
             padding: 0,
             cursor: pending ? 'wait' : 'pointer',
             transition: '180ms ease',
-            display: 'inline-flex',
-            alignItems: 'center',
+            opacity: pending ? 0.6 : isOn ? 0.9 : 1,
           }}
           title="Clique para ligar/desligar · Botão direito para pausar com prazo"
         >
           <span
             style={{
               position: 'absolute',
-              top: 1,
-              left: isOn ? 13 : 1,
-              width: 12,
-              height: 12,
+              top: 2,
+              left: isOn ? 12 : 2,
+              width: 8,
+              height: 8,
               borderRadius: '50%',
               background: '#fff',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
               transition: 'left 180ms ease',
             }}
           />
         </button>
 
-        <span style={{ color: paused ? 'var(--text-mute)' : 'var(--text)' }}>{label}</span>
+        <span style={{ color: paused ? 'var(--text-dim)' : 'var(--text-mute)', fontWeight: 500 }}>
+          {label}
+        </span>
 
-        {/* Idade da última sync (só quando ligado) */}
         {!paused && h.lastSuccessAt && (
-          <span style={{ fontFamily: 'var(--f-mono)', opacity: 0.55, fontSize: 10 }}>
+          <span
+            style={{
+              fontFamily: 'var(--f-mono)',
+              color: 'var(--text-dim)',
+              fontSize: 10,
+              letterSpacing: '0.02em',
+            }}
+          >
             {ageText(h.lastSuccessAt)}
           </span>
         )}
         {h.pendingEvents > 0 && !paused && (
-          <span style={{ color: 'var(--warning)', fontFamily: 'var(--f-mono)' }}>
+          <span
+            style={{
+              color: 'var(--warning)',
+              fontFamily: 'var(--f-mono)',
+              fontSize: 10,
+            }}
+          >
             ·{h.pendingEvents}
           </span>
         )}
 
-        {pending && <Loader2 className="w-3 h-3 animate-spin" style={{ opacity: 0.7 }} />}
+        {pending && <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ opacity: 0.6 }} />}
       </div>
 
       {/* Popover de agendamento (clique direito ou botão "..." futuro) */}
