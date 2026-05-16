@@ -92,16 +92,27 @@ export function CotacoesDashboardForm({
 
   return (
     <div className="max-w-4xl space-y-4">
-      <div className="flex items-center justify-between p-3 rounded border border-border bg-gray-50">
-        <div className="text-sm text-gray-700">
-          {selected.size} commodities selecionadas {custom ? '· lista personalizada' : '· lista padrão'}
+      <div
+        className="flex items-center justify-between p-3"
+        style={{
+          borderRadius: 'var(--r-md)',
+          border: '1px solid var(--border)',
+          background: 'var(--surface-2)',
+        }}
+      >
+        <div className="text-sm" style={{ color: 'var(--text)' }}>
+          {selected.size} commodities selecionadas{' '}
+          <span style={{ color: 'var(--text-mute)' }}>
+            · {custom ? 'lista personalizada' : 'lista padrão'}
+          </span>
         </div>
         {custom && canEdit ? (
           <button
             type="button"
             onClick={handleReset}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded border border-border"
+            className="btn ghost"
+            style={{ fontSize: 11, padding: '5px 10px' }}
           >
             <RotateCcw className="w-3 h-3" />
             Resetar ao padrão
@@ -110,13 +121,29 @@ export function CotacoesDashboardForm({
       </div>
 
       {error ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-red-200 bg-red-50 text-red-700 text-sm">
+        <div
+          className="flex items-start gap-2 p-3 text-sm"
+          style={{
+            borderRadius: 'var(--r-md)',
+            background: 'var(--danger-soft)',
+            border: '1px solid rgba(248, 113, 113, 0.25)',
+            color: 'var(--danger)',
+          }}
+        >
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       ) : null}
       {success ? (
-        <div className="flex items-start gap-2 p-3 rounded border border-emerald-200 bg-accent-soft text-emerald-700 text-sm">
+        <div
+          className="flex items-start gap-2 p-3 text-sm"
+          style={{
+            borderRadius: 'var(--r-md)',
+            background: 'var(--success-soft)',
+            border: '1px solid rgba(74, 222, 128, 0.25)',
+            color: 'var(--success)',
+          }}
+        >
           <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{success}</span>
         </div>
@@ -127,29 +154,48 @@ export function CotacoesDashboardForm({
           const allOn = g.items.every((i) => selected.has(i.id))
           const someOn = g.items.some((i) => selected.has(i.id))
           return (
-            <div key={g.category} className="rounded-lg border border-border bg-surface-1">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-800">{g.label}</h3>
+            <div
+              key={g.category}
+              style={{
+                borderRadius: 'var(--r-md)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface-1)',
+              }}
+            >
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: '1px solid var(--border)' }}
+              >
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                  {g.label}
+                </h3>
                 <button
                   type="button"
                   onClick={() => toggleGroup(g.items)}
-                  className="text-xs text-gray-600 hover:text-gray-900 underline"
+                  className="text-xs underline transition"
+                  style={{ color: 'var(--text-mute)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-mute)')}
                 >
-                  {allOn ? 'Desmarcar todos' : someOn ? 'Marcar todos' : 'Marcar todos'}
+                  {allOn ? 'Desmarcar todos' : 'Marcar todos'}
                 </button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-4">
                 {g.items.map((item) => (
                   <label
                     key={item.id}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer text-sm"
+                    className="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition"
+                    style={{ color: 'var(--text)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--tint-4pct)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
                     <input
                       type="checkbox"
                       checked={selected.has(item.id)}
                       onChange={() => toggle(item.id)}
+                      style={{ accentColor: 'var(--accent)' }}
                     />
-                    <span className="text-gray-800">{item.name}</span>
+                    <span>{item.name}</span>
                   </label>
                 ))}
               </div>
@@ -162,12 +208,13 @@ export function CotacoesDashboardForm({
             type="button"
             onClick={handleSave}
             disabled={busy || !canEdit}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-accent text-accent-ink text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="btn primary"
+            style={{ fontSize: 13 }}
           >
             {busy ? 'Salvando…' : `Salvar (${selected.size} commodities)`}
           </button>
           {!canEdit ? (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs" style={{ color: 'var(--text-mute)' }}>
               Apenas owner/admin pode alterar.
             </span>
           ) : null}

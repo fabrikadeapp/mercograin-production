@@ -45,6 +45,7 @@ const MAIS_MENU = [
 ]
 
 const USER_MENU = [
+  { href: '/admin-empresa', label: 'Painel administrativo', icon: Settings },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
   { href: '/configuracoes/integracoes', label: 'Integrações', icon: Plug },
   { href: '/configuracoes/fluxo-trabalho', label: 'Fluxo de trabalho', icon: Workflow },
