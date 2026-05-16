@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { AppShell, PageHeader, Card, Button, Input } from '@/components/ui/phb'
@@ -35,11 +35,17 @@ const NATUREZAS_DESPESA = [
 export default function NovoMovimentoPage() {
   const router = useRouter()
   const toast = useToast()
+  const searchParams = useSearchParams()
   const [centros, setCentros] = React.useState<CC[]>([])
+
+  // Aceita ?tipo=receita|despesa|transferencia vindo do dashboard
+  const tipoQuery = searchParams.get('tipo')
+  const tipoInicial: 'receita' | 'despesa' | 'transferencia' =
+    tipoQuery === 'receita' || tipoQuery === 'transferencia' ? tipoQuery : 'despesa'
 
   const today = new Date().toISOString().slice(0, 10)
   const [data, setData] = React.useState(today)
-  const [tipo, setTipo] = React.useState<'receita' | 'despesa' | 'transferencia'>('despesa')
+  const [tipo, setTipo] = React.useState<'receita' | 'despesa' | 'transferencia'>(tipoInicial)
   const [natureza, setNatureza] = React.useState('outras_despesas')
   const [valor, setValor] = React.useState('')
   const [descricao, setDescricao] = React.useState('')
