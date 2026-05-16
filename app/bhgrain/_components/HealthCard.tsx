@@ -210,62 +210,55 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
 
   return (
     <li className="relative">
-      <div
-        title={tooltip}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isOn}
+        aria-label={`${isOn ? 'Desligar' : 'Ligar'} ${label}`}
+        onClick={() => toggle()}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          setScheduleOpen((v) => !v)
+        }}
+        disabled={pending}
+        title={`${tooltip} · Clique para ${isOn ? 'pausar' : 'reativar'} · Botão direito para pausar com prazo`}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 6,
-          padding: '3px 9px 3px 4px',
+          padding: '5px 10px',
           borderRadius: 'var(--r-pill)',
           background: 'var(--surface-2)',
-          border: '1px solid var(--border)',
+          border: `1px solid ${paused ? 'var(--border)' : 'var(--border)'}`,
           fontSize: 11,
-          opacity: paused ? 0.6 : 1,
+          opacity: paused ? 0.55 : 1,
+          cursor: pending ? 'wait' : 'pointer',
           transition: '150ms ease',
+          fontFamily: 'inherit',
         }}
       >
-        {/* Toggle switch — micro, alinhado ao design NewDB */}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isOn}
-          aria-label={`${isOn ? 'Desligar' : 'Ligar'} ${label}`}
-          onClick={() => toggle()}
-          onContextMenu={(e) => {
-            e.preventDefault()
-            setScheduleOpen((v) => !v)
-          }}
-          disabled={pending}
+        {/* Dot de status — pequeno, igual ao resto do app */}
+        <span
           style={{
-            position: 'relative',
-            width: 22,
-            height: 12,
-            borderRadius: 999,
-            background: isOn ? color : 'var(--surface-3)',
-            border: 0,
-            padding: 0,
-            cursor: pending ? 'wait' : 'pointer',
-            transition: '180ms ease',
-            opacity: pending ? 0.6 : isOn ? 0.9 : 1,
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: color,
+            boxShadow: !paused && h.status === 'online' ? `0 0 6px ${color}66` : 'none',
+            flexShrink: 0,
+            transition: '150ms ease',
           }}
-          title="Clique para ligar/desligar · Botão direito para pausar com prazo"
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: 2,
-              left: isOn ? 12 : 2,
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#fff',
-              transition: 'left 180ms ease',
-            }}
-          />
-        </button>
+        />
 
-        <span style={{ color: paused ? 'var(--text-dim)' : 'var(--text-mute)', fontWeight: 500 }}>
+        <span
+          style={{
+            color: paused ? 'var(--text-dim)' : 'var(--text)',
+            fontWeight: 500,
+            textDecoration: paused ? 'line-through' : 'none',
+            textDecorationColor: 'var(--text-dim)',
+            textDecorationThickness: '1px',
+          }}
+        >
           {label}
         </span>
 
@@ -294,7 +287,7 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
         )}
 
         {pending && <Loader2 className="w-2.5 h-2.5 animate-spin" style={{ opacity: 0.6 }} />}
-      </div>
+      </button>
 
       {/* Popover de agendamento (clique direito ou botão "..." futuro) */}
       {scheduleOpen && !pending && (
