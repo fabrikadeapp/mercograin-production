@@ -20,14 +20,21 @@ export const authConfig = {
 
       return isLoggedIn
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) {
         token.id = user.id
         token.email = user.email
+        ;(token as any).refreshedAt = 0 // força refresh logo na primeira validação após login
       }
-      // Refresh role e subscription status em cada chamada (simples; otimizar depois)
-      // Subscription agora pertence ao Workspace owned pelo user.
-      if (token.id) {
+      // Cache: só recarrega dados do DB se passaram >60s OU se foi pedido refresh
+      // explicito via update() OU se ainda não foi refrescado nesta sessão.
+      // Antes: hit no DB a cada request (~1.5-2s no TTFB).
+      const REFRESH_TTL_MS = 60_000
+      const lastRefresh = ((token as any).refreshedAt as number) ?? 0
+      const isStale = Date.now() - lastRefresh > REFRESH_TTL_MS
+      const forced = trigger === 'update' || trigger === 'signIn' || trigger === 'signUp'
+      const needsRefresh = !!user || forced || isStale
+      if (token.id && needsRefresh) {
         try {
           const u = await db.user.findUnique({
             where: { id: token.id as string },
@@ -77,6 +84,7 @@ export const authConfig = {
               ;(token as any).workspaceRole = null
               ;(token as any).areasPermitidas = []
             }
+            ;(token as any).refreshedAt = Date.now()
           }
         } catch (e) {
           // não bloqueia auth se DB falhar

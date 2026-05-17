@@ -72,7 +72,8 @@ export function BhGrainTopBar({
         })
         .catch(() => {})
     load()
-    const id = setInterval(load, 30_000)
+    // 2 min é suficiente — o sino só mostra count agregado
+    const id = setInterval(load, 120_000)
     return () => {
       cancelled = true
       clearInterval(id)
