@@ -30,9 +30,11 @@ export function NovoAdiantamentoDialog({
 
   const [produtorId, setProdutorId] = React.useState('')
   const [contratoId, setContratoId] = React.useState('')
-  const [numero, setNumero] = React.useState(
-    `ADV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`
-  )
+  // Sugestão de número (sufixo do timestamp). Backend pode sobrescrever.
+  const [numero, setNumero] = React.useState(() => {
+    const now = Date.now().toString()
+    return `ADV-${new Date().getFullYear()}-${now.slice(-5)}`
+  })
   const [valor, setValor] = React.useState<number>(0)
   const [tipo, setTipo] = React.useState<'dinheiro' | 'insumo' | 'misto'>(
     'dinheiro'

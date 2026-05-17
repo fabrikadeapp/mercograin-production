@@ -32,6 +32,11 @@ export default auth((req) => {
     return NextResponse.next()
   }
 
+  // /playground é só pra desenvolvimento — bloqueia em produção
+  if (path.startsWith('/playground') && process.env.NODE_ENV === 'production') {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
   const isPublic =
     PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + '/')) ||
     path.startsWith('/auth')
