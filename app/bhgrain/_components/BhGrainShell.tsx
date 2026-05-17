@@ -5,6 +5,7 @@ import { BhGrainTopBar } from './BhGrainTopBar'
 import { PrioridadesDrawer } from './PrioridadesDrawer'
 import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { DemoBanner } from './DemoBanner'
+import { KeyboardShortcuts } from './KeyboardShortcuts'
 
 interface Props {
   children: React.ReactNode
@@ -44,6 +45,7 @@ export function BhGrainShell({
       }}
     >
       <DemoBanner />
+      <KeyboardShortcuts />
       <BhGrainTopBar
         userName={userName}
         workspaceName={workspaceName}
