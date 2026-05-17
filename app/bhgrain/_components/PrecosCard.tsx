@@ -123,11 +123,29 @@ export function PrecosCard() {
 
   const error = tab === 'spot' ? errPrecos : errCbot
 
+  // Hora da última atualização (formato HH:mm). Pega o fetchedAt mais recente
+  // da resposta atual (Spot ou CBOT, dependendo da aba).
+  const lastUpdate = tab === 'spot' ? precos?.fetchedAt : cbot?.fetchedAt
+  const lastUpdateLabel = lastUpdate
+    ? new Date(lastUpdate).toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : null
+
   return (
     <GlassCard
       title="Preços ao vivo"
       subtitle="Spot CEPEA + Futuros CBOT + Câmbio"
-      status={{ online: !error, label: error ? 'Erro' : 'Online' }}
+      status={{
+        online: !error,
+        label: error
+          ? 'Erro'
+          : lastUpdateLabel
+            ? `Online · ${lastUpdateLabel}`
+            : 'Online',
+      }}
       action={
         <div className="flex items-center gap-4">
           {/* Tabs minimal */}
