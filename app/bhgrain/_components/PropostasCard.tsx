@@ -45,13 +45,26 @@ export function PropostasCard({ onOpenProposta }: { onOpenProposta: (id: string)
     [filtros.params]
   )
 
-  const rows = data?.resumo?.pipeline ?? []
-  const count = data?.resumo?.kpis.propostasAbertas ?? 0
+  // Filtra só status pós-envio — rascunhos e pendências da Laura.IA
+  // aparecem no card "Aguardando envio" ao lado.
+  const STATUS_ENVIADAS = new Set([
+    'enviada',
+    'em_negociacao',
+    'em negociação',
+    'pronta_para_enviar',
+    'pronta para enviar',
+    'aceita',
+    'rejeitada',
+  ])
+  const rows = (data?.resumo?.pipeline ?? []).filter((p) =>
+    STATUS_ENVIADAS.has(p.status),
+  )
+  const count = rows.length
 
   return (
     <GlassCard
-      title="Propostas"
-      subtitle={`Ciclo de vendas (${count})`}
+      title="Propostas enviadas"
+      subtitle={`Em negociação (${count})`}
       action={
         <Link href="/propostas" className="text-[11px] text-vg-fg-3 hover:text-vg-fg-primary flex items-center gap-1">
           Ver todas <ArrowUpRight className="w-3 h-3" />

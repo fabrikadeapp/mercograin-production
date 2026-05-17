@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Sparkles, Zap, Filter as FilterIcon } from 'lucide-react'
 import Link from 'next/link'
-import { ClientesCard } from './ClientesCard'
+import { PropostasAguardandoCard } from './PropostasAguardandoCard'
 import { InboxCard } from './InboxCard'
 import { PrecosCard } from './PrecosCard'
 import { PropostasCard } from './PropostasCard'
@@ -279,9 +279,10 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
           <IndicadoresCard />
         </div>
 
-        {/* Linha 3 — Clientes + Propostas + Faturamento & Meta */}
+        {/* Linha 3 — Aguardando envio + Enviadas + Faturamento & Meta
+            (Clientes movido pra navbar — acessível por Mesa → Clientes) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ClientesCard />
+          <PropostasAguardandoCard onOpenProposta={openProposta} />
           <PropostasCard onOpenProposta={openProposta} />
           <FaturamentoMetaCard />
         </div>
