@@ -77,12 +77,18 @@ export const authConfig = {
             if (ownedWs) {
               ;(token as any).workspaceRole = 'owner'
               ;(token as any).areasPermitidas = []
+              ;(token as any).activeWorkspaceId = ownedWs.id
+              ;(token as any).isWorkspaceOwner = true
             } else if (member) {
               ;(token as any).workspaceRole = member.role
               ;(token as any).areasPermitidas = member.areasPermitidas ?? []
+              ;(token as any).activeWorkspaceId = member.workspaceId
+              ;(token as any).isWorkspaceOwner = false
             } else {
               ;(token as any).workspaceRole = null
               ;(token as any).areasPermitidas = []
+              ;(token as any).activeWorkspaceId = null
+              ;(token as any).isWorkspaceOwner = false
             }
             ;(token as any).refreshedAt = Date.now()
           }
@@ -103,6 +109,8 @@ export const authConfig = {
         ;(session.user as any).onboardingCompleted = (token as any).onboardingCompleted as boolean | undefined
         ;(session.user as any).workspaceRole = (token as any).workspaceRole as string | null | undefined
         ;(session.user as any).areasPermitidas = (token as any).areasPermitidas as string[] | undefined
+        ;(session.user as any).activeWorkspaceId = (token as any).activeWorkspaceId as string | null | undefined
+        ;(session.user as any).isWorkspaceOwner = (token as any).isWorkspaceOwner as boolean | undefined
       }
       return session
     },

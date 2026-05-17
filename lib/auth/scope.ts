@@ -82,8 +82,11 @@ export async function getActiveWorkspace(userId: string): Promise<{
 }
 
 /**
- * Carrega sessão, role atualizada e workspace ativo. Retorna null se sem sessão
- * ou sem workspace acessível.
+ * Carrega sessão, role e workspace ativo. Lê do JWT primeiro (rápido) e só
+ * faz query DB se faltar dado essencial (legado / sessão antiga sem
+ * activeWorkspaceId).
+ *
+ * Permite override via header X-Workspace-Id (validado contra membership).
  */
 export async function getScope(
   searchParams?: URLSearchParams
@@ -91,32 +94,65 @@ export async function getScope(
   const session = await auth()
   if (!session?.user?.id) return null
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, role: true },
-  })
-  if (!user) return null
-
-  const isAdmin = user.role === 'admin'
+  const u = session.user as any
+  const isAdmin = u.role === 'admin'
   const wantAllScope = isAdmin && searchParams?.get('scope') === 'all'
 
-  const ws = await getActiveWorkspace(user.id)
-  if (!ws) return null
+  // Caminho rápido: JWT tem todos os dados que precisamos
+  const tokenWsId = u.activeWorkspaceId as string | null | undefined
+  const tokenRole = u.workspaceRole as string | null | undefined
+  const tokenIsOwner = u.isWorkspaceOwner as boolean | undefined
+
+  // Override por header (admin trocando workspace)
+  let requestedWsId: string | null = null
+  try {
+    const h = await headers()
+    requestedWsId = h.get('x-workspace-id')
+  } catch {
+    // headers() pode falhar fora de request — ignora
+  }
+
+  // Se há header diferente do JWT, ou JWT está vazio, cai no fluxo lento
+  let workspaceId = tokenWsId ?? null
+  let workspaceRole = tokenRole ?? null
+  let isOwner = !!tokenIsOwner
+
+  if (requestedWsId && requestedWsId !== tokenWsId) {
+    // Trocou workspace — valida membership e atualiza
+    const member = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: requestedWsId, userId: u.id, status: 'active' },
+      include: { workspace: { select: { ownerId: true } } },
+    })
+    if (member) {
+      workspaceId = member.workspaceId
+      workspaceRole = member.role
+      isOwner = member.workspace.ownerId === u.id
+    }
+  } else if (!workspaceId) {
+    // JWT antigo sem activeWorkspaceId — fallback lento
+    const ws = await getActiveWorkspace(u.id)
+    if (!ws) return null
+    workspaceId = ws.workspaceId
+    workspaceRole = ws.role
+    isOwner = ws.isOwner
+  }
+
+  if (!workspaceId || !workspaceRole) return null
 
   return {
-    userId: user.id,
-    workspaceId: ws.workspaceId,
-    workspaceRole: ws.role,
+    userId: u.id,
+    workspaceId,
+    workspaceRole,
     isAdmin,
-    isWorkspaceOwner: ws.isOwner,
+    isWorkspaceOwner: isOwner,
     whereOwn(extra?: any) {
       if (wantAllScope) return { ...(extra || {}) }
-      return { workspaceId: ws.workspaceId, ...(extra || {}) }
+      return { workspaceId, ...(extra || {}) }
     },
     whereOwnVia(relationPath: string, extra?: any) {
       if (wantAllScope) return { ...(extra || {}) }
       const parts = relationPath.split('.')
-      let nested: any = { workspaceId: ws.workspaceId }
+      let nested: any = { workspaceId }
       for (let i = parts.length - 1; i >= 0; i--) {
         nested = { [parts[i]]: nested }
       }
