@@ -20,7 +20,12 @@ export async function GET(
   req: Request,
   { params }: { params: { memberId: string } },
 ) {
-  const scope = await requireScope()
+  let scope
+  try {
+    scope = await requireScope()
+  } catch {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
 
   if (
     !scope.isAdmin &&
