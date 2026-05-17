@@ -84,8 +84,11 @@ async function writeAuditLog(args: {
   after: unknown
   ctx: AuditContext
 }) {
-  // Lazy import pra não criar ciclo
-  const { db } = await import('@/lib/db')
+  // Cliente Prisma separado pra evitar ciclo com lib/db (que importa esta extension)
+  const { PrismaClient } = await import('@prisma/client')
+  const g = globalThis as any
+  if (!g.__auditDb) g.__auditDb = new PrismaClient()
+  const db = g.__auditDb as InstanceType<typeof PrismaClient>
 
   const entidadeId =
     (args.after as any)?.id ?? (args.before as any)?.id ?? null

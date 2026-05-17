@@ -47,10 +47,12 @@ export const authConfig = {
             where: { id: token.id as string },
             select: {
               role: true,
+              totpEnabled: true,
               workspacesOwned: {
                 select: {
                   id: true,
                   onboardingCompletedAt: true,
+                  require2FA: true,
                   subscription: { select: { status: true, trialEnd: true } },
                 },
                 orderBy: { createdAt: 'asc' },
@@ -78,6 +80,8 @@ export const authConfig = {
             token.hasWorkspace =
               u.workspacesOwned.length > 0 || u.workspaceMemberships.length > 0
             token.onboardingCompleted = !!ownedWs?.onboardingCompletedAt
+            ;(token as any).totpEnabled = !!u.totpEnabled
+            ;(token as any).workspaceRequire2FA = !!ownedWs?.require2FA
             // Areas: se o user é owner, workspaceRole='owner' (acesso total).
             // Caso contrário usa o primeiro membership ativo.
             const member = u.workspaceMemberships[0]
@@ -118,6 +122,8 @@ export const authConfig = {
         ;(session.user as any).areasPermitidas = (token as any).areasPermitidas as string[] | undefined
         ;(session.user as any).activeWorkspaceId = (token as any).activeWorkspaceId as string | null | undefined
         ;(session.user as any).isWorkspaceOwner = (token as any).isWorkspaceOwner as boolean | undefined
+        ;(session.user as any).totpEnabled = (token as any).totpEnabled as boolean | undefined
+        ;(session.user as any).workspaceRequire2FA = (token as any).workspaceRequire2FA as boolean | undefined
       }
       return session
     },

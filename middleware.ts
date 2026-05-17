@@ -83,6 +83,25 @@ export default auth((req) => {
       return NextResponse.redirect(url)
     }
 
+    // 2FA obrigatório (políticas por workspace)
+    const totpEnabled = (u as any).totpEnabled === true
+    const require2FA = (u as any).workspaceRequire2FA === true
+    const isWorkspaceOwner = (u as any).isWorkspaceOwner === true
+    const isPerfilSeg = path.startsWith('/perfil/seguranca')
+    if (
+      require2FA &&
+      isWorkspaceOwner &&
+      !totpEnabled &&
+      !isPerfilSeg &&
+      !isOnboardingPath &&
+      !isPublic &&
+      !path.startsWith('/auth')
+    ) {
+      const url = new URL('/perfil/seguranca/2fa', req.url)
+      url.searchParams.set('motivo', 'workspace_exige_2fa')
+      return NextResponse.redirect(url)
+    }
+
     // Bloqueio por área (Mesa / Financeiro / Fiscal / Gestão).
     // Admin global sempre passa; owner/admin do workspace também.
     if (!isAdmin && !isOnboardingPath && !isAssinaturaPath && !isPublic) {

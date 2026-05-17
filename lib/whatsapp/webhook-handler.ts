@@ -7,7 +7,6 @@
  * Multi-tenancy: TODA escrita filtra por instance.workspaceId. Mensagens NUNCA
  * vazam entre workspaces.
  */
-import type { PrismaClient } from '@prisma/client'
 import { db as defaultDb } from '@/lib/db'
 import { processCommand } from './bot-commands'
 import { captureError } from '@/lib/observability/capture'
@@ -38,7 +37,7 @@ export interface EvolutionWebhookPayload {
   date_time?: string
 }
 
-type DbLike = PrismaClient | typeof defaultDb
+type DbLike = typeof defaultDb | any
 
 /**
  * Roteador de eventos. Usado pelo route handler. Em caso de erro,
@@ -222,6 +221,31 @@ export async function processMessage(
     timestamp,
     fromMe,
   })
+
+  // Laura.IA — pipeline novo (Onda 5). Roda em paralelo ao wireBhGrain
+  // por enquanto. Só processa mensagens entrantes com texto.
+  // Feature flag laura_ai controla dentro do processIncomingMessage.
+  if (!fromMe && text) {
+    void (async () => {
+      try {
+        const { processIncomingMessage } = await import(
+          '@/lib/laura/process-message'
+        )
+        await processIncomingMessage({
+          workspaceId: instance.workspaceId,
+          canal: 'whatsapp',
+          handle: phone || remoteJid,
+          mensagem: text,
+          tipo: 'text',
+        })
+      } catch (e) {
+        captureError(e, {
+          where: 'webhook-handler.laura',
+          workspaceId: instance.workspaceId,
+        })
+      }
+    })()
+  }
 }
 
 async function handleConnectionUpdate(

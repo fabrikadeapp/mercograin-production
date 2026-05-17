@@ -189,6 +189,10 @@ model Workspace {
   features   WorkspaceFeature[]
   lauraConversations LauraConversation[]
 
+  /// Política: força owner/admin do workspace a ter 2FA habilitado.
+  /// Quando true, middleware redireciona /perfil/seguranca/2fa até habilitarem.
+  require2FA Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

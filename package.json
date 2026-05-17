@@ -19,6 +19,9 @@
     "test:e2e": "node --test __tests__/e2e/*.e2e.test.js",
     "test:bhgrain": "node --import tsx --test __tests__/bhgrain/*.test.ts",
     "test:all": "npm test && npm run test:e2e && npm run test:bhgrain",
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "test:smoke": "playwright test e2e/smoke",
     "audit:compliance": "node --experimental-strip-types --no-warnings scripts/audit-compliance.ts"
   },
   "dependencies": {

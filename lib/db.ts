@@ -1,6 +1,10 @@
 /**
  * db.ts
- * Cliente Prisma singleton
+ * Cliente Prisma singleton.
+ *
+ * Nota: o audit-extension fica DISPONÍVEL via lib/db/audit-extension mas
+ * não é plugado globalmente porque quebra tipos de muitos callers. Adote
+ * caso-a-caso com runWithAudit() + cliente local extended se precisar.
  */
 
 import { PrismaClient } from '@prisma/client'
