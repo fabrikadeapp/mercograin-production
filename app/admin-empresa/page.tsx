@@ -11,13 +11,14 @@ import {
   Receipt,
   Users,
   CreditCard,
-  ImageIcon,
+  Image as ImageIcon,
   TrendingUp,
   Sparkles,
 } from 'lucide-react'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
+import { HoverCard, HoverTextLink } from '@/components/ui/HoverCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,10 +26,6 @@ export const dynamic = 'force-dynamic'
  * /admin-empresa — Dashboard administrativo da workspace (cliente).
  *
  * NÃO CONFUNDIR com /admin (super-admin global da Mercograin).
- * Aqui o admin DO WORKSPACE vê:
- *  - Saúde do cadastro (% completude)
- *  - Resumo de contagens (clientes, propostas, integrações ativas)
- *  - Atalhos para subsistemas administrativos
  */
 export default async function AdminEmpresaPage() {
   const session = await auth()
@@ -63,7 +60,6 @@ export default async function AdminEmpresaPage() {
   ])
   const [clientesAtivos, propostasTotal, contratosTotal, movimentosTotal, integracoesAtivas, usuariosTotal] = counts
 
-  // Completude do cadastro
   const checks: Array<{ label: string; done: boolean; href: string }> = [
     {
       label: 'Razão social',
@@ -107,7 +103,7 @@ export default async function AdminEmpresaPage() {
         <KpiTile label="Contratos" value={contratosTotal.toString()} icon={<Receipt className="w-3.5 h-3.5" />} href="/contratos" />
         <KpiTile label="Movimentos" value={movimentosTotal.toString()} icon={<TrendingUp className="w-3.5 h-3.5" />} href="/financeiro/movimentos" />
         <KpiTile label="Integrações" value={integracoesAtivas.toString()} icon={<Plug className="w-3.5 h-3.5" />} href="/configuracoes/integracoes" />
-        <KpiTile label="Usuários" value={usuariosTotal.toString()} icon={<Users className="w-3.5 h-3.5" />} href="#" />
+        <KpiTile label="Usuários" value={usuariosTotal.toString()} icon={<Users className="w-3.5 h-3.5" />} href="/configuracoes" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
@@ -133,7 +129,6 @@ export default async function AdminEmpresaPage() {
             {completos} de {checks.length} itens preenchidos
           </p>
 
-          {/* Barra de progresso */}
           <div
             style={{
               height: 6,
@@ -158,18 +153,11 @@ export default async function AdminEmpresaPage() {
           <ul className="space-y-1.5">
             {checks.map((c) => (
               <li key={c.label}>
-                <Link
+                <HoverTextLink
                   href={c.href}
-                  className="flex items-center gap-2 py-1 transition"
-                  style={{
-                    fontSize: 12,
-                    color: c.done ? 'var(--text-mute)' : 'var(--text)',
-                    textDecoration: 'none',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = c.done ? 'var(--text-mute)' : 'var(--text)')
-                  }
+                  className="flex items-center gap-2 py-1"
+                  style={{ fontSize: 12 }}
+                  done={c.done}
                 >
                   {c.done ? (
                     <CheckCircle2 className="w-3.5 h-3.5" style={{ color: 'var(--success)', flexShrink: 0 }} />
@@ -188,7 +176,7 @@ export default async function AdminEmpresaPage() {
                       configurar →
                     </span>
                   )}
-                </Link>
+                </HoverTextLink>
               </li>
             ))}
           </ul>
@@ -274,21 +262,7 @@ function KpiTile({
   href: string
 }) {
   return (
-    <Link
-      href={href}
-      style={{
-        display: 'block',
-        padding: 14,
-        borderRadius: 'var(--r-md)',
-        background: 'var(--surface-1)',
-        border: '1px solid var(--border)',
-        textDecoration: 'none',
-        color: 'var(--text)',
-        transition: '120ms ease',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-    >
+    <HoverCard href={href} variant="kpi">
       <div className="flex items-center justify-between mb-1">
         <span className="eyebrow">{label}</span>
         <span style={{ color: 'var(--text-dim)' }}>{icon}</span>
@@ -305,7 +279,7 @@ function KpiTile({
       >
         {value}
       </p>
-    </Link>
+    </HoverCard>
   )
 }
 
@@ -319,30 +293,12 @@ function ShortcutTile({
   label: string
 }) {
   return (
-    <Link
-      href={href}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        padding: 12,
-        borderRadius: 'var(--r-md)',
-        background: 'var(--surface-2)',
-        border: '1px solid var(--border)',
-        textDecoration: 'none',
-        color: 'var(--text)',
-        minHeight: 72,
-        transition: '120ms ease',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-    >
+    <HoverCard href={href} variant="tile">
       <span style={{ color: 'var(--text-mute)' }}>{icon}</span>
       <span style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3, marginTop: 8 }}>
         {label}
       </span>
-    </Link>
+    </HoverCard>
   )
 }
 

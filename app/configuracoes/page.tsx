@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { AppShell, PageHeader } from '@/components/ui/phb'
+import { HoverCard } from '@/components/ui/HoverCard'
 import {
   Building2,
   Image as ImageIcon,
@@ -170,30 +170,7 @@ export default async function ConfiguracoesPage() {
               {group.items.map((item) => {
                 const Icon = item.icon
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      padding: 16,
-                      borderRadius: 'var(--r-md)',
-                      border: '1px solid var(--border)',
-                      background: 'var(--surface-1)',
-                      textDecoration: 'none',
-                      color: 'var(--text)',
-                      transition: '120ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--accent)'
-                      e.currentTarget.style.background = 'var(--surface-2)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border)'
-                      e.currentTarget.style.background = 'var(--surface-1)'
-                    }}
-                  >
+                  <HoverCard key={item.href} href={item.href} variant="card">
                     <div
                       style={{
                         flexShrink: 0,
@@ -245,7 +222,7 @@ export default async function ConfiguracoesPage() {
                         {item.description}
                       </p>
                     </div>
-                  </Link>
+                  </HoverCard>
                 )
               })}
             </div>
