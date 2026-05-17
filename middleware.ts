@@ -11,7 +11,7 @@ export const config = {
   ],
 }
 
-const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite']
+const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite', '/status']
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth

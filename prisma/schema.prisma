@@ -187,11 +187,60 @@ model Workspace {
 
   contadores NumberingCounter[]
   features   WorkspaceFeature[]
+  lauraConversations LauraConversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+// ============================================
+// LAURA.IA — Agente conversacional WhatsApp/Telefone
+// ============================================
+
+/// Conversa entre cliente externo e o sistema via canal (WhatsApp, Telefone).
+model LauraConversation {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  canal           String    @db.VarChar(20)
+  handle          String    @db.VarChar(40)
+  clienteId       String?
+  cliente         Cliente?  @relation("ClienteLauraConv", fields: [clienteId], references: [id], onDelete: SetNull)
+  status          String    @default("aberta") @db.VarChar(20)
+  intentDetectado String?   @db.VarChar(40)
+  ultimaMensagemEm DateTime?
+  messages         LauraMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, canal, handle])
+  @@index([status, ultimaMensagemEm])
+  @@index([workspaceId])
+}
+
+/// Mensagem dentro de uma conversa Laura.
+model LauraMessage {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation   LauraConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direcao        String            @db.VarChar(3)
+  conteudo       String            @db.Text
+  tipo           String            @default("text") @db.VarChar(20)
+  transcricao    String?           @db.Text
+  llmProvider    String?           @db.VarChar(40)
+  llmModel       String?           @db.VarChar(60)
+  tokensIn       Int?
+  tokensOut      Int?
+  custoUsd       Decimal?          @db.Decimal(10, 6)
+  propostaId     String?
+  extracao       Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 /// Feature flag por workspace. Permite super-admin habilitar/desabilitar
@@ -557,6 +606,7 @@ model Cliente {
   responsavelId String?
   responsavel   WorkspaceMember?     @relation("ClienteResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
   atendimentos  ClienteAtendimento[]
+  lauraConversations LauraConversation[] @relation("ClienteLauraConv")
 
   @@index([email])
   @@index([cnpj])

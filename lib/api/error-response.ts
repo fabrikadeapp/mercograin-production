@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { ZodError } from 'zod'
+import { captureError } from '@/lib/observability/capture'
 
 export interface ApiErrorBody {
   error: string
@@ -72,5 +73,36 @@ export function zodError(err: ZodError, context?: string) {
 export function serverError(err: unknown, context: string) {
   const message =
     err instanceof Error ? err.message : 'Erro interno do servidor'
+  // Sentry capture além do log local
+  try {
+    captureError(err, { where: context })
+  } catch {}
   return apiError(500, 'internal_error', message, { context, cause: err })
+}
+
+/**
+ * Wrapper de handler — substitui boilerplate `try { ... } catch { genérico }`.
+ * Uso:
+ *   export const GET = withApiError('clientes.list', async (req) => {
+ *     const data = await db.cliente.findMany(...)
+ *     return NextResponse.json(data)
+ *   })
+ */
+export function withApiError<Args extends unknown[]>(
+  context: string,
+  handler: (...args: Args) => Promise<Response>,
+): (...args: Args) => Promise<Response> {
+  return async (...args: Args): Promise<Response> => {
+    try {
+      return await handler(...args)
+    } catch (err) {
+      if (err instanceof ZodError) return zodError(err, context)
+      // Erros conhecidos por mensagem
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg === 'Não autorizado' || msg === 'unauthorized') {
+        return unauthorized()
+      }
+      return serverError(err, context)
+    }
+  }
 }

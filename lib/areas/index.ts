@@ -193,6 +193,7 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
     { href: '/clientes', label: 'Clientes' },
     { href: '/propostas', label: 'Propostas' },
     { href: '/aprovacoes/propostas', label: 'Autorizações pendentes' },
+    { href: '/laura', label: 'Laura.IA' },
     { href: '/contratos', label: 'Contratos' },
     { href: '/cotacoes', label: 'Cotações' },
     { href: '/precos', label: 'Preços ao vivo' },
