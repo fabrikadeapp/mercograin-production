@@ -80,3 +80,26 @@ railway variable delete SUPABASE_SERVICE_ROLE_KEY
 | **Total** | **~$30/mês** | **~$5/mês** (Railway plano base) |
 
 Economia: ~$25/mês = ~$300/ano.
+
+## Volumes órfãos da Railway (pendência manual)
+
+Durante a migração, identifiquei **12 volumes Postgres órfãos** no projeto
+(serviceName=null, ~13GB combinados). São de deploys anteriores de Postgres
+que foram deletados sem limpar os volumes.
+
+Tentei deletar via CLI (`railway volume delete --volume <ID> --yes`): o CLI
+retorna "Volume deleted" mas o volume continua aparecendo na lista. Bug
+conhecido da CLI ou volumes em quarentena.
+
+**Ação necessária — manual no painel web:**
+1. Railway dashboard → PHB Grain → Volumes
+2. Identificar volumes com nome `postgres-volume-*` que NÃO sejam o
+   `postgres-volume-TOm_` (atual)
+3. Deletar manualmente cada um pelo painel (provavelmente exige confirmação 2FA)
+
+Volumes a preservar:
+- `postgres-volume-TOm_` (DB atual)
+- `web-volume` (storage do app)
+
+Custo dos órfãos: depende do plano Railway — em geral volumes parados não
+cobram I/O mas ocupam quota de storage do plano.
