@@ -6,9 +6,28 @@ import { syncWorkspaceSeats } from '@/lib/stripe/seats'
 
 export const dynamic = 'force-dynamic'
 
+const AREA_VALUES = ['mesa', 'financeiro', 'fiscal', 'gestao'] as const
+const FUNCAO_VALUES = [
+  'trader',
+  'gerente_mesa',
+  'gerente_conta',
+  'cs',
+  'analista_financeiro',
+  'gerente_administrativo',
+  'cfo',
+  'analista_fiscal',
+  'gerente_fiscal',
+  'assistente',
+  'compliance',
+  'ti',
+] as const
+
 const patchSchema = z.object({
   role: z.enum(['owner', 'admin', 'member', 'viewer']).optional(),
   status: z.enum(['active', 'invited', 'suspended']).optional(),
+  cargo: z.string().trim().max(120).optional().nullable(),
+  areasPermitidas: z.array(z.enum(AREA_VALUES)).optional(),
+  funcoes: z.array(z.enum(FUNCAO_VALUES)).optional(),
 })
 
 function canManage(role: string): boolean {

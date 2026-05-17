@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { isValidCPF, isValidCNPJ } from '@/lib/br/documento'
 import { logAudit } from '@/lib/audit/log'
 import { tryIniciarAprovacao } from '@/lib/compliance'
+import { resolveMesaScope, whereClienteMesa } from '@/lib/equipe/scope-mesa'
 
 const cpfRefinement = z
   .string()
@@ -62,27 +63,38 @@ export async function GET(request: NextRequest) {
     }
 
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const limit = Math.min(100, parseInt(searchParams.get('limit') || '25'))
+    const limit = Math.min(500, parseInt(searchParams.get('limit') || '25'))
     const search = searchParams.get('search') || ''
     const tipo = searchParams.get('tipo') || ''
     const ativo = searchParams.get('ativo')
+    const responsavelId = searchParams.get('responsavelId') || ''
 
     const skip = (page - 1) * limit
 
+    const mesa = await resolveMesaScope(scope)
+    const mesaFilter = whereClienteMesa(mesa)
     const where: any = scope.whereOwn()
+    const andClauses: any[] = []
+    if (mesaFilter && Object.keys(mesaFilter).length > 0) andClauses.push(mesaFilter)
     if (search) {
-      where.OR = [
-        { nome: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { cnpj: { contains: search, mode: 'insensitive' } },
-        { cpf: { contains: search, mode: 'insensitive' } },
-      ]
+      andClauses.push({
+        OR: [
+          { nome: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { cnpj: { contains: search, mode: 'insensitive' } },
+          { cpf: { contains: search, mode: 'insensitive' } },
+        ],
+      })
     }
+    if (andClauses.length > 0) where.AND = andClauses
     if (tipo) {
       where.tipo = tipo
     }
     if (ativo !== null && ativo !== undefined) {
       where.ativo = ativo === 'true'
+    }
+    if (responsavelId) {
+      where.responsavelId = responsavelId
     }
 
     const [total, clientes] = await Promise.all([

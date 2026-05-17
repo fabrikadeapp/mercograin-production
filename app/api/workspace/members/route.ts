@@ -4,12 +4,33 @@ import { randomBytes } from 'crypto'
 import { db } from '@/lib/db'
 import { requireScope } from '@/lib/auth/scope'
 import { syncWorkspaceSeats } from '@/lib/stripe/seats'
+import { sendEmail } from '@/lib/email/send'
+import { memberInviteTemplate } from '@/lib/email/templates/member-invite'
 
 export const dynamic = 'force-dynamic'
+
+const AREA_VALUES = ['mesa', 'financeiro', 'fiscal', 'gestao'] as const
+const FUNCAO_VALUES = [
+  'trader',
+  'gerente_mesa',
+  'gerente_conta',
+  'cs',
+  'analista_financeiro',
+  'gerente_administrativo',
+  'cfo',
+  'analista_fiscal',
+  'gerente_fiscal',
+  'assistente',
+  'compliance',
+  'ti',
+] as const
 
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['admin', 'member', 'viewer']).default('member'),
+  cargo: z.string().trim().max(120).optional().nullable(),
+  areasPermitidas: z.array(z.enum(AREA_VALUES)).optional().default([]),
+  funcoes: z.array(z.enum(FUNCAO_VALUES)).optional().default([]),
 })
 
 function canManageMembers(role: string): boolean {
@@ -21,7 +42,16 @@ export async function GET() {
     const scope = await requireScope()
     const members = await db.workspaceMember.findMany({
       where: { workspaceId: scope.workspaceId },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        cargo: true,
+        areasPermitidas: true,
+        invitedAt: true,
+        acceptedAt: true,
+        createdAt: true,
         user: { select: { id: true, nome: true, email: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -50,7 +80,7 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
-    const { email, role } = parsed.data
+    const { email, role, cargo, areasPermitidas, funcoes } = parsed.data
 
     // Existe membership desse email?
     const existing = await db.workspaceMember.findUnique({
@@ -78,6 +108,9 @@ export async function POST(req: Request) {
         inviteToken: user ? null : inviteToken,
         invitedAt: new Date(),
         acceptedAt: user ? new Date() : null,
+        cargo: cargo || null,
+        areasPermitidas,
+        funcoes,
       },
     })
 
@@ -89,7 +122,52 @@ export async function POST(req: Request) {
       console.warn('[workspace/members POST] seat sync falhou:', err)
     }
 
-    // TODO: enviar email de convite quando status='invited'
+    // Envia email de convite (status='invited') ou notificação de acesso (status='active')
+    try {
+      const [inviter, workspace] = await Promise.all([
+        db.user.findUnique({
+          where: { id: scope.userId },
+          select: { nome: true, email: true },
+        }),
+        db.workspace.findUnique({
+          where: { id: scope.workspaceId },
+          select: { name: true },
+        }),
+      ])
+      const inviterName = inviter?.nome ?? inviter?.email ?? 'Administrador'
+      const workspaceName = workspace?.name ?? 'BH Grain'
+
+      // Áreas mostradas no email: admin vê todas, demais só as marcadas.
+      const areasParaEmail =
+        role === 'admin' ? ['mesa', 'financeiro', 'fiscal', 'gestao'] : areasPermitidas
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.NEXTAUTH_URL ||
+        'https://www.profitsync.ia.br'
+      const acceptUrl = member.inviteToken
+        ? `${baseUrl}/auth/aceitar-convite/${member.inviteToken}`
+        : `${baseUrl}/dashboard`
+
+      const tpl = memberInviteTemplate({
+        invitedEmail: email,
+        inviterName,
+        workspaceName,
+        cargo,
+        areas: areasParaEmail,
+        acceptUrl,
+      })
+      await sendEmail({
+        to: email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        tags: [{ name: 'type', value: 'member-invite' }],
+      })
+    } catch (err) {
+      console.warn('[workspace/members POST] envio de email falhou:', err)
+    }
+
     return NextResponse.json({ member, seats: seatInfo })
   } catch (e: any) {
     console.error('[workspace/members POST]', e)
