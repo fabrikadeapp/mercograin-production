@@ -18,5 +18,10 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  return NextResponse.json({ items: MOCK_NEWS, fonte: 'mock' })
+  return NextResponse.json({
+    items: [],
+    fonte: 'em_breve',
+    comingSoon: true,
+    descricaoFutura: 'Notícias CEPEA/Reuters/Bloomberg em breve.',
+  })
 }

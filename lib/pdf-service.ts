@@ -3,7 +3,7 @@
  * Uses @react-pdf/renderer for server-side PDF generation
  */
 
-import { renderToStream } from '@react-pdf/renderer'
+import { renderToBuffer } from '@react-pdf/renderer'
 import React from 'react'
 import { formatCurrency, formatDate, formatCNPJ } from './utils/formatters'
 
@@ -322,12 +322,12 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
 /**
  * Generate PDF stream for Proposta
  */
-export async function generatePropostaPDFStream(data: PropostaPDFData) {
+export async function generatePropostaPDFStream(data: PropostaPDFData): Promise<Buffer> {
   try {
-    const stream = await renderToStream(
-      React.createElement(PropostaDocument, { data }) as any
+    const buffer = await renderToBuffer(
+      React.createElement(PropostaDocument, { data }) as any,
     )
-    return stream
+    return buffer
   } catch (error) {
     console.error('Error generating proposta PDF:', error)
     throw new Error('Falha ao gerar PDF da proposta')
@@ -337,12 +337,12 @@ export async function generatePropostaPDFStream(data: PropostaPDFData) {
 /**
  * Generate PDF stream for Contrato
  */
-export async function generateContratoPDFStream(data: ContratoPDFData) {
+export async function generateContratoPDFStream(data: ContratoPDFData): Promise<Buffer> {
   try {
-    const stream = await renderToStream(
-      React.createElement(ContratoDocument, { data }) as any
+    const buffer = await renderToBuffer(
+      React.createElement(ContratoDocument, { data }) as any,
     )
-    return stream
+    return buffer
   } catch (error) {
     console.error('Error generating contrato PDF:', error)
     throw new Error('Falha ao gerar PDF do contrato')

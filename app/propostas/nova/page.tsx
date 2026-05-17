@@ -105,7 +105,7 @@ function brlTonParaPreco(brlTon: number, unidade: UnidadePreco, grao: string, us
 
 const propostaSchema = z.object({
   clienteId: z.string().min(1, 'Cliente é obrigatório'),
-  numero: z.string().min(1, 'Número é obrigatório'),
+  numero: z.string().optional(),
   tipo: z.enum(['venda', 'compra'], { errorMap: () => ({ message: 'Tipo inválido' }) }),
   descricao: z.string().optional(),
   validadeEm: z.string().min(1, 'Data de validade é obrigatória'),
@@ -366,12 +366,19 @@ export default function NovaPropostaPage() {
                   {...register('clienteId')}
                   error={errors.clienteId?.message}
                 />
-                <Input
-                  label="Número da proposta *"
-                  placeholder="EX: PROP-2024-001"
-                  {...register('numero')}
-                  error={errors.numero?.message}
-                />
+                <div>
+                  <Input
+                    label="Número da proposta"
+                    placeholder="Gerado automaticamente ao salvar"
+                    readOnly
+                    disabled
+                    {...register('numero')}
+                  />
+                  <p className="text-[11px] mt-1" style={{ color: 'var(--text-dim)' }}>
+                    Formato: 3 letras do workspace + AAAAMMDD + sequência + P
+                    (ex.: MCG2026051701P)
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select

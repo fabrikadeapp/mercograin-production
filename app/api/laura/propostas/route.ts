@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireScope } from '@/lib/auth/scope'
 import { logAudit } from '@/lib/audit/log'
+import { nextNumber } from '@/lib/numbering/next-number'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,12 +69,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'cliente_invalido' }, { status: 404 })
   }
 
-  // Geração de número simples baseada em sequência por workspace.
-  // Em produção, considerar contador atômico — aqui basta um sufixo determinístico.
-  const count = await db.proposta.count({
-    where: { workspaceId: scope.workspaceId },
-  })
-  const numero = `LAURA-${(count + 1).toString().padStart(5, '0')}`
+  const numero = await nextNumber(scope.workspaceId, 'proposta')
 
   const proposta = await db.proposta.create({
     data: {

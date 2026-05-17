@@ -5,10 +5,12 @@ import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
 import { resolveMesaScope, wherePropostaMesa } from '@/lib/equipe/scope-mesa'
+import { nextNumber } from '@/lib/numbering/next-number'
 
 const propostaSchema = z.object({
   clienteId: z.string().min(1, 'Cliente é obrigatório'),
-  numero: z.string().min(1, 'Número da proposta é obrigatório'),
+  /** Opcional — servidor gera automaticamente se ausente */
+  numero: z.string().optional(),
   tipo: z.enum(['venda', 'compra'], { errorMap: () => ({ message: 'Tipo inválido (venda/compra)' }) }),
   descricao: z.string().optional(),
   valor: z.number().positive('Valor total deve ser maior que zero'),
@@ -139,9 +141,11 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     })
 
+    const numeroGerado = data.numero?.trim() || (await nextNumber(scope.workspaceId, 'proposta'))
+
     const proposta = await db.proposta.create({
       data: {
-        numero: data.numero,
+        numero: numeroGerado,
         clienteId: data.clienteId,
         workspaceId: scope.workspaceId,
         tipo: data.tipo,

@@ -145,9 +145,10 @@ export async function POST(request: NextRequest) {
         },
         beneficiario: {
           banco: data.banco,
-          agencia: process.env.BRASPAG_BENEFICIARY_AGENCY || '0001',
-          conta: process.env.BRASPAG_BENEFICIARY_ACCOUNT || '1234567',
-          nome: process.env.BRASPAG_BENEFICIARY_NAME || 'MercoGrain LTDA',
+          // Sem fallback hardcoded — exige env explícita em prod
+          agencia: process.env.BRASPAG_BENEFICIARY_AGENCY ?? '',
+          conta: process.env.BRASPAG_BENEFICIARY_ACCOUNT ?? '',
+          nome: process.env.BRASPAG_BENEFICIARY_NAME ?? '',
         },
       })
 

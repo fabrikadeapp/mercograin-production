@@ -8,6 +8,13 @@ export const authConfig = {
   pages: {
     signIn: '/auth/login',
   },
+  session: {
+    strategy: 'jwt' as const,
+    // TTL curto (4h) pra invalidar membership desligado mais rápido
+    maxAge: 60 * 60 * 4,
+    // Renova se a sessão estiver dentro da última hora
+    updateAge: 60 * 60,
+  },
   callbacks: {
     authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user

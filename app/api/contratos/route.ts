@@ -8,11 +8,12 @@ import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
 import { tryIniciarAprovacao } from '@/lib/compliance'
 import { logAudit } from '@/lib/audit/log'
 import { resolveMesaScope, whereContratoMesa } from '@/lib/equipe/scope-mesa'
+import { nextNumber } from '@/lib/numbering/next-number'
 
 const contratoSchema = z.object({
   proposIdFk: z.string().min(1),
   clienteId: z.string().min(1),
-  numero: z.string().min(1),
+  numero: z.string().optional(),
   descricao: z.string().optional(),
   valor: z.number().positive(),
 })
@@ -140,11 +141,14 @@ export async function POST(request: NextRequest) {
       ? 'pendente_aprovacao'
       : 'aprovado'
 
+    const numeroGerado =
+      data.numero?.trim() || (await nextNumber(scope.workspaceId, 'contrato'))
+
     const contrato = await db.contrato.create({
       data: {
         proposIdFk: data.proposIdFk,
         clienteId: data.clienteId,
-        numero: data.numero,
+        numero: numeroGerado,
         workspaceId: scope.workspaceId,
         dataInicio: new Date(),
         statusAssinatura: 'pendente',

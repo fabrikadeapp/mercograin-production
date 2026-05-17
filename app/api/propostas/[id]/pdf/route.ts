@@ -69,41 +69,16 @@ export async function GET(
       validadeEm: proposta.validadeEm,
     }
 
-    // Generate PDF stream
-    const pdfStream = await generatePropostaPDFStream(pdfData)
+    // Generate PDF (returns Buffer directly — sem stream)
+    const pdfBuffer = await generatePropostaPDFStream(pdfData)
 
-    // Convert stream to buffer for response
-    const chunks: Buffer[] = []
-
-    return new Promise((resolve) => {
-      pdfStream.on('data', (chunk: Buffer) => {
-        chunks.push(chunk)
-      })
-
-      pdfStream.on('end', () => {
-        const pdfBuffer = Buffer.concat(chunks)
-
-        const response = new NextResponse(pdfBuffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="Proposta-${proposta.numero}.pdf"`,
-            'Content-Length': pdfBuffer.length.toString(),
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-          },
-        })
-
-        resolve(response)
-      })
-
-      pdfStream.on('error', (error: Error) => {
-        console.error('PDF stream error:', error)
-        resolve(
-          NextResponse.json(
-            { error: 'Erro ao gerar PDF' },
-            { status: 500 }
-          )
-        )
-      })
+    return new NextResponse(pdfBuffer as any, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Proposta-${proposta.numero}.pdf"`,
+        'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
     })
   } catch (error) {
     console.error('Generate proposta PDF error:', error)

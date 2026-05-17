@@ -180,10 +180,36 @@ model Workspace {
 
   onboardingCompletedAt DateTime?
 
+  /// Código de 3 letras do workspace, usado como prefixo na numeração de
+  /// propostas/contratos (ex.: MCG2026051701P). Default = 3 primeiras letras
+  /// do nome em maiúscula. Editável em Gestão → Dados da empresa.
+  codigo String? @db.VarChar(8)
+
+  contadores NumberingCounter[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+/// Sequência diária de numeração por workspace + tipo.
+/// Chave única: (workspaceId, dia, tipo). Incrementa atomicamente.
+model NumberingCounter {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// Data no formato YYYY-MM-DD (string pra evitar timezone bugs)
+  dia         String    @db.VarChar(10)
+  /// 'P' (proposta) | 'C' (contrato)
+  tipo        String    @db.VarChar(2)
+  /// Último número usado nesse dia/tipo (incrementa antes de retornar)
+  ultimo      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, dia, tipo])
+  @@index([workspaceId])
 }
 
 model WorkspaceMember {

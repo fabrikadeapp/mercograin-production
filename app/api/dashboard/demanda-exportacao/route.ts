@@ -23,8 +23,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
   return NextResponse.json({
-    items: MOCK_DEMAND,
-    totalToneladas: MOCK_DEMAND.reduce((acc, x) => acc + x.amount, 0),
-    fonte: 'mock', // TODO: 'CONAB' | 'MAPA' | 'SECEX'
+    items: [],
+    totalToneladas: 0,
+    fonte: 'em_breve',
+    comingSoon: true,
+    descricaoFutura: 'Integração com CONAB/MAPA/SECEX em breve.',
   })
 }

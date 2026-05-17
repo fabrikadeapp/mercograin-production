@@ -4,6 +4,9 @@ const { withSentryConfig } = require('@sentry/nextjs')
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Cache em-memória (Railway filesystem é read-only fora do /data)
+  cacheHandler: require.resolve('./cache-handler.js'),
+  cacheMaxMemorySize: 0, // desabilita LRU interno (nosso handler já gerencia)
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
