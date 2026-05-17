@@ -22,9 +22,8 @@ export async function GET() {
       backups: files
         .map((f) => ({
           name: f.name,
-          size:
-            (f.metadata as { size?: number } | null | undefined)?.size ?? null,
-          createdAt: f.created_at ?? null,
+          size: f.size,
+          createdAt: f.createdAt.toISOString(),
         }))
         .sort((a, b) =>
           (b.createdAt || '').localeCompare(a.createdAt || ''),

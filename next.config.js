@@ -8,13 +8,10 @@ const nextConfig = {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'qdzktmzpogidcxeuuozh.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-    ],
+    // Imagens agora vêm de /api/files (same-origin). Patterns vazios
+    // bloqueiam <Image src="https://...">; deixamos um pattern aberto pra
+    // URLs externas confiáveis (Sentry user avatars etc).
+    remotePatterns: [],
   },
 }
 

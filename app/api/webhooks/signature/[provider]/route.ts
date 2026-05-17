@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSignatureProvider } from '@/lib/contratos/signature'
 import { verifyWebhookSignature } from '@/lib/contratos/signature'
-import { getSupabaseAdmin, SUPABASE_BUCKET } from '@/lib/supabase/server'
+import { SUPABASE_BUCKET } from '@/lib/supabase/server'
 import { logAudit } from '@/lib/audit/log'
 import { sendEmail } from '@/lib/email/send'
 import { contractSignedTemplate } from '@/lib/email/templates/contract-signed'
@@ -147,19 +147,18 @@ export async function POST(
       signedHash = crypto.createHash('sha256').update(buf).digest('hex')
 
       try {
-        const sb = getSupabaseAdmin()
         const path = `contratos-assinados/${ass.workspaceId}/${ass.contratoId}-${signedHash.slice(0, 12)}.pdf`
-        const { error } = await sb.storage
-          .from(SUPABASE_BUCKET)
-          .upload(path, buf, {
+        try {
+          const { uploadFile } = await import('@/lib/storage/local')
+          await uploadFile({
+            bucket: SUPABASE_BUCKET,
+            path,
+            buffer: buf,
             contentType: 'application/pdf',
-            upsert: true,
           })
-        if (!error) {
-          const { data: pub } = sb.storage.from(SUPABASE_BUCKET).getPublicUrl(path)
-          signedUrl = pub?.publicUrl ?? null
-        } else {
-          console.error('[webhook signature] supabase upload error:', error)
+          signedUrl = `/api/files/${SUPABASE_BUCKET}/${path}`
+        } catch (err) {
+          console.error('[webhook signature] storage upload error:', err)
         }
       } catch (e) {
         console.error('[webhook signature] storage fallback:', e)
