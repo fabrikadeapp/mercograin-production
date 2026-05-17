@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
+import { routeToArea, canAccessArea, getDefaultRouteFor } from '@/lib/areas'
 
 export const config = {
   // Exclui rotas que não devem passar pelo middleware (assets públicos + auth).
@@ -70,6 +71,25 @@ export default auth((req) => {
     if (!hasActiveAccess && !isAssinaturaPath && !isOnboardingPath && !isPublic) {
       const url = new URL('/assinatura/checkout', req.url)
       return NextResponse.redirect(url)
+    }
+
+    // Bloqueio por área (Mesa / Financeiro / Fiscal / Gestão).
+    // Admin global sempre passa; owner/admin do workspace também.
+    if (!isAdmin && !isOnboardingPath && !isAssinaturaPath && !isPublic) {
+      const area = routeToArea(path)
+      if (area) {
+        const accessUser = {
+          globalRole: role,
+          workspaceRole: u.workspaceRole ?? null,
+          areasPermitidas: u.areasPermitidas ?? [],
+        }
+        if (!canAccessArea(accessUser, area)) {
+          const dest = getDefaultRouteFor(accessUser)
+          if (dest !== path) {
+            return NextResponse.redirect(new URL(dest, req.url))
+          }
+        }
+      }
     }
   }
 

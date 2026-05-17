@@ -195,10 +195,36 @@ model WorkspaceMember {
   email       String
   role        String // 'owner' | 'admin' | 'member' | 'viewer'
   status      String    @default("active") // 'active' | 'invited' | 'suspended'
-  /// BH Grain — perfil comercial granular (opcional, ortogonal ao role).
-  /// 'gestor' | 'trader' | 'vendedor' | 'financeiro' | 'operador' | 'leitura'
-  /// null = sem perfil específico; permissões caem para role base.
+  /// Perfil comercial granular (legado, mantido para compat).
   commercialRole String?
+
+  /// Áreas do produto que este membro pode acessar.
+  /// Valores válidos: 'mesa' | 'financeiro' | 'fiscal' | 'gestao'
+  /// owner/admin têm acesso a TODAS as áreas independente deste campo.
+  /// Default: ['mesa'] — membro novo só vê a Mesa.
+  areasPermitidas String[] @default([])
+
+  /// Cargo livre do funcionário (ex.: "Trader", "Analista Fiscal", "CFO").
+  /// Cadastrado pelo CEO em /gestao/equipe. Texto livre, só visual.
+  cargo String?
+
+  /// Funções semânticas do colaborador (enum fixo gerenciado em
+  /// lib/equipe/funcoes.ts). Uma pessoa pode ter múltiplas (ex.: trader +
+  /// gerente_mesa). Define visibilidade fina nas áreas + agrupamento BI.
+  /// Valores válidos: trader | gerente_mesa | gerente_conta | cs |
+  /// analista_financeiro | gerente_administrativo | cfo | analista_fiscal |
+  /// gerente_fiscal | assistente | compliance | ti
+  funcoes String[] @default([])
+
+  // Relations para atribuição comercial
+  clientesResponsavel        Cliente[]            @relation("ClienteResponsavel")
+  clienteAtendimentos        ClienteAtendimento[]
+  propostasGerente           Proposta[]           @relation("PropostaGerente")
+  propostasVendedor          Proposta[]           @relation("PropostaVendedor")
+  propostasAutorizadas       Proposta[]           @relation("PropostaAutorizadoPor")
+  contratosGerente           Contrato[]           @relation("ContratoGerente")
+  contratosVendedor          Contrato[]           @relation("ContratoVendedor")
+
   inviteToken String?   @unique
   invitedAt   DateTime?
   acceptedAt  DateTime?
@@ -450,10 +476,37 @@ model Cliente {
   documentosProdutor DocumentoProdutor[]
   mensagensProdutor  MensagemProdutor[]
 
+  /// Atribuição comercial: responsável atual pela conta (gerente de conta).
+  /// Snapshot por momento — Cliente.responsavel = quem cuida agora.
+  /// Histórico fica em ClienteAtendimento.
+  responsavelId String?
+  responsavel   WorkspaceMember?     @relation("ClienteResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  atendimentos  ClienteAtendimento[]
+
   @@index([email])
   @@index([cnpj])
   @@index([tipo])
   @@index([workspaceId])
+  @@index([responsavelId])
+}
+
+/// Histórico de quem atendeu cada cliente. Imutável (append-only) para BI.
+/// Registro ativo: fimEm IS NULL. Trocar de gerente: fechar o ativo (set fimEm)
+/// e criar um novo registro.
+model ClienteAtendimento {
+  id          String           @id @default(cuid())
+  clienteId   String
+  cliente     Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      WorkspaceMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  inicioEm    DateTime         @default(now())
+  fimEm       DateTime?
+  motivo      String?          // 'inicial' | 'transferencia' | 'ferias' | 'desligamento' | 'manual'
+  observacao  String?          @db.Text
+  createdAt   DateTime         @default(now())
+
+  @@index([clienteId, fimEm])
+  @@index([memberId])
 }
 
 // ============================================
@@ -620,6 +673,17 @@ model Proposta {
   /// JSON estruturado: { umidadeMax?, impurezaMax?, ph?, proteinaMin?, ardidosMax?, avariadosMax?, padraoComercial?, observacoes? }
   qualidadeSpec    Json?
 
+  // Atribuição comercial — quem é dono da conta e quem fechou.
+  gerenteContaId     String?
+  gerenteConta       WorkspaceMember? @relation("PropostaGerente", fields: [gerenteContaId], references: [id], onDelete: SetNull)
+  vendedorId         String?
+  vendedor           WorkspaceMember? @relation("PropostaVendedor", fields: [vendedorId], references: [id], onDelete: SetNull)
+  /// Canal pelo qual a proposta foi autorizada: 'web' | 'whatsapp' | 'telefone' | 'ia_autonomo'
+  canalAutorizacao   String?
+  autorizadoEm       DateTime?
+  autorizadoPorId    String?
+  autorizadoPor      WorkspaceMember? @relation("PropostaAutorizadoPor", fields: [autorizadoPorId], references: [id], onDelete: SetNull)
+
   @@index([clienteId])
   @@index([status])
   @@index([validadeEm])
@@ -628,6 +692,8 @@ model Proposta {
   @@index([armazemOrigemRefId])
   @@index([armazemDestinoRefId])
   @@index([loteEstoqueRefId])
+  @@index([gerenteContaId])
+  @@index([vendedorId])
 
   // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
   ofertaOrigem Oferta?
@@ -707,11 +773,20 @@ model Contrato {
   corretorId String?
   mesaId     String?
 
+  // Atribuição comercial nova (2026-05). Gerente conta = dono da carteira,
+  // Vendedor = quem fechou efetivamente esta venda.
+  gerenteContaId String?
+  gerenteConta   WorkspaceMember? @relation("ContratoGerente", fields: [gerenteContaId], references: [id], onDelete: SetNull)
+  vendedorId     String?
+  vendedor       WorkspaceMember? @relation("ContratoVendedor", fields: [vendedorId], references: [id], onDelete: SetNull)
+
   @@index([clienteId])
   @@index([proposIdFk])
   @@index([assinadoEm])
   @@index([workspaceId])
   @@index([contratoOriginalId])
+  @@index([gerenteContaId])
+  @@index([vendedorId])
 }
 
 // ============================================

@@ -44,7 +44,13 @@ export const authConfig = {
               },
               workspaceMemberships: {
                 where: { status: 'active' },
-                select: { id: true },
+                select: {
+                  id: true,
+                  role: true,
+                  areasPermitidas: true,
+                  workspaceId: true,
+                },
+                orderBy: { createdAt: 'asc' },
                 take: 1,
               },
             },
@@ -58,6 +64,19 @@ export const authConfig = {
             token.hasWorkspace =
               u.workspacesOwned.length > 0 || u.workspaceMemberships.length > 0
             token.onboardingCompleted = !!ownedWs?.onboardingCompletedAt
+            // Areas: se o user é owner, workspaceRole='owner' (acesso total).
+            // Caso contrário usa o primeiro membership ativo.
+            const member = u.workspaceMemberships[0]
+            if (ownedWs) {
+              ;(token as any).workspaceRole = 'owner'
+              ;(token as any).areasPermitidas = []
+            } else if (member) {
+              ;(token as any).workspaceRole = member.role
+              ;(token as any).areasPermitidas = member.areasPermitidas ?? []
+            } else {
+              ;(token as any).workspaceRole = null
+              ;(token as any).areasPermitidas = []
+            }
           }
         } catch (e) {
           // não bloqueia auth se DB falhar
@@ -74,6 +93,8 @@ export const authConfig = {
         ;(session.user as any).trialEnd = token.trialEnd as string | null | undefined
         ;(session.user as any).hasWorkspace = (token as any).hasWorkspace as boolean | undefined
         ;(session.user as any).onboardingCompleted = (token as any).onboardingCompleted as boolean | undefined
+        ;(session.user as any).workspaceRole = (token as any).workspaceRole as string | null | undefined
+        ;(session.user as any).areasPermitidas = (token as any).areasPermitidas as string[] | undefined
       }
       return session
     },

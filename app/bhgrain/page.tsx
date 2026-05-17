@@ -23,12 +23,16 @@ export default async function BhGrainPage() {
   const scope = await getScope()
   if (!scope) redirect('/auth/login')
 
-  const [user, workspace] = await Promise.all([
+  const [user, workspace, membership] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: { nome: true, email: true, role: true },
     }),
     db.workspace.findUnique({ where: { id: scope.workspaceId }, select: { name: true } }),
+    db.workspaceMember.findFirst({
+      where: { workspaceId: scope.workspaceId, userId: session.user.id },
+      select: { role: true, areasPermitidas: true },
+    }),
   ])
 
   const firstName =
@@ -40,6 +44,8 @@ export default async function BhGrainPage() {
       workspaceName={workspace?.name ?? null}
       userEmail={user?.email ?? null}
       userRole={user?.role ?? null}
+      workspaceRole={membership?.role ?? null}
+      areasPermitidas={membership?.areasPermitidas ?? null}
     >
       <BhGrainDashboard firstName={firstName} workspaceName={workspace?.name ?? 'Workspace'} />
     </BhGrainShell>

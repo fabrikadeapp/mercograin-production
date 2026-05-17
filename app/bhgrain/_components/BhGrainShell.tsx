@@ -12,13 +12,23 @@ interface Props {
   workspaceName: string | null
   userEmail?: string | null
   userRole?: string | null
+  workspaceRole?: string | null
+  areasPermitidas?: string[] | null
 }
 
 /**
  * Shell BH Grain — design v2 NewDB.
  * Fundo sólido NewDB com radial gradients suaves (sem foto agrícola — clareza primeiro).
  */
-export function BhGrainShell({ children, userName, workspaceName, userEmail, userRole }: Props) {
+export function BhGrainShell({
+  children,
+  userName,
+  workspaceName,
+  userEmail,
+  userRole,
+  workspaceRole,
+  areasPermitidas,
+}: Props) {
   const [prioridadesOpen, setPrioridadesOpen] = useState(false)
   const [propostaId, setPropostaId] = useState<string | null>(null)
 
@@ -39,6 +49,8 @@ export function BhGrainShell({ children, userName, workspaceName, userEmail, use
         workspaceName={workspaceName}
         userEmail={userEmail ?? null}
         userRole={userRole ?? null}
+        workspaceRole={workspaceRole ?? null}
+        areasPermitidas={areasPermitidas ?? null}
         onOpenPrioridades={() => setPrioridadesOpen(true)}
       />
 

@@ -47,3 +47,8 @@ prisma/*.db-journal
 .playwright-mcp/
 phb-*.png
 landing-atual.jpeg
+
+# Artefatos locais
+design2/
+outputs/
+.claude/scheduled_tasks.lock
