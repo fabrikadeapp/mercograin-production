@@ -7,7 +7,8 @@ import { Faq } from '@/app/_landing/Faq'
 import { Card, Button } from '@/components/ui/phb'
 import { loadActivePlans } from '@/lib/pricing/serialize'
 
-export const dynamic = 'force-dynamic'
+// Planos podem mudar via admin — revalida a cada 10min mantendo cache de CDN/edge
+export const revalidate = 600
 
 export const metadata = {
   title: 'Preços — BH Grain',

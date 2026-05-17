@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { sendEmail } from '@/lib/email/send'
 import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
@@ -230,6 +231,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    revalidateTag('contratos')
     return NextResponse.json(
       { ...contrato, aprovacao: aprovacaoIniciada?.aprovacao || null },
       { status: 201 }

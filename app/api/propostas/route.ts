@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
 import { resolveMesaScope, wherePropostaMesa } from '@/lib/equipe/scope-mesa'
@@ -170,6 +171,8 @@ export async function POST(request: NextRequest) {
         valorTotal: Number(proposta.valorTotal),
       },
     })
+
+    revalidateTag('propostas')
 
     return NextResponse.json(proposta, { status: 201 })
   } catch (error) {

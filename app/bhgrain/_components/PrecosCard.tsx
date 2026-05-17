@@ -112,13 +112,13 @@ export function PrecosCard() {
   const { data: precos, error: errPrecos, loading: loadPrecos } = useJson<RespPrecos>(
     '/api/bhgrain/precos',
     [],
-    { pollMs: 60_000 }
+    { pollMs: 5_000 }
   )
   // Dados detalhados CBOT — só busca quando aba Chicago/Câmbio está ativa
   const { data: cbot, error: errCbot, loading: loadCbot } = useJson<RespCbot>(
     tab === 'spot' ? null : '/api/bhgrain/cbot',
     [tab],
-    { pollMs: 30_000 }
+    { pollMs: 5_000 }
   )
 
   const error = tab === 'spot' ? errPrecos : errCbot

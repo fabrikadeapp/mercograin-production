@@ -12,6 +12,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { requireScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { getQuotesBatch } from '@/lib/commodities/yahoo-batch'
@@ -40,6 +41,42 @@ interface PropostaGrao {
   unidade?: string
 }
 
+/**
+ * Cache 120s das propostas abertas por workspace. Invalidado por revalidateTag('propostas')
+ * quando POST/PATCH/DELETE de proposta acontece (best-effort).
+ */
+const getPropostasAbertasCached = unstable_cache(
+  async (workspaceId: string) => {
+    return db.proposta
+      .findMany({
+        where: {
+          workspaceId,
+          status: { in: STATUS_ABERTAS },
+        },
+        select: {
+          id: true,
+          graos: true,
+          cliente: { select: { nome: true } },
+        },
+        take: 200,
+        orderBy: { atualizadaEm: 'desc' },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string
+            graos: unknown
+            cliente: { nome: string } | null
+          }>,
+      )
+  },
+  ['propostas-abertas-insight'],
+  {
+    revalidate: 120,
+    tags: ['propostas'],
+  },
+)
+
 export async function GET() {
   try {
     const scope = await requireScope()
@@ -59,21 +96,8 @@ export async function GET() {
       }
     }
 
-    // 2. Propostas em aberto desse workspace (filtragem por commodity feita em memória,
-    //    já que `graos` é JSON e o filtro estruturado dependeria de dialeto Postgres).
-    const propostasAbertas = await db.proposta.findMany({
-      where: {
-        workspaceId: scope.workspaceId,
-        status: { in: STATUS_ABERTAS },
-      },
-      select: {
-        id: true,
-        graos: true,
-        cliente: { select: { nome: true } },
-      },
-      take: 200,
-      orderBy: { atualizadaEm: 'desc' },
-    }).catch(() => [] as Array<{ id: string; graos: unknown; cliente: { nome: string } | null }>)
+    // 2. Propostas em aberto desse workspace (cache 120s por workspace).
+    const propostasAbertas = await getPropostasAbertasCached(scope.workspaceId)
 
     // Fallback: se não houve variação relevante OU não conseguimos cotação,
     // mas há propostas em rascunho, ainda mostramos um insight "geral" — para

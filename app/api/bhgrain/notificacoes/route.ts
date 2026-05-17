@@ -1,8 +1,105 @@
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * Cache 30s das fontes de notificação por workspace. Invalida quando
+ * propostas/contratos/boletos sofrem mutation via revalidateTag.
+ */
+const getFontesCached = unstable_cache(
+  async (workspaceId: string) => {
+    const now = new Date()
+    const in48h = new Date(now.getTime() + 48 * 3600 * 1000)
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000)
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 3600 * 1000)
+
+    const [
+      propostasVencendo,
+      contratosNaoAssinados,
+      boletosVencidos,
+      propostasAguardando,
+    ] = await Promise.all([
+      db.proposta.findMany({
+        where: {
+          workspaceId,
+          status: { in: ['enviada', 'em_negociacao', 'rascunho'] },
+          validadeEm: { gte: now, lte: in48h },
+        },
+        select: {
+          id: true,
+          numero: true,
+          validadeEm: true,
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { validadeEm: 'asc' },
+        take: 10,
+      }),
+      db.contrato.findMany({
+        where: {
+          workspaceId,
+          statusAssinatura: { in: ['pendente', null as any] },
+          criadoEm: { lte: sevenDaysAgo },
+        },
+        select: {
+          id: true,
+          numero: true,
+          criadoEm: true,
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { criadoEm: 'asc' },
+        take: 5,
+      }),
+      db.boleto
+        .findMany({
+          where: {
+            workspaceId,
+            status: { in: ['vencido', 'pendente'] },
+            vencimento: { gte: fourteenDaysAgo, lte: now },
+          },
+          select: {
+            id: true,
+            numero: true,
+            vencimento: true,
+            cliente: { select: { nome: true } },
+          },
+          orderBy: { vencimento: 'desc' },
+          take: 5,
+        })
+        .catch(() => []),
+      db.proposta.findMany({
+        where: {
+          workspaceId,
+          status: 'aguardando_autorizacao',
+        },
+        select: {
+          id: true,
+          numero: true,
+          criadaEm: true,
+          canalAutorizacao: true,
+          cliente: { select: { nome: true } },
+        },
+        orderBy: { criadaEm: 'desc' },
+        take: 10,
+      }),
+    ])
+
+    return {
+      propostasVencendo,
+      contratosNaoAssinados,
+      boletosVencidos,
+      propostasAguardando,
+      now: now.toISOString(),
+    }
+  },
+  ['notificacoes-fontes'],
+  {
+    revalidate: 30,
+    tags: ['propostas', 'contratos', 'boletos'],
+  },
+)
 
 /**
  * GET /api/bhgrain/notificacoes
@@ -31,80 +128,13 @@ export async function GET() {
   }> = []
 
   const now = new Date()
-  const in48h = new Date(now.getTime() + 48 * 3600 * 1000)
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000)
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 3600 * 1000)
 
   try {
-    const [
-      propostasVencendo,
-      contratosNaoAssinados,
-      boletosVencidos,
-      propostasAguardando,
-    ] = await Promise.all([
-      db.proposta.findMany({
-        where: {
-          workspaceId: scope.workspaceId,
-          status: { in: ['enviada', 'em_negociacao', 'rascunho'] },
-          validadeEm: { gte: now, lte: in48h },
-        },
-        select: {
-          id: true,
-          numero: true,
-          validadeEm: true,
-          cliente: { select: { nome: true } },
-        },
-        orderBy: { validadeEm: 'asc' },
-        take: 10,
-      }),
-      db.contrato.findMany({
-        where: {
-          workspaceId: scope.workspaceId,
-          statusAssinatura: { in: ['pendente', null as any] },
-          criadoEm: { lte: sevenDaysAgo },
-        },
-        select: {
-          id: true,
-          numero: true,
-          criadoEm: true,
-          cliente: { select: { nome: true } },
-        },
-        orderBy: { criadoEm: 'asc' },
-        take: 5,
-      }),
-      db.boleto
-        .findMany({
-          where: {
-            workspaceId: scope.workspaceId,
-            status: { in: ['vencido', 'pendente'] },
-            vencimento: { gte: fourteenDaysAgo, lte: now },
-          },
-          select: {
-            id: true,
-            numero: true,
-            vencimento: true,
-            cliente: { select: { nome: true } },
-          },
-          orderBy: { vencimento: 'desc' },
-          take: 5,
-        })
-        .catch(() => []),
-      db.proposta.findMany({
-        where: {
-          workspaceId: scope.workspaceId,
-          status: 'aguardando_autorizacao',
-        },
-        select: {
-          id: true,
-          numero: true,
-          criadaEm: true,
-          canalAutorizacao: true,
-          cliente: { select: { nome: true } },
-        },
-        orderBy: { criadaEm: 'desc' },
-        take: 10,
-      }),
-    ])
+    const fontes = await getFontesCached(scope.workspaceId)
+    const propostasVencendo = fontes.propostasVencendo
+    const contratosNaoAssinados = fontes.contratosNaoAssinados
+    const boletosVencidos = fontes.boletosVencidos
+    const propostasAguardando = fontes.propostasAguardando
 
     for (const p of propostasVencendo) {
       const horas = Math.max(

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireScope } from '@/lib/auth/scope'
@@ -131,5 +132,6 @@ export async function POST(
     },
   }).catch(() => null)
 
+  revalidateTag('propostas')
   return NextResponse.json({ ok: true, proposta: updated })
 }

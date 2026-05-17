@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { enviarNotificacaoProposta } from '@/lib/services/email-notifications'
 
@@ -109,6 +110,7 @@ export async function PUT(
       include: { cliente: true },
     })
 
+    revalidateTag('propostas')
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -159,6 +161,7 @@ export async function DELETE(
       where: { id: params.id },
     })
 
+    revalidateTag('propostas')
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Delete proposta error:', error)
@@ -226,6 +229,7 @@ export async function PATCH(
       }
     }
 
+    revalidateTag('propostas')
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { requireBhGrainScope } from '@/lib/bhgrain/scope-permissions'
 import { db } from '@/lib/db'
 import { setIntegrationPause, KNOWN_INTEGRATIONS } from '@/lib/bhgrain/integration-pause'
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    revalidateTag('health')
     return NextResponse.json({ ok: true, ...result })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro interno'

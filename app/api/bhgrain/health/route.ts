@@ -5,18 +5,27 @@
  */
 
 import { NextResponse } from 'next/server'
+import { unstable_cache } from 'next/cache'
 import { requireScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
+const getHealthCached = unstable_cache(
+  async (workspaceId: string) => {
+    return db.integrationHealth.findMany({
+      where: { workspaceId },
+      orderBy: { integration: 'asc' },
+    })
+  },
+  ['integration-health'],
+  { revalidate: 30, tags: ['health'] },
+)
+
 export async function GET() {
   try {
     const scope = await requireScope()
-    const rows = await db.integrationHealth.findMany({
-      where: { workspaceId: scope.workspaceId },
-      orderBy: { integration: 'asc' },
-    })
+    const rows = await getHealthCached(scope.workspaceId)
     return NextResponse.json({
       integrations: rows.map((r) => ({
         integration: r.integration,
