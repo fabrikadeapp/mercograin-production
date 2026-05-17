@@ -3,6 +3,7 @@ import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
+import { resolveMesaScope, wherePropostaMesa } from '@/lib/equipe/scope-mesa'
 
 const propostaSchema = z.object({
   clienteId: z.string().min(1, 'Cliente é obrigatório'),
@@ -45,13 +46,19 @@ export async function GET(request: NextRequest) {
 
     // Construir where clause com filtros (multi-tenancy via Proposta.workspaceId)
     const where: any = scope.whereOwn()
-
+    const mesa = await resolveMesaScope(scope)
+    const mesaFilter = wherePropostaMesa(mesa)
+    const andClauses: any[] = []
+    if (mesaFilter && Object.keys(mesaFilter).length > 0) andClauses.push(mesaFilter)
     if (search) {
-      where.OR = [
-        { numero: { contains: search, mode: 'insensitive' } },
-        { cliente: { nome: { contains: search, mode: 'insensitive' } } },
-      ]
+      andClauses.push({
+        OR: [
+          { numero: { contains: search, mode: 'insensitive' } },
+          { cliente: { nome: { contains: search, mode: 'insensitive' } } },
+        ],
+      })
     }
+    if (andClauses.length > 0) where.AND = andClauses
     if (status) {
       where.status = status
     }
@@ -114,6 +121,7 @@ export async function POST(request: NextRequest) {
     // Verificar se cliente pertence ao usuário
     const cliente = await db.cliente.findFirst({
       where: { id: data.clienteId, ...scope.whereOwn() },
+      select: { id: true, responsavelId: true },
     })
 
     if (!cliente) {
@@ -122,6 +130,13 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Auto-atribuição: vendedor = quem criou (membership atual);
+    // gerente de conta = responsável atual do cliente (snapshot).
+    const member = await db.workspaceMember.findFirst({
+      where: { workspaceId: scope.workspaceId, userId: scope.userId },
+      select: { id: true },
+    })
 
     const proposta = await db.proposta.create({
       data: {
@@ -134,6 +149,9 @@ export async function POST(request: NextRequest) {
         status: 'rascunho',
         descricao: data.descricao,
         validadeEm: new Date(data.validadeEm),
+        vendedorId: member?.id ?? null,
+        gerenteContaId: cliente.responsavelId ?? member?.id ?? null,
+        canalAutorizacao: 'web',
       },
       include: { cliente: true },
     })

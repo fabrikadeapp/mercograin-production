@@ -6,6 +6,7 @@ import { sendEmail } from '@/lib/email/send'
 import { contractCreatedTemplate } from '@/lib/email/templates/contract-created'
 import { tryIniciarAprovacao } from '@/lib/compliance'
 import { logAudit } from '@/lib/audit/log'
+import { resolveMesaScope, whereContratoMesa } from '@/lib/equipe/scope-mesa'
 
 const contratoSchema = z.object({
   proposIdFk: z.string().min(1),
@@ -31,15 +32,21 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Multi-tenancy via Contrato.workspaceId
+    // Multi-tenancy via Contrato.workspaceId + scope da Mesa
     const where: any = scope.whereOwn()
-
+    const mesa = await resolveMesaScope(scope)
+    const mesaFilter = whereContratoMesa(mesa)
+    const andClauses: any[] = []
+    if (mesaFilter && Object.keys(mesaFilter).length > 0) andClauses.push(mesaFilter)
     if (search) {
-      where.OR = [
-        { numero: { contains: search, mode: 'insensitive' } },
-        { cliente: { nome: { contains: search, mode: 'insensitive' } } },
-      ]
+      andClauses.push({
+        OR: [
+          { numero: { contains: search, mode: 'insensitive' } },
+          { cliente: { nome: { contains: search, mode: 'insensitive' } } },
+        ],
+      })
     }
+    if (andClauses.length > 0) where.AND = andClauses
     if (statusAssinatura) {
       where.statusAssinatura = statusAssinatura
     }

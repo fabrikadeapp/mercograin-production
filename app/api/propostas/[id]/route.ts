@@ -19,7 +19,14 @@ const updatePropostaSchema = z.object({
 })
 
 const statusUpdateSchema = z.object({
-  status: z.enum(['rascunho', 'enviada', 'aceita', 'rejeitada']),
+  status: z.enum([
+    'rascunho',
+    'aguardando_autorizacao',
+    'enviada',
+    'aceita',
+    'rejeitada',
+    'cancelada',
+  ]),
 })
 
 // GET - Obter proposta específica
