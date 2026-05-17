@@ -38,8 +38,21 @@ export interface LLMProvider {
 }
 
 // ============================================================================
-// OpenRouter — modelos free + pagos
+// OpenRouter — modelos free + pagos, com fallback chain
 // ============================================================================
+
+/**
+ * Cadeia de fallback para modelos free do OpenRouter.
+ * Se um der 429/404, tenta o próximo. Lista ordenada por qualidade observada.
+ */
+const FALLBACK_CHAIN = [
+  'deepseek/deepseek-v4-flash:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-nano-9b-v2:free',
+  'minimax/minimax-m2.5:free',
+]
+
 class OpenRouterProvider implements LLMProvider {
   name = 'openrouter'
 
@@ -48,16 +61,41 @@ class OpenRouterProvider implements LLMProvider {
 
   constructor() {
     this.apiKey = process.env.OPENROUTER_API_KEY ?? ''
-    // Default: free tier do Llama 3.1 70B (gratuito até quota)
-    this.defaultModel = process.env.LAURA_LLM_MODEL ?? 'meta-llama/llama-3.1-70b-instruct:free'
+    this.defaultModel = process.env.LAURA_LLM_MODEL ?? FALLBACK_CHAIN[0]
   }
 
   async chat(req: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     if (!this.apiKey) {
       throw new Error('OPENROUTER_API_KEY não configurada')
     }
-    const model = req.model ?? this.defaultModel
 
+    const primary = req.model ?? this.defaultModel
+    const tried = new Set<string>()
+    const queue = [primary, ...FALLBACK_CHAIN.filter((m) => m !== primary)]
+
+    let lastErr: unknown = null
+    for (const model of queue) {
+      if (tried.has(model)) continue
+      tried.add(model)
+      try {
+        return await this.callOnce(req, model)
+      } catch (err) {
+        lastErr = err
+        const msg = err instanceof Error ? err.message : String(err)
+        // 429 (rate limit) / 404 (modelo indisponível): tenta próximo
+        if (msg.includes('429') || msg.includes('404')) continue
+        throw err
+      }
+    }
+    throw lastErr instanceof Error
+      ? lastErr
+      : new Error('Todos os modelos OpenRouter falharam')
+  }
+
+  private async callOnce(
+    req: ChatCompletionRequest,
+    model: string,
+  ): Promise<ChatCompletionResponse> {
     const body: Record<string, unknown> = {
       model,
       messages: req.messages,
@@ -92,7 +130,7 @@ class OpenRouterProvider implements LLMProvider {
       content,
       tokensIn: usage.prompt_tokens ?? 0,
       tokensOut: usage.completion_tokens ?? 0,
-      costUsd: 0, // free tier — em modelos pagos OpenRouter retorna usage.cost
+      costUsd: 0,
       provider: 'openrouter',
       model,
     }
