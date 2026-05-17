@@ -15,7 +15,7 @@ import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { ConversaDrawer } from './ConversaDrawer'
 import { DateRangePopover } from './DateRangePopover'
 import { FiltrosAvancadosDrawer, FILTROS_VAZIO, countFiltrosAvancadosAtivos, type FiltrosAvancados } from './FiltrosAvancadosDrawer'
-import { Chip, FilterBar, FilterLabel, InsightBar, Button } from '@/components/ui/newdb'
+import { Chip, FilterBar, FilterLabel } from '@/components/ui/newdb'
 import { DashboardFiltersProvider } from './DashboardFiltersContext'
 
 interface Props {
@@ -76,61 +76,116 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
 
   return (
     <div className="space-y-4">
-      {/* Header — conforme design v2: eyebrow + saudação + serifa inline */}
+      {/* Header — saudação à esquerda + insight IA compacto à direita */}
       <header style={{ paddingTop: 4 }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>
           MESA OPERACIONAL · {eyebrowTimestamp}
         </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1
-            style={{
-              fontSize: 36,
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              margin: 0,
-              lineHeight: 1.1,
-            }}
-          >
-            {greeting}, {firstName}.
-          </h1>
-          <span
-            className="t-serif"
-            style={{
-              fontSize: 28,
-              fontFamily: 'var(--f-serif)',
-              fontStyle: 'italic',
-              color: 'var(--text-mute)',
-              lineHeight: 1.2,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Aqui está o que importa hoje.
-          </span>
-        </div>
-      </header>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 min-w-0">
+            <h1
+              style={{
+                fontSize: 36,
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                lineHeight: 1.1,
+              }}
+            >
+              {greeting}, {firstName}.
+            </h1>
+            <span
+              className="t-serif"
+              style={{
+                fontSize: 28,
+                fontFamily: 'var(--f-serif)',
+                fontStyle: 'italic',
+                color: 'var(--text-mute)',
+                lineHeight: 1.2,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Aqui está o que importa hoje.
+            </span>
+          </div>
 
-      {/* InsightBar dinâmico — só renderiza se houver insight relevante */}
-      {!insightDismissed && insight?.show && insight.title && (
-        <InsightBar
-          icon={<Zap style={{ width: 16, height: 16 }} fill="currentColor" />}
-          title={insight.title}
-          description={insight.description ?? ''}
-          actions={
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setInsightDismissed(true)}>
-                Ignorar
-              </Button>
+          {/* Insight IA — chip compacto ao lado da saudação */}
+          {!insightDismissed && insight?.show && insight.title && (
+            <div
+              className="flex items-center gap-2 shrink-0"
+              style={{
+                background: 'var(--surface-2, rgba(255,255,255,0.04))',
+                border: '1px solid var(--border, rgba(255,255,255,0.08))',
+                borderRadius: 999,
+                padding: '6px 10px 6px 8px',
+                maxWidth: 520,
+              }}
+            >
+              <span
+                style={{
+                  display: 'inline-flex',
+                  width: 20,
+                  height: 20,
+                  borderRadius: 999,
+                  background: 'var(--accent)',
+                  color: 'var(--accent-ink)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Zap style={{ width: 11, height: 11 }} fill="currentColor" />
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: 'var(--text)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: 320,
+                }}
+                title={insight.title + (insight.description ? ` — ${insight.description}` : '')}
+              >
+                {insight.title}
+              </span>
+              <button
+                type="button"
+                onClick={() => setInsightDismissed(true)}
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  color: 'var(--text-mute)',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  padding: '0 4px',
+                }}
+                aria-label="Ignorar dica"
+              >
+                ×
+              </button>
               <Link
                 href={`/admin/bhgrain/prioridades${insight.commodity ? `?commodity=${insight.commodity}` : ''}`}
-                className="btn primary"
-                style={{ textDecoration: 'none', fontSize: 12 }}
+                style={{
+                  background: 'var(--accent)',
+                  color: 'var(--accent-ink)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: '3px 9px',
+                  borderRadius: 999,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
               >
-                <Sparkles style={{ width: 12, height: 12 }} /> Revisar
+                <Sparkles style={{ width: 10, height: 10 }} />
+                Revisar
               </Link>
-            </>
-          }
-        />
-      )}
+            </div>
+          )}
+        </div>
+      </header>
 
       {/* FilterBar — conforme design: período (incl. Personalizar) + commodity + Filtros avançados */}
       <FilterBar

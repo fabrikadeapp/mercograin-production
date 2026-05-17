@@ -83,13 +83,16 @@ export function HealthCard() {
   )
 
   return (
-    <section className="sec-card" style={{ padding: '12px 16px' }}>
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2 shrink-0" style={{ minWidth: 0 }}>
-          <Activity className="w-3.5 h-3.5" style={{ color: 'var(--text-dim)' }} />
+    <section
+      className="sec-card"
+      style={{ padding: '6px 14px', minHeight: 36 }}
+    >
+      <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Activity className="w-3 h-3" style={{ color: 'var(--text-dim)' }} />
           <span
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontFamily: 'var(--f-mono)',
               color: 'var(--text-dim)',
               letterSpacing: '0.06em',
@@ -100,13 +103,11 @@ export function HealthCard() {
           </span>
         </div>
 
-        <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
-
         <div className="flex-1 min-w-0">
           {loading ? (
-            <div className="flex gap-3">
+            <div className="flex gap-2 justify-between">
               {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-7 w-32" />
+                <Skeleton key={i} className="h-5 w-24" />
               ))}
             </div>
           ) : error ? (
@@ -114,7 +115,14 @@ export function HealthCard() {
           ) : !data?.integrations || data.integrations.length === 0 ? (
             <EmptyState message="Aguardando primeiro cron…" />
           ) : (
-            <ul className="flex items-center gap-1.5 flex-wrap">
+            <ul
+              className="flex items-center"
+              style={{
+                gap: 4,
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
               {data.integrations.map((h) => (
                 <IntegrationChip key={h.integration} health={h} />
               ))}
@@ -125,7 +133,7 @@ export function HealthCard() {
         <Link
           href="/admin/bhgrain/integracoes"
           className="shrink-0"
-          style={{ fontSize: 11, color: 'var(--text-dim)' }}
+          style={{ fontSize: 10, color: 'var(--text-dim)' }}
         >
           Detalhes →
         </Link>
@@ -225,12 +233,13 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '5px 10px',
+          gap: 5,
+          padding: '2px 8px',
           borderRadius: 'var(--r-pill)',
           background: 'var(--surface-2)',
-          border: `1px solid ${paused ? 'var(--border)' : 'var(--border)'}`,
-          fontSize: 11,
+          border: '1px solid var(--border)',
+          fontSize: 10,
+          lineHeight: 1.4,
           opacity: paused ? 0.55 : 1,
           cursor: pending ? 'wait' : 'pointer',
           transition: '150ms ease',
