@@ -298,6 +298,46 @@ export function BhGrainTopBar({
                   )}
                 </div>
 
+                <Link
+                  href="/perfil"
+                  onClick={() => setUserMenuOpen(false)}
+                  role="menuitem"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--text)',
+                    borderRadius: 'var(--r-sm)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Meu perfil
+                </Link>
+
+                <Link
+                  href="/assinatura"
+                  onClick={() => setUserMenuOpen(false)}
+                  role="menuitem"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--text)',
+                    borderRadius: 'var(--r-sm)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Minha assinatura
+                </Link>
+
+                <div
+                  style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }}
+                />
+
                 {userRole === 'admin' && (
                   <>
                     <Link

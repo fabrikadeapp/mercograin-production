@@ -88,9 +88,25 @@ export async function POST(request: NextRequest) {
       ? await gerarSpedFiscal({ config: cfg, competencia, empresa, notas: notas as any })
       : await gerarSpedContribuicoes({ config: cfg, competencia, empresa, notas: notas as any })
 
-    // TODO produção: subir conteúdo pro Supabase Storage e salvar URL.
-    // Aqui guardamos o arquivo num campo dataURL inline (apenas pra MVP, evita storage extra).
-    const arquivoUrl = `data:text/plain;base64,${Buffer.from(out.conteudo, 'utf-8').toString('base64')}`
+    // Salva conteúdo no Railway Volume e retorna URL pública assinada.
+    try {
+      const { uploadFile, getSignedUrl } = await import('@/lib/storage/local')
+      const fileName = `sped-${tipo}-${competencia}-${exportEntry.id}.txt`
+      await uploadFile({
+        bucket: 'fiscal-sped',
+        path: `${scope.workspaceId}/${fileName}`,
+        buffer: Buffer.from(out.conteudo, 'utf-8'),
+        contentType: 'text/plain',
+      })
+      var arquivoUrl = await getSignedUrl(
+        'fiscal-sped',
+        `${scope.workspaceId}/${fileName}`,
+        7 * 24 * 3600, // 7 dias
+      )
+    } catch (storageErr) {
+      console.error('[sped] erro storage local, usando data URL fallback', storageErr)
+      var arquivoUrl = `data:text/plain;base64,${Buffer.from(out.conteudo, 'utf-8').toString('base64')}`
+    }
 
     const updated = await db.spedExport.update({
       where: { id: exportEntry.id },
