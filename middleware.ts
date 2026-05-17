@@ -44,6 +44,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
+  // Landing: usuário logado vai direto pra /dashboard
+  if (isLoggedIn && path === '/') {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
   // Onboarding redirect: user logado sem workspace
   if (isLoggedIn) {
     const u = (req.auth as any)?.user || {}
@@ -93,5 +98,17 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next()
+  const res = NextResponse.next()
+
+  // Cache-Control p/ rotas públicas — middleware sempre seta cookies (NextAuth csrf),
+  // o que faz Next.js mandar private/no-cache. Forçamos público em rotas
+  // de marketing pra Railway-edge/Cloudflare cachear o HTML.
+  if (!isLoggedIn && isPublic && path !== '/aceite') {
+    res.headers.set(
+      'Cache-Control',
+      'public, max-age=60, s-maxage=600, stale-while-revalidate=86400',
+    )
+  }
+
+  return res
 })
