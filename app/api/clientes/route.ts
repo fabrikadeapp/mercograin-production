@@ -51,6 +51,8 @@ const clienteSchema = z.object({
   origemCapital: z.enum(['nacional', 'estrangeiro']).optional(),
   scoreRelacionamento: z.number().int().min(0).max(1000).optional(),
   limiteCredito: z.number().nonnegative().optional(),
+  /** WorkspaceMember.id que será o gerente de conta inicial */
+  responsavelId: z.string().optional().nullable(),
 })
 
 // GET - Listar clientes (com paginação e filtros)
@@ -142,6 +144,24 @@ export async function POST(request: NextRequest) {
     const temWorkflow = workflows.length > 0
     const statusCadastral = temWorkflow ? 'analise' : 'aprovado'
 
+    // Valida responsavelId pertence ao workspace
+    if (data.responsavelId) {
+      const m = await db.workspaceMember.findFirst({
+        where: {
+          id: data.responsavelId,
+          workspaceId: scope.workspaceId,
+          status: 'active',
+        },
+        select: { id: true },
+      })
+      if (!m) {
+        return NextResponse.json(
+          { error: 'responsavel_invalido' },
+          { status: 400 },
+        )
+      }
+    }
+
     const cliente = await db.cliente.create({
       data: {
         ...data,
@@ -151,6 +171,19 @@ export async function POST(request: NextRequest) {
         workspaceId: scope.workspaceId,
       } as any,
     })
+
+    // Se tiver responsavel, registra ClienteAtendimento inicial (histórico)
+    if (data.responsavelId) {
+      await db.clienteAtendimento
+        .create({
+          data: {
+            clienteId: cliente.id,
+            memberId: data.responsavelId,
+            motivo: 'inicial',
+          },
+        })
+        .catch(() => null)
+    }
 
     // QW2 — audit log de criação (best-effort)
     await logAudit({
