@@ -52,3 +52,8 @@ landing-atual.jpeg
 design2/
 outputs/
 .claude/scheduled_tasks.lock
+
+# Playwright
+playwright-report/
+test-results/
+.playwright/
