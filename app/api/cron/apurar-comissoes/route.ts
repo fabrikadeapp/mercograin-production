@@ -19,6 +19,7 @@ import {
   type RegraInput,
 } from '@/lib/comissao/calcular'
 import { captureError, captureMessage } from '@/lib/observability/capture'
+import { withCronLog } from '@/lib/cron/with-log'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -178,8 +179,8 @@ async function handle(req: Request) {
 }
 
 export async function GET(req: Request) {
-  return handle(req)
+  return withCronLog('apurar-comissoes', () => handle(req))
 }
 export async function POST(req: Request) {
-  return handle(req)
+  return withCronLog('apurar-comissoes', () => handle(req))
 }

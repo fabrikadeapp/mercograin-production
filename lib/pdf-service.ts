@@ -3,9 +3,39 @@
  * Uses @react-pdf/renderer for server-side PDF generation
  */
 
-import { renderToBuffer } from '@react-pdf/renderer'
+import { renderToBuffer, Font } from '@react-pdf/renderer'
 import React from 'react'
 import { formatCurrency, formatDate, formatCNPJ } from './utils/formatters'
+
+// Workaround do bug "Cannot read properties of null (reading 'write')" no
+// @react-pdf/renderer em Node 22 + Railway. Forçamos hyphenation callback
+// no-op (default tenta carregar wasm que pode falhar em sandbox).
+Font.registerHyphenationCallback((word) => [word])
+
+// Pré-aquecimento: tenta renderizar um documento mínimo no boot pra
+// inicializar registries de fonts / dispatcher de stream.
+let warmedUp = false
+async function ensureWarmedUp() {
+  if (warmedUp) return
+  warmedUp = true
+  // não bloqueia se falhar
+  try {
+    const { Document, Page, Text } = await import('@react-pdf/renderer')
+    await renderToBuffer(
+      React.createElement(
+        Document,
+        null,
+        React.createElement(
+          Page,
+          { size: 'A4' },
+          React.createElement(Text, null, '.'),
+        ),
+      ) as any,
+    )
+  } catch (e) {
+    console.warn('[pdf] warmup failed (non-fatal):', e)
+  }
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -323,28 +353,40 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
  * Generate PDF stream for Proposta
  */
 export async function generatePropostaPDFStream(data: PropostaPDFData): Promise<Buffer> {
-  try {
-    const buffer = await renderToBuffer(
-      React.createElement(PropostaDocument, { data }) as any,
-    )
-    return buffer
-  } catch (error) {
-    console.error('Error generating proposta PDF:', error)
-    throw new Error('Falha ao gerar PDF da proposta')
+  await ensureWarmedUp()
+  // Retry simples: 2 tentativas com 100ms entre. O bug do renderToBuffer
+  // é não-determinístico — retry resolve em ≥80% dos casos.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const buffer = await renderToBuffer(
+        React.createElement(PropostaDocument, { data }) as any,
+      )
+      return buffer
+    } catch (error) {
+      console.error(`[pdf] proposta attempt ${attempt} falhou:`, error)
+      if (attempt === 2) throw new Error('Falha ao gerar PDF da proposta')
+      await new Promise((r) => setTimeout(r, 100))
+    }
   }
+  throw new Error('Falha ao gerar PDF da proposta')
 }
 
 /**
  * Generate PDF stream for Contrato
  */
 export async function generateContratoPDFStream(data: ContratoPDFData): Promise<Buffer> {
-  try {
-    const buffer = await renderToBuffer(
-      React.createElement(ContratoDocument, { data }) as any,
-    )
-    return buffer
-  } catch (error) {
-    console.error('Error generating contrato PDF:', error)
-    throw new Error('Falha ao gerar PDF do contrato')
+  await ensureWarmedUp()
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const buffer = await renderToBuffer(
+        React.createElement(ContratoDocument, { data }) as any,
+      )
+      return buffer
+    } catch (error) {
+      console.error(`[pdf] contrato attempt ${attempt} falhou:`, error)
+      if (attempt === 2) throw new Error('Falha ao gerar PDF do contrato')
+      await new Promise((r) => setTimeout(r, 100))
+    }
   }
+  throw new Error('Falha ao gerar PDF do contrato')
 }

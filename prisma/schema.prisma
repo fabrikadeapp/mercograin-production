@@ -186,11 +186,60 @@ model Workspace {
   codigo String? @db.VarChar(8)
 
   contadores NumberingCounter[]
+  features   WorkspaceFeature[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+/// Feature flag por workspace. Permite super-admin habilitar/desabilitar
+/// módulos opcionais por cliente (originação, EUDR, hedge, etc).
+///
+/// Estratégia comercial: cada cliente compra os módulos que precisa.
+/// CAC menor (já está usando) + ARR maior (upgrade pra módulos extras).
+model WorkspaceFeature {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// Chave canônica do módulo. Ex.: 'originacao', 'eudr', 'hedge', 'portal_produtor',
+  /// 'logistica', 'fiscal_avancado', 'marketplace', 'laura_ai'
+  feature     String    @db.VarChar(60)
+  enabled     Boolean   @default(false)
+  /// Quando ativada, por quem
+  enabledAt   DateTime?
+  enabledBy   String?
+  /// Notas internas (motivo do toggle)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, feature])
+  @@index([feature, enabled])
+}
+
+/// Log de execução de crons. Cada job de cron grava aqui ao terminar
+/// pra permitir monitoring em /admin/crons.
+model CronExecution {
+  id          String   @id @default(cuid())
+  /// Nome do cron (ex: 'apurar-comissoes', 'bhgrain-health')
+  cron        String   @db.VarChar(60)
+  /// 'success' | 'error' | 'partial'
+  status      String   @db.VarChar(20)
+  /// Timestamp de início
+  startedAt   DateTime @default(now())
+  /// Timestamp de fim (null se ainda rodando)
+  finishedAt  DateTime?
+  /// Duração em ms
+  durationMs  Int?
+  /// Mensagem de erro ou resumo
+  message     String?  @db.Text
+  /// Metadados estruturados (records processed, etc)
+  meta        Json?
+
+  @@index([cron, startedAt])
+  @@index([status])
 }
 
 /// Sequência diária de numeração por workspace + tipo.

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { collectHealthAll } from '@/lib/bhgrain/health-collector'
 import { isBhGrainV1Enabled } from '@/lib/bhgrain/feature-flag'
 import { captureError } from '@/lib/observability/capture'
+import { withCronLog } from '@/lib/cron/with-log'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -31,4 +32,9 @@ async function handle(req: Request) {
   }
 }
 
-export { handle as GET, handle as POST }
+export async function GET(req: Request) {
+  return withCronLog('bhgrain-health', () => handle(req))
+}
+export async function POST(req: Request) {
+  return withCronLog('bhgrain-health', () => handle(req))
+}
