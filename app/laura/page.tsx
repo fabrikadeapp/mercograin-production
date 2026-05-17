@@ -14,6 +14,11 @@ export default async function LauraPage() {
   if (!scope) redirect('/auth/login')
 
   const featureOn = await isFeatureEnabled(scope.workspaceId, 'laura_ai')
+  const llmConfigured = !!(
+    process.env.OPENROUTER_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.LAURA_LLM_PROVIDER === 'mock'
+  )
 
   const [user, workspace, membership, conversas, propostasIA] = await Promise.all([
     db.user.findUnique({
@@ -140,6 +145,34 @@ export default async function LauraPage() {
               Mensagens ainda são registradas, mas não há classificação automática
               nem criação de propostas. Para ativar, vá em <b>Super-admin →
               Workspaces → {workspace?.name} → Features</b>.
+            </div>
+          </div>
+        )}
+
+        {featureOn && !llmConfigured && (
+          <div
+            className="sec-card"
+            style={{
+              padding: 16,
+              background: 'rgba(255,80,80,0.08)',
+              borderLeft: '3px solid var(--danger, #ff5050)',
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+              LLM provider não configurado
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-mute)' }}>
+              Feature está ativa mas falta configurar a chave do provider.
+              No Railway, adicione <code>OPENROUTER_API_KEY</code> (gratuito em{' '}
+              <a
+                href="https://openrouter.ai/keys"
+                target="_blank"
+                style={{ color: 'var(--accent)' }}
+              >
+                openrouter.ai/keys
+              </a>
+              ) ou <code>OPENAI_API_KEY</code>. Por enquanto Laura roda em
+              fallback heurístico (precisão baixa).
             </div>
           </div>
         )}
