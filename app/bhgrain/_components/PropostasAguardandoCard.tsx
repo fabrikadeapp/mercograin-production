@@ -33,13 +33,16 @@ interface Resp {
   count: number
 }
 
-function iniciais(nome: string) {
-  return nome
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
-    .join('')
+function iniciais(nome: string | null | undefined): string {
+  if (!nome) return '—'
+  return (
+    nome
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? '')
+      .join('') || '—'
+  )
 }
 
 function ageLabel(iso: string): string {

@@ -4,6 +4,7 @@ import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { AppShell, PageHeader, Card } from '@/components/ui/phb'
 import { EmpresaForm } from './_components/EmpresaForm'
+import { CodigoWorkspaceCard } from './_components/CodigoWorkspaceCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +18,15 @@ export default async function EmpresaConfigPage() {
     scope.isAdmin || ['owner', 'admin'].includes(scope.workspaceRole)
   if (!allowed) redirect('/dashboard')
 
-  const empresa = await db.dadosEmpresa.findUnique({
-    where: { workspaceId: scope.workspaceId },
-  })
+  const [empresa, workspace] = await Promise.all([
+    db.dadosEmpresa.findUnique({
+      where: { workspaceId: scope.workspaceId },
+    }),
+    db.workspace.findUnique({
+      where: { id: scope.workspaceId },
+      select: { codigo: true, name: true },
+    }),
+  ])
 
   return (
     <AppShell>
@@ -28,6 +35,11 @@ export default async function EmpresaConfigPage() {
         title="Dados da empresa"
         subtitle="CNPJ, razão social, endereço e contato. Aparecem em PDFs, boletos, e-mails e relatórios."
         search={false}
+      />
+
+      <CodigoWorkspaceCard
+        initial={workspace?.codigo ?? null}
+        nome={workspace?.name ?? ''}
       />
 
       <Card className="p-5 max-w-4xl">

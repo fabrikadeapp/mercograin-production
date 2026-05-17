@@ -116,7 +116,7 @@ export default function EditarContratoPage() {
       const data: Contrato = await response.json()
       setContrato(data)
 
-      const dataInicioISO = data.dataInicio.split('T')[0]
+      const dataInicioISO = data.dataInicio ? data.dataInicio.split('T')[0] : ''
       const dataFimISO = data.dataFim ? data.dataFim.split('T')[0] : ''
 
       reset({

@@ -136,7 +136,11 @@ export default function DetalheBoletoPage() {
     )
   }
 
-  const valorDecimal = parseFloat(boleto.valor)
+  const valorRaw =
+    typeof boleto.valor === 'number'
+      ? boleto.valor
+      : parseFloat(String(boleto.valor ?? '0'))
+  const valorDecimal = Number.isFinite(valorRaw) ? valorRaw : 0
 
   return (
     <AppShell>
