@@ -138,6 +138,97 @@ class OpenRouterProvider implements LLMProvider {
 }
 
 // ============================================================================
+// Groq — free tier alto (30 req/min) — fallback rápido
+// ============================================================================
+class GroqProvider implements LLMProvider {
+  name = 'groq'
+
+  private readonly apiKey: string
+  private readonly defaultModel: string
+
+  constructor() {
+    this.apiKey = process.env.GROQ_API_KEY ?? ''
+    this.defaultModel = process.env.GROQ_LLM_MODEL ?? 'llama-3.3-70b-versatile'
+  }
+
+  async chat(req: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    if (!this.apiKey) {
+      throw new Error('GROQ_API_KEY não configurada')
+    }
+    const model = req.model ?? this.defaultModel
+
+    const body: Record<string, unknown> = {
+      model,
+      messages: req.messages,
+      temperature: req.temperature ?? 0.2,
+    }
+    if (req.jsonMode) {
+      body.response_format = { type: 'json_object' }
+    }
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 200)}`)
+    }
+
+    const json = await res.json()
+    const content = json.choices?.[0]?.message?.content ?? ''
+    const usage = json.usage ?? {}
+
+    return {
+      content,
+      tokensIn: usage.prompt_tokens ?? 0,
+      tokensOut: usage.completion_tokens ?? 0,
+      costUsd: 0,
+      provider: 'groq',
+      model,
+    }
+  }
+}
+
+// ============================================================================
+// FallbackProvider — encadeia múltiplos providers
+// ============================================================================
+class FallbackProvider implements LLMProvider {
+  name = 'fallback'
+
+  constructor(private readonly providers: LLMProvider[]) {}
+
+  async chat(req: ChatCompletionRequest): Promise<ChatCompletionResponse> {
+    let lastErr: unknown = null
+    for (const p of this.providers) {
+      try {
+        return await p.chat(req)
+      } catch (err) {
+        lastErr = err
+        const msg = err instanceof Error ? err.message : String(err)
+        // Continua tentando próximo provider em 429/quota/timeout/não configurado
+        if (
+          msg.includes('429') ||
+          msg.includes('quota') ||
+          msg.includes('rate') ||
+          msg.includes('não configurada')
+        ) {
+          continue
+        }
+        throw err
+      }
+    }
+    throw lastErr instanceof Error
+      ? lastErr
+      : new Error('Todos os providers LLM falharam')
+  }
+}
+
+// ============================================================================
 // OpenAI — escotilha pro futuro
 // ============================================================================
 class OpenAIProvider implements LLMProvider {
@@ -226,22 +317,40 @@ let cached: LLMProvider | null = null
 
 export function getLLMProvider(): LLMProvider {
   if (cached) return cached
-  const which = (process.env.LAURA_LLM_PROVIDER ?? 'openrouter').toLowerCase()
+  const which = (process.env.LAURA_LLM_PROVIDER ?? 'auto').toLowerCase()
+
+  // Mode 'auto' (default): encadeia todos os providers configurados em
+  // ordem: Groq (mais rápido + free tier alto) → OpenRouter (free) → OpenAI (pago)
+  if (which === 'auto') {
+    const chain: LLMProvider[] = []
+    if (process.env.GROQ_API_KEY) chain.push(new GroqProvider())
+    if (process.env.OPENROUTER_API_KEY) chain.push(new OpenRouterProvider())
+    if (process.env.OPENAI_API_KEY) chain.push(new OpenAIProvider())
+    if (chain.length === 0) {
+      cached = new MockProvider()
+    } else if (chain.length === 1) {
+      cached = chain[0]
+    } else {
+      cached = new FallbackProvider(chain)
+    }
+    return cached
+  }
+
   switch (which) {
+    case 'groq':
+      cached = process.env.GROQ_API_KEY ? new GroqProvider() : new MockProvider()
+      break
     case 'openai':
-      cached = new OpenAIProvider()
+      cached = process.env.OPENAI_API_KEY ? new OpenAIProvider() : new MockProvider()
       break
     case 'mock':
       cached = new MockProvider()
       break
     case 'openrouter':
     default:
-      // Se sem chave, cai pra mock
-      if (!process.env.OPENROUTER_API_KEY) {
-        cached = new MockProvider()
-      } else {
-        cached = new OpenRouterProvider()
-      }
+      cached = process.env.OPENROUTER_API_KEY
+        ? new OpenRouterProvider()
+        : new MockProvider()
   }
   return cached
 }
