@@ -15,7 +15,8 @@ const contratoSchema = z.object({
   clienteId: z.string().min(1),
   numero: z.string().optional(),
   descricao: z.string().optional(),
-  valor: z.number().positive(),
+  /** Opcional: se omitido, herda valorTotal da proposta */
+  valor: z.number().positive().optional(),
 })
 
 export async function GET(request: NextRequest) {

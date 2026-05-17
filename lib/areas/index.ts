@@ -199,11 +199,12 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
     { href: '/ofertas', label: 'Ofertas' },
     { href: '/calculadora', label: 'Calculadora' },
     { href: '/hedge', label: 'Hedge' },
-    { href: '/bhgrain/inbox', label: 'Inbox' },
+    { href: '/whatsapp', label: 'Inbox' },
   ],
   financeiro: [
     { href: '/financeiro', label: 'Dashboard' },
     { href: '/financeiro/movimentos', label: 'Movimentos' },
+    { href: '/financeiro/comissoes', label: 'Comissões' },
     { href: '/financeiro/centros-custo', label: 'Centros de custo' },
     { href: '/financeiro/conciliacao', label: 'Conciliação OFX' },
     { href: '/financeiro/royalties', label: 'Royalties' },

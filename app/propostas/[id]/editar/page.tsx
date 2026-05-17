@@ -200,7 +200,7 @@ export default function EditarPropostaPage() {
           <Link href={`/propostas/${id}`} className="text-blue-600 hover:underline mb-4 inline-block">
             ← Voltar para Proposta
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Editar Proposta PROP-{proposta.numero}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Editar Proposta {proposta.numero}</h1>
           <p className="text-gray-600 mt-2">Atualize os dados da proposta em rascunho</p>
         </div>
 

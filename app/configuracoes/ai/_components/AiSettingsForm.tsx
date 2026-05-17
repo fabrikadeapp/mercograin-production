@@ -62,7 +62,7 @@ export function AiSettingsForm({
               plano Pro (AI gerenciado) ou Enterprise (AI + opção BYOK).
             </p>
             <a
-              href="/planos"
+              href="/precos"
               className="inline-block mt-3 px-3 py-1.5 text-xs font-medium rounded bg-amber-900 text-amber-50 hover:bg-amber-800"
             >
               Ver planos

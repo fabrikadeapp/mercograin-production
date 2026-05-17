@@ -233,7 +233,7 @@ export default function PropostaDetalhesPage() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow={`Proposta · #PROP-${proposta.numero}`}
+        eyebrow={`Proposta · #${proposta.numero}`}
         title={proposta.cliente.nome}
         subtitle={`${proposta.tipo === 'venda' ? 'Venda' : 'Compra'} · Criada em ${formatDate(proposta.criadaEm)}`}
         search={false}

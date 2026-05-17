@@ -261,7 +261,7 @@ export default function EditarContratoPage() {
             <div className="space-y-1">
               <p className="eyebrow">Proposta</p>
               <p className="text-fg-1 font-medium font-mono tabular-nums">
-                PROP-{contrato.proposta.numero}
+                {contrato.proposta.numero}
               </p>
             </div>
             <div className="space-y-1">

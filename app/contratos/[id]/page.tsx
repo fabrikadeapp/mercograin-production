@@ -267,9 +267,9 @@ export default function ContratoDetalhesPage() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow={`Contrato · #CTR-${contrato.numero}`}
+        eyebrow={`Contrato · #${contrato.numero}`}
         title={contrato.cliente.nome}
-        subtitle={`Originado da PROP-${contrato.proposta.numero} · Criado em ${formatDate(contrato.criadoEm)}`}
+        subtitle={`Originado da proposta ${contrato.proposta.numero} · Criado em ${formatDate(contrato.criadoEm)}`}
         search={false}
         actions={
           <>

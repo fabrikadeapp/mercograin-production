@@ -411,7 +411,7 @@ export default function PropostasPage() {
                     <div className="flex justify-between items-start gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1 flex-wrap">
-                          <h3 className="text-fg-1 font-semibold t-num">PROP-{proposta.numero}</h3>
+                          <h3 className="text-fg-1 font-semibold t-num">{proposta.numero}</h3>
                           <Badge variant={STATUS_TO_BADGE[proposta.status]} />
                         </div>
                         <p className="text-fg-2 text-small truncate">{proposta.cliente.nome}</p>

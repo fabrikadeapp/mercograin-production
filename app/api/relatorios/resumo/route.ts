@@ -164,22 +164,44 @@ export async function GET(req: NextRequest) {
         color: ['var(--grain-soja)', 'var(--grain-milho)', 'color-mix(in srgb, var(--grain-soja) 70%, var(--bg-3))', 'var(--grain-trigo)', 'var(--info)'][idx],
       }))
 
-    // Canal de venda — sem coluna `canal`. Fallback: 100% Mesa direta + TODO.
-    const canalVenda = [
-      { label: 'Mesa direta', pct: 100, color: 'var(--accent)' },
-    ]
+    // Canal de venda — derivado de Proposta.canalAutorizacao
+    const canalCounts = await db.proposta.groupBy({
+      by: ['canalAutorizacao'],
+      where: { workspaceId: scope.workspaceId, status: { in: ['aceita', 'enviada'] } },
+      _count: true,
+    })
+    const totalCanal = canalCounts.reduce((acc, c) => acc + c._count, 0) || 1
+    const canalLabels: Record<string, string> = {
+      web: 'Mesa direta',
+      whatsapp: 'WhatsApp (Laura.IA)',
+      telefone: 'Telefone (Laura.IA)',
+      ia_autonomo: 'IA autônoma',
+    }
+    const canalColors: Record<string, string> = {
+      web: 'var(--accent)',
+      whatsapp: '#25D366',
+      telefone: 'var(--info)',
+      ia_autonomo: 'var(--warning)',
+    }
+    const canalVenda =
+      canalCounts.length > 0
+        ? canalCounts.map((c) => ({
+            label: canalLabels[c.canalAutorizacao ?? 'web'] ?? c.canalAutorizacao ?? '—',
+            pct: Math.round((c._count / totalCanal) * 100),
+            color: canalColors[c.canalAutorizacao ?? 'web'] ?? 'var(--text-dim)',
+          }))
+        : [{ label: 'Mesa direta', pct: 100, color: 'var(--accent)' }]
 
-    // Eficiência logística — TODO: criar model Logistica
-    // QW1 — NPS retorna null até existir tabela de pesquisas. UI deve renderizar
-    //       "NPS pendente" quando recebe null. Removido flag _mock e valor falso "+72".
+    // Eficiência logística — sem dado real ainda, retorna comingSoon
     const logistica = {
-      custoMedioT: 'R$ 184,20',
-      leadTime: '6,2 dias',
-      ocupacaoArmazem: '78%',
-      quebraContratual: '0,4%',
-      slaEntrega: '98,2%',
+      custoMedioT: null,
+      leadTime: null,
+      ocupacaoArmazem: null,
+      quebraContratual: null,
+      slaEntrega: null,
       nps: null as string | null,
       npsLabel: 'NPS pendente',
+      comingSoon: true,
     }
 
     // KPIs

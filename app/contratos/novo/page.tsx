@@ -116,7 +116,7 @@ export default function NovoContratoPage() {
       const payload = {
         proposIdFk: data.proposIdFk,
         clienteId: selectedProposta.cliente.id,
-        numero: `CTR-${Date.now()}`,
+        // numero gerado no servidor (formato XXX2026051701C)
         dataInicio: new Date(data.dataInicio),
         dataFim: data.dataFim ? new Date(data.dataFim) : null,
       }
@@ -157,7 +157,7 @@ export default function NovoContratoPage() {
     { value: '', label: 'Selecione uma proposta aceita' },
     ...propostas.map((p) => ({
       value: p.id,
-      label: `PROP-${p.numero} · ${p.cliente.nome}`,
+      label: `${p.numero} · ${p.cliente.nome}`,
     })),
   ]
 
