@@ -66,8 +66,14 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  let scope
   try {
-    const scope = await requireScope()
+    scope = await requireScope()
+  } catch {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
+  try {
     if (!canManageMembers(scope.workspaceRole)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
