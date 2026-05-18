@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { processIncomingMessage } from '@/lib/laura/process-message'
+import { checkMutationLimit, rateLimited } from '@/lib/security/mutation-rate-limit'
+import { getClientIp } from '@/lib/security/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     }
   }
+
+  // Rate limit por IP (webhook externo)
+  const ip = getClientIp(req)
+  const limit = checkMutationLimit('laura.ingest', ip)
+  if (!limit.ok) return rateLimited(limit)
 
   const body = await req.json().catch(() => null)
   const parsed = schema.safeParse(body)

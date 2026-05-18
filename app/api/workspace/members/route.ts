@@ -6,6 +6,7 @@ import { requireScope } from '@/lib/auth/scope'
 import { syncWorkspaceSeats } from '@/lib/stripe/seats'
 import { sendEmail } from '@/lib/email/send'
 import { memberInviteTemplate } from '@/lib/email/templates/member-invite'
+import { checkMutationLimit, rateLimited } from '@/lib/security/mutation-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,9 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
+
+  const limit = checkMutationLimit('member.invite', scope.userId)
+  if (!limit.ok) return rateLimited(limit)
 
   try {
     if (!canManageMembers(scope.workspaceRole)) {

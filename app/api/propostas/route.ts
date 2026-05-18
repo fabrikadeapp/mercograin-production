@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
 import { resolveMesaScope, wherePropostaMesa } from '@/lib/equipe/scope-mesa'
 import { nextNumber } from '@/lib/numbering/next-number'
+import { checkMutationLimit, rateLimited } from '@/lib/security/mutation-rate-limit'
 
 const propostaSchema = z.object({
   clienteId: z.string().min(1, 'Cliente é obrigatório'),
@@ -117,6 +118,9 @@ export async function POST(request: NextRequest) {
     if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+
+    const limit = checkMutationLimit('proposta.create', scope.userId)
+    if (!limit.ok) return rateLimited(limit)
 
     const body = await request.json()
     const data = propostaSchema.parse(body)
