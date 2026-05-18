@@ -65,6 +65,39 @@ export default auth((req) => {
 
     const isOnboardingPath = path === '/onboarding' || path.startsWith('/onboarding/')
 
+    // ============================================================
+    // SUPER-ADMIN MERCOGRAIN — guard estanque para /admin e /api/admin
+    // ============================================================
+    // Regras simultâneas:
+    //   1. role='admin' (global)
+    //   2. NÃO ter workspace (super-admin puro, sem conta de cliente)
+    //   3. TOTP 2FA habilitado
+    // Falhar qualquer uma redireciona pra /dashboard (ou /auth/login se
+    // não logado, já tratado acima) — nunca mostra 403 pra não revelar
+    // existência da rota.
+    const isAdminRoute =
+      path === '/admin' ||
+      path.startsWith('/admin/') ||
+      path === '/api/admin' ||
+      path.startsWith('/api/admin/')
+
+    if (isAdminRoute) {
+      const totpEnabled = (u as any).totpEnabled === true
+      const isPureSuperAdmin = isAdmin && !hasWorkspace
+      if (!isPureSuperAdmin) {
+        // User comum (ou admin com workspace de teste) — fora
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+      if (!totpEnabled) {
+        // Super-admin sem 2FA — força ativar antes
+        const url = new URL('/perfil/seguranca/2fa', req.url)
+        url.searchParams.set('motivo', 'super_admin_exige_2fa')
+        return NextResponse.redirect(url)
+      }
+      // OK — segue pro layout que faz double-check via DB
+      return NextResponse.next()
+    }
+
     if (!hasWorkspace && !isOnboardingPath && !isPublic) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
@@ -81,6 +114,26 @@ export default auth((req) => {
     if (!hasActiveAccess && !isAssinaturaPath && !isOnboardingPath && !isPublic) {
       const url = new URL('/assinatura/checkout', req.url)
       return NextResponse.redirect(url)
+    }
+
+    // Perfil RH incompleto: colaborador convidado precisa completar wizard antes
+    // de acessar qualquer área do sistema. Owner/admin global ignorados — owner
+    // já tem perfilCompleto setado em true via auth.config quando é dono de workspace.
+    const perfilCompleto = (u as any).perfilCompleto === true
+    const isPerfilCompletar =
+      path === '/perfil/completar' || path.startsWith('/perfil/completar/')
+    if (
+      !isAdmin &&
+      hasWorkspace &&
+      !perfilCompleto &&
+      !isPerfilCompletar &&
+      !isOnboardingPath &&
+      !isAssinaturaPath &&
+      !isPublic &&
+      !path.startsWith('/auth') &&
+      !path.startsWith('/api')
+    ) {
+      return NextResponse.redirect(new URL('/perfil/completar', req.url))
     }
 
     // 2FA obrigatório (políticas por workspace)

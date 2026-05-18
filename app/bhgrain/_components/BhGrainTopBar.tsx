@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Bell, Sparkles, Shield, LogOut } from 'lucide-react'
+import { Plus, Bell, Sparkles, LogOut } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { ThemeToggle } from '@/components/ui/newdb'
 import {
@@ -350,32 +350,9 @@ export function BhGrainTopBar({
                   style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }}
                 />
 
-                {userRole === 'admin' && (
-                  <>
-                    <Link
-                      href="/admin"
-                      onClick={() => setUserMenuOpen(false)}
-                      role="menuitem"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '8px 12px',
-                        fontSize: 13,
-                        color: 'var(--accent)',
-                        borderRadius: 'var(--r-sm)',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <Shield className="w-3.5 h-3.5" />
-                      Painel super-admin
-                    </Link>
-                    <div
-                      style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }}
-                    />
-                  </>
-                )}
+                {/* Super-admin link removido. Acesso a /admin é exclusivo
+                 * via URL direta + conta dedicada Mercograin (User.role='admin'
+                 * SEM WorkspaceMember) + 2FA TOTP. Ver middleware.ts. */}
 
                 <button
                   type="button"
