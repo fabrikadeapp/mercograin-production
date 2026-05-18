@@ -250,8 +250,26 @@ export function UnidadeSelector({
   )
 }
 
-/** Footer padrão com notas de unidade — use em cards de preço. */
-export function CotacoesFooterNote() {
+/** Footer padrão com notas de unidade — use em cards de preço.
+ *  Opcionalmente exibe relógio "atualizado HH:MM:SS" no canto direito.
+ */
+export function CotacoesFooterNote({
+  lastUpdate,
+  online,
+}: {
+  /** ISO timestamp da última atualização */
+  lastUpdate?: string | null
+  /** Se está online (verde) ou erro (vermelho) */
+  online?: boolean
+} = {}) {
+  const updateLabel = lastUpdate
+    ? new Date(lastUpdate).toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : null
+
   return (
     <div
       style={{
@@ -263,10 +281,46 @@ export function CotacoesFooterNote() {
         fontFamily: 'var(--f-mono)',
         letterSpacing: '0.02em',
         lineHeight: 1.5,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        gap: 12,
       }}
     >
-      Saca = 60 kg salvo indicação · Tonelada = 1.000 kg · Bushel USDA: soja/trigo 27,22 kg ·
-      milho 25,40 kg · Conversão R$ ↔ US$ usa câmbio do card
+      <div style={{ flex: 1, minWidth: 0 }}>
+        Saca = 60 kg salvo indicação · Tonelada = 1.000 kg · Bushel USDA:
+        soja/trigo 27,22 kg · milho 25,40 kg · Conversão R$ ↔ US$ usa câmbio do
+        card
+      </div>
+      {updateLabel && (
+        <div
+          style={{
+            flexShrink: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            whiteSpace: 'nowrap',
+            color: 'var(--text-dim)',
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background:
+                online === false
+                  ? 'var(--danger, #ff5050)'
+                  : 'var(--success, #40c864)',
+              boxShadow:
+                online === false
+                  ? 'none'
+                  : '0 0 6px color-mix(in srgb, var(--success, #40c864) 50%, transparent)',
+            }}
+          />
+          atualizado {updateLabel}
+        </div>
+      )}
     </div>
   )
 }

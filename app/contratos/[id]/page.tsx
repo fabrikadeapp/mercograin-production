@@ -30,6 +30,10 @@ import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { OriginacaoPanel } from './_components/OriginacaoPanel'
 import { AssinaturaDigitalPanel } from './_components/AssinaturaDigitalPanel'
+import {
+  StatusTimeline,
+  buildContratoTimeline,
+} from '@/components/ui/StatusTimeline'
 
 interface GraoItem {
   grao: string
@@ -344,6 +348,32 @@ export default function ContratoDetalhesPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Timeline horizontal do fluxo Proposta → Pago */}
+      <Card>
+        <p
+          className="eyebrow"
+          style={{ marginBottom: 16, paddingLeft: 4 }}
+        >
+          Progresso da negociação
+        </p>
+        <StatusTimeline
+          steps={buildContratoTimeline({
+            proposta: {
+              status: 'aceita', // contrato existente implica proposta aceita
+              criadaEm: (contrato as any).proposta?.criadaEm ?? null,
+              enviadaEm: (contrato as any).proposta?.enviadaEm ?? contrato.criadoEm,
+            },
+            contrato: {
+              statusAssinatura: contrato.statusAssinatura,
+              assinadoEm: contrato.assinadoEm ?? null,
+              criadoEm: contrato.criadoEm,
+            },
+            temBoleto: false,
+            boletoPago: false,
+          })}
+        />
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

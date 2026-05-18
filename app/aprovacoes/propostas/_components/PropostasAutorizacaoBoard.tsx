@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Clock,
 } from 'lucide-react'
+import { StatusTimeline, type TimelineStep } from '@/components/ui/StatusTimeline'
 
 interface Proposta {
   id: string
@@ -296,6 +297,23 @@ function PropostaCard({
             </b>
           </div>
         )}
+
+        {/* Timeline compacta — visual rápido do fluxo */}
+        <div style={{ marginTop: 14 }}>
+          <StatusTimeline
+            size="sm"
+            steps={
+              [
+                { label: 'Recebida', state: 'done', at: proposta.criadaEm },
+                { label: 'Aut. pendente', state: 'current' },
+                { label: 'Enviada', state: 'pending' },
+                { label: 'Aceita', state: 'pending' },
+                { label: 'Contrato', state: 'pending' },
+                { label: 'Pago', state: 'pending' },
+              ] as TimelineStep[]
+            }
+          />
+        </div>
 
         {proposta.observacoes && (
           <div
