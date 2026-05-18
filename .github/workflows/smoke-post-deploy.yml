@@ -1,0 +1,44 @@
+name: Smoke (pós-deploy)
+
+# Roda smoke automaticamente quando Railway termina deploy de main.
+# Trigger manual também — útil pra disparar via UI do GitHub.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # A cada 2 horas: monitor contínuo de produção
+    - cron: '15 */2 * * *'
+
+jobs:
+  smoke-prod:
+    name: Smoke contra produção
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke
+        env:
+          BASE_URL: https://www.profitsync.ia.br
+          LAURA_INGEST_SECRET: ${{ secrets.LAURA_INGEST_SECRET }}
+        run: npx playwright test e2e/smoke --reporter=github
+
+      - name: Notificar Slack em falha
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST "$SLACK_WEBHOOK" \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"🚨 Smoke tests falharam em produção! Ver: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'

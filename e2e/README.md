@@ -59,30 +59,20 @@ e2e/
 - [ ] smoke/status-page.spec.ts
 - [ ] smoke/health.spec.ts
 
-## CI
+## CI (configurado)
 
-Adicionar workflow GitHub Actions em `.github/workflows/e2e.yml`:
+3 workflows ativos em `.github/workflows/`:
 
-```yaml
-name: E2E
-on:
-  pull_request:
-    branches: [main]
-jobs:
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
-        env:
-          BASE_URL: ${{ secrets.E2E_BASE_URL }}
-          TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER }}
-          TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_PASS }}
-```
+- **`ci.yml`** — type-check + build em todo push/PR em main
+- **`e2e.yml`** — smoke (push+PR) e suite full (só PR) contra prod
+- **`smoke-post-deploy.yml`** — smoke a cada 2h + alerta Slack em falha
+
+Secrets necessários no GitHub:
+- `LAURA_INGEST_SECRET` — pra testes de Laura ingest auth
+- `E2E_TEST_USER` / `E2E_TEST_PASS` — pra testes autenticados (skip se ausente)
+- `SLACK_WEBHOOK` — pra alertas (opcional)
+
+Acompanhar runs: `https://github.com/fabrikadeapp/mercograin-production/actions`
 
 ## Estratégia
 

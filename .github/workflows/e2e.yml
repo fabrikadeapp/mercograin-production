@@ -1,0 +1,87 @@
+name: E2E (Playwright)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'URL alvo dos testes'
+        default: 'https://www.profitsync.ia.br'
+        required: false
+
+# Cancela job antigo do PR quando push novo
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke tests (contra produção)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://www.profitsync.ia.br' }}
+          # Secret opcional pra testar /api/laura/ingest
+          LAURA_INGEST_SECRET: ${{ secrets.LAURA_INGEST_SECRET }}
+        run: npx playwright test e2e/smoke --reporter=github
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: playwright-report/
+          retention-days: 7
+
+  full:
+    name: Full E2E suite (contra produção)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Roda só em PR contra main (não em push direto, pra não bloquear deploy)
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run full E2E
+        env:
+          BASE_URL: ${{ inputs.base_url || 'https://www.profitsync.ia.br' }}
+          LAURA_INGEST_SECRET: ${{ secrets.LAURA_INGEST_SECRET }}
+          # Opcional: pra testes autenticados (skipam se não setado)
+          E2E_TEST_USER: ${{ secrets.E2E_TEST_USER }}
+          E2E_TEST_PASS: ${{ secrets.E2E_TEST_PASS }}
+        run: npx playwright test --reporter=github
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-full-report
+          path: playwright-report/
+          retention-days: 7
