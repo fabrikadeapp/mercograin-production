@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Sparkles,
 } from 'lucide-react'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import { PageHeader, Card } from '@/components/ui/phb'
+import { BhGrainShellServer } from '@/app/_shared/BhGrainShellServer'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 import { HoverCard, HoverTextLink } from '@/components/ui/HoverCard'
@@ -84,7 +85,7 @@ export default async function AdminEmpresaPage() {
   const completudePct = Math.round((completos / checks.length) * 100)
 
   return (
-    <AppShell>
+    <BhGrainShellServer>
       <PageHeader
         eyebrow="Administração · Workspace"
         title={workspace?.name ?? 'Painel administrativo'}
@@ -246,7 +247,7 @@ export default async function AdminEmpresaPage() {
           <ShortcutTile href="/assinatura" icon={<CreditCard className="w-4 h-4" />} label="Assinatura" />
         </div>
       </Card>
-    </AppShell>
+    </BhGrainShellServer>
   )
 }
 
