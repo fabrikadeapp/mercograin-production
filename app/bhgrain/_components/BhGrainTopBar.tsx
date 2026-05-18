@@ -114,7 +114,7 @@ export function BhGrainTopBar({
     >
       {/* Linha 1 — Brand · Áreas · Search · Ações · Avatar */}
       <nav
-        className="mx-auto flex items-center gap-5 px-6 md:px-10 py-3"
+        className="mx-auto flex items-center gap-2 sm:gap-3 md:gap-5 px-3 sm:px-6 md:px-10 py-3"
         style={{ maxWidth: '1440px' }}
       >
         {/* Brand */}
@@ -144,7 +144,15 @@ export function BhGrainTopBar({
         </Link>
 
         {/* Abas das 4 áreas — só as que o user vê */}
-        <ul className="flex items-center gap-1 ml-2" style={{ flex: 1, minWidth: 0 }}>
+        <ul
+          className="flex items-center gap-0 sm:gap-1 ml-0 sm:ml-2 overflow-x-auto"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
           {visibleAreas.map((area) => {
             const active = area === currentArea
             return (
@@ -241,7 +249,9 @@ export function BhGrainTopBar({
             </Link>
           )}
 
-          <ThemeToggle />
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
 
           {/* Avatar — só nome+email+workspace+Sair */}
           <div ref={userMenuRef} style={{ position: 'relative' }}>

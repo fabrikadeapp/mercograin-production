@@ -53,8 +53,15 @@ export default async function WorkspacesAdminPage() {
         </p>
       </header>
 
-      <section className="sec-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <section className="sec-card" style={{ padding: 0, overflowX: 'auto' }}>
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 13,
+            minWidth: 720,
+          }}
+        >
           <thead>
             <tr style={{ background: 'var(--surface-2)' }}>
               <Th>Workspace</Th>

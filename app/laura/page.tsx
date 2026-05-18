@@ -177,8 +177,15 @@ export default async function LauraPage() {
           </div>
         )}
 
-        <section className="sec-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <section className="sec-card" style={{ padding: 0, overflowX: 'auto' }}>
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: 13,
+              minWidth: 700,
+            }}
+          >
             <thead>
               <tr style={{ background: 'var(--surface-2)' }}>
                 <Th>Cliente</Th>

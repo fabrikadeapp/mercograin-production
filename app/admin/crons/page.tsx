@@ -108,9 +108,16 @@ export default function CronsAdminPage() {
 
       <section
         className="sec-card"
-        style={{ padding: 0, overflow: 'hidden' }}
+        style={{ padding: 0, overflowX: 'auto' }}
       >
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 13,
+            minWidth: 760,
+          }}
+        >
           <thead>
             <tr style={{ background: 'var(--surface-2)' }}>
               <Th>Cron</Th>
