@@ -25,6 +25,31 @@ model User {
   criadoEm         DateTime @default(now())
   atualizadoEm     DateTime @updatedAt
 
+  // RH / Dados pessoais do colaborador (Lote: dados RH)
+  // CPF é unique mas opcional pra não quebrar registros existentes; preenchido
+  // pelo owner ao convidar OU pelo próprio colaborador no wizard de completar perfil.
+  cpf                   String?   @unique
+  telefone              String?
+  rg                    String?
+  rgEmissor             String?
+  dataNascimento        DateTime?
+  pis                   String?
+  // Endereço residencial (campos diretos pra permitir filtros/relatórios).
+  enderecoCep           String?
+  enderecoRua           String?
+  enderecoNumero        String?
+  enderecoComplemento   String?
+  enderecoBairro        String?
+  enderecoCidade        String?
+  enderecoUF            String?
+  // Banco + PIX em JSON ({ banco, agencia, conta, tipo, titular, pix, pixTipo })
+  dadosBancariosJson    Json?
+  contatoEmergenciaNome     String?
+  contatoEmergenciaTelefone String?
+  // True quando colaborador completou o wizard obrigatório. Owner é
+  // considerado completo automaticamente (não precisa do wizard).
+  perfilCompleto        Boolean   @default(false)
+
   // 2FA TOTP (S2 M10)
   totpSecret     String?
   totpEnabled    Boolean   @default(false)
@@ -189,6 +214,9 @@ model Workspace {
   features   WorkspaceFeature[]
   lauraConversations LauraConversation[]
 
+  // Purchase-first: licença vinculada (criada antes do workspace, depois ligada)
+  license License?
+
   /// Política: força owner/admin do workspace a ter 2FA habilitado.
   /// Quando true, middleware redireciona /perfil/seguranca/2fa até habilitarem.
   require2FA Boolean @default(false)
@@ -336,6 +364,14 @@ model WorkspaceMember {
   /// Cadastrado pelo CEO em /gestao/equipe. Texto livre, só visual.
   cargo String?
 
+  /// CPF do colaborador (capturado pelo owner no convite). Espelhado em
+  /// User.cpf quando o usuário aceita o convite.
+  cpf String?
+
+  /// Telefone/WhatsApp do colaborador (capturado pelo owner no convite).
+  /// Espelhado em User.telefone quando o usuário aceita o convite.
+  telefoneWhats String?
+
   /// Funções semânticas do colaborador (enum fixo gerenciado em
   /// lib/equipe/funcoes.ts). Uma pessoa pode ter múltiplas (ex.: trader +
   /// gerente_mesa). Define visibilidade fina nas áreas + agrupamento BI.
@@ -462,6 +498,31 @@ model ContratoTemplateVersao {
 // ============================================
 // ASSINATURAS (Stripe)
 // ============================================
+
+/// Licença purchase-first: criada quando alguém compra ANTES de ter conta.
+/// Quando o cliente clica no link mágico recebido por e-mail e completa o
+/// onboarding (criar senha + dados da empresa), criamos User + Workspace e
+/// ligamos via workspaceId. Status 'pending' até ativação.
+model License {
+  id                   String    @id @default(cuid())
+  codigo               String    @unique // ex: BHG-2026-A4F2X9
+  workspaceId          String?   @unique
+  workspace            Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  stripeCustomerId     String
+  stripeSubscriptionId String?   @unique
+  email                String
+  nomeComprador        String?
+  plano                String // 'starter' | 'pro' | 'enterprise' (slug do Plan)
+  status               String    @default("pending") // pending | active | onboarding | canceled
+  onboardingToken      String?   @unique
+  onboardingExpiresAt  DateTime?
+  metadataJson         Json?
+  createdAt            DateTime  @default(now())
+  ativadaEm            DateTime?
+
+  @@index([email])
+  @@index([status])
+}
 
 model Subscription {
   id                   String    @id @default(cuid())

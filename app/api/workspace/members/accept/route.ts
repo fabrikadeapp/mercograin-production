@@ -112,6 +112,17 @@ export async function POST(req: NextRequest) {
   }
 
   const hashed = await hash(senha, 10)
+  // Pré-popula CPF/telefone se o owner já cadastrou no convite — o wizard
+  // de completar perfil aproveita esses valores como ponto de partida.
+  // CPF é unique: se já houver outro User com esse CPF, ignoramos (evita 500).
+  let cpfToSeed: string | null = null
+  if (member.cpf) {
+    const exists = await db.user.findUnique({
+      where: { cpf: member.cpf },
+      select: { id: true },
+    })
+    if (!exists) cpfToSeed = member.cpf
+  }
   const user = await db.user.create({
     data: {
       nome: nome.trim(),
@@ -119,6 +130,8 @@ export async function POST(req: NextRequest) {
       senha: hashed,
       emailVerificado: true, // o convite por email já valida o endereço
       role: 'user',
+      cpf: cpfToSeed,
+      telefone: member.telefoneWhats ?? null,
     },
   })
 

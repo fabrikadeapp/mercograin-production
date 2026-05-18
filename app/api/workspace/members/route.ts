@@ -7,6 +7,8 @@ import { syncWorkspaceSeats } from '@/lib/stripe/seats'
 import { sendEmail } from '@/lib/email/send'
 import { memberInviteTemplate } from '@/lib/email/templates/member-invite'
 import { checkMutationLimit, rateLimited } from '@/lib/security/mutation-rate-limit'
+import { isValidCPF } from '@/lib/br/documento'
+import { isValidTelefoneBR, onlyDigits } from '@/lib/equipe/rh'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +34,8 @@ const inviteSchema = z.object({
   cargo: z.string().trim().max(120).optional().nullable(),
   areasPermitidas: z.array(z.enum(AREA_VALUES)).optional().default([]),
   funcoes: z.array(z.enum(FUNCAO_VALUES)).optional().default([]),
+  cpf: z.string().trim().min(11).max(20).optional().nullable(),
+  telefoneWhats: z.string().trim().min(10).max(20).optional().nullable(),
 })
 
 function canManageMembers(role: string): boolean {
@@ -50,10 +54,15 @@ export async function GET() {
         status: true,
         cargo: true,
         areasPermitidas: true,
+        funcoes: true,
+        cpf: true,
+        telefoneWhats: true,
         invitedAt: true,
         acceptedAt: true,
         createdAt: true,
-        user: { select: { id: true, nome: true, email: true } },
+        user: {
+          select: { id: true, nome: true, email: true, perfilCompleto: true },
+        },
       },
       orderBy: { createdAt: 'asc' },
     })
@@ -90,7 +99,17 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
-    const { email, role, cargo, areasPermitidas, funcoes } = parsed.data
+    const { email, role, cargo, areasPermitidas, funcoes, cpf, telefoneWhats } = parsed.data
+
+    // Validações extras: CPF e telefone (se fornecidos)
+    const cpfDigits = cpf ? onlyDigits(cpf) : null
+    if (cpfDigits && !isValidCPF(cpfDigits)) {
+      return NextResponse.json({ error: 'CPF inválido' }, { status: 400 })
+    }
+    const telDigits = telefoneWhats ? onlyDigits(telefoneWhats) : null
+    if (telDigits && !isValidTelefoneBR(telDigits)) {
+      return NextResponse.json({ error: 'Telefone inválido' }, { status: 400 })
+    }
 
     // Existe membership desse email?
     const existing = await db.workspaceMember.findUnique({
@@ -121,6 +140,8 @@ export async function POST(req: Request) {
         cargo: cargo || null,
         areasPermitidas,
         funcoes,
+        cpf: cpfDigits,
+        telefoneWhats: telDigits,
       },
     })
 

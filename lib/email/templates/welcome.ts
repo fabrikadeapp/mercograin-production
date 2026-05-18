@@ -4,6 +4,8 @@ export interface WelcomeArgs {
   name: string
   workspaceName?: string
   dashboardUrl?: string
+  /** Quando vier do fluxo purchase-first, exibimos o código da licença. */
+  codigoLicenca?: string
 }
 
 export function welcomeTemplate(args: WelcomeArgs) {
@@ -14,8 +16,13 @@ export function welcomeTemplate(args: WelcomeArgs) {
 
   const stepBox = `padding:14px 16px;border:1px solid ${COLORS.border};border-radius:8px;background-color:${COLORS.bg};margin:0 0 10px 0;`
 
+  const codigoBlock = args.codigoLicenca
+    ? `<p style="margin:0 0 18px 0;font-size:13px;color:${COLORS.textMuted};">Sua licença: <strong style="font-family:'SF Mono','Menlo','Consolas',monospace;color:${COLORS.accent};letter-spacing:1px;">${escapeHtml(args.codigoLicenca)}</strong></p>`
+    : ''
+
   const bodyHtml = `
     <p style="margin:0 0 16px 0;">Olá, <strong style="color:${COLORS.text};">${name}</strong>. Sua conta no <strong>BH Grain</strong> foi criada — bem-vindo(a) a bordo (${ws}).</p>
+    ${codigoBlock}
     <p style="margin:0 0 18px 0;">Para começar a operar, recomendamos três próximos passos:</p>
     <div style="${stepBox}">
       <p style="margin:0 0 4px 0;font-size:14px;font-weight:600;color:${COLORS.text};">1. Cadastrar seu primeiro cliente</p>

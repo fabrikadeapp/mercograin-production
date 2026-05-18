@@ -2,9 +2,11 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
-import { UserPlus, Pencil, Trash2, Mail, X, Check, BarChart3, ArrowRightLeft } from 'lucide-react'
+import { UserPlus, Pencil, Trash2, Mail, X, Check, BarChart3, ArrowRightLeft, Clock } from 'lucide-react'
 import { AREAS, AREA_LABEL, type Area } from '@/lib/areas'
 import { FUNCOES, FUNCAO_LABEL, FUNCAO_AREA_SUGERIDA, type Funcao } from '@/lib/equipe/funcoes'
+import { maskCPF, maskTelefone } from '@/lib/equipe/rh'
+import { isValidCPF } from '@/lib/br/documento'
 
 interface Member {
   id: string
@@ -14,10 +16,12 @@ interface Member {
   cargo: string | null
   funcoes: string[]
   areasPermitidas: string[]
+  cpf: string | null
+  telefoneWhats: string | null
   invitedAt: string | null
   acceptedAt: string | null
   createdAt: string
-  user: { id: string; nome: string | null; email: string } | null
+  user: { id: string; nome: string | null; email: string; perfilCompleto?: boolean } | null
 }
 
 interface Props {
@@ -115,6 +119,7 @@ export function EquipeManager({ initialMembers }: Props) {
               <Th>Áreas</Th>
               <Th>Acesso</Th>
               <Th>Status</Th>
+              <Th>Perfil</Th>
               <Th align="right">Ações</Th>
             </tr>
           </thead>
@@ -122,7 +127,7 @@ export function EquipeManager({ initialMembers }: Props) {
             {members.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     padding: '32px 16px',
                     textAlign: 'center',
@@ -192,6 +197,9 @@ export function EquipeManager({ initialMembers }: Props) {
                     />
                     {STATUS_LABEL[m.status] ?? m.status}
                   </span>
+                </Td>
+                <Td>
+                  <PerfilBadge member={m} />
                 </Td>
                 <Td align="right">
                   <div className="flex items-center gap-1 justify-end">
@@ -665,6 +673,66 @@ function Pill({
   )
 }
 
+function PerfilBadge({ member }: { member: Member }) {
+  // Owner é sempre considerado completo (não faz wizard de colaborador).
+  if (member.role === 'owner') {
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 11,
+          color: 'var(--text-dim)',
+        }}
+      >
+        —
+      </span>
+    )
+  }
+  if (member.status === 'invited') {
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 11,
+          color: 'var(--text-dim)',
+        }}
+      >
+        <Clock className="w-3 h-3" /> Aguardando aceite
+      </span>
+    )
+  }
+  const completo = member.user?.perfilCompleto === true
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '3px 8px',
+        fontSize: 11,
+        borderRadius: 'var(--r-pill)',
+        background: completo ? 'var(--accent-soft)' : 'var(--surface-2)',
+        color: completo ? 'var(--accent)' : 'var(--warning, #d97706)',
+        border: `1px solid ${completo ? 'var(--accent)' : 'var(--border)'}`,
+      }}
+    >
+      {completo ? (
+        <>
+          <Check className="w-3 h-3" /> Completo
+        </>
+      ) : (
+        <>
+          <Clock className="w-3 h-3" /> Pendente
+        </>
+      )}
+    </span>
+  )
+}
+
 function RemoveButton({
   memberId,
   onDone,
@@ -711,6 +779,10 @@ function MemberForm({
 }) {
   const [email, setEmail] = useState(member?.email ?? '')
   const [cargo, setCargo] = useState(member?.cargo ?? '')
+  const [cpf, setCpf] = useState(member?.cpf ? maskCPF(member.cpf) : '')
+  const [telefoneWhats, setTelefoneWhats] = useState(
+    member?.telefoneWhats ? maskTelefone(member.telefoneWhats) : '',
+  )
   const [role, setRole] = useState<'admin' | 'member' | 'viewer'>(
     (member?.role as any) ?? 'member',
   )
@@ -760,6 +832,19 @@ function MemberForm({
       setErr('Marque pelo menos uma área para um membro comum.')
       return
     }
+    // CPF/telefone só são obrigatórios na criação inicial — no edit podem ficar em branco
+    if (mode === 'create') {
+      const cpfDigits = cpf.replace(/\D/g, '')
+      if (!cpfDigits || !isValidCPF(cpfDigits)) {
+        setErr('Informe um CPF válido.')
+        return
+      }
+      const telDigits = telefoneWhats.replace(/\D/g, '')
+      if (telDigits.length < 10) {
+        setErr('Informe o telefone/WhatsApp do colaborador.')
+        return
+      }
+    }
     startTransition(async () => {
       const url =
         mode === 'create'
@@ -768,7 +853,15 @@ function MemberForm({
       const method = mode === 'create' ? 'POST' : 'PATCH'
       const body =
         mode === 'create'
-          ? { email, role, cargo: cargo || null, areasPermitidas: areas, funcoes }
+          ? {
+              email,
+              role,
+              cargo: cargo || null,
+              areasPermitidas: areas,
+              funcoes,
+              cpf: cpf.replace(/\D/g, '') || null,
+              telefoneWhats: telefoneWhats.replace(/\D/g, '') || null,
+            }
           : { role, cargo: cargo || null, areasPermitidas: areas, funcoes }
 
       const res = await fetch(url, {
@@ -853,6 +946,45 @@ function MemberForm({
               }}
             />
           </Field>
+
+          {mode === 'create' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="CPF *">
+                <input
+                  type="text"
+                  value={cpf}
+                  onChange={(e) => setCpf(maskCPF(e.target.value))}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text)',
+                    outline: 'none',
+                    fontSize: 14,
+                  }}
+                />
+              </Field>
+              <Field label="Telefone / WhatsApp *">
+                <input
+                  type="text"
+                  value={telefoneWhats}
+                  onChange={(e) => setTelefoneWhats(maskTelefone(e.target.value))}
+                  placeholder="(00) 0 0000-0000"
+                  inputMode="tel"
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 0,
+                    color: 'var(--text)',
+                    outline: 'none',
+                    fontSize: 14,
+                  }}
+                />
+              </Field>
+            </div>
+          )}
 
           {/* Nível de acesso */}
           <Field label="Nível de acesso">

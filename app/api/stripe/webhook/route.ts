@@ -3,6 +3,13 @@ import { headers } from 'next/headers'
 import type Stripe from 'stripe'
 import { stripe, planFromPriceMetadata } from '@/lib/stripe/server'
 import { db } from '@/lib/db'
+import {
+  gerarCodigoLicenca,
+  gerarOnboardingToken,
+  onboardingExpiresIn,
+} from '@/lib/license/codigo'
+import { sendEmail } from '@/lib/email/send'
+import { licencaCompradaTemplate } from '@/lib/email/templates/licenca-comprada'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -90,6 +97,119 @@ async function upsertSubscription(sub: Stripe.Subscription) {
   await recountWorkspaceMembers(workspaceId)
 }
 
+/**
+ * Purchase-first: cria License em status=pending após pagamento.
+ * NÃO cria User/Workspace — isso só acontece quando o cliente clicar no
+ * link mágico e completar o onboarding em /ativar/[token].
+ *
+ * Idempotente: se já existe License para este stripeSubscriptionId, faz
+ * no-op (Stripe pode reentregar webhooks).
+ */
+async function handlePurchaseFirstSession(session: Stripe.Checkout.Session) {
+  const customerId =
+    typeof session.customer === 'string'
+      ? session.customer
+      : session.customer?.id
+  if (!customerId) {
+    console.warn('[stripe/webhook] purchase-first sem customer')
+    return
+  }
+
+  const subId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id
+
+  // Idempotência — se já criamos a license para essa subscription, sai.
+  if (subId) {
+    const existing = await db.license.findUnique({
+      where: { stripeSubscriptionId: subId },
+    })
+    if (existing) {
+      console.log('[stripe/webhook] license já existe', existing.codigo)
+      return
+    }
+  }
+
+  const meta = session.metadata || {}
+  const email =
+    (meta.email as string | undefined) ||
+    session.customer_email ||
+    session.customer_details?.email ||
+    ''
+  if (!email) {
+    console.error('[stripe/webhook] purchase-first sem email')
+    return
+  }
+  const plano = (meta.plan as string | undefined) || 'pro'
+  const nomeComprador =
+    (meta.nome as string | undefined) ||
+    session.customer_details?.name ||
+    null
+
+  // Gera código único — colisão é improvável (32^6 ≈ 1 bilhão), mas
+  // retry algumas vezes só pra garantir.
+  let codigo = gerarCodigoLicenca()
+  for (let i = 0; i < 5; i++) {
+    const dup = await db.license.findUnique({ where: { codigo } })
+    if (!dup) break
+    codigo = gerarCodigoLicenca()
+  }
+
+  const onboardingToken = gerarOnboardingToken()
+  const onboardingExpiresAt = onboardingExpiresIn(7)
+
+  const license = await db.license.create({
+    data: {
+      codigo,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subId || null,
+      email,
+      nomeComprador,
+      plano,
+      status: 'pending',
+      onboardingToken,
+      onboardingExpiresAt,
+      metadataJson: {
+        cnpj: (meta.cnpj as string | undefined) || null,
+        sessionId: session.id,
+      },
+    },
+  })
+
+  // Resolve nome amigável do plano (cai para slug em uppercase).
+  const planRow = await db.plan.findUnique({ where: { slug: plano } })
+  const planoNome = planRow?.name || plano.toUpperCase()
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    'https://www.profitsync.ia.br'
+  const ativarUrl = `${appUrl}/ativar/${onboardingToken}`
+
+  const tpl = licencaCompradaTemplate({
+    nome: nomeComprador || email,
+    email,
+    codigoLicenca: codigo,
+    planoNome,
+    ativarUrl,
+    validadeDias: 7,
+  })
+
+  await sendEmail({
+    to: email,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    tags: [
+      { name: 'kind', value: 'licenca-comprada' },
+      { name: 'codigo', value: codigo },
+    ],
+  })
+
+  console.log('[stripe/webhook] license criada', license.codigo, 'para', email)
+}
+
 export async function POST(req: Request) {
   const body = await req.text()
   const sig = (await headers()).get('stripe-signature') || ''
@@ -118,6 +238,11 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
+        // Purchase-first: source=purchase-first nos metadata indica que
+        // não existe User/Workspace ainda. Criamos License em status=pending.
+        if (session.metadata?.source === 'purchase-first') {
+          await handlePurchaseFirstSession(session)
+        }
         if (session.mode === 'subscription' && session.subscription) {
           const subId =
             typeof session.subscription === 'string'

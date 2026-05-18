@@ -72,8 +72,10 @@ export function AcceptInviteForm({
         setErr(j.error || j.feedback?.[0] || 'Não foi possível criar sua conta.')
         return
       }
+      // Após criar a conta, vai pro login com next=/perfil/completar.
+      // O middleware também força esse fluxo caso pulasse o redirect.
       router.push(
-        `/auth/login?email=${encodeURIComponent(email)}&next=/dashboard&convite=aceito`,
+        `/auth/login?email=${encodeURIComponent(email)}&next=/perfil/completar&convite=aceito`,
       )
     })
   }
