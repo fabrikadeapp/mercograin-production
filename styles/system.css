@@ -11,41 +11,42 @@
   box-shadow: var(--shadow-card);
 }
 
-.card {
-  background: var(--bg-2);
-  border: 1px solid var(--border-1);
+/* .card é definido em newdb.css com a estética v2 (sem padding default,
+ * surface-1, sh-1). Aqui só preservamos um fallback caso newdb não carregue. */
+.card:not([class*="newdb"]) {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-6);
+  box-shadow: var(--sh-1);
 }
 
   /* ---------- Buttons ---------- */
+/* NewDB v2 — botão primário: lime sólido, sem glow constante, hover suave */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  height: 44px;
-  padding: 0 var(--space-5);
-  border-radius: var(--r-pill);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--r-md);
   background: var(--accent);
   color: var(--accent-ink);
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: -0.01em;
-  box-shadow: var(--shadow-glow);
-  transition: transform 120ms ease, box-shadow 200ms ease, filter 200ms ease;
-  border: 0;
+  transition: background 160ms ease, box-shadow 200ms ease;
+  border: 1px solid transparent;
   cursor: pointer;
 }
 .btn-primary:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+  background: #d4f95f;
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 .btn-primary:active {
-  transform: translateY(0);
-  filter: brightness(0.98);
+  background: var(--accent);
+  box-shadow: none;
 }
 
 .btn-secondary {
@@ -53,21 +54,21 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  height: 44px;
-  padding: 0 var(--space-5);
-  border-radius: var(--r-pill);
-  background: var(--bg-2);
-  color: var(--fg-1);
-  border: 1px solid var(--border-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
   font-family: var(--font-sans);
   font-weight: 500;
-  font-size: 14px;
-  transition: background 200ms ease, border-color 200ms ease, transform 120ms ease;
+  font-size: 13px;
+  transition: background 160ms ease, border-color 160ms ease;
   cursor: pointer;
 }
 .btn-secondary:hover {
-  background: var(--bg-3);
-  border-color: var(--fg-4);
+  background: var(--surface-3);
+  border-color: var(--border-strong);
 }
 
 .btn-ghost {
@@ -75,47 +76,48 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  height: 44px;
-  padding: 0 var(--space-4);
-  border-radius: var(--r-pill);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-md);
   background: transparent;
-  color: var(--fg-2);
-  border: 0;
+  color: var(--text-mute);
+  border: 1px solid transparent;
   font-family: var(--font-sans);
   font-weight: 500;
-  font-size: 14px;
-  transition: color 200ms ease, background 200ms ease;
+  font-size: 13px;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
   cursor: pointer;
 }
 .btn-ghost:hover {
-  color: var(--fg-1);
-  background: var(--bg-2);
+  color: var(--text);
+  background: var(--tint-4pct);
+  border-color: var(--border);
 }
 
 .btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-pill);
-  background: var(--bg-2);
-  color: var(--fg-2);
-  border: 1px solid var(--border-1);
-  transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
   cursor: pointer;
   position: relative;
 }
 .btn-icon:hover {
-  background: var(--bg-3);
-  color: var(--fg-1);
-  border-color: var(--border-2);
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--border-strong);
 }
 
 .btn-sm {
-  height: 32px;
+  height: 28px;
   padding: 0 var(--space-3);
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
   /* ---------- Pills & Chips ---------- */
