@@ -74,6 +74,17 @@
 - `935a185` — /status, LGPD, Laura.IA fundação
 - `fb32196` — pg-backup + atalhos teclado
 
+## Domínios
+
+- **profitsync.ia.br** — desenvolvimento/staging atual.
+- **bhgrain.com** — domínio definitivo a comprar quando for vender.
+  Quando comprar:
+  1. Apontar DNS pra Railway
+  2. Configurar Resend com DKIM/SPF/DMARC do bhgrain.com
+  3. Atualizar `EMAIL_FROM=BH Grain <noreply@bhgrain.com>`
+  4. Atualizar `NEXT_PUBLIC_APP_URL` no Railway
+  5. Atualizar links em templates de email
+
 ## Pendências reconhecidas (para próximas sessões)
 
 - DKIM Resend (sua ação manual no DNS)
