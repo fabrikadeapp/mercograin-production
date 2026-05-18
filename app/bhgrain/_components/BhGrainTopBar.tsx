@@ -153,12 +153,14 @@ export function BhGrainTopBar({
                   href={AREA_ENTRY[area]}
                   className="relative whitespace-nowrap flex items-center gap-1.5 transition"
                   style={{
-                    padding: '8px 14px',
-                    borderRadius: 'var(--r-pill)',
+                    padding: '10px 14px',
                     fontSize: 13,
                     color: active ? 'var(--text)' : 'var(--text-mute)',
-                    background: active ? 'var(--tint-4pct)' : 'transparent',
-                    fontWeight: active ? 600 : 400,
+                    fontWeight: active ? 600 : 500,
+                    borderBottom: active
+                      ? '2px solid var(--accent)'
+                      : '2px solid transparent',
+                    marginBottom: -2,
                   }}
                 >
                   {AREA_LABEL[area]}
@@ -255,7 +257,7 @@ export function BhGrainTopBar({
                 color: 'var(--text)',
                 cursor: 'pointer',
               }}
-              title="Menu do usuário"
+              aria-label="Menu do usuário"
             >
               {initials}
             </button>
@@ -418,12 +420,15 @@ export function BhGrainTopBar({
                     href={item.href}
                     className="relative whitespace-nowrap flex items-center gap-1.5 transition"
                     style={{
-                      padding: '5px 11px',
-                      borderRadius: 'var(--r-pill)',
+                      padding: '6px 12px 6px 12px',
                       fontSize: 12,
                       color: active ? 'var(--text)' : 'var(--text-mute)',
-                      background: active ? 'var(--surface-2)' : 'transparent',
                       fontWeight: active ? 600 : 400,
+                      position: 'relative',
+                      borderBottom: active
+                        ? '2px solid var(--accent)'
+                        : '2px solid transparent',
+                      marginBottom: -2,
                     }}
                   >
                     {item.label}

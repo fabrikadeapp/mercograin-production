@@ -16,6 +16,7 @@ import { ConversaDrawer } from './ConversaDrawer'
 import { DateRangePopover } from './DateRangePopover'
 import { FiltrosAvancadosDrawer, FILTROS_VAZIO, countFiltrosAvancadosAtivos, type FiltrosAvancados } from './FiltrosAvancadosDrawer'
 import { Chip, FilterBar, FilterLabel } from '@/components/ui/newdb'
+import { FunctionToolbar } from './FunctionToolbar'
 import { DashboardFiltersProvider } from './DashboardFiltersContext'
 
 interface Props {
@@ -186,6 +187,9 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
           )}
         </div>
       </header>
+
+      {/* Toolbar de funções rápidas — Glow buttons da área Mesa */}
+      <FunctionToolbar area="mesa" />
 
       {/* FilterBar — conforme design: período (incl. Personalizar) + commodity + Filtros avançados */}
       <FilterBar

@@ -85,10 +85,31 @@ export function HealthCard() {
   return (
     <section
       className="sec-card"
-      style={{ padding: '6px 14px', minHeight: 36 }}
+      style={{
+        padding: '0 14px',
+        height: 32,
+        display: 'flex',
+        alignItems: 'center',
+      }}
     >
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex items-center gap-1.5 shrink-0">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            flexShrink: 0,
+            lineHeight: 1,
+          }}
+        >
           <Activity className="w-3 h-3" style={{ color: 'var(--text-dim)' }} />
           <span
             style={{
@@ -97,30 +118,47 @@ export function HealthCard() {
               color: 'var(--text-dim)',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
+              lineHeight: 1,
             }}
           >
             Health · integrações
           </span>
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
           {loading ? (
-            <div className="flex gap-2 justify-between">
+            <div
+              className="flex gap-2 justify-between"
+              style={{ width: '100%' }}
+            >
               {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-5 w-24" />
+                <Skeleton key={i} className="h-4 w-20" />
               ))}
             </div>
           ) : error ? (
-            <ErrorState message="Erro" />
+            <InlineState message="Erro" tone="danger" />
           ) : !data?.integrations || data.integrations.length === 0 ? (
-            <EmptyState message="Aguardando primeiro cron…" />
+            <InlineState message="Aguardando primeiro cron…" tone="dim" />
           ) : (
             <ul
-              className="flex items-center"
               style={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: 4,
                 justifyContent: 'space-between',
                 width: '100%',
+                margin: 0,
+                padding: 0,
+                listStyle: 'none',
+                lineHeight: 1,
               }}
             >
               {data.integrations.map((h) => (
@@ -132,13 +170,54 @@ export function HealthCard() {
 
         <Link
           href="/admin/bhgrain/integracoes"
-          className="shrink-0"
-          style={{ fontSize: 10, color: 'var(--text-dim)' }}
+          style={{
+            flexShrink: 0,
+            fontSize: 10,
+            color: 'var(--text-dim)',
+            textDecoration: 'none',
+            lineHeight: 1,
+          }}
         >
           Detalhes →
         </Link>
       </div>
     </section>
+  )
+}
+
+/** Estado inline (erro/empty) inline na barra — sem padding vertical. */
+function InlineState({ message, tone }: { message: string; tone: 'danger' | 'dim' }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        fontSize: 11,
+        color: tone === 'danger' ? 'var(--danger, #ff5050)' : 'var(--text-dim)',
+        lineHeight: 1,
+      }}
+    >
+      {tone === 'danger' && (
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 14,
+            height: 14,
+            borderRadius: 3,
+            border: '1px solid currentColor',
+            fontSize: 9,
+            fontWeight: 700,
+          }}
+        >
+          !
+        </span>
+      )}
+      <span>{message}</span>
+    </div>
   )
 }
 
@@ -234,12 +313,12 @@ function IntegrationChip({ health: h }: { health: IntegrationHealth }) {
           display: 'inline-flex',
           alignItems: 'center',
           gap: 5,
-          padding: '2px 8px',
+          padding: '1px 8px',
           borderRadius: 'var(--r-pill)',
           background: 'var(--surface-2)',
           border: '1px solid var(--border)',
           fontSize: 10,
-          lineHeight: 1.4,
+          lineHeight: 1,
           opacity: paused ? 0.55 : 1,
           cursor: pending ? 'wait' : 'pointer',
           transition: '150ms ease',
