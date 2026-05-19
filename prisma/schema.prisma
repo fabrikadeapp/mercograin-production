@@ -251,6 +251,8 @@ model LauraConversation {
   @@unique([workspaceId, canal, handle])
   @@index([status, ultimaMensagemEm])
   @@index([workspaceId])
+  // HOT: listagem de conversas por workspace ordenadas por última msg.
+  @@index([workspaceId, ultimaMensagemEm])
 }
 
 /// Mensagem dentro de uma conversa Laura.
@@ -889,6 +891,11 @@ model Proposta {
   @@index([loteEstoqueRefId])
   @@index([gerenteContaId])
   @@index([vendedorId])
+  // HOT: dashboard-resumo carrega propostas por workspace ordenadas por atualizadaEm DESC e por criadaEm em janela.
+  @@index([workspaceId, atualizadaEm])
+  @@index([workspaceId, criadaEm])
+  // HOT: agregações por (workspaceId, status IN [...]) com filtro temporal (sumFechadasNoMes, funil).
+  @@index([workspaceId, status, atualizadaEm])
 
   // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
   ofertaOrigem Oferta?
@@ -982,6 +989,8 @@ model Contrato {
   @@index([contratoOriginalId])
   @@index([gerenteContaId])
   @@index([vendedorId])
+  // HOT: listagens de contrato por workspace ordenadas por criadoEm DESC.
+  @@index([workspaceId, criadoEm])
 }
 
 // ============================================
@@ -1088,6 +1097,8 @@ model AuditLog {
   @@index([entidade])
   @@index([criadoEm])
   @@index([workspaceId])
+  // HOT: telas de auditoria filtram por workspace e ordenam por criadoEm DESC.
+  @@index([workspaceId, criadoEm])
 }
 
 // ============================================
@@ -2167,6 +2178,8 @@ model NotaFiscal {
   @@index([dataEmissao])
   @@index([chave])
   @@index([contratoId])
+  // HOT: hub fiscal — count/aggregate por workspace+dataEmissao range; listagem ordenada por dataEmissao DESC.
+  @@index([workspaceId, dataEmissao])
 }
 
 model CartaCorrecao {
@@ -2407,6 +2420,8 @@ model MovimentoFinanceiro {
   @@index([workspaceId, tipo, natureza])
   @@index([centroCustoId])
   @@index([safraId])
+  // HOT: dashboard financeiro — groupBy tipo com range de data por workspace.
+  @@index([workspaceId, tipo, data])
 }
 
 /// Talhão / Gleba do produtor.
