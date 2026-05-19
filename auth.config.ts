@@ -209,7 +209,8 @@ export const authConfig = {
                   (user as any).totpSecret as string
                 ),
               })
-              ok = totp.validate({ token: totpCode, window: 1 }) !== null
+              // window: 2 aceita ±60s (margem pra digitação + jitter de relógio cliente/servidor)
+              ok = totp.validate({ token: totpCode, window: 2 }) !== null
             }
 
             if (!ok && recoveryCode) {
