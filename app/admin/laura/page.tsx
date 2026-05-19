@@ -107,7 +107,7 @@ async function loadTopWorkspaces(sinceDays: number): Promise<WorkspaceAgg[]> {
     LEFT JOIN "Workspace" w ON w.id = c."workspaceId"
     WHERE m."createdAt" >= ${since}
       AND m."llmProvider" IS NOT NULL
-    GROUP BY c."workspaceId", w."nome"
+    GROUP BY c."workspaceId", w."name"
     ORDER BY "custoMicros" DESC, mensagens DESC
     LIMIT 10
   `
