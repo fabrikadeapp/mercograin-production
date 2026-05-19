@@ -248,7 +248,14 @@ export const authConfig = {
             email: user.email,
             name: user.nome,
           }
-        } catch (error) {
+        } catch (error: any) {
+          // 2FA_REQUIRED e 2FA_INVALID precisam chegar no frontend pro modal
+          // exibir o campo TOTP. NextAuth empacota em CredentialsSignin
+          // automaticamente, mas a mensagem é preservada em res.error.
+          const msg = String(error?.message || '')
+          if (msg === '2FA_REQUIRED' || msg === '2FA_INVALID' || msg.startsWith('Muitas tentativas')) {
+            throw error
+          }
           console.error('Auth error:', error)
           return null
         }
