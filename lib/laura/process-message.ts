@@ -16,8 +16,47 @@
  */
 
 import { db } from '@/lib/db'
-import { classifyIntent, extractOrcamento } from './intent'
+import {
+  classifyIntent,
+  extractOrcamento,
+  type LLMTelemetry,
+} from './intent'
 import { isFeatureEnabled } from '@/lib/features'
+
+/**
+ * Mescla múltiplas telemetrias de chamadas LLM em um único registro pra gravar
+ * em LauraMessage. Soma tokens/custo/latência; preserva provider+model da
+ * última chamada bem-sucedida; concatena erros distintos.
+ */
+function mergeTelemetry(parts: LLMTelemetry[]): LLMTelemetry | null {
+  const real = parts.filter((p) => p.provider !== 'none' || p.errorMsg)
+  if (real.length === 0) return null
+  const successful = real.filter((p) => !p.errorMsg && p.provider !== 'none')
+  const ref = successful[successful.length - 1] ?? real[real.length - 1]
+  const errs = real.map((p) => p.errorMsg).filter(Boolean) as string[]
+  return {
+    provider: ref.provider,
+    model: ref.model,
+    tokensIn: real.reduce((s, p) => s + p.tokensIn, 0),
+    tokensOut: real.reduce((s, p) => s + p.tokensOut, 0),
+    costUsdMicros: real.reduce((s, p) => s + p.costUsdMicros, 0),
+    latencyMs: real.reduce((s, p) => s + p.latencyMs, 0),
+    errorMsg: errs.length ? errs.join(' | ').slice(0, 1000) : null,
+  }
+}
+
+function telemetryToData(t: LLMTelemetry | null) {
+  if (!t) return {}
+  return {
+    llmProvider: t.provider === 'none' ? null : t.provider,
+    llmModel: t.model === 'none' ? null : t.model,
+    tokensIn: t.tokensIn || null,
+    tokensOut: t.tokensOut || null,
+    custoUsdMicros: t.costUsdMicros || null,
+    latencyMs: t.latencyMs || null,
+    errorMsg: t.errorMsg,
+  }
+}
 
 export interface ProcessMessageInput {
   workspaceId: string
@@ -95,22 +134,35 @@ export async function processIncomingMessage(
 
   // Classifica intent
   const textoParaAnalise = input.transcricao ?? input.mensagem
-  let intentResp
-  try {
-    intentResp = await classifyIntent(textoParaAnalise)
-  } catch (err) {
-    console.error('[laura] classify failed:', err)
+  const telemetryParts: LLMTelemetry[] = []
+  const intentRes = await classifyIntent(textoParaAnalise)
+  telemetryParts.push(intentRes.telemetry)
+  const intentResp = intentRes.data
+
+  await db.lauraConversation.update({
+    where: { id: conv.id },
+    data: { intentDetectado: intentResp.intent },
+  })
+
+  // Se classificação falhou de vez (sem provider real) e fallback heurístico
+  // não detectou orçamento, persistimos telemetry e saímos sem chamar extrator.
+  if (
+    intentRes.telemetry.provider === 'none' &&
+    intentResp.intent !== 'orcamento'
+  ) {
+    const merged = mergeTelemetry(telemetryParts)
+    if (merged) {
+      await db.lauraMessage.update({
+        where: { id: msg.id },
+        data: telemetryToData(merged),
+      })
+    }
     return {
       conversationId: conv.id,
       messageId: msg.id,
       proximaAcao: 'classificação IA falhou — revisar manualmente',
     }
   }
-
-  await db.lauraConversation.update({
-    where: { id: conv.id },
-    data: { intentDetectado: intentResp.intent },
-  })
 
   // Se é orçamento + cliente identificado + alta confiança → cria proposta pendente
   if (
@@ -119,7 +171,9 @@ export async function processIncomingMessage(
     intentResp.confianca >= 0.6
   ) {
     try {
-      const extracao = await extractOrcamento(textoParaAnalise)
+      const extracaoRes = await extractOrcamento(textoParaAnalise)
+      telemetryParts.push(extracaoRes.telemetry)
+      const extracao = extracaoRes.data
       if (
         extracao.confianca >= 0.5 &&
         extracao.quantidade &&
@@ -139,9 +193,14 @@ export async function processIncomingMessage(
           subtotal,
           origem: `${input.canal}:${input.handle}`,
         })
+        const merged = mergeTelemetry(telemetryParts)
         await db.lauraMessage.update({
           where: { id: msg.id },
-          data: { propostaId: proposta.id, extracao: extracao as any },
+          data: {
+            propostaId: proposta.id,
+            extracao: extracao as any,
+            ...telemetryToData(merged),
+          },
         })
         await db.lauraConversation.update({
           where: { id: conv.id },
@@ -157,6 +216,13 @@ export async function processIncomingMessage(
         }
       }
       // Extração com baixa confiança — pede humano
+      const merged = mergeTelemetry(telemetryParts)
+      if (merged) {
+        await db.lauraMessage.update({
+          where: { id: msg.id },
+          data: telemetryToData(merged),
+        })
+      }
       return {
         conversationId: conv.id,
         messageId: msg.id,
@@ -165,6 +231,25 @@ export async function processIncomingMessage(
       }
     } catch (err) {
       console.error('[laura] extractOrcamento failed:', err)
+      const errMsg = err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500)
+      const merged = mergeTelemetry([
+        ...telemetryParts,
+        {
+          provider: 'none',
+          model: 'none',
+          tokensIn: 0,
+          tokensOut: 0,
+          costUsdMicros: 0,
+          latencyMs: 0,
+          errorMsg: errMsg,
+        },
+      ])
+      if (merged) {
+        await db.lauraMessage.update({
+          where: { id: msg.id },
+          data: telemetryToData(merged),
+        })
+      }
       return {
         conversationId: conv.id,
         messageId: msg.id,
@@ -179,6 +264,14 @@ export async function processIncomingMessage(
     where: { id: conv.id },
     data: { status: 'aguardando_humano' },
   })
+
+  const merged = mergeTelemetry(telemetryParts)
+  if (merged) {
+    await db.lauraMessage.update({
+      where: { id: msg.id },
+      data: telemetryToData(merged),
+    })
+  }
 
   return {
     conversationId: conv.id,

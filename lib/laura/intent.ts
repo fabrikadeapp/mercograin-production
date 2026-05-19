@@ -10,6 +10,33 @@
 import { z } from 'zod'
 import { getLLMProvider, type ChatMessage } from './llm-provider'
 
+/**
+ * Telemetria capturada de uma chamada LLM (intent ou extração).
+ * Caller persiste em LauraMessage.
+ */
+export interface LLMTelemetry {
+  provider: string
+  model: string
+  tokensIn: number
+  tokensOut: number
+  costUsdMicros: number
+  latencyMs: number
+  /** Mensagem de erro se a chamada falhou (e caímos pro fallback). */
+  errorMsg: string | null
+}
+
+function emptyTelemetry(errorMsg: string | null = null): LLMTelemetry {
+  return {
+    provider: 'none',
+    model: 'none',
+    tokensIn: 0,
+    tokensOut: 0,
+    costUsdMicros: 0,
+    latencyMs: 0,
+    errorMsg,
+  }
+}
+
 // ----------------------------------------------------------------------------
 // INTENT CLASSIFIER
 // ----------------------------------------------------------------------------
@@ -45,21 +72,49 @@ Classifique a mensagem em UMA das categorias:
 Retorne JSON estritamente neste formato:
 { "intent": "<categoria>", "confianca": 0.0-1.0, "motivo": "breve explicação" }`
 
+export interface ClassifyIntentResult {
+  data: z.infer<typeof intentSchema>
+  telemetry: LLMTelemetry
+}
+
 export async function classifyIntent(
   mensagem: string,
-): Promise<z.infer<typeof intentSchema>> {
+): Promise<ClassifyIntentResult> {
   const llm = getLLMProvider()
   const messages: ChatMessage[] = [
     { role: 'system', content: INTENT_SYSTEM_PROMPT },
     { role: 'user', content: mensagem },
   ]
-  const resp = await llm.chat({ messages, jsonMode: true, temperature: 0.1 })
   try {
-    const parsed = intentSchema.parse(JSON.parse(resp.content))
-    return parsed
+    const resp = await llm.chat({ messages, jsonMode: true, temperature: 0.1 })
+    const telemetry: LLMTelemetry = {
+      provider: resp.provider,
+      model: resp.model,
+      tokensIn: resp.tokensIn,
+      tokensOut: resp.tokensOut,
+      costUsdMicros: resp.costUsdMicros,
+      latencyMs: resp.latencyMs,
+      errorMsg: null,
+    }
+    try {
+      const parsed = intentSchema.parse(JSON.parse(resp.content))
+      return { data: parsed, telemetry }
+    } catch {
+      // LLM respondeu mas conteúdo não bateu schema → fallback heurístico,
+      // mantém telemetry da chamada que aconteceu
+      return {
+        data: fallbackClassify(mensagem),
+        telemetry: { ...telemetry, errorMsg: 'schema_parse_failed' },
+      }
+    }
   } catch (err) {
-    // Fallback heurístico se LLM falhar
-    return fallbackClassify(mensagem)
+    // LLM falhou (rede / quota) → fallback heurístico, telemetry zerada com erro
+    return {
+      data: fallbackClassify(mensagem),
+      telemetry: emptyTelemetry(
+        err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500),
+      ),
+    }
   }
 }
 
@@ -114,25 +169,52 @@ Retorne JSON ESTRITAMENTE neste formato. Use null para campos não mencionados:
   "confianca": 0.0-1.0
 }`
 
+export interface ExtractOrcamentoResult {
+  data: z.infer<typeof orcamentoSchema>
+  telemetry: LLMTelemetry
+}
+
 export async function extractOrcamento(
   mensagem: string,
-): Promise<z.infer<typeof orcamentoSchema>> {
+): Promise<ExtractOrcamentoResult> {
   const llm = getLLMProvider()
   const messages: ChatMessage[] = [
     { role: 'system', content: EXTRATOR_SYSTEM_PROMPT },
     { role: 'user', content: mensagem },
   ]
-  const resp = await llm.chat({ messages, jsonMode: true, temperature: 0.1 })
+  const emptyData: z.infer<typeof orcamentoSchema> = {
+    tipo: 'indefinido',
+    grao: 'outro',
+    quantidade: null,
+    unidade: 'sc',
+    precoSc: null,
+    confianca: 0,
+  }
   try {
-    return orcamentoSchema.parse(JSON.parse(resp.content))
-  } catch {
+    const resp = await llm.chat({ messages, jsonMode: true, temperature: 0.1 })
+    const telemetry: LLMTelemetry = {
+      provider: resp.provider,
+      model: resp.model,
+      tokensIn: resp.tokensIn,
+      tokensOut: resp.tokensOut,
+      costUsdMicros: resp.costUsdMicros,
+      latencyMs: resp.latencyMs,
+      errorMsg: null,
+    }
+    try {
+      return { data: orcamentoSchema.parse(JSON.parse(resp.content)), telemetry }
+    } catch {
+      return {
+        data: emptyData,
+        telemetry: { ...telemetry, errorMsg: 'schema_parse_failed' },
+      }
+    }
+  } catch (err) {
     return {
-      tipo: 'indefinido',
-      grao: 'outro',
-      quantidade: null,
-      unidade: 'sc',
-      precoSc: null,
-      confianca: 0,
+      data: emptyData,
+      telemetry: emptyTelemetry(
+        err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500),
+      ),
     }
   }
 }

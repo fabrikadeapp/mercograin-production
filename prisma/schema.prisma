@@ -266,13 +266,18 @@ model LauraMessage {
   llmModel       String?           @db.VarChar(60)
   tokensIn       Int?
   tokensOut      Int?
-  custoUsd       Decimal?          @db.Decimal(10, 6)
+  /// Custo em micro-USD (1 USD = 1_000_000). Evita imprecisão de float em agregações.
+  custoUsdMicros Int?
+  latencyMs      Int?
+  errorMsg       String?           @db.Text
   propostaId     String?
   extracao       Json?
 
   createdAt DateTime @default(now())
 
   @@index([conversationId, createdAt])
+  @@index([createdAt])
+  @@index([llmProvider, createdAt])
 }
 
 /// Feature flag por workspace. Permite super-admin habilitar/desabilitar

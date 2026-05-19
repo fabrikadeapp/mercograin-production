@@ -16,6 +16,7 @@ import {
   Tags,
   LineChart,
   HardDriveDownload,
+  Bot,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -44,6 +45,7 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: 'Operacional',
   },
   { href: '/admin/cotacoes', icon: Activity, label: 'Fontes cotação' },
+  { href: '/admin/laura', icon: Bot, label: 'Laura.IA' },
   { href: '/admin/design', icon: LineChart, label: 'Tema de design' },
   { href: '/admin/infra', icon: Server, label: 'Infraestrutura' },
   { href: '/admin/backups', icon: HardDriveDownload, label: 'Backups' },

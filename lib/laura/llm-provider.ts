@@ -28,6 +28,10 @@ export interface ChatCompletionResponse {
   tokensOut: number
   /** Custo estimado em USD (best-effort). */
   costUsd: number
+  /** Custo estimado em micro-USD (1 USD = 1_000_000). Persistido como Int. */
+  costUsdMicros: number
+  /** Latência da chamada (ms). */
+  latencyMs: number
   provider: string
   model: string
 }
@@ -36,6 +40,8 @@ export interface LLMProvider {
   name: string
   chat(req: ChatCompletionRequest): Promise<ChatCompletionResponse>
 }
+
+import { calcCostMicros } from './pricing'
 
 // ============================================================================
 // OpenRouter — modelos free + pagos, com fallback chain
@@ -105,6 +111,7 @@ class OpenRouterProvider implements LLMProvider {
       body.response_format = { type: 'json_object' }
     }
 
+    const t0 = Date.now()
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -123,14 +130,33 @@ class OpenRouterProvider implements LLMProvider {
     }
 
     const json = await res.json()
+    const latencyMs = Date.now() - t0
     const content = json.choices?.[0]?.message?.content ?? ''
     const usage = json.usage ?? {}
+    const tokensIn = usage.prompt_tokens ?? 0
+    const tokensOut = usage.completion_tokens ?? 0
+    // OpenRouter pode devolver `usage.cost` (em USD) — preferir esse valor
+    const override =
+      typeof usage.cost === 'number'
+        ? usage.cost
+        : typeof usage.total_cost === 'number'
+          ? usage.total_cost
+          : undefined
+    const costUsdMicros = calcCostMicros(
+      'openrouter',
+      model,
+      tokensIn,
+      tokensOut,
+      override,
+    )
 
     return {
       content,
-      tokensIn: usage.prompt_tokens ?? 0,
-      tokensOut: usage.completion_tokens ?? 0,
-      costUsd: 0,
+      tokensIn,
+      tokensOut,
+      costUsd: costUsdMicros / 1_000_000,
+      costUsdMicros,
+      latencyMs,
       provider: 'openrouter',
       model,
     }
@@ -166,6 +192,7 @@ class GroqProvider implements LLMProvider {
       body.response_format = { type: 'json_object' }
     }
 
+    const t0 = Date.now()
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -180,14 +207,20 @@ class GroqProvider implements LLMProvider {
     }
 
     const json = await res.json()
+    const latencyMs = Date.now() - t0
     const content = json.choices?.[0]?.message?.content ?? ''
     const usage = json.usage ?? {}
+    const tokensIn = usage.prompt_tokens ?? 0
+    const tokensOut = usage.completion_tokens ?? 0
+    const costUsdMicros = calcCostMicros('groq', model, tokensIn, tokensOut)
 
     return {
       content,
-      tokensIn: usage.prompt_tokens ?? 0,
-      tokensOut: usage.completion_tokens ?? 0,
+      tokensIn,
+      tokensOut,
       costUsd: 0,
+      costUsdMicros,
+      latencyMs,
       provider: 'groq',
       model,
     }
@@ -257,6 +290,7 @@ class OpenAIProvider implements LLMProvider {
       body.response_format = { type: 'json_object' }
     }
 
+    const t0 = Date.now()
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -271,19 +305,20 @@ class OpenAIProvider implements LLMProvider {
     }
 
     const json = await res.json()
+    const latencyMs = Date.now() - t0
     const content = json.choices?.[0]?.message?.content ?? ''
     const usage = json.usage ?? {}
-
-    // Preço aproximado gpt-4o-mini: $0.150 / 1M in, $0.600 / 1M out
-    const costUsd =
-      ((usage.prompt_tokens ?? 0) * 0.15 + (usage.completion_tokens ?? 0) * 0.6) /
-      1_000_000
+    const tokensIn = usage.prompt_tokens ?? 0
+    const tokensOut = usage.completion_tokens ?? 0
+    const costUsdMicros = calcCostMicros('openai', model, tokensIn, tokensOut)
 
     return {
       content,
-      tokensIn: usage.prompt_tokens ?? 0,
-      tokensOut: usage.completion_tokens ?? 0,
-      costUsd,
+      tokensIn,
+      tokensOut,
+      costUsd: costUsdMicros / 1_000_000,
+      costUsdMicros,
+      latencyMs,
       provider: 'openai',
       model,
     }
@@ -307,6 +342,8 @@ class MockProvider implements LLMProvider {
       tokensIn: lastUser.length,
       tokensOut: 20,
       costUsd: 0,
+      costUsdMicros: 0,
+      latencyMs: 0,
       provider: 'mock',
       model: 'mock-1',
     }
