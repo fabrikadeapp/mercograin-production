@@ -108,7 +108,8 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/admin', req.url))
     }
 
-    if (!hasWorkspace && !isOnboardingPath && !isPublic) {
+    // Super-admin não precisa de onboarding/workspace — pula essa regra.
+    if (!hasWorkspace && !isOnboardingPath && !isPublic && !isAdmin) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 
