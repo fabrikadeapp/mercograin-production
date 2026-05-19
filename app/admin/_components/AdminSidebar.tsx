@@ -169,7 +169,7 @@ export function AdminSidebar({
         </Link>
         <button
           type="button"
-          onClick={() => signOut()}
+          onClick={() => signOut({ callbackUrl: '/' })}
           className="nav-item w-full text-left"
         >
           <LogOut className="h-4 w-4 shrink-0" />
