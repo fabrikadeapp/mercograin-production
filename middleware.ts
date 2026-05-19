@@ -99,8 +99,12 @@ export default auth((req) => {
     }
 
     // Super-admin Mercograin nunca passa pelo onboarding nem assinatura —
-    // ele não opera workspace nenhum, só o /admin. Manda direto pra lá.
-    if (isAdmin && !hasWorkspace) {
+    // ele só opera /admin. Manda direto pra lá, EXCETO se estiver em rotas
+    // legítimas pra super-admin: /perfil/seguranca (ativar 2FA), /perfil,
+    // ou /api/* (chamadas internas do app).
+    const isPerfilPath = path === '/perfil' || path.startsWith('/perfil/')
+    const isApiPath = path.startsWith('/api/')
+    if (isAdmin && !hasWorkspace && !isPerfilPath && !isApiPath && !isPublic && !path.startsWith('/auth')) {
       return NextResponse.redirect(new URL('/admin', req.url))
     }
 
