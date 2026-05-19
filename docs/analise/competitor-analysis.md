@@ -1,5 +1,7 @@
 # Análise Competitiva — BH Grain / Mercograin
-**Versão:** 1.0 · **Data:** 2026-05-19 · **Autor:** Atlas (Business Analyst)
+**Versão:** 2.0 (recalibrado) · **Data:** 2026-05-19 · **Autor:** Atlas (Business Analyst)
+
+> **Nota de calibração**: este documento mantém o mapeamento competitivo (lacunas, SWOT, scores), que é factualmente correto. Para projeções de mercado e receita, ver `project-brief.md` v2 (com churn 10%, CAC R$ 3,5k, conversões realistas BR).
 
 ## Sumário Executivo
 
@@ -302,32 +304,34 @@ Recomendado: #2 — destaca o diferencial único (Laura.IA).
 
 ---
 
-## 6. Roadmap competitivo (12 meses)
+## 6. Roadmap competitivo (12 meses) — recalibrado v2
 
 ### Q1 2026 — Fundação
-- Lançar com 10 corretoras pioneer (preço promo R$ 497/mês)
-- Coletar 5 cases documentados
+- Lançar com 5-8 corretoras pioneer (preço promo R$ 497/mês)
+- Coletar 3-5 cases documentados
 - Habilitar Stripe prod
 - DNS SPF/DKIM/DMARC ajustado
+- **Meta**: 5-8 clientes, R$ 3-5k MRR
 
 ### Q2 2026 — Validação
-- Lançamento público (R$ 697/1997/5997)
-- Conteúdo: 1 case study/semana, 1 webinar/mês
+- Lançamento público (R$ 697/1997/5997) + plano Mini R$ 297
+- Conteúdo: 1 case study/mês, 1 webinar/trimestre
 - Indicação: 1 mês grátis para quem indica
-- Meta: 30 clientes, R$ 35k MRR
+- **Meta realista**: 15-20 clientes, R$ 12-18k MRR
 
 ### Q3 2026 — Aceleração
-- Presença em Show Rural Coopavel (ago) ou Agrishow (mai/27)
-- Contratação 1 vendedor + 1 CS
-- Partnership com 1 cooperativa (white-label pilot)
-- API pública (Pro+) + marketplace de integrações
-- Meta: 60 clientes, R$ 90k MRR
+- Presença em Show Rural Coopavel (ago) ou similar regional
+- Contratação 1 vendedor (após validar canal)
+- Tentar partnership com 1 cooperativa (pilot grátis)
+- **Meta realista**: 28-35 clientes, R$ 25-40k MRR
 
-### Q4 2026 — Expansão
-- Captação seed R$ 2-5M (se métricas válidas)
-- Time 4-6 pessoas
-- Expansão para 2 cooperativas + 1 vertical adjacente (algodão, café)
-- Meta: 100+ clientes, R$ 180k MRR
+### Q4 2026 — Crescimento
+- Considerar captação seed (R$ 1,5-2M) se MRR > R$ 50k
+- Time 3-4 pessoas
+- API pública v1
+- **Meta realista**: 38-50 clientes, R$ 55-75k MRR
+
+**Importante**: metas v1 (100 clientes, R$ 180k MRR no Q4) eram cenário "muito bom" disfarçado. Estas metas v2 refletem trajetória base case honesta.
 
 ---
 
@@ -377,16 +381,22 @@ Recomendado: #2 — destaca o diferencial único (Laura.IA).
 2. **Partnership com 1 cooperativa** (mesmo pilot, mesmo grátis) — credibilidade
 3. **Calculadora de ROI** no marketing — "quanto você perde com Excel?"
 
-### Métricas a perseguir
+### Métricas a perseguir (recalibrado v2 — honesto)
 
 | Métrica | Q1 | Q2 | Q3 | Q4 |
 |---|---|---|---|---|
-| Clientes pagantes | 10 | 30 | 60 | 100 |
-| MRR (R$) | 7k | 35k | 90k | 180k |
-| Churn mensal | <8% | <6% | <5% | <4% |
-| NPS | >40 | >50 | >55 | >60 |
-| CAC | <R$ 1.500 | <R$ 1.200 | <R$ 1.000 | <R$ 800 |
-| LTV/CAC | >15x | >25x | >35x | >50x |
+| Clientes pagantes | 5-8 | 15-20 | 28-35 | 38-50 |
+| MRR (R$) | 3-5k | 12-18k | 25-40k | 55-75k |
+| Churn mensal | <15% | <12% | <10% | <8% |
+| NPS | >30 | >40 | >45 | >50 |
+| CAC | <R$ 5.000 | <R$ 4.500 | <R$ 4.000 | <R$ 3.500 |
+| LTV/CAC | >2x | >2,5x | >3x | >3,5x |
+
+**Realidade SaaS B2B BR ano 1**:
+- Churn começa alto (10-15%) e cai devagar com onboarding melhor e cases
+- CAC continua caro (R$ 3-5k blended) — agro tem ciclo longo
+- LTV/CAC 3x+ é saudável (não os 39x da v1)
+- NPS >50 só com 6+ meses de uso real do cliente
 
 ---
 

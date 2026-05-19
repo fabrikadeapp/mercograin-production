@@ -1,7 +1,9 @@
 # Project Brief — BH Grain / Mercograin
-**Versão:** 1.0 · **Data:** 2026-05-19 · **Autor:** Atlas (Business Analyst)
+**Versão:** 2.0 (recalibrado) · **Data:** 2026-05-19 · **Autor:** Atlas (Business Analyst)
 
 > Documento estratégico consolidado. Use para apresentação a investidores, onboarding de sócios/vendedores e decisões de roadmap.
+>
+> **Nota de calibração v2.0**: premissas v1 foram corrigidas. Churn ajustado de 4% para 10% (realidade SaaS B2B BR ano 1), CAC de R$ 1k para R$ 3,5k (ciclo agro), valuation múltiplos de 4-10x ARR para 3-5x (mercado 2026), conversão sobre TAM acessível (não TAM total). Cenários reduzidos ~70% em ARR.
 
 ---
 
@@ -18,10 +20,11 @@
 | **Linhas de código produtivo** | ~120k LoC TypeScript/SQL |
 | **Cobertura E2E** | 53+ testes Playwright passando |
 | **Multi-tenancy** | RLS Postgres + middleware estanque |
-| **Compliance** | LGPD, 2FA TOTP, audit log, CSP, SPF/DKIM (DMARC pendente) |
-| **Valuation estimado hoje** | **R$ 650k – R$ 1,5M** |
-| **ARR projetado ano 1 (base case)** | **R$ 2,26M** |
-| **Valuation projetado ano 1 (base case)** | **R$ 9M – R$ 16M** |
+| **Compliance** | LGPD, 2FA TOTP, audit log, CSP, DKIM (SPF/DMARC pendente) |
+| **Valuation estimado hoje** | **R$ 500k – R$ 1M** |
+| **ARR projetado ano 1 (base case honesto)** | **R$ 678k** |
+| **Valuation projetado ano 1 (base case)** | **R$ 2M – R$ 3,5M** |
+| **Expected ARR ponderado ano 1** | **R$ 805k** |
 
 ### Proposta de valor única
 
@@ -137,23 +140,27 @@
 
 ## 4. Mercado
 
-### TAM / SAM / SOM
+### TAM / SAM / SOM (recalibrado v2 — honesto)
 
-| Métrica | Valor | Cálculo |
-|---|---|---|
-| **TAM** (Total Addressable Market) | R$ 252M/ano | 3.500 corretoras × R$ 6k/mês × 12 |
-| **SAM** (Serviceable Available Market) | R$ 76M/ano | 2.500 corretoras pequenas+médias × R$ 2,5k/mês × 12 |
-| **SOM** (Serviceable Obtainable Market) | R$ 7,6M/ano | 10% do SAM em 3 anos |
+A v1 confundia TAM teórico (corretoras × preço máximo) com mercado endereçável real. Aqui aplico filtros honestos de **willingness-to-pay** por segmento.
 
-### Segmentação por porte
-
-| Segmento | # corretoras | Ticket médio | Mercado anual |
+| Métrica | Valor v1 (otimista) | Valor v2 (honesto) | Justificativa correção |
 |---|---|---|---|
-| Micro (1-3 func) | 700 | R$ 297/mês | R$ 2,5M |
-| Pequena (3-10 func) | 1.500 | R$ 697/mês | R$ 12,5M |
-| Média (10-50 func) | 1.000 | R$ 1.997/mês | R$ 24M |
-| Grande (>50 func) | 300 | R$ 5.997/mês | R$ 21,6M |
-| **Total** | **3.500** | — | **R$ 60,6M** |
+| **TAM** total | R$ 252M | **R$ 60M** | Nem toda corretora paga R$ 6k. Tickets reais por porte. |
+| **SAM** acessível | R$ 76M | **R$ 18M** | Só ~30-50% por porte pagam SaaS (resto fica em Excel) |
+| **SOM** 3 anos | R$ 7,6M | **R$ 1,8M** | 10% do SAM real em 3 anos — ainda agressivo |
+
+### Segmentação realista (com taxa de adoção honesta)
+
+| Segmento | # corretoras | Ticket médio | % que paga SaaS | Mercado real |
+|---|---|---|---|---|
+| Micro (1-3 func) | 700 | R$ 297/mês | 10% | R$ 250k |
+| Pequena (3-10 func) | 1.500 | R$ 697/mês | 30% | R$ 3,8M |
+| Média (10-50 func) | 1.000 | R$ 1.997/mês | 45% | R$ 10,8M |
+| Grande (>50 func) | 300 | R$ 5.997/mês | 60% | R$ 13M |
+| **Total acessível** | **3.500** | — | — | **R$ 27,9M** |
+
+A `% que paga SaaS` reflete que muitas corretoras (especialmente micro/pequenas) operam em Excel + WhatsApp e **não pagam software** — não é só questão de preço, é cultural.
 
 ### Geografia (cluster prioritário)
 
@@ -211,88 +218,118 @@
 3. **Services one-time** (setup, migração, treinamento) — 5%
 4. **Co-selling cooperativas** (futuro) — comissão sobre white-label
 
-### Unit economics (cenário normal)
+### Unit economics (recalibrado v2 — premissas BR realistas)
 
-| Métrica | Valor |
-|---|---|
-| ARPU médio | R$ 1.567/mês |
-| LTV (25 meses) | R$ 39.175 |
-| CAC (blended) | R$ 1.000 |
-| **LTV/CAC** | **39x** |
-| Payback period | <1 mês |
-| Gross margin | 78% |
-| Net margin (ano 1) | 50% |
+| Métrica | Valor v1 (otimista) | Valor v2 (honesto) | Notas |
+|---|---|---|---|
+| ARPU médio | R$ 1.567 | R$ 1.480 | mix mais Starter no início |
+| Churn mensal | 4% | **10%** | SaaS B2B BR ano 1 é alto. Cai pra 6-7% no ano 2-3 |
+| Lifecycle (1/churn) | 25 meses | **10 meses** | LTV reduzido proporcionalmente |
+| LTV | R$ 39.175 | **R$ 14.800** | conservador |
+| CAC blended | R$ 1.000 | **R$ 3.500** | agro tem ciclo longo, decisor 50-65 anos |
+| **LTV/CAC** | **39x** | **4,2x** | ainda saudável (>3x é OK) |
+| Payback period | <1 mês | **2,4 meses** | razoável |
+| Gross margin | 78% | 75-80% | inalterado (verdade SaaS) |
+| Net margin ano 1 | 50% | **-10% a +20%** | ano 1 é investimento, não lucro |
+
+**Por que CAC mais alto?**
+- Decisor agro: dono da corretora, 50-65 anos, conservador
+- Ciclo de venda: 30-90 dias (demo presencial frequente)
+- Resistência cultural: "sempre funcionou no Excel"
+- Inbound qualificado real custa R$ 3-5k; outbound LinkedIn R$ 6-10k
+
+**Por que churn maior?**
+- Implementação leva tempo → cliente não vê valor imediato
+- Cancelamento sazonal (entressafra reduz uso)
+- Concorrência de Excel grátis sempre presente
+- Primeiros 12 meses sempre piores (sem case de sucesso interno)
 
 ---
 
-## 6. Cenários financeiros — 12 meses
+## 6. Cenários financeiros — 12 meses (recalibrado v2)
 
-### Premissas comuns
-- Churn mensal: 4%
-- Lifecycle: 25 meses
-- CAC: R$ 800–2.000 (depende de canal)
-- Custos operacionais: infra R$ 8k/mês + Stripe 4% + LLM R$ 2k/mês + equipe (variável)
+### Premissas comuns (v2 honestas)
+- **Churn mensal**: 10% (SaaS B2B BR ano 1)
+- **Lifecycle**: 10 meses
+- **CAC blended**: R$ 3.500
+- **Add-ons**: 5-10% MRR (em vez de 20-30% — corretoras não compram add-ons cedo)
+- **Custos operacionais**: infra R$ 2k/mês + Stripe 4% + LLM R$ 500-2k/mês + equipe (variável)
+- **Reinvestimento**: 60-80% do gross profit volta pra crescimento (não margem alta no ano 1)
 
-### Cenário 🔴 MUITO RUIM (5% prob)
+### Cenário 🔴 MUITO RUIM (15% prob)
 
-| | M3 | M6 | M12 |
-|---|---|---|---|
-| Clientes | 4 | 9 | 16 |
-| MRR | R$ 4.088 | R$ 10.173 | R$ 22.967 |
-| **ARR** | — | — | **R$ 276k** |
-| EBITDA | -R$ 50k | -R$ 30k | **-R$ 30k** |
+| | M6 | M12 |
+|---|---|---|
+| Clientes ativos | 4 | 6 |
+| MRR | R$ 5.500 | R$ 8.500 |
+| **ARR** | — | **R$ 102k** |
+| EBITDA | -R$ 60k | **-R$ 80k** |
 
-**Outcome**: pivota ou vende.
+**Outcome**: queima caixa, considera pivot ou venda do código.
 
-### Cenário 🟠 RUIM (15% prob)
+### Cenário 🟠 RUIM (25% prob)
 
-| | M3 | M6 | M12 |
-|---|---|---|---|
-| Clientes | 11 | 27 | 56 |
-| MRR | R$ 11.567 | R$ 30.486 | R$ 76.336 |
-| **ARR** | — | — | **R$ 916k** |
-| EBITDA | — | — | **R$ 270k** |
+| | M6 | M12 |
+|---|---|---|
+| Clientes ativos | 10 | 18 |
+| MRR | R$ 14.000 | R$ 26.500 |
+| **ARR** | — | **R$ 318k** |
+| EBITDA | -R$ 40k | **-R$ 20k** |
 
-**Outcome**: sobrevive lucrativo, equipe pequena.
+**Outcome**: sobrevive operando sozinho + 1 freela. Decide se continua ou volta a job.
 
-### Cenário 🟡 NORMAL — base case (50% prob)
+### Cenário 🟡 NORMAL — base case (40% prob)
 
-| | M3 | M6 | M12 |
-|---|---|---|---|
-| Clientes | 23 | 56 | 118 |
-| MRR | R$ 29.302 | R$ 79.063 | R$ 188.047 |
-| **ARR** | — | — | **R$ 2,26M** |
-| EBITDA | -R$ 20k | R$ 200k | **R$ 1,13M** |
+| | M6 | M12 |
+|---|---|---|
+| Clientes ativos | 20 | 38 |
+| MRR | R$ 28.000 | R$ 56.500 |
+| Add-ons (~7%) | R$ 2.000 | R$ 4.000 |
+| **MRR total** | R$ 30.000 | R$ 60.500 |
+| **ARR** | — | **R$ 678k** |
+| EBITDA | -R$ 30k | **R$ 80-150k** |
 
-**Outcome**: equipe 5-7 pessoas, captação seed opcional.
+**Outcome**: 1 vendedor + você + 1 dev pleno. Lucrativo no Q4. Decide se capta ou bootstrappa.
+**Valuation**: R$ 2-3,5M (3-5x ARR).
 
-### Cenário 🟢 MUITO BOM (25% prob)
+### Cenário 🟢 MUITO BOM (15% prob)
 
-| | M3 | M6 | M12 |
-|---|---|---|---|
-| Clientes | 43 | 108 | 240 |
-| MRR | R$ 81.648 | R$ 209.385 | R$ 489.208 |
-| **ARR** | — | — | **R$ 5,87M** |
-| EBITDA | R$ 50k | R$ 700k | **R$ 3,23M** |
+| | M6 | M12 |
+|---|---|---|
+| Clientes ativos | 35 | 78 |
+| MRR | R$ 49.000 | R$ 115.000 |
+| Add-ons (~10%) | R$ 5.000 | R$ 12.000 |
+| **MRR total** | R$ 54.000 | R$ 127.000 |
+| **ARR** | — | **R$ 1,38M** |
+| EBITDA | -R$ 50k | **R$ 280k** |
 
-**Outcome**: time 10-15, expansão geográfica, valuation R$ 24-40M.
+**Outcome**: equipe 5-6 pessoas, captação seed possível, PMF claro.
+**Valuation**: R$ 5-7M.
 
 ### Cenário 🟣 EXCELENTE (5% prob)
 
-| | M3 | M6 | M12 |
+| | M6 | M12 |
+|---|---|---|
+| Clientes ativos | 60 | 150 |
+| MRR | R$ 90.000 | R$ 235.000 |
+| Add-ons (~12%) | R$ 11.000 | R$ 28.000 |
+| **MRR total** | R$ 101.000 | R$ 263.000 |
+| **ARR** | — | **R$ 2,82M** |
+| EBITDA | R$ 50k | **R$ 850k** |
+
+**Outcome**: captação Series A possível ano 2, time 10-12, expansão vertical.
+**Valuation**: R$ 12-18M (4-6x ARR).
+
+### Resumo ponderado v2 — honesto
+
+| | v1 (otimista) | v2 (honesto) | Δ |
 |---|---|---|---|
-| Clientes | 88 | 265 | 640 |
-| MRR | R$ 188.260 | R$ 545.266 | R$ 1.319.201 |
-| **ARR** | — | — | **R$ 15,83M** |
-| EBITDA | R$ 100k | R$ 1,5M | **R$ 7,12M** |
+| **Expected ARR ano 1** | R$ 3,2M | **R$ 805k** | **-75%** |
+| **Expected EBITDA ano 1** | R$ 1,5M | **R$ 90k** | **-94%** |
+| **Expected valuation ano 1** | R$ 14-22M | **R$ 3,5-5M** | **-70%** |
+| **Expected clientes ano 1** | 118 | **38** | **-68%** |
 
-**Outcome**: viraliza, captação seed R$ 5M, time 20+, valuation R$ 80-160M.
-
-### Resumo ponderado
-
-**Expected ARR ano 1**: **R$ 3,2M**
-**Expected EBITDA ano 1**: **R$ 1,5M**
-**Expected valuation ano 1**: **R$ 14M – R$ 22M**
+**Leitura honesta**: o produto vale a pena, o mercado existe, mas é uma maratona de 3-5 anos, não sprint de 12 meses. Quem promete R$ 2M+ ARR no ano 1 em SaaS B2B agro está vendendo sonho.
 
 ---
 
@@ -442,32 +479,58 @@
 
 ---
 
-## 11. Asks (se buscando captação)
+## 11. Asks (se buscando captação) — recalibrado v2
 
-### Seed Round — R$ 3M (target Q3-Q4 2026)
+### Pre-seed / Bootstrap (Q1-Q2 2026) — viável sem captação
 
-**Uso dos recursos**:
-- 40% Equipe (4 hires) — R$ 1,2M
-- 30% Marketing & vendas — R$ 900k
-- 15% Produto & infra — R$ 450k
-- 10% Reserva — R$ 300k
-- 5% Legal & compliance — R$ 150k
+Você não precisa captar ainda. Cenário base (R$ 678k ARR ano 1) sustenta operação enxuta:
+- Você + 1 vendedor (R$ 6k base + comissão)
+- 1 dev pleno (R$ 12k)
+- Infra R$ 2k/mês
+- Marketing R$ 5-10k/mês
+- **Burn rate**: ~R$ 30-40k/mês
+- **Receita Q4**: ~R$ 60k/mês → break-even em ~12 meses
 
-**Estrutura**: SAFE ou equity 15-20% (valuation R$ 15-20M post-money)
+**Recomendado**: bootstrappar até atingir MRR R$ 50k antes de captar.
 
-**Investidores-alvo**:
-- SP Ventures (agro)
-- Barn Investimentos (agro)
-- Wayra
-- Família agro (angels)
+### Seed Round — R$ 1,5-2M (target Q4 2026 ou Q1 2027)
 
-### Métricas que destravam captação
+**Quando captar**: depois de 30+ clientes pagantes e MRR R$ 50k+.
 
-- 30+ clientes pagantes
-- MRR > R$ 50k
-- Net retention > 110%
-- Churn < 5%
-- NPS > 50
+**Uso dos recursos (R$ 1,5M scenario)**:
+- 50% Equipe (3 hires: 1 vendedor sênior, 1 CS, 1 dev) — R$ 750k
+- 30% Marketing & vendas (feiras, tráfego, conteúdo) — R$ 450k
+- 10% Produto & infra — R$ 150k
+- 10% Reserva 6 meses — R$ 150k
+
+**Estrutura realista 2026**: SAFE ou equity **20-25%** (valuation R$ 6-8M post-money, **não** R$ 15-20M como v1 sugeria).
+
+**Por que valuation mais baixo**:
+- Mercado VC 2025/2026 está em down round (vs 2021)
+- SaaS B2B seed BR: 3-5x ARR é o padrão (não 8-10x)
+- Sem PMF comprovado pré-captação = desconto adicional
+- Vertical agro tem menos investidores especializados que SaaS horizontal
+
+**Investidores-alvo (ranking realista)**:
+1. **Angels do agro** (donos de cooperativas, traders) — mais provável fechar
+2. **SP Ventures** (agro tech, ticket R$ 1-3M)
+3. **Barn Investimentos** (agro tech)
+4. **Aberto Capital** (early stage BR)
+5. **Wayra** (corporate VC, tickets menores)
+
+### Métricas que destravam captação (honesto)
+
+| Métrica | v1 (otimista) | v2 (realista) |
+|---|---|---|
+| Clientes pagantes | 30+ | **50+** |
+| MRR | R$ 50k | **R$ 80-100k** |
+| Net retention | 110% | **95-105%** (110% é raro ano 1) |
+| Churn mensal | <5% | **<8%** |
+| NPS | >50 | **>40** |
+| Crescimento MoM | 20% | **15-25%** |
+| LTV/CAC | 5x+ | **3x+** |
+
+**Realidade**: muito provável que você só consiga captar no **ano 2** (Q2-Q3 2027) quando tiver 60-100 clientes e MRR R$ 100-150k.
 
 ---
 
