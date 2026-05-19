@@ -3,42 +3,48 @@
  * Utility component classes referencing tokens.css
  * ============================================================================ */
 
-/* ---------- Surfaces ---------- */
+/* ---------- Surfaces (NewDB v2 — surface-1, sh-1 minimal) ---------- */
 .panel {
-  background: var(--bg-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-}
-
-/* .card é definido em newdb.css com a estética v2 (sem padding default,
- * surface-1, sh-1). Aqui só preservamos um fallback caso newdb não carregue. */
-.card:not([class*="newdb"]) {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-1);
 }
 
-  /* ---------- Buttons ---------- */
-/* NewDB v2 — botão primário: lime sólido, sem glow constante, hover suave */
+/* .card é definido em newdb.css com a estética v2 (surface-1, r-lg, sh-1,
+ * padding 24px). Aqui só preservamos um fallback caso newdb não carregue,
+ * alinhado aos mesmos valores. */
+.card:not([class*="newdb"]) {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+  padding: var(--space-6);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.card:not([class*="newdb"]):hover {
+  border-color: var(--border-strong);
+}
+
+  /* ---------- Buttons (NewDB v2 — pill radius, 13px, 160ms ease) ---------- */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-4);
-  border-radius: var(--r-md);
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
   background: var(--accent);
   color: var(--accent-ink);
-  font-family: var(--font-sans);
+  font-family: var(--f-sans);
   font-weight: 600;
   font-size: 13px;
+  line-height: 1;
   letter-spacing: -0.01em;
-  transition: background 160ms ease, box-shadow 200ms ease;
+  transition: background 160ms ease, box-shadow 160ms ease;
   border: 1px solid transparent;
   cursor: pointer;
+  white-space: nowrap;
 }
 .btn-primary:hover {
   background: #d4f95f;
@@ -53,18 +59,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-4);
-  border-radius: var(--r-md);
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
-  font-family: var(--font-sans);
+  font-family: var(--f-sans);
   font-weight: 500;
   font-size: 13px;
+  line-height: 1;
   transition: background 160ms ease, border-color 160ms ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 .btn-secondary:hover {
   background: var(--surface-3);
@@ -75,23 +82,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-3);
-  border-radius: var(--r-md);
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
   background: transparent;
-  color: var(--text-mute);
-  border: 1px solid transparent;
-  font-family: var(--font-sans);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-family: var(--f-sans);
   font-weight: 500;
   font-size: 13px;
+  line-height: 1;
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 .btn-ghost:hover {
   color: var(--text);
   background: var(--tint-4pct);
-  border-color: var(--border);
+  border-color: var(--border-strong);
 }
 
 .btn-icon {
@@ -100,9 +108,10 @@
   justify-content: center;
   width: 32px;
   height: 32px;
+  padding: 0;
   border-radius: var(--r-sm);
   background: var(--surface-2);
-  color: var(--text-mute);
+  color: var(--text);
   border: 1px solid var(--border);
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
   cursor: pointer;
@@ -115,100 +124,109 @@
 }
 
 .btn-sm {
-  height: 28px;
-  padding: 0 var(--space-3);
+  padding: 6px 10px;
   font-size: 12px;
 }
 
-  /* ---------- Pills & Chips ---------- */
+  /* ---------- Pills & Chips (NewDB v2 — padding-based, surface-2 base) ---------- */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  height: 28px;
-  padding: 0 var(--space-3);
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: var(--r-pill);
-  background: var(--bg-2);
-  color: var(--fg-2);
-  border: 1px solid var(--border-1);
-  font-size: 12.5px;
+  background: var(--surface-2);
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+  font-family: var(--f-mono);
+  font-size: 11px;
   font-weight: 500;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 24px;
-  padding: 0 10px;
+  gap: 8px;
+  padding: 7px 12px;
   border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-mute);
+  border: 1px solid var(--border);
+  font-family: var(--f-sans);
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 .chip-pos {
-  background: color-mix(in srgb, var(--pos) 16%, transparent);
-  color: var(--pos);
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: rgba(74, 222, 128, 0.2);
 }
 .chip-neg {
-  background: color-mix(in srgb, var(--neg) 16%, transparent);
-  color: var(--neg);
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.22);
 }
 .chip-warn {
-  background: color-mix(in srgb, var(--warn) 16%, transparent);
-  color: var(--warn);
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: rgba(251, 191, 36, 0.2);
 }
 
-  /* ---------- Numerals ---------- */
+  /* ---------- Numerals (NewDB v2 — sans tnum, KPI hero 36px) ---------- */
 .t-num {
-  font-family: var(--font-mono);
+  font-family: var(--f-sans);
+  font-feature-settings: "tnum", "ss01";
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 .t-num-lg {
-  font-family: var(--font-mono);
+  font-family: var(--f-sans);
+  font-feature-settings: "tnum", "ss01";
   font-variant-numeric: tabular-nums;
-  font-size: 28px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
   font-weight: 600;
 }
 
-  /* ---------- Eyebrow ---------- */
+  /* ---------- Eyebrow (NewDB v2 — mono 11px, tracking suave) ---------- */
 .eyebrow {
+  font-family: var(--f-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
 }
 
-  /* ---------- Sidebar ---------- */
+  /* ---------- Sidebar (NewDB v2 — surface-1, border sutil) ---------- */
 .sidebar {
-  background: var(--bg-1);
-  border-right: 1px solid var(--border-1);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  height: 40px;
-  padding: 0 var(--space-4);
-  border-radius: var(--r-md);
-  color: var(--fg-2);
-  font-size: 14px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  color: var(--text-mute);
+  font-size: 13px;
   font-weight: 500;
-  transition: background 180ms ease, color 180ms ease;
+  border: 1px solid transparent;
+  transition: background 160ms ease, color 160ms ease;
   cursor: pointer;
 }
 .nav-item:hover {
-  background: var(--bg-2);
-  color: var(--fg-1);
+  background: var(--tint-4pct);
+  color: var(--text);
 }
 
 .nav-item-active {
-background: var(--bg-2);
-color: var(--fg-1);
-box-shadow: inset 2px 0 0 var(--accent);
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
