@@ -98,6 +98,12 @@ export default auth((req) => {
       return NextResponse.next()
     }
 
+    // Super-admin Mercograin nunca passa pelo onboarding nem assinatura —
+    // ele não opera workspace nenhum, só o /admin. Manda direto pra lá.
+    if (isAdmin && !hasWorkspace) {
+      return NextResponse.redirect(new URL('/admin', req.url))
+    }
+
     if (!hasWorkspace && !isOnboardingPath && !isPublic) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
