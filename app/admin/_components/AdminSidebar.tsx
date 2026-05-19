@@ -10,7 +10,6 @@ import {
   Megaphone,
   Activity,
   Server,
-  ArrowLeft,
   LogOut,
   ShieldAlert,
   Tags,
@@ -161,12 +160,9 @@ export function AdminSidebar({
 
       <div className="flex-1" />
 
-      {/* Footer */}
+      {/* Footer — super-admin Mercograin nao tem workspace, entao nao mostra
+       * 'Voltar ao app trader'. Acesso a /admin e exclusivo para esta conta. */}
       <div className="px-3 pb-4 space-y-1 mt-4">
-        <Link href="/dashboard" className="nav-item">
-          <ArrowLeft className="h-4 w-4 shrink-0" />
-          <span className="flex-1">Voltar ao app trader</span>
-        </Link>
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: '/' })}
