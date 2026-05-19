@@ -19,6 +19,8 @@ export function SecretAdminPortal() {
   const [open, setOpen] = React.useState(false)
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [totpCode, setTotpCode] = React.useState('')
+  const [needsTotp, setNeedsTotp] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const clickTimes = React.useRef<number[]>([])
@@ -65,9 +67,22 @@ export function SecretAdminPortal() {
       const res = await signIn('credentials', {
         email,
         password,
+        ...(needsTotp ? { totpCode } : {}),
         redirect: false,
       })
       if (res?.error) {
+        const errMsg = res.error
+        if (errMsg.includes('2FA_REQUIRED')) {
+          setNeedsTotp(true)
+          setError(null)
+          setLoading(false)
+          return
+        }
+        if (errMsg.includes('2FA_INVALID')) {
+          setError('Código 2FA inválido')
+          setLoading(false)
+          return
+        }
         setError('Credenciais inválidas')
         setLoading(false)
         return
@@ -151,6 +166,23 @@ export function SecretAdminPortal() {
                 required
                 autoComplete="current-password"
               />
+
+              {needsTotp ? (
+                <Input
+                  label="Código 2FA (Authenticator)"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  leftIcon={<Lock className="h-4 w-4 text-fg-3" />}
+                  required
+                  autoFocus
+                  autoComplete="one-time-code"
+                />
+              ) : null}
 
               {error ? (
                 <p className="text-small" style={{ color: 'var(--neg)' }}>
