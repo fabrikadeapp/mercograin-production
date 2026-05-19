@@ -1,5 +1,17 @@
 name: CI
 
+# Gate de qualidade obrigatório em PRs e push pra main.
+# Roda 3 jobs em paralelo: typecheck, lint, build.
+#
+# ─── Secrets necessários (GitHub Settings → Secrets and variables → Actions) ───
+# Nenhum é OBRIGATÓRIO neste workflow — todas as envs do build são dummies.
+# O build NÃO conecta no banco real, apenas precisa que as variáveis EXISTAM
+# pra Next.js não falhar no `next build` ao avaliar config no boot.
+#
+# Se você quiser sobrescrever alguma env por secret real (não recomendado pra CI),
+# adicione em Settings → Secrets e referencie como ${{ secrets.NOME }} abaixo.
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
   pull_request:
     branches: [main]
@@ -11,8 +23,23 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Envs dummy compartilhadas pelo build (NÃO conectam de fato)
+  DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+  DIRECT_URL: postgresql://user:pass@localhost:5432/db?schema=public
+  NEXTAUTH_SECRET: dummy-ci-secret-not-used-in-runtime
+  NEXTAUTH_URL: http://localhost:3000
+  AUTH_SECRET: dummy-ci-secret-not-used-in-runtime
+  AUTH_TRUST_HOST: 'true'
+  STRIPE_SECRET_KEY: sk_test_dummy
+  STRIPE_PUBLISHABLE_KEY: pk_test_dummy
+  STRIPE_WEBHOOK_SECRET: whsec_dummy
+  RESEND_API_KEY: re_dummy
+  CRON_SECRET: dummy-cron-secret
+  SKIP_ENV_VALIDATION: 'true'
+
 jobs:
-  type-check:
+  typecheck:
     name: TypeScript type check
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -21,7 +48,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -33,17 +60,54 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-  build:
-    name: Production build
+  lint:
+    name: Lint (next lint)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Check lint script exists
+        id: check_lint
+        run: |
+          if node -e "process.exit(require('./package.json').scripts.lint ? 0 : 1)"; then
+            echo "has_lint=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_lint=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No 'lint' script in package.json — skipping"
+          fi
+
+      - name: Run lint
+        if: steps.check_lint.outputs.has_lint == 'true'
+        run: npm run lint
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Cache .next/cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
@@ -51,11 +115,5 @@ jobs:
       - name: Prisma generate
         run: npx prisma generate
 
-      - name: Build
-        env:
-          # Envs mínimas pra build não quebrar
-          DATABASE_URL: postgresql://noop:noop@localhost:5432/noop?schema=public
-          DIRECT_URL: postgresql://noop:noop@localhost:5432/noop?schema=public
-          NEXTAUTH_SECRET: ci-build-secret-not-used
-          NEXTAUTH_URL: http://localhost:3000
+      - name: Build (next build)
         run: npm run build

@@ -1,5 +1,7 @@
 # BH Grain — Trading System
 
+![CI](https://github.com/fabrikadeapp/mercograin-production/actions/workflows/ci.yml/badge.svg)
+
 > Sistema multi-tenant de mesa de operações para tradings de grãos (soja, milho, trigo). Originação, fixação, hedge, logística, fiscal, compliance EUDR, BI e portal do produtor — tudo em um único produto SaaS.
 
 **Status (10/05/2026):** 100% de conformidade na auditoria final (68/68 checks · `npm run audit:compliance`).
@@ -133,6 +135,26 @@ API docs interativa: **http://localhost:3000/docs/api** (Swagger UI · OpenAPI e
 ### Crons (Railway)
 
 `sync-cotacoes`, `price-alerts`, `contrato-marcos`, `sync-areas-protegidas`, `marcacao-diaria`, `sync-listas-suja`, `trial-notifications`, `apurar-comissoes`, `risco-breaches`, `whatsapp-cotacao-diaria` — todos com endpoint `/api/cron/*` protegido por `CRON_SECRET`.
+
+---
+
+## Desenvolvimento
+
+PRs contra `main` rodam o workflow [CI](.github/workflows/ci.yml) com 3 jobs em paralelo (timeout 10 min cada):
+
+- **typecheck** — `npx prisma generate` + `npx tsc --noEmit` (bloqueia merge)
+- **lint** — `npm run lint` (bloqueia merge)
+- **build** — `npm run build` com envs dummy (bloqueia merge)
+
+Adicionalmente, [`e2e-preview.yml`](.github/workflows/e2e-preview.yml) roda smoke + `purchase-first-flow` contra produção em PRs como **status informativo** (não bloqueia merge). Secrets opcionais documentados no header do YAML.
+
+Rodando localmente antes de abrir PR:
+
+```bash
+npx tsc --noEmit     # typecheck
+npm run lint         # lint
+npm run build        # build (precisa envs no .env.local)
+```
 
 ---
 
