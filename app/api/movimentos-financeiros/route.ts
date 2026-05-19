@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { logAudit } from '@/lib/audit/log'
 
 const schema = z.object({
   data: z.string(),
@@ -86,6 +87,19 @@ export async function POST(request: NextRequest) {
         observacoes: d.observacoes || null,
       },
     })
+    logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'movimento_create',
+      entidade: 'movimento_financeiro',
+      entidadeId: mov.id,
+      mudancas: {
+        tipo: d.tipo,
+        natureza: d.natureza,
+        valor: d.valor,
+        data: d.data,
+      },
+    }).catch(() => undefined)
     return NextResponse.json(mov, { status: 201 })
   } catch (e: any) {
     if (e instanceof z.ZodError)

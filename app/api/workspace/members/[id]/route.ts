@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireScope } from '@/lib/auth/scope'
 import { syncWorkspaceSeats } from '@/lib/stripe/seats'
+import { logAudit } from '@/lib/audit/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +79,25 @@ export async function PATCH(
     } catch (err) {
       console.warn('[workspace/members PATCH] seat sync falhou:', err)
     }
+    // Audit: role change apenas se a role mudou; caso contrário registra update genérico.
+    const roleChanged =
+      parsed.data.role !== undefined && parsed.data.role !== member.role
+    logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: roleChanged ? 'member_role_change' : 'member_update',
+      entidade: 'workspace_member',
+      entidadeId: member.id,
+      mudancas: {
+        antes: {
+          role: member.role,
+          status: member.status,
+          areasPermitidas: member.areasPermitidas,
+          funcoes: member.funcoes,
+        },
+        depois: parsed.data,
+      },
+    }).catch(() => undefined)
     return NextResponse.json({ member: updated, seats: seatInfo })
   } catch (e: any) {
     return NextResponse.json(
@@ -113,6 +133,14 @@ export async function DELETE(
     } catch (err) {
       console.warn('[workspace/members DELETE] seat sync falhou:', err)
     }
+    logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'member_remove',
+      entidade: 'workspace_member',
+      entidadeId: member.id,
+      mudancas: { email: member.email, role: member.role },
+    }).catch(() => undefined)
     return NextResponse.json({ ok: true, seats: seatInfo })
   } catch (e: any) {
     return NextResponse.json(

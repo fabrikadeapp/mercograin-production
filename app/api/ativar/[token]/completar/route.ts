@@ -227,6 +227,21 @@ export async function POST(
     mudancas: { codigo: license.codigo, plano: license.plano },
   }).catch(() => undefined)
 
+  // Audit: workspace criado (via purchase-first onboarding)
+  logAudit({
+    userId: result.user.id,
+    workspaceId: result.workspace.id,
+    acao: 'workspace_create',
+    entidade: 'workspace',
+    entidadeId: result.workspace.id,
+    mudancas: {
+      origem: 'purchase-first',
+      name: result.workspace.name,
+      slug: result.workspace.slug,
+      plano: license.plano,
+    },
+  }).catch(() => undefined)
+
   // Welcome email com código de licença
   try {
     const tpl = welcomeTemplate({

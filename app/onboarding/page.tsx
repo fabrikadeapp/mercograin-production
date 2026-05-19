@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { OnboardingWizard } from './_components/OnboardingWizard'
+import { logAudit } from '@/lib/audit/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,6 +80,17 @@ export default async function OnboardingPage() {
       },
       include: { empresa: true },
     })) as any
+
+    if (ws) {
+      logAudit({
+        userId: session.user.id,
+        workspaceId: ws.id,
+        acao: 'workspace_create',
+        entidade: 'workspace',
+        entidadeId: ws.id,
+        mudancas: { origem: 'onboarding', name: ws.name, slug: ws.slug },
+      }).catch(() => undefined)
+    }
   }
 
   if (!ws) {

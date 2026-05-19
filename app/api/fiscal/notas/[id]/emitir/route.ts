@@ -3,6 +3,7 @@ import { getScope } from '@/lib/auth/scope'
 import { NextRequest, NextResponse } from 'next/server'
 import { getProvider } from '@/lib/fiscal/providers'
 import type { NFeEmissaoPayload, NFeItemPayload } from '@/lib/fiscal/providers/types'
+import { logAudit } from '@/lib/audit/log'
 
 export async function POST(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { searchParams } = new URL(request.url)
@@ -93,6 +94,25 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
       emitenteUF: empresa.uf ?? 'RS',
     },
   })
+
+  logAudit({
+    userId: scope.userId,
+    workspaceId: scope.workspaceId,
+    acao: 'nfe_emit',
+    entidade: 'nota_fiscal',
+    entidadeId: updated.id,
+    mudancas: {
+      tipo: updated.tipo,
+      modelo: updated.modelo,
+      serie: updated.serie,
+      numero: updated.numero,
+      status: updated.status,
+      chave: updated.chave,
+      protocolo: updated.protocolo,
+      provider: provider.nome,
+      motivoRejeicao: updated.motivoRejeicao,
+    },
+  }).catch(() => undefined)
 
   return NextResponse.json({ data: updated, provider: provider.nome, providerResult: r })
 }

@@ -10,6 +10,7 @@ import {
 } from '@/lib/license/codigo'
 import { sendEmail } from '@/lib/email/send'
 import { licencaCompradaTemplate } from '@/lib/email/templates/licenca-comprada'
+import { logAudit } from '@/lib/audit/log'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -176,6 +177,22 @@ async function handlePurchaseFirstSession(session: Stripe.Checkout.Session) {
       },
     },
   })
+
+  // Audit: license criada pelo webhook. Como ainda não há User no sistema,
+  // registramos com userId sentinel "system:stripe-webhook" (campo é String livre).
+  logAudit({
+    userId: 'system:stripe-webhook',
+    acao: 'license_create',
+    entidade: 'license',
+    entidadeId: license.id,
+    mudancas: {
+      codigo,
+      plano,
+      email,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subId || null,
+    },
+  }).catch(() => undefined)
 
   // Resolve nome amigável do plano (cai para slug em uppercase).
   const planRow = await db.plan.findUnique({ where: { slug: plano } })

@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/security/rate-limit'
+import { logAudit } from '@/lib/audit/log'
 
 export const authConfig = {
   pages: {
@@ -32,6 +33,15 @@ export const authConfig = {
         token.id = user.id
         token.email = user.email
         ;(token as any).refreshedAt = 0 // força refresh logo na primeira validação após login
+        // Audit: login bem-sucedido (best-effort).
+        if (trigger === 'signIn') {
+          logAudit({
+            userId: user.id,
+            acao: 'login',
+            entidade: 'session',
+            entidadeId: user.id,
+          }).catch(() => undefined)
+        }
       }
       // Cache: só recarrega dados do DB se passaram >60s OU se foi pedido refresh
       // explicito via update() OU se ainda não foi refrescado nesta sessão.
@@ -222,6 +232,13 @@ export const authConfig = {
             }
 
             if (!ok) {
+              logAudit({
+                userId: user.id,
+                acao: 'login_failed',
+                entidade: 'session',
+                entidadeId: user.id,
+                mudancas: { motivo: '2FA_INVALID' },
+              }).catch(() => undefined)
               throw new Error('2FA_INVALID')
             }
           }

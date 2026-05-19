@@ -9,6 +9,7 @@ import { memberInviteTemplate } from '@/lib/email/templates/member-invite'
 import { checkMutationLimit, rateLimited } from '@/lib/security/mutation-rate-limit'
 import { isValidCPF } from '@/lib/br/documento'
 import { isValidTelefoneBR, onlyDigits } from '@/lib/equipe/rh'
+import { logAudit } from '@/lib/audit/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -198,6 +199,15 @@ export async function POST(req: Request) {
     } catch (err) {
       console.warn('[workspace/members POST] envio de email falhou:', err)
     }
+
+    logAudit({
+      userId: scope.userId,
+      workspaceId: scope.workspaceId,
+      acao: 'member_invite',
+      entidade: 'workspace_member',
+      entidadeId: member.id,
+      mudancas: { email, role, areasPermitidas, funcoes },
+    }).catch(() => undefined)
 
     return NextResponse.json({ member, seats: seatInfo })
   } catch (e: any) {
