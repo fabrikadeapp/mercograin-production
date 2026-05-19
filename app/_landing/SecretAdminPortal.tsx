@@ -63,6 +63,30 @@ export function SecretAdminPortal() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+
+    // Passo 1: se ainda não sabemos se precisa 2FA, pergunta ao servidor.
+    // NextAuth v5 não expõe a cause de CredentialsSignin no cliente, então
+    // descobrimos antes via /api/auth/check-2fa.
+    if (!needsTotp) {
+      try {
+        const r = await fetch('/api/auth/check-2fa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        const j = await r.json()
+        if (j.totpEnabled) {
+          setNeedsTotp(true)
+          setError(null)
+          setLoading(false)
+          return
+        }
+      } catch {
+        // Se check-2fa falhar (rede), seguimos tentando signIn — pior caso
+        // o usuário vê "Credenciais inválidas" e tenta de novo.
+      }
+    }
+
     try {
       const res = await signIn('credentials', {
         email,
@@ -71,19 +95,11 @@ export function SecretAdminPortal() {
         redirect: false,
       })
       if (res?.error) {
-        const errMsg = res.error
-        if (errMsg.includes('2FA_REQUIRED')) {
-          setNeedsTotp(true)
-          setError(null)
-          setLoading(false)
-          return
-        }
-        if (errMsg.includes('2FA_INVALID')) {
+        if (needsTotp) {
           setError('Código 2FA inválido')
-          setLoading(false)
-          return
+        } else {
+          setError('Credenciais inválidas')
         }
-        setError('Credenciais inválidas')
         setLoading(false)
         return
       }
