@@ -103,8 +103,18 @@ export async function POST(
 
   const hashedPassword = await hash(body.senha, 10)
 
-  // Slug do workspace baseado em razão social ou nome
-  const baseName = body.empresa.razaoSocial || body.nome
+  // Slug do workspace baseado em razão social ou nome.
+  // Sanitiza para nunca acabar com 'undefined'/'null' literal de payload mal formado.
+  const sanitize = (s: any): string => {
+    if (typeof s !== 'string') return ''
+    const t = s.trim()
+    if (!t || t === 'undefined' || t === 'null') return ''
+    return t
+  }
+  const baseName =
+    sanitize(body.empresa.razaoSocial) ||
+    sanitize(body.nome) ||
+    `Workspace-${license.codigo}`
   const baseSlug = slugify(baseName) || `ws-${Date.now().toString(36)}`
   let slug = baseSlug
   let suffix = 1
