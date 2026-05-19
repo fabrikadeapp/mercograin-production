@@ -11,7 +11,9 @@ export const config = {
   ],
 }
 
-const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite', '/status']
+// Rotas públicas — usuário deslogado pode acessar sem ser redirecionado pra login.
+// /ativar/* (purchase-first) e /comprar (compra sem login) são essenciais aqui.
+const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite', '/status', '/ativar', '/comprar']
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth
