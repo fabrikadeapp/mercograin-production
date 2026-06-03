@@ -2,7 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mic, Plus, Send, Wand2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import {
+  Mic,
+  MicOff,
+  Plus,
+  Send,
+  Wand2,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  MessageCircle,
+  X,
+} from 'lucide-react'
 import { Card, Button } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { parseComando, type ParsedComando } from '@/lib/propostas/parse-comando'
@@ -10,6 +21,7 @@ import { ClienteQuickCreateModal } from '@/components/clientes/ClienteQuickCreat
 import type { ClienteCriado } from '@/components/clientes/ClienteForm'
 import { KG_POR_SC } from '@/lib/cotacoes/unidades'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 
 interface Cliente {
   id: string
@@ -56,8 +68,16 @@ export function PropostaCommandBar({
   const [parsed, setParsed] = useState<ParsedComando | null>(null)
   const [criando, setCriando] = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
-  const [escutando, setEscutando] = useState(false)
-  const recognitionRef = useRef<unknown>(null)
+  const [modoTranscricao, setModoTranscricao] = useState(false)
+  const [propostaCriada, setPropostaCriada] = useState<{
+    id: string
+    numero: string
+    clienteId: string
+  } | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const speech = useSpeechRecognition({
+    onTranscript: (full) => setTexto(full),
+  })
 
   // Auto-foco ao montar
   useEffect(() => {
@@ -111,28 +131,32 @@ export function PropostaCommandBar({
   // Atalhos
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Enter (sem shift) → criar
-      if (e.key === 'Enter' && !e.shiftKey && document.activeElement === inputRef.current) {
+      const isInput = document.activeElement === inputRef.current
+      const isTextarea = document.activeElement === textareaRef.current
+      const focado = isInput || isTextarea
+
+      // Enter (sem shift) no input → criar
+      if (e.key === 'Enter' && !e.shiftKey && isInput) {
         e.preventDefault()
         void handleSubmit(false)
       }
-      // Shift+Enter → criar + enviar
-      if (e.key === 'Enter' && e.shiftKey && document.activeElement === inputRef.current) {
+      // Shift+Enter no input → criar + enviar
+      if (e.key === 'Enter' && e.shiftKey && isInput) {
         e.preventDefault()
         void handleSubmit(true)
       }
-      // Tab no input quando cliente não existe → abre modal
-      if (
-        e.key === 'Tab' &&
-        document.activeElement === inputRef.current &&
-        parsed?.clienteNome &&
-        !clienteEncontrado
-      ) {
+      // Cmd/Ctrl+Enter em qualquer um → criar
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && focado) {
+        e.preventDefault()
+        void handleSubmit(false)
+      }
+      // Tab quando cliente não existe → abre modal
+      if (e.key === 'Tab' && focado && parsed?.clienteNome && !clienteEncontrado) {
         e.preventDefault()
         setModalAberto(true)
       }
       // Esc → limpa
-      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+      if (e.key === 'Escape' && focado) {
         setTexto('')
         setParsed(null)
       }
@@ -182,7 +206,15 @@ export function PropostaCommandBar({
         if (r2.ok) success('Proposta enviada')
         else showError('Proposta criada mas falhou envio')
       }
-      router.push('/propostas')
+
+      // Em vez de redirecionar, mostra painel pós-criação com ações
+      setPropostaCriada({
+        id: proposta.id,
+        numero: proposta.numero,
+        clienteId: proposta.clienteId,
+      })
+      setTexto('')
+      setParsed(null)
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Erro ao criar')
     } finally {
@@ -190,86 +222,134 @@ export function PropostaCommandBar({
     }
   }
 
-  // Web Speech API
-  const speechSupported =
-    typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
-
   const toggleMic = () => {
-    if (!speechSupported) return
-    type WindowWithSR = Window & {
-      SpeechRecognition?: new () => unknown
-      webkitSpeechRecognition?: new () => unknown
+    if (!speech.supported) return
+    if (speech.listening) {
+      speech.stop()
+    } else {
+      speech.reset()
+      setTexto('')
+      speech.start()
     }
-    const w = window as WindowWithSR
-    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition
-    if (!SR) return
+  }
 
-    if (escutando) {
-      // @ts-expect-error API nativa do browser sem tipos
-      recognitionRef.current?.stop?.()
-      setEscutando(false)
-      return
-    }
-
-    const rec = new SR()
-    // @ts-expect-error API nativa do browser sem tipos
-    rec.lang = 'pt-BR'
-    // @ts-expect-error
-    rec.continuous = true
-    // @ts-expect-error
-    rec.interimResults = true
-    // @ts-expect-error
-    rec.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> & { length: number } }) => {
-      let texto = ''
-      for (let i = 0; i < event.results.length; i++) {
-        texto += event.results[i][0].transcript
-      }
-      setTexto(texto)
-    }
-    // @ts-expect-error
-    rec.onend = () => setEscutando(false)
-    // @ts-expect-error
-    rec.onerror = () => setEscutando(false)
-    // @ts-expect-error
-    rec.start()
-    recognitionRef.current = rec
-    setEscutando(true)
+  // Painel pós-criação — depois de criar, mostra ações WhatsApp/PDF/concluir
+  if (propostaCriada) {
+    return (
+      <PainelPosCriacao
+        proposta={propostaCriada}
+        onConcluir={() => router.push('/propostas')}
+        onNovaProposta={() => {
+          setPropostaCriada(null)
+          inputRef.current?.focus()
+        }}
+      />
+    )
   }
 
   return (
     <>
       <Card className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Wand2 className="h-4 w-4 text-accent" />
-          <p className="eyebrow">Criar proposta por comando</p>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4 text-accent" />
+            <p className="eyebrow">
+              {modoTranscricao ? 'Modo transcrição (cole a ligação)' : 'Criar proposta por comando'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setModoTranscricao((v) => !v)
+              setTimeout(() => {
+                if (!modoTranscricao) textareaRef.current?.focus()
+                else inputRef.current?.focus()
+              }, 50)
+            }}
+            className="text-[11px] underline text-fg-3 hover:text-fg-1"
+          >
+            {modoTranscricao ? '← voltar para comando' : 'colar transcrição →'}
+          </button>
         </div>
 
-        <div className="relative">
-          <input
-            ref={inputRef}
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder="Ex: Fazenda São João 1000sc soja 130/sc 30d Sorriso"
-            className="w-full px-4 py-3 pr-24 rounded-md bg-bg-2 border border-border-1 hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-accent text-fg-1 text-body placeholder:text-fg-3"
-            style={{ fontFamily: 'var(--f-mono)', fontSize: 15 }}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            {speechSupported && (
-              <button
-                type="button"
-                onClick={toggleMic}
-                title={escutando ? 'Parar de ouvir' : 'Ditar (PT-BR)'}
-                className={escutando ? 'chip active' : 'chip'}
-                style={{ padding: '6px 8px' }}
+        {!modoTranscricao ? (
+          <div className="relative">
+            <input
+              ref={inputRef}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder="Ex: Fazenda São João 1000sc soja 130/sc 30d Sorriso"
+              className="w-full px-4 py-3 pr-24 rounded-md bg-bg-2 border border-border-1 hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-accent text-fg-1 text-body placeholder:text-fg-3"
+              style={{ fontFamily: 'var(--f-mono)', fontSize: 15 }}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {speech.supported && (
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  title={speech.listening ? 'Parar de ouvir' : 'Ditar (PT-BR)'}
+                  className={speech.listening ? 'chip active' : 'chip'}
+                  style={{ padding: '6px 8px' }}
+                >
+                  {speech.listening ? (
+                    <MicOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Mic className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder={
+                'Cole aqui a transcrição da ligação ou WhatsApp.\n\n' +
+                'Ex:\n"Bom dia João, da Fazenda São João aqui. Queria fechar mil sacas de soja a R$ 130 a saca, ' +
+                'entrega em 30 dias, em Sorriso."'
+              }
+              rows={6}
+              className="w-full px-4 py-3 pr-24 rounded-md bg-bg-2 border border-border-1 hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-accent text-fg-1 text-body placeholder:text-fg-3 resize-y"
+              style={{ fontFamily: 'var(--f-sans)', fontSize: 14 }}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <div className="absolute right-2 top-2 flex items-center gap-1">
+              {speech.supported && (
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  title={speech.listening ? 'Parar de ouvir' : 'Ditar (PT-BR)'}
+                  className={speech.listening ? 'chip active' : 'chip'}
+                  style={{ padding: '6px 8px' }}
+                >
+                  {speech.listening ? (
+                    <MicOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Mic className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
+            {speech.listening && (
+              <p
+                className="text-[11px] mt-1 flex items-center gap-1.5"
+                style={{ color: 'var(--accent)' }}
               >
-                <Mic className="h-3.5 w-3.5" />
-              </button>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                Ouvindo… fale em PT-BR. O texto aparece em tempo real.
+              </p>
+            )}
+            {speech.error && (
+              <p className="text-[11px] mt-1 text-warn">Erro voz: {speech.error}</p>
             )}
           </div>
-        </div>
+        )}
 
         {parsed && (
           <div
@@ -461,4 +541,181 @@ export function PropostaCommandBar({
       />
     </>
   )
+}
+
+// ─────────────────────────────────────────────
+// Painel pós-criação — mostrado depois de criar a proposta.
+// Oferece: WhatsApp 1-clique, copiar link público, baixar PDF, ir para a lista.
+// ─────────────────────────────────────────────
+interface PainelPosCriacaoProps {
+  proposta: { id: string; numero: string; clienteId: string }
+  onConcluir: () => void
+  onNovaProposta: () => void
+}
+
+function PainelPosCriacao({ proposta, onConcluir, onNovaProposta }: PainelPosCriacaoProps) {
+  const { success, error: showError, info } = useToast()
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [carregandoShare, setCarregandoShare] = useState(false)
+  const [enviandoWhats, setEnviandoWhats] = useState(false)
+
+  const obterShareUrl = async (): Promise<string | null> => {
+    if (shareUrl) return shareUrl
+    setCarregandoShare(true)
+    try {
+      const r = await fetch(`/api/propostas/${proposta.id}/share`, { method: 'POST' })
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}))
+        showError(j.error || 'Erro ao gerar link')
+        return null
+      }
+      const j = await r.json()
+      setShareUrl(j.url)
+      return j.url as string
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Erro ao gerar link')
+      return null
+    } finally {
+      setCarregandoShare(false)
+    }
+  }
+
+  const copiarLink = async () => {
+    const url = await obterShareUrl()
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      success('Link copiado')
+    } catch {
+      info(url) // fallback: mostra no toast
+    }
+  }
+
+  const enviarWhatsServer = async () => {
+    setEnviandoWhats(true)
+    try {
+      // Primeiro: garante share link no histórico (e log)
+      const url = await obterShareUrl()
+      const r = await fetch(`/api/propostas/${proposta.id}/send-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (r.ok) {
+        success(j.message || 'WhatsApp enviado')
+      } else if (r.status === 400 && j.error === 'Número WhatsApp não fornecido') {
+        // Fallback: abre wa.me sem destino — operador escolhe contato
+        if (url) {
+          window.open(`https://wa.me/?text=${encodeURIComponent(mensagemWhats(proposta.numero, url))}`, '_blank')
+          info('Cliente sem WhatsApp salvo — abri o app pra você escolher')
+        } else {
+          showError('Cliente sem WhatsApp salvo')
+        }
+      } else {
+        showError(j.message || j.error || 'Falha no envio WhatsApp')
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Erro')
+    } finally {
+      setEnviandoWhats(false)
+    }
+  }
+
+  return (
+    <Card className="space-y-4">
+      <div className="flex items-start gap-3">
+        <div
+          className="rounded-full p-2"
+          style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+        >
+          <CheckCircle2 className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <p className="eyebrow">Proposta criada</p>
+          <h3 className="text-h3 font-sans tracking-tight text-fg-1">
+            {proposta.numero}
+          </h3>
+          <p className="text-fg-3 text-small">
+            Escolha o próximo passo. Os atalhos abaixo funcionam.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onNovaProposta}
+          title="Nova proposta"
+          className="chip"
+          style={{ padding: '6px 8px' }}
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Button
+          type="button"
+          variant="primary"
+          leftIcon={<MessageCircle className="h-4 w-4" />}
+          loading={enviandoWhats}
+          onClick={enviarWhatsServer}
+        >
+          Enviar por WhatsApp
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          leftIcon={<FileText className="h-4 w-4" />}
+          loading={carregandoShare}
+          onClick={copiarLink}
+        >
+          {shareUrl ? 'Copiar link público' : 'Gerar link público'}
+        </Button>
+
+        <a
+          href={`/api/propostas/${proposta.id}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            leftIcon={<FileText className="h-4 w-4" />}
+            className="w-full"
+          >
+            Baixar PDF privado
+          </Button>
+        </a>
+
+        <Button
+          type="button"
+          variant="ghost"
+          leftIcon={<Plus className="h-4 w-4" />}
+          onClick={onNovaProposta}
+        >
+          Nova proposta
+        </Button>
+      </div>
+
+      {shareUrl && (
+        <div
+          className="rounded-md p-2 text-[12px] break-all"
+          style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', fontFamily: 'var(--f-mono)' }}
+        >
+          {shareUrl}
+        </div>
+      )}
+
+      <div className="flex justify-end pt-2 border-t border-border-1">
+        <Button type="button" variant="ghost" size="sm" onClick={onConcluir}>
+          Ir para lista de propostas
+        </Button>
+      </div>
+    </Card>
+  )
+}
+
+function mensagemWhats(numero: string, link: string): string {
+  return `Olá! Segue a proposta ${numero}. Acesse o PDF: ${link}`
 }
