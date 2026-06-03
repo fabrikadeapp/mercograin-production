@@ -30,6 +30,9 @@ import {
 import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
+import { PropostasKPIs } from '@/components/propostas/PropostasKPIs'
+import { PropostaRowActions } from '@/components/propostas/PropostaRowActions'
+import { calcularAging, CANAL_LABEL, CANAL_ICONE } from '@/lib/propostas/aging'
 
 interface Proposta {
   id: string
@@ -39,6 +42,7 @@ interface Proposta {
   valorTotal: string
   validadeEm: string
   criadaEm: string
+  canalAutorizacao?: string | null
   cliente: {
     id: string
     nome: string
@@ -87,8 +91,11 @@ const STATUS_OPTIONS = [
   { value: '', label: 'Todos os status' },
   { value: 'rascunho', label: 'Rascunho' },
   { value: 'enviada', label: 'Enviada' },
-  { value: 'aceita', label: 'Aceita' },
+  { value: 'em_negociacao', label: 'Em negociação' },
+  { value: 'aceita', label: 'Aceita / aprovada' },
   { value: 'rejeitada', label: 'Rejeitada' },
+  { value: 'perdida', label: 'Perdida' },
+  { value: 'expirada', label: 'Expirada' },
 ]
 
 // Mapeia status do banco para variantes do Badge.
@@ -102,6 +109,7 @@ const STATUS_TO_BADGE: Record<string, BadgeStatus> = {
   aprovada: 'assinado',
   rejeitada: 'cancelado',
   recusada: 'cancelado',
+  perdida: 'cancelado',
   expirada: 'cancelado',
   fechado: 'fechado',
   sucesso: 'assinado',
@@ -254,6 +262,8 @@ export default function PropostasPage() {
         }
       />
 
+      <PropostasKPIs />
+
       <Card className="mb-6 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <SearchField
@@ -405,25 +415,65 @@ export default function PropostasPage() {
           <div className="space-y-3">
             {propostas.map((proposta) => {
               const TipoIcon = proposta.tipo === 'venda' ? ArrowUpRight : ArrowDownLeft
+              const aging = calcularAging(proposta.validadeEm)
+              const canal = proposta.canalAutorizacao ?? 'web'
+              const corMap: Record<string, string> = {
+                neg: 'var(--danger)',
+                warn: 'var(--warn)',
+                info: 'var(--info)',
+                'fg-2': 'var(--text)',
+                'fg-3': 'var(--text-dim)',
+              }
               return (
-                <Link key={proposta.id} href={`/propostas/${proposta.id}`}>
-                  <Card className="hover:bg-bg-3 transition-colors cursor-pointer">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-3 mb-1 flex-wrap">
-                          <h3 className="text-fg-1 font-semibold t-num">{proposta.numero}</h3>
-                          <Badge variant={STATUS_TO_BADGE[proposta.status]} />
-                        </div>
-                        <p className="text-fg-2 text-small truncate">{proposta.cliente.nome}</p>
+                <Card
+                  key={proposta.id}
+                  className="hover:bg-bg-3 transition-colors"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <Link
+                      href={`/propostas/${proposta.id}`}
+                      className="min-w-0 flex-1 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="text-fg-1 font-semibold t-num">{proposta.numero}</h3>
+                        <Badge variant={STATUS_TO_BADGE[proposta.status] ?? 'rascunho'} />
+                        {(aging.nivel === 'vencida' ||
+                          aging.nivel === 'hoje' ||
+                          aging.nivel === 'urgente') && (
+                          <Chip variant={aging.cor === 'neg' ? 'neg' : 'warn'}>
+                            {aging.label}
+                          </Chip>
+                        )}
+                        <span
+                          className="text-[11px] flex items-center gap-1"
+                          style={{ color: 'var(--text-dim)' }}
+                          title={`Canal: ${CANAL_LABEL[canal] ?? canal}`}
+                        >
+                          {CANAL_ICONE[canal] ?? '•'} {CANAL_LABEL[canal] ?? canal}
+                        </span>
                       </div>
-                      <div className="text-right shrink-0">
+                      <p className="text-fg-2 text-small truncate">{proposta.cliente.nome}</p>
+                    </Link>
+                    <div className="text-right shrink-0 flex items-start gap-2">
+                      <div>
                         <p className="t-num-lg text-fg-1">
                           {formatCurrency(parseFloat(proposta.valorTotal))}
                         </p>
                       </div>
+                      <PropostaRowActions
+                        proposta={{
+                          id: proposta.id,
+                          numero: proposta.numero,
+                          status: proposta.status,
+                          clienteId: proposta.cliente.id,
+                        }}
+                        onRefresh={fetchPropostas}
+                      />
                     </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-border-1">
+                  <Link href={`/propostas/${proposta.id}`} className="block">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-border-1 cursor-pointer">
                       <div>
                         <p className="eyebrow">Tipo</p>
                         <p className="text-fg-1 text-small flex items-center gap-1.5 mt-1">
@@ -443,13 +493,19 @@ export default function PropostasPage() {
                       </div>
                       <div>
                         <p className="eyebrow">Validade</p>
-                        <p className="text-fg-2 text-small t-num mt-1">
+                        <p
+                          className="text-small t-num mt-1"
+                          style={{ color: corMap[aging.cor] ?? 'var(--text)' }}
+                        >
                           {formatDate(proposta.validadeEm)}
+                          {aging.nivel !== 'sem-validade' && (
+                            <span className="text-[11px] ml-1">· {aging.label}</span>
+                          )}
                         </p>
                       </div>
                     </div>
-                  </Card>
-                </Link>
+                  </Link>
+                </Card>
               )
             })}
           </div>
