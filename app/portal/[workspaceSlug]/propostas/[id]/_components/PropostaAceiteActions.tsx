@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -9,13 +9,35 @@ interface Props {
   workspaceSlug: string
 }
 
+interface PreviewResp {
+  html: string
+  templateNome: string | null
+  templateExiste: boolean
+  variavelFaltando: string[]
+}
+
 export function PropostaAceiteActions({ propostaId }: Props) {
   const router = useRouter()
-  const [modalAberto, setModalAberto] = useState<'aceitar' | 'recusar' | null>(null)
+  const [modalAberto, setModalAberto] = useState<'aceitar' | 'recusar' | 'preview' | null>(null)
   const [motivo, setMotivo] = useState('')
   const [aceitanteNome, setAceitanteNome] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [preview, setPreview] = useState<PreviewResp | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  useEffect(() => {
+    if (modalAberto !== 'preview' || preview) return
+    setPreviewLoading(true)
+    fetch(`/api/portal/propostas/${propostaId}/preview-contrato`)
+      .then(async (r) => {
+        const j = await r.json()
+        if (!r.ok) throw new Error(j.error || 'Erro ao gerar preview')
+        setPreview(j as PreviewResp)
+      })
+      .catch((e) => setErro(e instanceof Error ? e.message : 'Erro'))
+      .finally(() => setPreviewLoading(false))
+  }, [modalAberto, preview, propostaId])
 
   const submitAceite = async () => {
     if (!aceitanteNome.trim()) {
@@ -81,6 +103,16 @@ export function PropostaAceiteActions({ propostaId }: Props) {
           <button
             type="button"
             onClick={() => {
+              setModalAberto('preview')
+              setErro(null)
+            }}
+            className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            👁  Ver contrato que será gerado
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setModalAberto('aceitar')
               setErro(null)
             }}
@@ -107,19 +139,56 @@ export function PropostaAceiteActions({ propostaId }: Props) {
           onClick={() => !loading && setModalAberto(null)}
         >
           <div
-            className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
+            className={`w-full ${modalAberto === 'preview' ? 'max-w-4xl' : 'max-w-lg'} rounded-lg bg-white p-6 shadow-xl`}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-semibold">
-              {modalAberto === 'aceitar' ? 'Aceitar proposta' : 'Recusar proposta'}
+              {modalAberto === 'aceitar'
+                ? 'Aceitar proposta'
+                : modalAberto === 'recusar'
+                  ? 'Recusar proposta'
+                  : 'Contrato que será gerado'}
             </h3>
             <p className="mt-2 text-sm text-gray-600">
               {modalAberto === 'aceitar'
                 ? 'Confirme seu nome para registrar o aceite. Isso vale como manifestação formal de aceitação.'
-                : 'Informe o motivo. Sua resposta ajuda a equipe comercial a ajustar futuras propostas.'}
+                : modalAberto === 'recusar'
+                  ? 'Informe o motivo. Sua resposta ajuda a equipe comercial a ajustar futuras propostas.'
+                  : 'Este é o modelo que será preenchido com seus dados quando você aceitar. Confira antes de decidir.'}
             </p>
 
             <div className="mt-4 space-y-3">
+              {modalAberto === 'preview' && (
+                <div>
+                  {previewLoading && (
+                    <p className="py-8 text-center text-sm text-gray-500">Gerando preview…</p>
+                  )}
+                  {preview && (
+                    <>
+                      <div className="mb-2 flex items-center justify-between text-xs">
+                        <span className="text-gray-600">
+                          {preview.templateExiste ? (
+                            <>
+                              Modelo: <strong>{preview.templateNome}</strong>
+                            </>
+                          ) : (
+                            <span className="text-amber-700">⚠ Sem modelo configurado</span>
+                          )}
+                        </span>
+                        {preview.templateExiste && preview.variavelFaltando.length > 0 && (
+                          <span className="text-amber-700" title={preview.variavelFaltando.join(', ')}>
+                            {preview.variavelFaltando.length} campos pendentes
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className="max-h-[60vh] overflow-auto rounded border bg-white p-6 text-sm leading-relaxed text-gray-800"
+                        dangerouslySetInnerHTML={{ __html: preview.html }}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
               {modalAberto === 'aceitar' && (
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -163,24 +232,37 @@ export function PropostaAceiteActions({ propostaId }: Props) {
                 onClick={() => setModalAberto(null)}
                 className="rounded-md px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
               >
-                Cancelar
+                {modalAberto === 'preview' ? 'Fechar' : 'Cancelar'}
               </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={modalAberto === 'aceitar' ? submitAceite : submitRecusa}
-                className={
-                  modalAberto === 'aceitar'
-                    ? 'rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-60'
-                    : 'rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60'
-                }
-              >
-                {loading
-                  ? 'Enviando…'
-                  : modalAberto === 'aceitar'
-                    ? 'Confirmar aceite'
-                    : 'Confirmar recusa'}
-              </button>
+              {modalAberto === 'preview' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalAberto('aceitar')
+                    setErro(null)
+                  }}
+                  className="rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
+                >
+                  Aceitar esta proposta
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={modalAberto === 'aceitar' ? submitAceite : submitRecusa}
+                  className={
+                    modalAberto === 'aceitar'
+                      ? 'rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-60'
+                      : 'rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60'
+                  }
+                >
+                  {loading
+                    ? 'Enviando…'
+                    : modalAberto === 'aceitar'
+                      ? 'Confirmar aceite'
+                      : 'Confirmar recusa'}
+                </button>
+              )}
             </div>
           </div>
         </div>

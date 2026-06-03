@@ -15,6 +15,8 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requirePortal } from '@/lib/portal-produtor/scope'
 import { criarContratoAutoFromProposta } from '@/lib/bhgrain/contrato-auto-create'
+import { sendEmail } from '@/lib/email/send'
+import { propostaAceitaPortalTemplate } from '@/lib/email/templates/proposta-aceita-portal'
 
 const schema = z.object({
   aceitanteNome: z.string().min(2, 'Nome muito curto').max(200),
@@ -43,7 +45,27 @@ export async function POST(
         clienteId: sess.clienteId,
         workspaceId: sess.workspaceId,
       },
-      select: { id: true, numero: true, status: true, validadeEm: true, observacoes: true },
+      select: {
+        id: true,
+        numero: true,
+        status: true,
+        validadeEm: true,
+        observacoes: true,
+        valorTotal: true,
+        cliente: { select: { nome: true } },
+        vendedor: {
+          select: {
+            email: true,
+            user: { select: { nome: true, email: true } },
+          },
+        },
+        gerenteConta: {
+          select: {
+            email: true,
+            user: { select: { nome: true, email: true } },
+          },
+        },
+      },
     })
 
     if (!proposta) {
@@ -113,6 +135,15 @@ export async function POST(
       userId: sess.accessId,
     })
 
+    // Notifica o vendedor + gerente da conta (best-effort, não bloqueia resposta)
+    void notificarTime({
+      proposta,
+      contrato,
+      aceitanteNome: data.aceitanteNome,
+      aceitoEmISO: new Date().toISOString(),
+      origin: request.headers.get('origin') ?? request.nextUrl.origin,
+    })
+
     return NextResponse.json({
       ok: true,
       status: 'aceita',
@@ -124,5 +155,76 @@ export async function POST(
     }
     console.error('Portal aceitar proposta error:', error)
     return NextResponse.json({ error: 'Erro ao aceitar proposta' }, { status: 500 })
+  }
+}
+
+interface ProppForEmail {
+  numero: string
+  valorTotal: { toString: () => string } | number
+  cliente: { nome: string } | null
+  vendedor: {
+    email: string | null
+    user: { nome: string | null; email: string | null } | null
+  } | null
+  gerenteConta: {
+    email: string | null
+    user: { nome: string | null; email: string | null } | null
+  } | null
+}
+
+async function notificarTime(args: {
+  proposta: ProppForEmail
+  contrato: { contratoId: string; numero: string; novo: boolean } | null
+  aceitanteNome: string
+  aceitoEmISO: string
+  origin: string
+}): Promise<void> {
+  try {
+    const destinos = new Map<string, string>() // email → nome
+    for (const m of [args.proposta.vendedor, args.proposta.gerenteConta]) {
+      if (!m) continue
+      const email = m.user?.email ?? m.email
+      const nome = m.user?.nome ?? email?.split('@')[0] ?? 'time comercial'
+      if (email && !destinos.has(email)) destinos.set(email, nome)
+    }
+    if (destinos.size === 0) return
+
+    const valorNum = Number(args.proposta.valorTotal)
+    const valorFmt = valorNum.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    })
+
+    const linkInterno = args.contrato?.contratoId
+      ? `${args.origin}/contratos/${args.contrato.contratoId}`
+      : `${args.origin}/propostas`
+
+    for (const [email, nome] of destinos) {
+      const { propostaAceitaPortalTemplate } = await import(
+        '@/lib/email/templates/proposta-aceita-portal'
+      )
+      const tmpl = propostaAceitaPortalTemplate({
+        destinatarioNome: nome,
+        clienteNome: args.proposta.cliente?.nome ?? 'Cliente',
+        aceitanteNome: args.aceitanteNome,
+        propostaNumero: args.proposta.numero,
+        valorFormatado: valorFmt,
+        contratoNumero: args.contrato?.numero ?? null,
+        linkInterno,
+        aceitoEm: args.aceitoEmISO,
+      })
+      await sendEmail({
+        to: email,
+        subject: tmpl.subject,
+        html: tmpl.html,
+        text: tmpl.text,
+        tags: [
+          { name: 'kind', value: 'proposta_aceita_portal' },
+          { name: 'proposta_numero', value: args.proposta.numero },
+        ],
+      })
+    }
+  } catch (err) {
+    console.warn('[notificarTime] best-effort falhou:', err)
   }
 }
