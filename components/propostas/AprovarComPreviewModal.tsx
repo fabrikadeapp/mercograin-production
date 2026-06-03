@@ -113,8 +113,15 @@ export function AprovarComPreviewModal({
                 )}
               </span>
               {preview.templateExiste && preview.variavelFaltando.length > 0 && (
-                <span className="text-warn text-[12px]">
-                  {preview.variavelFaltando.length} variáveis sem dados
+                <span
+                  className="text-warn text-[12px]"
+                  title={preview.variavelFaltando.join(', ')}
+                >
+                  ⚠ {preview.variavelFaltando.length} variáveis sem dados:{' '}
+                  <span className="font-mono">
+                    {preview.variavelFaltando.slice(0, 3).join(', ')}
+                    {preview.variavelFaltando.length > 3 && '…'}
+                  </span>
                 </span>
               )}
             </div>

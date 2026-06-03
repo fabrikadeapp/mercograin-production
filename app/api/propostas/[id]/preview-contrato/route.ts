@@ -13,7 +13,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
-import { resolveContent, type RenderContext, type ProductInfo } from '@/lib/contratos/render-template'
+import {
+  resolveContent,
+  resolveVariable,
+  extractVariables,
+  type RenderContext,
+  type ProductInfo,
+} from '@/lib/contratos/render-template'
 import { tiptapJsonToHtml } from '@/lib/contratos/tiptap-to-html'
 
 export async function GET(
@@ -115,12 +121,22 @@ export async function GET(
     const resolvedJson = resolveContent(template.contentJson, ctx)
     const html = tiptapJsonToHtml(resolvedJson)
 
+    // Detecta variáveis cuja resolução voltou vazia/placeholder
+    const todasVars = extractVariables(template.contentJson)
+    const variavelFaltando: string[] = []
+    for (const v of todasVars) {
+      const valor = resolveVariable(v, ctx)
+      if (!valor || valor === '—' || valor.trim() === '') {
+        variavelFaltando.push(v)
+      }
+    }
+
     return NextResponse.json({
       html,
       templateNome: template.nome,
       templateId: template.id,
       templateExiste: true,
-      variavelFaltando: [],
+      variavelFaltando,
     })
   } catch (error) {
     console.error('Preview contrato error:', error)

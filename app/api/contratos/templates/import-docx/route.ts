@@ -16,6 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getScope } from '@/lib/auth/scope'
+import { uploadImage, getExtensionForMime } from '@/lib/storage/local'
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5MB
 
@@ -73,22 +74,52 @@ export async function POST(request: NextRequest) {
     // Lazy import — mammoth puxa dependências pesadas que só queremos na rota.
     const mammoth = (await import('mammoth')).default ?? (await import('mammoth'))
 
+    let imagensSubidas = 0
+    let imagensFalhadas = 0
+
     const result = await mammoth.convertToHtml(
       { buffer },
       {
         styleMap: STYLE_MAP,
-        // Ignora imagens por enquanto — depois podemos subir para storage e referenciar
-        convertImage: mammoth.images.imgElement(async () => ({ src: '' })),
+        convertImage: mammoth.images.imgElement(async (image) => {
+          try {
+            const mime = (image.contentType ?? 'image/png').toLowerCase()
+            const ext = getExtensionForMime(mime)
+            if (ext === 'bin') {
+              imagensFalhadas++
+              return { src: '' }
+            }
+            const imgBuf = await image.read()
+            if (!(imgBuf instanceof Buffer)) {
+              imagensFalhadas++
+              return { src: '' }
+            }
+            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+            const upload = await uploadImage({
+              buffer: imgBuf,
+              mimeType: mime,
+              pathPrefix: `contratos-templates/${scope.workspaceId}`,
+              fileName,
+            })
+            imagensSubidas++
+            return { src: upload.publicUrl, alt: 'imagem importada' }
+          } catch (err) {
+            console.warn('[import-docx] falha em imagem:', err)
+            imagensFalhadas++
+            return { src: '' }
+          }
+        }),
       }
     )
 
-    // Limpa <img src=""> que mammoth deixou para placeholders
+    // Limpa <img src=""> que mammoth deixou para placeholders falhados
     const html = result.value.replace(/<img[^>]*src=""[^>]*>/g, '')
 
     return NextResponse.json({
       html,
       sugestaoNome: name.replace(/\.docx$/i, ''),
       tamanhoBytes: file.size,
+      imagens: { subidas: imagensSubidas, falhadas: imagensFalhadas },
       messages: result.messages
         .filter((m) => m.type === 'warning' || m.type === 'error')
         .slice(0, 20)

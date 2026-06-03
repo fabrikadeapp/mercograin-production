@@ -32,6 +32,7 @@ export default async function PortalLayout({
   const base = `/portal/${ws.slug}`
   const nav = [
     ['Dashboard', `${base}`],
+    ['Propostas', `${base}/propostas`],
     ['Contratos', `${base}/contratos`],
     ['Fixações', `${base}/fixacoes`],
     ['Recebíveis', `${base}/recebiveis`],
