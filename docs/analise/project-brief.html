@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Brief — BH Grain</title>
+<style>
+:root {
+  --bg: #0A0B0E;
+  --bg-elev: #0E1015;
+  --surface-1: #14171D;
+  --surface-2: #1B1F27;
+  --surface-3: #232831;
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.12);
+  --text: #ECEEF2;
+  --text-mute: #9AA0AB;
+  --text-dim: #5C6370;
+  --accent: #C8F051;
+  --accent-ink: #0A0B0E;
+  --accent-soft: rgba(200, 240, 81, 0.14);
+  --accent-2: #7FA8FF;
+  --success: #4ADE80;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-pill: 9999px;
+}
+@media print {
+  :root {
+    --bg: #ffffff; --surface-1: #f8f9fa; --surface-2: #ffffff;
+    --text: #0d1117; --text-mute: #57606a; --text-dim: #6e7781;
+    --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.20);
+    --accent: #6f9c1d; --accent-ink: #ffffff; --accent-soft: rgba(132,170,28,0.08);
+  }
+  body { background: white !important; }
+  .toc { display: none; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 32px 96px;
+}
+header.doc-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.brand-mark {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent) 0%, #8fd900 100%);
+  display: grid;
+  place-items: center;
+  color: var(--accent-ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 15px;
+}
+.brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+  margin: 0 0 16px;
+}
+h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 48px 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+h2:first-of-type { border-top: 0; padding-top: 0; }
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 32px 0 12px;
+  color: var(--text);
+}
+h4 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 24px 0 8px;
+}
+p { margin: 0 0 14px; color: var(--text-mute); }
+p strong, li strong { color: var(--text); font-weight: 600; }
+blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  color: var(--text);
+}
+blockquote p { color: var(--text); margin: 0; }
+blockquote p + p { margin-top: 12px; }
+ul, ol { padding-left: 24px; margin: 0 0 16px; color: var(--text-mute); }
+li { margin-bottom: 6px; }
+li::marker { color: var(--text-dim); }
+code {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  color: var(--accent);
+}
+pre {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.55;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 13px;
+  background: var(--surface-1);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  background: var(--surface-2);
+  color: var(--text-mute);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+td { color: var(--text); }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 160ms; }
+a:hover { border-bottom-color: var(--accent); }
+.meta {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+.toc {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  width: 240px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12px;
+}
+.toc-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 0; }
+.toc a {
+  display: block;
+  padding: 5px 0;
+  color: var(--text-mute);
+  border-bottom: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.toc a:hover { color: var(--accent); }
+@media (max-width: 1200px) {
+  .toc { display: none; }
+}
+footer.doc-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
+</style>
+</head>
+<body>
+<aside class="toc">
+        <div class="toc-title">Sumário</div>
+        <ul>
+          <li><a href="#s1">1. Executive Summary</a></li><li><a href="#s2">2. Problema</a></li><li><a href="#s3">3. Solução — BH Grain</a></li><li><a href="#s4">4. Mercado</a></li><li><a href="#s5">5. Modelo de negócio</a></li><li><a href="#s6">6. Cenários financeiros — 12 meses (recalibrado v2)</a></li><li><a href="#s7">7. Go-to-Market</a></li><li><a href="#s8">8. Equipe e operação</a></li><li><a href="#s9">9. Roadmap de produto</a></li><li><a href="#s10">10. Riscos e mitigações</a></li><li><a href="#s11">11. Asks (se buscando captação) — recalibrado v2</a></li><li><a href="#s12">12. Apêndices</a></li>
+        </ul>
+      </aside>
+<div class="container">
+  <header class="doc-header">
+    <div class="brand">
+      <span class="brand-mark">B</span>
+      <span class="brand-name">BH Grain · Mercograin</span>
+    </div>
+    <div class="eyebrow">Documento estratégico consolidado</div>
+    <h1>Project Brief</h1>
+    <p class="meta">Gerado em 2026-05-21 · Atlas (Business Analyst) · v2.0 recalibrado</p>
+  </header>
+  <main>
+    <blockquote>
+<p>Documento estratégico consolidado. Use para apresentação a investidores, onboarding de sócios/vendedores e decisões de roadmap.</p>
+<p><strong>Nota de calibração v2.0</strong>: premissas v1 foram corrigidas. Churn ajustado de 4% para 10% (realidade SaaS B2B BR ano 1), CAC de R$ 1k para R$ 3,5k (ciclo agro), valuation múltiplos de 4-10x ARR para 3-5x (mercado 2026), conversão sobre TAM acessível (não TAM total). Cenários reduzidos ~70% em ARR.</p>
+</blockquote>
+<hr>
+<h2 id="s1">1. Executive Summary</h2>
+<p><strong>BH Grain</strong> é a primeira plataforma SaaS multi-tenant verticalizada para corretoras de grãos no Brasil com <strong>IA conversacional via WhatsApp (Laura.IA)</strong> criando propostas em produção. Substitui ERPs legados (Sirius, Stark, Trinus) com UI moderna, deploys contínuos e pricing transparente.</p>
+<h3>Métricas-chave (estado atual)</h3>
+<table>
+<thead>
+<tr>
+<th>Indicador</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Estágio</strong></td>
+<td>MVP em produção, pré-launch comercial</td>
+</tr>
+<tr>
+<td><strong>Funcionalidades</strong></td>
+<td>41/42 (97%) vs concorrentes</td>
+</tr>
+<tr>
+<td><strong>Linhas de código produtivo</strong></td>
+<td>~120k LoC TypeScript/SQL</td>
+</tr>
+<tr>
+<td><strong>Cobertura E2E</strong></td>
+<td>53+ testes Playwright passando</td>
+</tr>
+<tr>
+<td><strong>Multi-tenancy</strong></td>
+<td>RLS Postgres + middleware estanque</td>
+</tr>
+<tr>
+<td><strong>Compliance</strong></td>
+<td>LGPD, 2FA TOTP, audit log, CSP, DKIM (SPF/DMARC pendente)</td>
+</tr>
+<tr>
+<td><strong>Valuation estimado hoje</strong></td>
+<td><strong>R$ 500k – R$ 1M</strong></td>
+</tr>
+<tr>
+<td><strong>ARR projetado ano 1 (base case honesto)</strong></td>
+<td><strong>R$ 678k</strong></td>
+</tr>
+<tr>
+<td><strong>Valuation projetado ano 1 (base case)</strong></td>
+<td><strong>R$ 2M – R$ 3,5M</strong></td>
+</tr>
+<tr>
+<td><strong>Expected ARR ponderado ano 1</strong></td>
+<td><strong>R$ 805k</strong></td>
+</tr>
+</tbody></table>
+<h3>Proposta de valor única</h3>
+<blockquote>
+<p>&quot;A primeira corretora 100% conectada: Laura atende WhatsApp, fiscal emite SPED, financeiro concilia OFX. Tudo num só lugar, por R$ 697/mês.&quot;</p>
+</blockquote>
+<hr>
+<h2 id="s2">2. Problema</h2>
+<h3>Estado atual do mercado de corretoras de grãos BR</h3>
+<ul>
+<li><strong>~3.500 corretoras ativas</strong> no Brasil</li>
+<li><strong>~60%</strong> ainda operam em <strong>Excel + WhatsApp manual</strong></li>
+<li>Concorrentes consolidados (Sirius) cobram <strong>R$ 2.500–8.000/mês</strong> com UI dos anos 2000</li>
+<li>Implementação típica: <strong>60-90 dias</strong> + setup fee de <strong>R$ 15-40k</strong></li>
+<li><strong>Nenhum concorrente</strong> tem IA conversacional integrada</li>
+<li><strong>EUDR</strong> (lei europeia 2025/2026) força rastreabilidade — ninguém preparado</li>
+</ul>
+<h3>Dores específicas do operador</h3>
+<ol>
+<li><strong>Repetitividade</strong>: trader passa 60% do tempo digitando propostas, atualizando planilha de preços, mandando WhatsApp manual</li>
+<li><strong>Erros fiscais</strong>: NF-e e SPED feitos no contador externo → atraso, multa, retrabalho</li>
+<li><strong>Conciliação bancária</strong>: 3-5 dias/mês de uma pessoa só pra bater banco com sistema</li>
+<li><strong>Sem visibilidade</strong>: dono não sabe pipeline real, margem por produto, ranking de cliente</li>
+<li><strong>Mobilidade zero</strong>: sistema só no desktop do escritório</li>
+<li><strong>Lock-in</strong>: trocar de software = perder histórico, regraçar de zero</li>
+</ol>
+<h3>Custo oculto típico de uma corretora média (10-20 func)</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Custo mensal (R$)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Excel/planilhas (40h/mês × R$ 80)</td>
+<td>3.200</td>
+</tr>
+<tr>
+<td>Contador externo NF-e+SPED</td>
+<td>2.500</td>
+</tr>
+<tr>
+<td>Erros operacionais (1 proposta errada/mês)</td>
+<td>5.000</td>
+</tr>
+<tr>
+<td>Multas fiscais (eventual)</td>
+<td>1.500</td>
+</tr>
+<tr>
+<td>Oportunidades perdidas (resposta lenta)</td>
+<td>8.000</td>
+</tr>
+<tr>
+<td><strong>Total/mês</strong></td>
+<td><strong>R$ 20.200</strong></td>
+</tr>
+</tbody></table>
+<p><strong>BH Grain Pro custa R$ 1.997/mês</strong> → economia mensal de ~R$ 18k = <strong>ROI de 10x</strong>.</p>
+<hr>
+<h2 id="s3">3. Solução — BH Grain</h2>
+<h3>Arquitetura de produto</h3>
+<p><strong>4 workspaces</strong> com permissões por colaborador:</p>
+<h4>🟢 Mesa (Operação Comercial)</h4>
+<ul>
+<li>Propostas + Contratos</li>
+<li>Clientes + CRM</li>
+<li>Cotações ao vivo (CEPEA + CBOT + Câmbio)</li>
+<li>Calculadora multi-unidade (saca/ton/bushel)</li>
+<li>Hedge + Futuros + Risco</li>
+<li>Inbox unificado (WhatsApp + e-mail + portal)</li>
+<li><strong>Laura.IA</strong> — bot WhatsApp que cria propostas</li>
+</ul>
+<h4>💰 Financeiro (Tesouraria)</h4>
+<ul>
+<li>Movimentos (receitas/despesas)</li>
+<li>Conciliação OFX 1-clique</li>
+<li>DRE em tempo real</li>
+<li>Comissões + Royalties</li>
+<li>Fornecedores + Boletos</li>
+<li>Fluxo de caixa projetado</li>
+<li>Aging de pagamentos</li>
+</ul>
+<h4>📋 Fiscal (Tributário)</h4>
+<ul>
+<li>NF-e (FUNRURAL + ICMS + PIS/COFINS automático)</li>
+<li>SPED Fiscal + Contribuições</li>
+<li>Guias (DARF, GNRE, GARE-SP)</li>
+<li>Simulador de carga tributária por UF</li>
+<li><strong>EUDR</strong> compliance</li>
+</ul>
+<h4>👑 Gestão (Executivo)</h4>
+<ul>
+<li>Dashboard executivo (KPIs C-Level)</li>
+<li>Equipe + permissões por área</li>
+<li>Configurações (empresa, marca, integrações)</li>
+<li>BI personalizado</li>
+<li>Audit log completo</li>
+<li>Assinatura + cobrança</li>
+</ul>
+<h3>Diferencial técnico: Laura.IA</h3>
+<blockquote>
+<p>Cliente da corretora manda mensagem WhatsApp:
+<em>&quot;Quero vender 1000 sacas de soja Maringá pra agosto&quot;</em></p>
+<p><strong>Laura cria proposta automaticamente</strong> com:</p>
+<ul>
+<li>Identifica cliente pelo telefone (CRM)</li>
+<li>Cotação CBOT + basis Maringá agosto</li>
+<li>Calcula preço sugerido</li>
+<li>Aplica regras da corretora (margem, comissão)</li>
+<li>Cria proposta <code>aguardando_autorizacao</code></li>
+<li>Notifica trader no app</li>
+<li>Responde no WhatsApp com confirmação</li>
+</ul>
+</blockquote>
+<p><strong>Provider chain</strong>: Groq → OpenRouter → OpenAI (fallback automático). Custo médio: R$ 0,12 por proposta. Telemetria completa em <code>/admin/laura</code>.</p>
+<h3>Stack tecnológica</h3>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Tecnologia</th>
+<th>Justificativa</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend</td>
+<td>Next.js 14 + React + Tailwind</td>
+<td>App Router, SSR, performance</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Next.js API Routes + Prisma</td>
+<td>Mono-repo, type-safe</td>
+</tr>
+<tr>
+<td>DB</td>
+<td>PostgreSQL + RLS</td>
+<td>Multi-tenancy seguro</td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>Railway (us-east4)</td>
+<td>Deploy contínuo, escalável</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>NextAuth v5 + 2FA TOTP</td>
+<td>Padrão da indústria</td>
+</tr>
+<tr>
+<td>Payments</td>
+<td>Stripe (BR)</td>
+<td>Recurring + checkout sessions</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Resend + SES inbound</td>
+<td>Deliverability + reply tracking</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>Groq + OpenRouter + OpenAI (chain)</td>
+<td>Fallback, custo otimizado</td>
+</tr>
+<tr>
+<td>WhatsApp</td>
+<td>Evolution API + Meta Cloud (futuro)</td>
+<td>Multi-conta</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s4">4. Mercado</h2>
+<h3>TAM / SAM / SOM (recalibrado v2 — honesto)</h3>
+<p>A v1 confundia TAM teórico (corretoras × preço máximo) com mercado endereçável real. Aqui aplico filtros honestos de <strong>willingness-to-pay</strong> por segmento.</p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Valor v1 (otimista)</th>
+<th>Valor v2 (honesto)</th>
+<th>Justificativa correção</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>TAM</strong> total</td>
+<td>R$ 252M</td>
+<td><strong>R$ 60M</strong></td>
+<td>Nem toda corretora paga R$ 6k. Tickets reais por porte.</td>
+</tr>
+<tr>
+<td><strong>SAM</strong> acessível</td>
+<td>R$ 76M</td>
+<td><strong>R$ 18M</strong></td>
+<td>Só ~30-50% por porte pagam SaaS (resto fica em Excel)</td>
+</tr>
+<tr>
+<td><strong>SOM</strong> 3 anos</td>
+<td>R$ 7,6M</td>
+<td><strong>R$ 1,8M</strong></td>
+<td>10% do SAM real em 3 anos — ainda agressivo</td>
+</tr>
+</tbody></table>
+<h3>Segmentação realista (com taxa de adoção honesta)</h3>
+<table>
+<thead>
+<tr>
+<th>Segmento</th>
+<th># corretoras</th>
+<th>Ticket médio</th>
+<th>% que paga SaaS</th>
+<th>Mercado real</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Micro (1-3 func)</td>
+<td>700</td>
+<td>R$ 297/mês</td>
+<td>10%</td>
+<td>R$ 250k</td>
+</tr>
+<tr>
+<td>Pequena (3-10 func)</td>
+<td>1.500</td>
+<td>R$ 697/mês</td>
+<td>30%</td>
+<td>R$ 3,8M</td>
+</tr>
+<tr>
+<td>Média (10-50 func)</td>
+<td>1.000</td>
+<td>R$ 1.997/mês</td>
+<td>45%</td>
+<td>R$ 10,8M</td>
+</tr>
+<tr>
+<td>Grande (&gt;50 func)</td>
+<td>300</td>
+<td>R$ 5.997/mês</td>
+<td>60%</td>
+<td>R$ 13M</td>
+</tr>
+<tr>
+<td><strong>Total acessível</strong></td>
+<td><strong>3.500</strong></td>
+<td>—</td>
+<td>—</td>
+<td><strong>R$ 27,9M</strong></td>
+</tr>
+</tbody></table>
+<p>A <code>% que paga SaaS</code> reflete que muitas corretoras (especialmente micro/pequenas) operam em Excel + WhatsApp e <strong>não pagam software</strong> — não é só questão de preço, é cultural.</p>
+<h3>Geografia (cluster prioritário)</h3>
+<table>
+<thead>
+<tr>
+<th>Estado</th>
+<th># corretoras</th>
+<th>% do mercado</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MT</td>
+<td>700</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>PR</td>
+<td>600</td>
+<td>17%</td>
+</tr>
+<tr>
+<td>RS</td>
+<td>500</td>
+<td>14%</td>
+</tr>
+<tr>
+<td>GO</td>
+<td>400</td>
+<td>11%</td>
+</tr>
+<tr>
+<td>MS</td>
+<td>350</td>
+<td>10%</td>
+</tr>
+<tr>
+<td>SP</td>
+<td>300</td>
+<td>9%</td>
+</tr>
+<tr>
+<td>BA</td>
+<td>200</td>
+<td>6%</td>
+</tr>
+<tr>
+<td>Outros</td>
+<td>450</td>
+<td>13%</td>
+</tr>
+</tbody></table>
+<p><strong>Estratégia</strong>: começar PR/SC/RS (proximidade Maringá, base de referência), expandir MT/MS no Q3.</p>
+<h3>Tendências de mercado</h3>
+<ol>
+<li><strong>EUDR</strong> (entrou 2025) — exportadores de soja/café precisam rastrear até a fazenda</li>
+<li><strong>Sucessão geracional</strong> — filhos assumem corretoras, querem ferramentas modernas</li>
+<li><strong>Consolidação</strong> — grupos comprando corretoras pequenas, querem sistema único</li>
+<li><strong>WhatsApp como canal de venda</strong> — Meta Business API cresce 40% a.a. no agro</li>
+<li><strong>IA generativa em B2B</strong> — clientes esperando &quot;ChatGPT&quot; em todo software</li>
+<li><strong>Cooperativas digitalizando</strong> — Coamo, C.Vale, Lar buscando white-label</li>
+</ol>
+<hr>
+<h2 id="s5">5. Modelo de negócio</h2>
+<h3>Pricing (estrutura recomendada)</h3>
+<table>
+<thead>
+<tr>
+<th>Plano</th>
+<th>Mensal</th>
+<th>Anual (-15%)</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Starter</strong></td>
+<td>R$ 697</td>
+<td>R$ 597/mês</td>
+<td>Corretora pequena (3-10 func)</td>
+</tr>
+<tr>
+<td><strong>Pro</strong> ⭐</td>
+<td>R$ 1.997</td>
+<td>R$ 1.697/mês</td>
+<td>Corretora média (10-50 func)</td>
+</tr>
+<tr>
+<td><strong>Enterprise</strong></td>
+<td>R$ 5.997+</td>
+<td>Negociável</td>
+<td>Corretora grande (&gt;50 func)</td>
+</tr>
+</tbody></table>
+<h3>Add-ons (todos os planos)</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Preço</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Colaborador extra</td>
+<td>R$ 150/mês</td>
+</tr>
+<tr>
+<td>Número WhatsApp extra</td>
+<td>R$ 200/mês</td>
+</tr>
+<tr>
+<td>NF-e pacote 500</td>
+<td>R$ 99/mês</td>
+</tr>
+<tr>
+<td>Laura.IA 500 conversas extras</td>
+<td>R$ 297/mês</td>
+</tr>
+<tr>
+<td>Portal produtor (+100)</td>
+<td>R$ 197/mês</td>
+</tr>
+<tr>
+<td>API enterprise 10k calls</td>
+<td>R$ 497/mês</td>
+</tr>
+<tr>
+<td>Implementação acelerada (one-time)</td>
+<td>R$ 2.500</td>
+</tr>
+<tr>
+<td>Migração de dados (one-time)</td>
+<td>R$ 1.500</td>
+</tr>
+</tbody></table>
+<h3>Modelo de monetização</h3>
+<ol>
+<li><strong>MRR recorrente</strong> (núcleo) — 80% da receita</li>
+<li><strong>Add-ons consumo</strong> — 15% (Laura.IA, NF-e extra, etc)</li>
+<li><strong>Services one-time</strong> (setup, migração, treinamento) — 5%</li>
+<li><strong>Co-selling cooperativas</strong> (futuro) — comissão sobre white-label</li>
+</ol>
+<h3>Unit economics (recalibrado v2 — premissas BR realistas)</h3>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Valor v1 (otimista)</th>
+<th>Valor v2 (honesto)</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ARPU médio</td>
+<td>R$ 1.567</td>
+<td>R$ 1.480</td>
+<td>mix mais Starter no início</td>
+</tr>
+<tr>
+<td>Churn mensal</td>
+<td>4%</td>
+<td><strong>10%</strong></td>
+<td>SaaS B2B BR ano 1 é alto. Cai pra 6-7% no ano 2-3</td>
+</tr>
+<tr>
+<td>Lifecycle (1/churn)</td>
+<td>25 meses</td>
+<td><strong>10 meses</strong></td>
+<td>LTV reduzido proporcionalmente</td>
+</tr>
+<tr>
+<td>LTV</td>
+<td>R$ 39.175</td>
+<td><strong>R$ 14.800</strong></td>
+<td>conservador</td>
+</tr>
+<tr>
+<td>CAC blended</td>
+<td>R$ 1.000</td>
+<td><strong>R$ 3.500</strong></td>
+<td>agro tem ciclo longo, decisor 50-65 anos</td>
+</tr>
+<tr>
+<td><strong>LTV/CAC</strong></td>
+<td><strong>39x</strong></td>
+<td><strong>4,2x</strong></td>
+<td>ainda saudável (&gt;3x é OK)</td>
+</tr>
+<tr>
+<td>Payback period</td>
+<td>&lt;1 mês</td>
+<td><strong>2,4 meses</strong></td>
+<td>razoável</td>
+</tr>
+<tr>
+<td>Gross margin</td>
+<td>78%</td>
+<td>75-80%</td>
+<td>inalterado (verdade SaaS)</td>
+</tr>
+<tr>
+<td>Net margin ano 1</td>
+<td>50%</td>
+<td><strong>-10% a +20%</strong></td>
+<td>ano 1 é investimento, não lucro</td>
+</tr>
+</tbody></table>
+<p><strong>Por que CAC mais alto?</strong></p>
+<ul>
+<li>Decisor agro: dono da corretora, 50-65 anos, conservador</li>
+<li>Ciclo de venda: 30-90 dias (demo presencial frequente)</li>
+<li>Resistência cultural: &quot;sempre funcionou no Excel&quot;</li>
+<li>Inbound qualificado real custa R$ 3-5k; outbound LinkedIn R$ 6-10k</li>
+</ul>
+<p><strong>Por que churn maior?</strong></p>
+<ul>
+<li>Implementação leva tempo → cliente não vê valor imediato</li>
+<li>Cancelamento sazonal (entressafra reduz uso)</li>
+<li>Concorrência de Excel grátis sempre presente</li>
+<li>Primeiros 12 meses sempre piores (sem case de sucesso interno)</li>
+</ul>
+<hr>
+<h2 id="s6">6. Cenários financeiros — 12 meses (recalibrado v2)</h2>
+<h3>Premissas comuns (v2 honestas)</h3>
+<ul>
+<li><strong>Churn mensal</strong>: 10% (SaaS B2B BR ano 1)</li>
+<li><strong>Lifecycle</strong>: 10 meses</li>
+<li><strong>CAC blended</strong>: R$ 3.500</li>
+<li><strong>Add-ons</strong>: 5-10% MRR (em vez de 20-30% — corretoras não compram add-ons cedo)</li>
+<li><strong>Custos operacionais</strong>: infra R$ 2k/mês + Stripe 4% + LLM R$ 500-2k/mês + equipe (variável)</li>
+<li><strong>Reinvestimento</strong>: 60-80% do gross profit volta pra crescimento (não margem alta no ano 1)</li>
+</ul>
+<h3>Cenário 🔴 MUITO RUIM (15% prob)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>M6</th>
+<th>M12</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes ativos</td>
+<td>4</td>
+<td>6</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 5.500</td>
+<td>R$ 8.500</td>
+</tr>
+<tr>
+<td><strong>ARR</strong></td>
+<td>—</td>
+<td><strong>R$ 102k</strong></td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>-R$ 60k</td>
+<td><strong>-R$ 80k</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Outcome</strong>: queima caixa, considera pivot ou venda do código.</p>
+<h3>Cenário 🟠 RUIM (25% prob)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>M6</th>
+<th>M12</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes ativos</td>
+<td>10</td>
+<td>18</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 14.000</td>
+<td>R$ 26.500</td>
+</tr>
+<tr>
+<td><strong>ARR</strong></td>
+<td>—</td>
+<td><strong>R$ 318k</strong></td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>-R$ 40k</td>
+<td><strong>-R$ 20k</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Outcome</strong>: sobrevive operando sozinho + 1 freela. Decide se continua ou volta a job.</p>
+<h3>Cenário 🟡 NORMAL — base case (40% prob)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>M6</th>
+<th>M12</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes ativos</td>
+<td>20</td>
+<td>38</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 28.000</td>
+<td>R$ 56.500</td>
+</tr>
+<tr>
+<td>Add-ons (~7%)</td>
+<td>R$ 2.000</td>
+<td>R$ 4.000</td>
+</tr>
+<tr>
+<td><strong>MRR total</strong></td>
+<td>R$ 30.000</td>
+<td>R$ 60.500</td>
+</tr>
+<tr>
+<td><strong>ARR</strong></td>
+<td>—</td>
+<td><strong>R$ 678k</strong></td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>-R$ 30k</td>
+<td><strong>R$ 80-150k</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Outcome</strong>: 1 vendedor + você + 1 dev pleno. Lucrativo no Q4. Decide se capta ou bootstrappa.
+<strong>Valuation</strong>: R$ 2-3,5M (3-5x ARR).</p>
+<h3>Cenário 🟢 MUITO BOM (15% prob)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>M6</th>
+<th>M12</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes ativos</td>
+<td>35</td>
+<td>78</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 49.000</td>
+<td>R$ 115.000</td>
+</tr>
+<tr>
+<td>Add-ons (~10%)</td>
+<td>R$ 5.000</td>
+<td>R$ 12.000</td>
+</tr>
+<tr>
+<td><strong>MRR total</strong></td>
+<td>R$ 54.000</td>
+<td>R$ 127.000</td>
+</tr>
+<tr>
+<td><strong>ARR</strong></td>
+<td>—</td>
+<td><strong>R$ 1,38M</strong></td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>-R$ 50k</td>
+<td><strong>R$ 280k</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Outcome</strong>: equipe 5-6 pessoas, captação seed possível, PMF claro.
+<strong>Valuation</strong>: R$ 5-7M.</p>
+<h3>Cenário 🟣 EXCELENTE (5% prob)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>M6</th>
+<th>M12</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes ativos</td>
+<td>60</td>
+<td>150</td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 90.000</td>
+<td>R$ 235.000</td>
+</tr>
+<tr>
+<td>Add-ons (~12%)</td>
+<td>R$ 11.000</td>
+<td>R$ 28.000</td>
+</tr>
+<tr>
+<td><strong>MRR total</strong></td>
+<td>R$ 101.000</td>
+<td>R$ 263.000</td>
+</tr>
+<tr>
+<td><strong>ARR</strong></td>
+<td>—</td>
+<td><strong>R$ 2,82M</strong></td>
+</tr>
+<tr>
+<td>EBITDA</td>
+<td>R$ 50k</td>
+<td><strong>R$ 850k</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Outcome</strong>: captação Series A possível ano 2, time 10-12, expansão vertical.
+<strong>Valuation</strong>: R$ 12-18M (4-6x ARR).</p>
+<h3>Resumo ponderado v2 — honesto</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>v1 (otimista)</th>
+<th>v2 (honesto)</th>
+<th>Δ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Expected ARR ano 1</strong></td>
+<td>R$ 3,2M</td>
+<td><strong>R$ 805k</strong></td>
+<td><strong>-75%</strong></td>
+</tr>
+<tr>
+<td><strong>Expected EBITDA ano 1</strong></td>
+<td>R$ 1,5M</td>
+<td><strong>R$ 90k</strong></td>
+<td><strong>-94%</strong></td>
+</tr>
+<tr>
+<td><strong>Expected valuation ano 1</strong></td>
+<td>R$ 14-22M</td>
+<td><strong>R$ 3,5-5M</strong></td>
+<td><strong>-70%</strong></td>
+</tr>
+<tr>
+<td><strong>Expected clientes ano 1</strong></td>
+<td>118</td>
+<td><strong>38</strong></td>
+<td><strong>-68%</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Leitura honesta</strong>: o produto vale a pena, o mercado existe, mas é uma maratona de 3-5 anos, não sprint de 12 meses. Quem promete R$ 2M+ ARR no ano 1 em SaaS B2B agro está vendendo sonho.</p>
+<hr>
+<h2 id="s7">7. Go-to-Market</h2>
+<h3>Fase 1 — Pioneer (Q1 2026)</h3>
+<ul>
+<li>10 corretoras early adopters</li>
+<li>Preço promocional: R$ 497/mês (qualquer plano)</li>
+<li>Em troca: case study + testimonial em vídeo</li>
+<li>Onboarding presencial gratuito</li>
+<li>Suporte 1-on-1 com fundador</li>
+<li><strong>Meta</strong>: 10 contas, R$ 5k MRR, 5 cases</li>
+</ul>
+<h3>Fase 2 — Lançamento público (Q2 2026)</h3>
+<ul>
+<li>Pricing oficial (R$ 697/1997/5997)</li>
+<li>Trial 14 dias sem cartão</li>
+<li>Conteúdo: 1 case/semana + 1 webinar/mês</li>
+<li>Programa de indicação: 1 mês grátis pra quem indica</li>
+<li>Tráfego pago: Google Ads + LinkedIn (R$ 15k/mês)</li>
+<li><strong>Meta</strong>: 30 contas, R$ 35k MRR</li>
+</ul>
+<h3>Fase 3 — Aceleração (Q3 2026)</h3>
+<ul>
+<li>Presença em feira agro (Show Rural Coopavel ou similar)</li>
+<li>Contratação: 1 vendedor inbound + 1 CS</li>
+<li>Partnership piloto com 1 cooperativa (white-label)</li>
+<li>API pública + marketplace integrações</li>
+<li><strong>Meta</strong>: 60 contas, R$ 90k MRR</li>
+</ul>
+<h3>Fase 4 — Expansão (Q4 2026)</h3>
+<ul>
+<li>Captação seed R$ 2-5M (se métricas válidas)</li>
+<li>Time 6-8 pessoas</li>
+<li>Expansão vertical: algodão, café, etanol</li>
+<li>Expansão geográfica: MT, MS, GO</li>
+<li><strong>Meta</strong>: 100+ contas, R$ 180k MRR</li>
+</ul>
+<h3>Canais de aquisição</h3>
+<table>
+<thead>
+<tr>
+<th>Canal</th>
+<th>CAC</th>
+<th>Volume mensal</th>
+<th>Prioridade</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Indicação cliente</td>
+<td>R$ 300</td>
+<td>5-15</td>
+<td>🟢 ALTA</td>
+</tr>
+<tr>
+<td>Conteúdo SEO/YouTube</td>
+<td>R$ 600</td>
+<td>10-30</td>
+<td>🟢 ALTA</td>
+</tr>
+<tr>
+<td>Feiras agro (1-2/ano)</td>
+<td>R$ 2.000</td>
+<td>20-40 (em 1 mês)</td>
+<td>🟡 MÉDIA</td>
+</tr>
+<tr>
+<td>Google Ads</td>
+<td>R$ 1.500</td>
+<td>8-20</td>
+<td>🟡 MÉDIA</td>
+</tr>
+<tr>
+<td>LinkedIn Sales</td>
+<td>R$ 2.500</td>
+<td>3-8 (Enterprise)</td>
+<td>🟡 MÉDIA</td>
+</tr>
+<tr>
+<td>Partnership cooperativa</td>
+<td>R$ 500</td>
+<td>50-200 (1 vez)</td>
+<td>🟢 ALTA</td>
+</tr>
+<tr>
+<td>Sindicatos rurais</td>
+<td>R$ 800</td>
+<td>5-20</td>
+<td>🟡 MÉDIA</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s8">8. Equipe e operação</h2>
+<h3>Equipe atual</h3>
+<ul>
+<li><strong>Fundador / CEO</strong> (você) — produto + comercial + dev</li>
+<li><strong>Claude</strong> (parceiro de dev) — assistente IA full-stack</li>
+</ul>
+<h3>Plano de hiring 12 meses (cenário base)</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Q</th>
+<th>Salário/mês (R$)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Vendedor inbound</td>
+<td>Q2</td>
+<td>4-6k + comissão 5% MRR</td>
+</tr>
+<tr>
+<td>CS (Customer Success)</td>
+<td>Q3</td>
+<td>4-5k</td>
+</tr>
+<tr>
+<td>Dev full-stack pleno</td>
+<td>Q3</td>
+<td>10-14k</td>
+</tr>
+<tr>
+<td>Marketing/conteúdo</td>
+<td>Q4</td>
+<td>6-8k</td>
+</tr>
+<tr>
+<td>Vendedor field sales (Enterprise)</td>
+<td>Q4</td>
+<td>6-10k + comissão 7% MRR</td>
+</tr>
+</tbody></table>
+<p><strong>Total folha ano 1 (estimado)</strong>: R$ 350-500k</p>
+<h3>Infraestrutura</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Custo mensal</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Railway (DB + 2 services)</td>
+<td>R$ 600</td>
+</tr>
+<tr>
+<td>Domain + SSL</td>
+<td>R$ 50</td>
+</tr>
+<tr>
+<td>Resend (e-mail)</td>
+<td>R$ 200</td>
+</tr>
+<tr>
+<td>Stripe (4% gross)</td>
+<td>variável</td>
+</tr>
+<tr>
+<td>LLM (Groq/OpenRouter)</td>
+<td>R$ 500-2.000</td>
+</tr>
+<tr>
+<td>Monitoring (Sentry)</td>
+<td>R$ 200</td>
+</tr>
+<tr>
+<td><strong>Total fixo</strong></td>
+<td><strong>~R$ 2k</strong></td>
+</tr>
+</tbody></table>
+<h3>Compliance e segurança</h3>
+<ul>
+<li>✅ LGPD: termo de uso + DPA + audit log</li>
+<li>✅ 2FA TOTP obrigatório para owners</li>
+<li>✅ RLS Postgres + middleware estanque</li>
+<li>✅ CSP headers + HSTS + SAMEORIGIN</li>
+<li>✅ Audit log automático em 13 eventos críticos</li>
+<li>✅ Backups diários (Railway managed)</li>
+<li>🟡 SPF/DMARC (pendente — adicionar SPF + DMARC quarantine)</li>
+<li>🟡 Pentests externos (planejado Q3)</li>
+</ul>
+<hr>
+<h2 id="s9">9. Roadmap de produto</h2>
+<h3>Já pronto (em produção)</h3>
+<ul>
+<li>4 workspaces multi-tenant</li>
+<li>Propostas, contratos, clientes</li>
+<li>Cotações ao vivo (CEPEA + CBOT + câmbio)</li>
+<li>Fiscal NF-e + SPED</li>
+<li>Financeiro completo</li>
+<li>Laura.IA WhatsApp</li>
+<li>Portal do produtor</li>
+<li>Operação física</li>
+<li>Originação</li>
+<li>EUDR</li>
+<li>Audit log + 2FA</li>
+<li>Purchase-first checkout</li>
+<li>Telemetria Laura</li>
+</ul>
+<h3>Q1 2026 — Polimento pré-launch</h3>
+<ul>
+<li>🔴 SPF/DMARC DNS</li>
+<li>🔴 Fix autofill CNPJ/CEP (race condition)</li>
+<li>🟡 Stripe production mode</li>
+<li>🟡 5 cases pioneer documentados</li>
+</ul>
+<h3>Q2 2026 — Conteúdo &amp; vendas</h3>
+<ul>
+<li>Calculadora pública de ROI no site</li>
+<li>Migração assistida (importar de Sirius/Excel)</li>
+<li>Treinamento certificado</li>
+<li>Marketplace de templates</li>
+</ul>
+<h3>Q3 2026 — Plataforma &amp; API</h3>
+<ul>
+<li>API pública v1 (REST + webhooks)</li>
+<li>Marketplace de integrações</li>
+<li>White-label (Enterprise)</li>
+<li>BI personalizado avançado</li>
+</ul>
+<h3>Q4 2026 — Verticalização</h3>
+<ul>
+<li>Algodão (mesma estrutura, ajustes regulatórios)</li>
+<li>Café</li>
+<li>Etanol/biodiesel</li>
+<li>Internacionalização (Paraguai? Argentina?)</li>
+</ul>
+<hr>
+<h2 id="s10">10. Riscos e mitigações</h2>
+<table>
+<thead>
+<tr>
+<th>Risco</th>
+<th>Probabilidade</th>
+<th>Impacto</th>
+<th>Mitigação</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Não atingir PMF em 90 dias</td>
+<td>Média</td>
+<td>Alto</td>
+<td>Pioneer program; pivotar em 6 meses se necessário</td>
+</tr>
+<tr>
+<td>Sirius copia IA</td>
+<td>Alta</td>
+<td>Médio</td>
+<td>Velocidade; moat de dados (transcrições); brand</td>
+</tr>
+<tr>
+<td>Crise agro (preços baixos)</td>
+<td>Média</td>
+<td>Médio</td>
+<td>Plano Starter accessível; freemium se preciso</td>
+</tr>
+<tr>
+<td>LLM cost explosion</td>
+<td>Baixa</td>
+<td>Médio</td>
+<td>Fallback chain; BYOK Enterprise; cache agressivo</td>
+</tr>
+<tr>
+<td>Bug fiscal causando multa cliente</td>
+<td>Baixa</td>
+<td>Alto</td>
+<td>Seguro D&amp;O + revisão fiscal externa quarterly</td>
+</tr>
+<tr>
+<td>Stripe muda regras BR</td>
+<td>Baixa</td>
+<td>Alto</td>
+<td>Plan B: Pagar.me ou Asaas</td>
+</tr>
+<tr>
+<td>Concorrente VC-funded</td>
+<td>Média</td>
+<td>Alto</td>
+<td>Diferenciação extrema; velocidade; partnership cooperativas</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s11">11. Asks (se buscando captação) — recalibrado v2</h2>
+<h3>Pre-seed / Bootstrap (Q1-Q2 2026) — viável sem captação</h3>
+<p>Você não precisa captar ainda. Cenário base (R$ 678k ARR ano 1) sustenta operação enxuta:</p>
+<ul>
+<li>Você + 1 vendedor (R$ 6k base + comissão)</li>
+<li>1 dev pleno (R$ 12k)</li>
+<li>Infra R$ 2k/mês</li>
+<li>Marketing R$ 5-10k/mês</li>
+<li><strong>Burn rate</strong>: ~R$ 30-40k/mês</li>
+<li><strong>Receita Q4</strong>: ~R$ 60k/mês → break-even em ~12 meses</li>
+</ul>
+<p><strong>Recomendado</strong>: bootstrappar até atingir MRR R$ 50k antes de captar.</p>
+<h3>Seed Round — R$ 1,5-2M (target Q4 2026 ou Q1 2027)</h3>
+<p><strong>Quando captar</strong>: depois de 30+ clientes pagantes e MRR R$ 50k+.</p>
+<p><strong>Uso dos recursos (R$ 1,5M scenario)</strong>:</p>
+<ul>
+<li>50% Equipe (3 hires: 1 vendedor sênior, 1 CS, 1 dev) — R$ 750k</li>
+<li>30% Marketing &amp; vendas (feiras, tráfego, conteúdo) — R$ 450k</li>
+<li>10% Produto &amp; infra — R$ 150k</li>
+<li>10% Reserva 6 meses — R$ 150k</li>
+</ul>
+<p><strong>Estrutura realista 2026</strong>: SAFE ou equity <strong>20-25%</strong> (valuation R$ 6-8M post-money, <strong>não</strong> R$ 15-20M como v1 sugeria).</p>
+<p><strong>Por que valuation mais baixo</strong>:</p>
+<ul>
+<li>Mercado VC 2025/2026 está em down round (vs 2021)</li>
+<li>SaaS B2B seed BR: 3-5x ARR é o padrão (não 8-10x)</li>
+<li>Sem PMF comprovado pré-captação = desconto adicional</li>
+<li>Vertical agro tem menos investidores especializados que SaaS horizontal</li>
+</ul>
+<p><strong>Investidores-alvo (ranking realista)</strong>:</p>
+<ol>
+<li><strong>Angels do agro</strong> (donos de cooperativas, traders) — mais provável fechar</li>
+<li><strong>SP Ventures</strong> (agro tech, ticket R$ 1-3M)</li>
+<li><strong>Barn Investimentos</strong> (agro tech)</li>
+<li><strong>Aberto Capital</strong> (early stage BR)</li>
+<li><strong>Wayra</strong> (corporate VC, tickets menores)</li>
+</ol>
+<h3>Métricas que destravam captação (honesto)</h3>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>v1 (otimista)</th>
+<th>v2 (realista)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes pagantes</td>
+<td>30+</td>
+<td><strong>50+</strong></td>
+</tr>
+<tr>
+<td>MRR</td>
+<td>R$ 50k</td>
+<td><strong>R$ 80-100k</strong></td>
+</tr>
+<tr>
+<td>Net retention</td>
+<td>110%</td>
+<td><strong>95-105%</strong> (110% é raro ano 1)</td>
+</tr>
+<tr>
+<td>Churn mensal</td>
+<td>&lt;5%</td>
+<td><strong>&lt;8%</strong></td>
+</tr>
+<tr>
+<td>NPS</td>
+<td>&gt;50</td>
+<td><strong>&gt;40</strong></td>
+</tr>
+<tr>
+<td>Crescimento MoM</td>
+<td>20%</td>
+<td><strong>15-25%</strong></td>
+</tr>
+<tr>
+<td>LTV/CAC</td>
+<td>5x+</td>
+<td><strong>3x+</strong></td>
+</tr>
+</tbody></table>
+<p><strong>Realidade</strong>: muito provável que você só consiga captar no <strong>ano 2</strong> (Q2-Q3 2027) quando tiver 60-100 clientes e MRR R$ 100-150k.</p>
+<hr>
+<h2 id="s12">12. Apêndices</h2>
+<h3>A. Glossário</h3>
+<ul>
+<li><strong>MRR</strong>: Monthly Recurring Revenue</li>
+<li><strong>ARR</strong>: Annual Recurring Revenue (MRR × 12)</li>
+<li><strong>CAC</strong>: Customer Acquisition Cost</li>
+<li><strong>LTV</strong>: Lifetime Value</li>
+<li><strong>PMF</strong>: Product-Market Fit</li>
+<li><strong>Laura.IA</strong>: bot conversacional via WhatsApp</li>
+<li><strong>EUDR</strong>: EU Deforestation Regulation</li>
+<li><strong>Multi-tenant</strong>: 1 sistema, múltiplas empresas isoladas</li>
+<li><strong>RLS</strong>: Row Level Security (Postgres)</li>
+</ul>
+<h3>B. Referências</h3>
+<ul>
+<li>CONAB: estimativas de mercado</li>
+<li>IBGE: PIB agro 2025</li>
+<li>Meta Business: WhatsApp API stats</li>
+<li>Crunchbase: VCs ativos no agro BR</li>
+<li>Sirius site / Sirius LinkedIn</li>
+</ul>
+<h3>C. Contato</h3>
+<ul>
+<li><strong>Fundador</strong>: Gustavo Holderbaum Vieira</li>
+<li><strong>E-mail</strong>: <a href="mailto:aero.gus@hotmail.com">aero.gus@hotmail.com</a></li>
+<li><strong>Produto live</strong>: <a href="https://www.profitsync.ia.br">https://www.profitsync.ia.br</a></li>
+<li><strong>GitHub</strong>: github.com/fabrikadeapp/mercograin-production</li>
+</ul>
+<hr>
+<p><strong>Próxima revisão</strong>: 2026-08-19 (90 dias) ou quando atingir 30 clientes pagantes.</p>
+<p>— Atlas, investigando a verdade 🔎</p>
+
+  </main>
+  <footer class="doc-footer">
+    Documento estratégico interno — BH Grain / Mercograin · <a href="index.html">↑ Voltar ao índice</a>
+  </footer>
+</div>
+</body>
+</html>

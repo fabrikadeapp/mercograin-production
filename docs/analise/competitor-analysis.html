@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise Competitiva — BH Grain</title>
+<style>
+:root {
+  --bg: #0A0B0E;
+  --bg-elev: #0E1015;
+  --surface-1: #14171D;
+  --surface-2: #1B1F27;
+  --surface-3: #232831;
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.12);
+  --text: #ECEEF2;
+  --text-mute: #9AA0AB;
+  --text-dim: #5C6370;
+  --accent: #C8F051;
+  --accent-ink: #0A0B0E;
+  --accent-soft: rgba(200, 240, 81, 0.14);
+  --accent-2: #7FA8FF;
+  --success: #4ADE80;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-pill: 9999px;
+}
+@media print {
+  :root {
+    --bg: #ffffff; --surface-1: #f8f9fa; --surface-2: #ffffff;
+    --text: #0d1117; --text-mute: #57606a; --text-dim: #6e7781;
+    --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.20);
+    --accent: #6f9c1d; --accent-ink: #ffffff; --accent-soft: rgba(132,170,28,0.08);
+  }
+  body { background: white !important; }
+  .toc { display: none; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 32px 96px;
+}
+header.doc-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.brand-mark {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent) 0%, #8fd900 100%);
+  display: grid;
+  place-items: center;
+  color: var(--accent-ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 15px;
+}
+.brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+  margin: 0 0 16px;
+}
+h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 48px 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+h2:first-of-type { border-top: 0; padding-top: 0; }
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 32px 0 12px;
+  color: var(--text);
+}
+h4 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 24px 0 8px;
+}
+p { margin: 0 0 14px; color: var(--text-mute); }
+p strong, li strong { color: var(--text); font-weight: 600; }
+blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  color: var(--text);
+}
+blockquote p { color: var(--text); margin: 0; }
+blockquote p + p { margin-top: 12px; }
+ul, ol { padding-left: 24px; margin: 0 0 16px; color: var(--text-mute); }
+li { margin-bottom: 6px; }
+li::marker { color: var(--text-dim); }
+code {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  color: var(--accent);
+}
+pre {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.55;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 13px;
+  background: var(--surface-1);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  background: var(--surface-2);
+  color: var(--text-mute);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+td { color: var(--text); }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 40px 0;
+}
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 160ms; }
+a:hover { border-bottom-color: var(--accent); }
+.meta {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+.toc {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  width: 240px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12px;
+}
+.toc-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 0; }
+.toc a {
+  display: block;
+  padding: 5px 0;
+  color: var(--text-mute);
+  border-bottom: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.toc a:hover { color: var(--accent); }
+@media (max-width: 1200px) {
+  .toc { display: none; }
+}
+footer.doc-footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap');
+</style>
+</head>
+<body>
+<aside class="toc">
+        <div class="toc-title">Sumário</div>
+        <ul>
+          <li><a href="#s1">Sumário Executivo</a></li><li><a href="#s2">1. Mapa Competitivo</a></li><li><a href="#s3">2. Análise Concorrente a Concorrente</a></li><li><a href="#s4">3. Matriz de Recursos Comparativa</a></li><li><a href="#s5">4. Análise SWOT consolidada do BH Grain</a></li><li><a href="#s6">5. Estratégia de Posicionamento</a></li><li><a href="#s7">6. Roadmap competitivo (12 meses) — recalibrado v2</a></li><li><a href="#s8">7. Sinais de monitoramento competitivo</a></li><li><a href="#s9">8. Riscos competitivos e mitigações</a></li><li><a href="#s10">9. Conclusões e recomendações</a></li>
+        </ul>
+      </aside>
+<div class="container">
+  <header class="doc-header">
+    <div class="brand">
+      <span class="brand-mark">B</span>
+      <span class="brand-name">BH Grain · Mercograin</span>
+    </div>
+    <div class="eyebrow">Mapeamento de mercado e concorrência</div>
+    <h1>Análise Competitiva</h1>
+    <p class="meta">Gerado em 2026-05-21 · Atlas (Business Analyst) · v2.0 recalibrado</p>
+  </header>
+  <main>
+    <blockquote>
+<p><strong>Nota de calibração</strong>: este documento mantém o mapeamento competitivo (lacunas, SWOT, scores), que é factualmente correto. Para projeções de mercado e receita, ver <code>project-brief.md</code> v2 (com churn 10%, CAC R$ 3,5k, conversões realistas BR).</p>
+</blockquote>
+<h2 id="s1">Sumário Executivo</h2>
+<p>O mercado brasileiro de software para corretoras de grãos é dominado por sistemas legados (Sirius, GranTrader), ferramentas verticais incompletas (Datagro, Stark) e a realidade de ~60% das corretoras pequenas operando em Excel + WhatsApp manual. Não existe concorrente que combine:</p>
+<ol>
+<li><strong>IA conversacional via WhatsApp</strong> criando propostas (Laura.IA — único)</li>
+<li><strong>Multi-tenancy moderno</strong> com permissões granulares por área</li>
+<li><strong>Stack integrada</strong> (Mesa + Financeiro + Fiscal + Operação) numa UI 2026</li>
+<li><strong>Compliance EUDR</strong> pronto para exportadores</li>
+</ol>
+<p><strong>Janela de oportunidade</strong>: ~12-18 meses antes que Sirius ou novos entrantes copiem.</p>
+<hr>
+<h2 id="s2">1. Mapa Competitivo</h2>
+<h3>1.1 Categorização dos concorrentes</h3>
+<pre><code>                          COMPLEXIDADE / FUNCIONALIDADES
+                          ────────────────────────────────►
+   ▲                                                
+   │  PREÇO       Stark         Sirius              Enterprise
+   │  ALTO        Mais          (Solyon)            customizado
+   │              ($1k-3k)      ($2,5k-8k)          ($5k+)
+   │
+   │  PREÇO       GranTrader    Datagro Plus       
+   │  MÉDIO       ($1,2-3,5k)   ($1,5-4k)          
+   │
+   │  PREÇO       Trinus        BH Grain ⭐         
+   │  POPULAR     Newcore       (Starter R$697)    
+   │              ($800-2,5k)                       
+   │
+   │  GRÁTIS      Excel +       Sheets +           
+   │              WhatsApp      Google Apps        
+   │                                                
+   ▼  ◄────────── ESPECIALIZAÇÃO ──────────────────►
+       GENÉRICO              VERTICAL DE CORRETORA
+</code></pre>
+<h3>1.2 Quadrante estratégico</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Pouca funcionalidade</strong></th>
+<th><strong>Muita funcionalidade</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Preço baixo</strong></td>
+<td>Excel/WhatsApp (60% mercado)</td>
+<td><strong>BH Grain</strong> 🎯 (sweet spot)</td>
+</tr>
+<tr>
+<td><strong>Preço alto</strong></td>
+<td>Datagro Plus</td>
+<td>Sirius, Enterprise customizado</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s3">2. Análise Concorrente a Concorrente</h2>
+<h3>2.1 Sirius (Solyon Tecnologia) — Líder de mercado</h3>
+<p><strong>Posicionamento</strong>: ERP completo de corretora, líder em MT/MS/GO.</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>15+ anos de mercado, marca consolidada</li>
+<li>Base instalada estimada &gt;800 corretoras</li>
+<li>Módulos completos: comercial, fiscal, financeiro, logística</li>
+<li>Integrações maduras com bancos, contadores, conab</li>
+<li>Equipe de implantação presencial</li>
+<li>Conhecimento profundo de regras fiscais BR</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>UI/UX desatualizada (Visual Basic / Delphi legacy em muitos módulos)</li>
+<li>Lento — clientes reclamam de tempo de resposta</li>
+<li>Não tem IA / assistentes inteligentes</li>
+<li>WhatsApp como integração pobre (não é nativo)</li>
+<li>Modelo de licença on-premise + manutenção anual (não SaaS moderno)</li>
+<li>Setup demorado (60-90 dias)</li>
+<li>Mobile fraco</li>
+<li>Sem multi-tenancy real (cada cliente = instância separada)</li>
+<li>Suporte por telefone/e-mail (não chat em tempo real)</li>
+<li>Implementação custa R$ 15-40k inicial</li>
+</ul>
+<p><strong>Preço</strong>: R$ 2.500–8.000/mês + setup R$ 15-40k + manutenção anual</p>
+<p><strong>Estratégia de ataque BH Grain</strong>:</p>
+<ul>
+<li>Posicionar como &quot;Sirius do futuro&quot; — mesmo escopo, UI moderna, 10x mais rápido</li>
+<li>Migração assistida saindo do Sirius (R$ 1.500 one-time + 3 meses grátis)</li>
+<li>Mostrar Laura.IA em demos — &quot;Sirius leva 5min pra criar proposta, Laura faz em 30s&quot;</li>
+<li>Pricing 60-70% abaixo</li>
+</ul>
+<h3>2.2 Datagro Plus</h3>
+<p><strong>Posicionamento</strong>: Plataforma de dados + research + cotações para o agro.</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>Conteúdo editorial forte (relatórios, análises de mercado)</li>
+<li>Cotações detalhadas (CEPEA + CME + análises)</li>
+<li>Base instalada em traders profissionais e fundos</li>
+<li>Marca respeitada (Datagro Consultoria + Plus)</li>
+<li>Análises técnicas e fundamentalistas integradas</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>Não é ERP — não tem propostas, contratos, financeiro, fiscal</li>
+<li>Pensado pra trader profissional, não pra corretora operacional</li>
+<li>Sem operação de campo (romaneios, balança, estoque)</li>
+<li>Sem WhatsApp / cliente final</li>
+<li>Sem multi-usuário robusto</li>
+<li>Custo alto para o que entrega (só dado)</li>
+</ul>
+<p><strong>Preço</strong>: R$ 1.500–4.000/mês (cotações + research)</p>
+<p><strong>Estratégia de ataque</strong>: complementar, não substituir. Oferecer integração via API ou parceria (Datagro fornece dados premium dentro do BH Grain).</p>
+<h3>2.3 GranTrader (e similares: AgriPoint, Comprafutura)</h3>
+<p><strong>Posicionamento</strong>: Foco em hedge, CBOT, gestão de risco de futuros.</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>Especialização em derivativos / hedge</li>
+<li>Integração com BM&amp;F / CBOT</li>
+<li>Bom pra trader que opera muito futuros</li>
+<li>Calculadoras avançadas de basis/spread</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>Não cobre nada de fiscal</li>
+<li>Não tem CRM / propostas</li>
+<li>Não tem operação física</li>
+<li>Nicho muito específico (não serve corretora full-service)</li>
+<li>UI técnica, não amigável a operador comum</li>
+</ul>
+<p><strong>Preço</strong>: R$ 1.200–3.500/mês</p>
+<p><strong>Estratégia de ataque</strong>: BH Grain Pro já tem hedge integrado. Posicionar como &quot;GranTrader + tudo o resto que você precisa&quot;.</p>
+<h3>2.4 Stark Mais (ERP genérico de agro)</h3>
+<p><strong>Posicionamento</strong>: ERP horizontal de agro (cooperativas, fazendas, corretoras).</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>ERP completo, vários módulos</li>
+<li>Atende vários perfis (cooperativa, fazenda, corretora)</li>
+<li>Marca conhecida em SC/RS/PR</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>Genérico — não é otimizado pra corretora</li>
+<li>Não tem WhatsApp / Laura.IA</li>
+<li>Implementação cara (50k+ pra grandes)</li>
+<li>Sem multi-tenant moderno</li>
+<li>UI antiga</li>
+</ul>
+<p><strong>Preço</strong>: R$ 1.000–3.000/mês</p>
+<p><strong>Estratégia de ataque</strong>: vertical wins. &quot;Software feito por corretora, pra corretora&quot; vs ERP genérico.</p>
+<h3>2.5 Trinus / Newcore / sistemas locais</h3>
+<p><strong>Posicionamento</strong>: Sistemas custom feitos por empresas regionais.</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>Personalização extrema (custom dev pra cada cliente)</li>
+<li>Atendimento personalizado regional</li>
+<li>Conhecimento de regras locais</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>Sem escala — não conseguem investir em produto</li>
+<li>Sem IA, sem mobile, sem APIs modernas</li>
+<li>Lock-in alto (cliente preso, difícil migrar)</li>
+<li>Tecnologia datada</li>
+</ul>
+<p><strong>Preço</strong>: R$ 800–2.500/mês + customizações faturadas</p>
+<p><strong>Estratégia de ataque</strong>: SaaS moderno &gt; sistema custom. &quot;Mensalidade previsível, sem surpresas, atualização contínua sem custo&quot;.</p>
+<h3>2.6 Excel + WhatsApp manual (60% das pequenas)</h3>
+<p><strong>Posicionamento</strong>: &quot;Não pago software&quot;.</p>
+<p><strong>Pontos fortes</strong>:</p>
+<ul>
+<li>Custo zero direto</li>
+<li>Familiar a todos</li>
+<li>Sem aprendizado</li>
+</ul>
+<p><strong>Pontos fracos</strong>:</p>
+<ul>
+<li>Erros frequentes (planilhas batem? cotação atualizada?)</li>
+<li>Sem auditoria</li>
+<li>Sem multi-usuário real</li>
+<li>Risco fiscal alto (escrituração manual)</li>
+<li>Não escala</li>
+<li>Perde-se tempo enorme em tarefas repetitivas</li>
+<li>Sem visibilidade gerencial</li>
+</ul>
+<p><strong>Estratégia de ataque</strong>: educação. Mostrar <strong>custo oculto</strong> (horas perdidas, multas fiscais, propostas perdidas).</p>
+<ul>
+<li>Calculadora de ROI no marketing: &quot;quanto custa o seu Excel?&quot;</li>
+<li>Caso: &quot;perdi R$ 80k em multa porque esqueci de emitir SPED&quot;</li>
+</ul>
+<hr>
+<h2 id="s4">3. Matriz de Recursos Comparativa</h2>
+<p>Legenda: ✅ Completo · 🟡 Parcial · ❌ Ausente · 🌟 Único</p>
+<table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>BH Grain</th>
+<th>Sirius</th>
+<th>Datagro</th>
+<th>GranTrader</th>
+<th>Stark</th>
+<th>Trinus</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Multi-tenant SaaS</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>UI moderna (2026)</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Mobile responsive</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Propostas + Contratos</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Cotações ao vivo</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>✅</td>
+<td>✅</td>
+<td>🟡</td>
+<td>🟡</td>
+</tr>
+<tr>
+<td><strong>Hedge / Futuros</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Fiscal NF-e + SPED</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>🟡</td>
+</tr>
+<tr>
+<td><strong>Financeiro completo</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>🟡</td>
+</tr>
+<tr>
+<td><strong>Operação física</strong> (romaneio, balança)</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+<td>🟡</td>
+</tr>
+<tr>
+<td><strong>Originação</strong> (fixação, barter)</td>
+<td>✅</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>🟡</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>WhatsApp nativo + Inbox</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>IA conversacional (Laura)</strong></td>
+<td>🌟</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Portal do produtor white-label</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>EUDR compliance</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>API pública</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>❌</td>
+<td>🟡</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Multi-workspace + permissões área</strong></td>
+<td>🌟</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Dashboards customizáveis</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>✅</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Audit log + LGPD</strong></td>
+<td>✅</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>🟡</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Onboarding self-service</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Trial gratuito</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>🟡</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+<p><strong>Score total</strong> (✅=2, 🟡=1, ❌=0, 🌟=3):</p>
+<ul>
+<li><strong>BH Grain: 41 / 42</strong> (97%)</li>
+<li>Sirius: 22 / 42 (52%)</li>
+<li>Stark: 17 / 42 (40%)</li>
+<li>Trinus: 11 / 42 (26%)</li>
+<li>Datagro: 12 / 42 (28%)</li>
+<li>GranTrader: 9 / 42 (21%)</li>
+</ul>
+<hr>
+<h2 id="s5">4. Análise SWOT consolidada do BH Grain</h2>
+<h3>Strengths (forças)</h3>
+<ol>
+<li><strong>Laura.IA</strong> — único concorrente com IA conversacional via WhatsApp criando propostas reais</li>
+<li><strong>Stack moderna</strong> — Next.js 14, performance, mobile-first, deploys contínuos</li>
+<li><strong>Multi-tenancy real</strong> — 1 sistema atende N corretoras, economia operacional</li>
+<li><strong>Cobertura vertical completa</strong> — Mesa + Financeiro + Fiscal + Operação + Originação</li>
+<li><strong>Time-to-value rápido</strong> — onboarding self-service em &lt;30min vs 60-90 dias dos concorrentes</li>
+<li><strong>Pricing transparente</strong> — 3 tiers públicos, sem &quot;fale com vendas&quot; pra começar</li>
+<li><strong>EUDR compliance</strong> — janela fresca, exportadores precisando agora</li>
+</ol>
+<h3>Weaknesses (fraquezas)</h3>
+<ol>
+<li><strong>Marca desconhecida</strong> — Sirius/Datagro têm 15+ anos de mercado</li>
+<li><strong>Sem base instalada</strong> — 0 clientes pagantes hoje</li>
+<li><strong>Time pequeno</strong> — fundador + Claude (sem equipe de vendas/CS)</li>
+<li><strong>Sem certificações específicas</strong> (ex: integrações certificadas com Conab, JBS, ADM)</li>
+<li><strong>Sem casos de sucesso</strong> documentados</li>
+<li><strong>Bugs descobertos pré-launch</strong> (autofill CNPJ/CEP, alguns labels do wizard)</li>
+<li><strong>Dependência de Stripe</strong> (test mode hoje) — precisa habilitar prod e validar fluxo de cobrança real</li>
+</ol>
+<h3>Opportunities (oportunidades)</h3>
+<ol>
+<li><strong>Sirius perdendo clientes</strong> — base envelhecida insatisfeita com UI/lentidão</li>
+<li><strong>EUDR</strong> — UE exige rastreabilidade desde 2025/2026, ninguém preparado</li>
+<li><strong>Cooperativas</strong> — Coamo, C.Vale, Lar buscando white-label pra ofertar aos cooperados</li>
+<li><strong>Geração Y/Z assumindo corretoras</strong> — herdeiros querem ferramentas modernas</li>
+<li><strong>WhatsApp Business API barateando</strong> — Meta cobrindo cada vez mais países BR</li>
+<li><strong>IA viral</strong> — corretora com Laura.IA gera buzz orgânico no LinkedIn/Twitter agro</li>
+<li><strong>Show Rural Coopavel + Agrishow</strong> — eventos pra mostrar produto</li>
+</ol>
+<h3>Threats (ameaças)</h3>
+<ol>
+<li><strong>Sirius copiando</strong> — eles têm caixa pra reagir, podem investir R$ 5-10M em refactor</li>
+<li><strong>Big tech entrando</strong> (Stark, Conab modernizando) — improvável mas possível</li>
+<li><strong>Mudança regulatória fiscal</strong> — qualquer mudança SPED/NF-e requer dev</li>
+<li><strong>Crise no agro</strong> (preços baixos, seca) — clientes cortam software</li>
+<li><strong>Saturação WhatsApp</strong> — Meta pode aumentar custos da API</li>
+<li><strong>Concorrente novo bem capitalizado</strong> — VC pode bancar concorrente direto</li>
+<li><strong>Dependência LLM</strong> — preços de Groq/OpenRouter podem subir</li>
+</ol>
+<hr>
+<h2 id="s6">5. Estratégia de Posicionamento</h2>
+<h3>Mensagem central</h3>
+<blockquote>
+<p><strong>&quot;A primeira plataforma de corretora de grãos com IA. Vendas via WhatsApp, fiscal automático, financeiro completo. Tudo em um só lugar, por R$ 697/mês.&quot;</strong></p>
+</blockquote>
+<h3>Diferenciação por persona</h3>
+<h4>Para o dono da corretora (CEO)</h4>
+<blockquote>
+<p>&quot;Reduza 40% do tempo do seu time em tarefas repetitivas. Laura.IA atende WhatsApp, fiscal emite SPED sozinho, financeiro concilia OFX. Você foca em vender mais.&quot;</p>
+</blockquote>
+<h4>Para o trader/operador</h4>
+<blockquote>
+<p>&quot;Calculadora, hedge, cotações ao vivo CBOT + CEPEA + câmbio em uma tela. Crie proposta em 30s. Aceite ou rejeite no celular.&quot;</p>
+</blockquote>
+<h4>Para o financeiro/fiscal</h4>
+<blockquote>
+<p>&quot;DRE em tempo real, NF-e + SPED gerados automaticamente. Conciliação OFX bate banco e sistema em 1 clique. Audit log de tudo.&quot;</p>
+</blockquote>
+<h4>Para o produtor (portal)</h4>
+<blockquote>
+<p>&quot;Seu próprio portal com a marca da corretora. Veja cotações, propostas e contratos no celular, sem ligar ou usar WhatsApp.&quot;</p>
+</blockquote>
+<h3>Slogan candidatos</h3>
+<ol>
+<li><strong>&quot;BH Grain — Corretora moderna, pra corretora moderna.&quot;</strong></li>
+<li><strong>&quot;A inteligência da Laura, a operação da sua corretora.&quot;</strong></li>
+<li><strong>&quot;Mais propostas. Menos planilhas.&quot;</strong></li>
+<li><strong>&quot;O ERP que conversa pelo seu time.&quot;</strong></li>
+</ol>
+<p>Recomendado: #2 — destaca o diferencial único (Laura.IA).</p>
+<hr>
+<h2 id="s7">6. Roadmap competitivo (12 meses) — recalibrado v2</h2>
+<h3>Q1 2026 — Fundação</h3>
+<ul>
+<li>Lançar com 5-8 corretoras pioneer (preço promo R$ 497/mês)</li>
+<li>Coletar 3-5 cases documentados</li>
+<li>Habilitar Stripe prod</li>
+<li>DNS SPF/DKIM/DMARC ajustado</li>
+<li><strong>Meta</strong>: 5-8 clientes, R$ 3-5k MRR</li>
+</ul>
+<h3>Q2 2026 — Validação</h3>
+<ul>
+<li>Lançamento público (R$ 697/1997/5997) + plano Mini R$ 297</li>
+<li>Conteúdo: 1 case study/mês, 1 webinar/trimestre</li>
+<li>Indicação: 1 mês grátis para quem indica</li>
+<li><strong>Meta realista</strong>: 15-20 clientes, R$ 12-18k MRR</li>
+</ul>
+<h3>Q3 2026 — Aceleração</h3>
+<ul>
+<li>Presença em Show Rural Coopavel (ago) ou similar regional</li>
+<li>Contratação 1 vendedor (após validar canal)</li>
+<li>Tentar partnership com 1 cooperativa (pilot grátis)</li>
+<li><strong>Meta realista</strong>: 28-35 clientes, R$ 25-40k MRR</li>
+</ul>
+<h3>Q4 2026 — Crescimento</h3>
+<ul>
+<li>Considerar captação seed (R$ 1,5-2M) se MRR &gt; R$ 50k</li>
+<li>Time 3-4 pessoas</li>
+<li>API pública v1</li>
+<li><strong>Meta realista</strong>: 38-50 clientes, R$ 55-75k MRR</li>
+</ul>
+<p><strong>Importante</strong>: metas v1 (100 clientes, R$ 180k MRR no Q4) eram cenário &quot;muito bom&quot; disfarçado. Estas metas v2 refletem trajetória base case honesta.</p>
+<hr>
+<h2 id="s8">7. Sinais de monitoramento competitivo</h2>
+<h3>Watchlist (revisar mensal)</h3>
+<ul>
+<li><strong>Sirius</strong>: site, LinkedIn dos sócios, releases novos</li>
+<li><strong>Datagro Plus</strong>: novos módulos, parcerias</li>
+<li><strong>Cooperativas grandes</strong>: contratos de tecnologia anunciados</li>
+<li><strong>Conab</strong>: editais de modernização</li>
+<li><strong>VCs no agro</strong> (SP Ventures, Barn Investimentos, Wayra): startups que captaram</li>
+</ul>
+<h3>Métricas de market share a acompanhar</h3>
+<ul>
+<li><h1>corretoras certificadas BCB (proxy de mercado)</h1>
+</li>
+<li><h1>NF-e de natureza &quot;venda grão&quot; emitidas (proxy de volume)</h1>
+</li>
+<li>Volume comercializado por commodity (CONAB)</li>
+<li>Adoção WhatsApp Business API agro (Meta reports)</li>
+</ul>
+<hr>
+<h2 id="s9">8. Riscos competitivos e mitigações</h2>
+<table>
+<thead>
+<tr>
+<th>Risco</th>
+<th>Probabilidade</th>
+<th>Impacto</th>
+<th>Mitigação</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sirius lança IA própria</td>
+<td>Médio</td>
+<td>Alto</td>
+<td>Patentear/registrar abordagem Laura.IA; criar moat de dados (treinos com transcrições)</td>
+</tr>
+<tr>
+<td>Cooperativa monta competidor in-house</td>
+<td>Baixo</td>
+<td>Alto</td>
+<td>Fechar partnership com 1 grande primeiro (Coamo ou C.Vale)</td>
+</tr>
+<tr>
+<td>Big tech entra (TOTVS, SAP agro)</td>
+<td>Baixo</td>
+<td>Médio</td>
+<td>Verticalização extrema; eles serão genéricos</td>
+</tr>
+<tr>
+<td>Crise no agro 2027</td>
+<td>Médio</td>
+<td>Médio</td>
+<td>Plano Starter accessível mantém entrada; freemium se necessário</td>
+</tr>
+<tr>
+<td>Stripe BR muda regras</td>
+<td>Baixo</td>
+<td>Alto</td>
+<td>Plan B com Pagar.me ou Asaas</td>
+</tr>
+<tr>
+<td>LLM providers (Groq/OpenAI) sobem preço</td>
+<td>Médio</td>
+<td>Médio</td>
+<td>Já temos fallback chain; BYOK no Enterprise</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s10">9. Conclusões e recomendações</h2>
+<h3>Top 3 ações imediatas</h3>
+<ol>
+<li><strong>Fechar 5 cases pioneer em 60 dias</strong> — preço promo, contrato de testimonial</li>
+<li><strong>Conteúdo Laura.IA</strong> — vídeos de 30s mostrando Laura criando proposta no WhatsApp</li>
+<li><strong>DNS + email deliverability</strong> — sem isso, nenhum dos outros itens importa</li>
+</ol>
+<h3>Top 3 ações em 90 dias</h3>
+<ol>
+<li><strong>Programa de indicação</strong> — 1 mês grátis pra quem indica + comissão recorrente</li>
+<li><strong>Partnership com 1 cooperativa</strong> (mesmo pilot, mesmo grátis) — credibilidade</li>
+<li><strong>Calculadora de ROI</strong> no marketing — &quot;quanto você perde com Excel?&quot;</li>
+</ol>
+<h3>Métricas a perseguir (recalibrado v2 — honesto)</h3>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Q1</th>
+<th>Q2</th>
+<th>Q3</th>
+<th>Q4</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Clientes pagantes</td>
+<td>5-8</td>
+<td>15-20</td>
+<td>28-35</td>
+<td>38-50</td>
+</tr>
+<tr>
+<td>MRR (R$)</td>
+<td>3-5k</td>
+<td>12-18k</td>
+<td>25-40k</td>
+<td>55-75k</td>
+</tr>
+<tr>
+<td>Churn mensal</td>
+<td>&lt;15%</td>
+<td>&lt;12%</td>
+<td>&lt;10%</td>
+<td>&lt;8%</td>
+</tr>
+<tr>
+<td>NPS</td>
+<td>&gt;30</td>
+<td>&gt;40</td>
+<td>&gt;45</td>
+<td>&gt;50</td>
+</tr>
+<tr>
+<td>CAC</td>
+<td>&lt;R$ 5.000</td>
+<td>&lt;R$ 4.500</td>
+<td>&lt;R$ 4.000</td>
+<td>&lt;R$ 3.500</td>
+</tr>
+<tr>
+<td>LTV/CAC</td>
+<td>&gt;2x</td>
+<td>&gt;2,5x</td>
+<td>&gt;3x</td>
+<td>&gt;3,5x</td>
+</tr>
+</tbody></table>
+<p><strong>Realidade SaaS B2B BR ano 1</strong>:</p>
+<ul>
+<li>Churn começa alto (10-15%) e cai devagar com onboarding melhor e cases</li>
+<li>CAC continua caro (R$ 3-5k blended) — agro tem ciclo longo</li>
+<li>LTV/CAC 3x+ é saudável (não os 39x da v1)</li>
+<li>NPS &gt;50 só com 6+ meses de uso real do cliente</li>
+</ul>
+<hr>
+<p><strong>Documento vivo</strong>. Revisar a cada 60 dias ou quando concorrente fizer movimento relevante.</p>
+<p>— Atlas, investigando a verdade 🔎</p>
+
+  </main>
+  <footer class="doc-footer">
+    Documento estratégico interno — BH Grain / Mercograin · <a href="index.html">↑ Voltar ao índice</a>
+  </footer>
+</div>
+</body>
+</html>
