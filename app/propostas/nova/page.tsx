@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Plus, Trash2, Wheat, Loader2, Calculator } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Wheat, Calculator, ChevronDown, ChevronRight } from 'lucide-react'
 import {
   AppShell,
   PageHeader,
@@ -18,6 +18,7 @@ import {
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { KG_POR_BU, KG_POR_SC, type Grao as GraoKey } from '@/lib/cotacoes/unidades'
+import { PropostaCommandBar } from '@/components/propostas/PropostaCommandBar'
 
 interface Cliente {
   id: string
@@ -133,9 +134,10 @@ export default function NovaPropostaPage() {
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [graos, setGraos] = useState<GraoItem[]>([])
-  const [loadingClientes, setLoadingClientes] = useState(true)
+  const [, setLoadingClientes] = useState(true)
   const [saving, setSaving] = useState(false)
   const [usdbrl, setUsdbrl] = useState<number | null>(null)
+  const [formExpandido, setFormExpandido] = useState(false)
   /** Map { soja: 0.3, milho: 0.4 } vindo de /api/bhgrain/margins */
   const [marginsMap, setMarginsMap] = useState<Record<string, number>>({})
 
@@ -295,16 +297,6 @@ export default function NovaPropostaPage() {
     }
   }
 
-  if (loadingClientes) {
-    return (
-      <AppShell>
-        <div className="flex items-center justify-center py-24 text-fg-3 text-small gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
-        </div>
-      </AppShell>
-    )
-  }
-
   const clienteOptions = [
     { value: '', label: 'Selecione um cliente' },
     ...clientes.map((c) => ({ value: c.id, label: c.nome })),
@@ -339,7 +331,33 @@ export default function NovaPropostaPage() {
         }
       />
 
-      {clientes.length === 0 ? (
+      {/* Command-bar sempre visível — funciona mesmo sem clientes (modal inline) */}
+      <div className="mb-6">
+        <PropostaCommandBar
+          clientes={clientes}
+          usdbrl={usdbrl}
+          marginsMap={marginsMap}
+          onClienteCriado={(c) => {
+            setClientes((prev) => [...prev, { id: c.id, nome: c.nome }])
+          }}
+        />
+      </div>
+
+      {/* Expansor do form clássico */}
+      <button
+        type="button"
+        onClick={() => setFormExpandido((v) => !v)}
+        className="flex items-center gap-2 text-fg-2 hover:text-fg-1 text-small mb-3"
+      >
+        {formExpandido ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+        {formExpandido ? 'Ocultar form completo' : 'Usar form completo (campos avançados)'}
+      </button>
+
+      {!formExpandido ? null : clientes.length === 0 ? (
         <Card className="text-center py-16 space-y-3">
           <p className="eyebrow">Pré-requisito</p>
           <h3 className="text-h3 font-sans tracking-tight text-fg-1">

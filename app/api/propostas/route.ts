@@ -26,6 +26,12 @@ const propostaSchema = z.object({
     )
     .min(1, 'Adicione pelo menos um grão'),
   validadeEm: z.string().min(1, 'Data de validade é obrigatória'),
+  /** Canal pelo qual a proposta foi originada. Default 'web'. */
+  canalAutorizacao: z.enum(['web', 'whatsapp', 'telefone', 'ia_autonomo']).optional(),
+  /** Origem (cidade/local) — preenchido pela command-bar. */
+  origem: z.string().max(120).optional(),
+  /** Local de entrega — opcional. */
+  localEntrega: z.string().max(120).optional(),
 })
 
 // GET - Listar propostas (com paginação e filtros)
@@ -160,7 +166,10 @@ export async function POST(request: NextRequest) {
         validadeEm: new Date(data.validadeEm),
         vendedorId: member?.id ?? null,
         gerenteContaId: cliente.responsavelId ?? member?.id ?? null,
-        canalAutorizacao: 'web',
+        canalAutorizacao: data.canalAutorizacao ?? 'web',
+        origem: data.origem ?? null,
+        localEntrega: data.localEntrega ?? null,
+        validadeCotacao: new Date(data.validadeEm),
       },
       include: { cliente: true },
     })
