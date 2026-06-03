@@ -24,13 +24,21 @@ import {
 } from 'lucide-react'
 import { TEMPLATE_VARIABLES, type TemplateVariable } from '@/lib/contratos/template-vars'
 
+export interface TemplateEditorHandle {
+  /** Substitui todo o conteúdo do editor (aceita HTML ou JSON do ProseMirror). */
+  setContent: (content: string | Record<string, unknown>) => void
+}
+
 interface Props {
   initialContent?: any
   onChange?: (json: any) => void
   placeholder?: string
 }
 
-export function TemplateEditor({ initialContent, onChange, placeholder = 'Comece a digitar o template do contrato...' }: Props) {
+export const TemplateEditor = React.forwardRef<TemplateEditorHandle, Props>(function TemplateEditor(
+  { initialContent, onChange, placeholder = 'Comece a digitar o template do contrato...' },
+  ref
+) {
   const [showVars, setShowVars] = React.useState(false)
   const wrapRef = React.useRef<HTMLDivElement>(null)
 
@@ -54,6 +62,18 @@ export function TemplateEditor({ initialContent, onChange, placeholder = 'Comece
       },
     },
   })
+
+  // Expor setContent para o caller (ex.: botão "Importar .docx")
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      setContent(content) {
+        if (!editor) return
+        editor.commands.setContent(content as never)
+      },
+    }),
+    [editor]
+  )
 
   // Close variable menu when clicking outside
   React.useEffect(() => {
@@ -302,4 +322,4 @@ export function TemplateEditor({ initialContent, onChange, placeholder = 'Comece
       </div>
     </div>
   )
-}
+})

@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireBhGrainScope } from '@/lib/bhgrain/scope-permissions'
 import { avaliarAprovacao, abrirAprovacao, decidirAprovacao } from '@/lib/bhgrain/proposta-approval'
 import { db } from '@/lib/db'
+import { criarContratoAutoFromProposta } from '@/lib/bhgrain/contrato-auto-create'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -66,7 +67,19 @@ export async function POST(
         decisao: body.acao === 'aprovar' ? 'aprovado' : 'rejeitado',
         motivo: body.motivo,
       })
-      return NextResponse.json({ ok: true, ...r })
+
+      // Trigger: aprovação concluída → cria contrato automaticamente.
+      // Best-effort: erros não falham a aprovação.
+      let contrato: Awaited<ReturnType<typeof criarContratoAutoFromProposta>> = null
+      if (r.status === 'aprovada') {
+        contrato = await criarContratoAutoFromProposta({
+          propostaId: id,
+          workspaceId: scope.workspaceId,
+          userId: scope.userId,
+        })
+      }
+
+      return NextResponse.json({ ok: true, ...r, contrato })
     }
 
     return NextResponse.json({ error: 'Ação inválida' }, { status: 400 })

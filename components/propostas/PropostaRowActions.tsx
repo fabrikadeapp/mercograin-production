@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MoreVertical, Send, CheckCircle2, XCircle, FileText, MessageCircle } from 'lucide-react'
 import { Dialog, Button, Select } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
+import { AprovarComPreviewModal } from './AprovarComPreviewModal'
 
 export interface PropostaRowActionsProps {
   proposta: {
@@ -33,6 +34,7 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
   const { success, error: showError } = useToast()
   const [menuOpen, setMenuOpen] = useState(false)
   const [perdidaOpen, setPerdidaOpen] = useState(false)
+  const [aprovarOpen, setAprovarOpen] = useState(false)
   const [lossReason, setLossReason] = useState('preco')
   const [observacoes, setObservacoes] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
@@ -82,15 +84,9 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
       'whatsapp'
     )
 
-  const aprovarQuick = async () => {
-    if (!confirm(`Aprovar proposta ${proposta.numero}? Esta ação criará um contrato.`)) return
-    await acao(
-      `/api/bhgrain/propostas/${proposta.id}/aprovar`,
-      'POST',
-      { acao: 'aprovar' },
-      'Proposta aprovada',
-      'aprovar'
-    )
+  const aprovarComPreview = () => {
+    setMenuOpen(false)
+    setAprovarOpen(true)
   }
 
   const submitPerdida = async () => {
@@ -169,9 +165,8 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
               {STATUS_PODE_APROVAR.has(status) && (
                 <MenuItem
                   icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-                  label="Aprovar (gera contrato)"
-                  loading={loading === 'aprovar'}
-                  onClick={aprovarQuick}
+                  label="Aprovar com preview…"
+                  onClick={aprovarComPreview}
                 />
               )}
               {STATUS_PODE_PERDER.has(status) && (
@@ -189,6 +184,14 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
           </>
         )}
       </div>
+
+      <AprovarComPreviewModal
+        open={aprovarOpen}
+        onClose={() => setAprovarOpen(false)}
+        propostaId={proposta.id}
+        propostaNumero={proposta.numero}
+        onAprovado={() => onRefresh()}
+      />
 
       <Dialog
         open={perdidaOpen}

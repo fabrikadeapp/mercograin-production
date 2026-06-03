@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Loader2, Eye } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Eye, Upload } from 'lucide-react'
 import {
   Card,
   Button,
@@ -11,7 +11,7 @@ import {
   Select,
 } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
-import { TemplateEditor } from '@/components/contratos/TemplateEditor'
+import { TemplateEditor, type TemplateEditorHandle } from '@/components/contratos/TemplateEditor'
 
 export interface TemplateFormInitial {
   id?: string
@@ -37,6 +37,45 @@ export function TemplateForm({ initial, mode }: Props) {
   const [isDefault, setIsDefault] = React.useState(!!initial?.isDefault)
   const [contentJson, setContentJson] = React.useState<any>(initial?.contentJson ?? null)
   const [saving, setSaving] = React.useState(false)
+  const [importando, setImportando] = React.useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const editorRef = React.useRef<TemplateEditorHandle>(null)
+
+  async function handleImportDocx(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      showError('Apenas arquivos .docx são aceitos')
+      e.target.value = ''
+      return
+    }
+    setImportando(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/contratos/templates/import-docx', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao importar')
+
+      // Cola HTML no editor — TipTap converte para JSON automaticamente
+      editorRef.current?.setContent(data.html)
+      if (!nome && data.sugestaoNome) setNome(data.sugestaoNome)
+
+      if (data.messages?.length > 0) {
+        success(`Importado com ${data.messages.length} avisos. Confira o conteúdo.`)
+      } else {
+        success('Documento importado. Insira variáveis {{...}} onde precisar.')
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Erro ao importar .docx')
+    } finally {
+      setImportando(false)
+      e.target.value = ''
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -91,6 +130,24 @@ export function TemplateForm({ initial, mode }: Props) {
           </Button>
         </Link>
         <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={handleImportDocx}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            leftIcon={
+              importando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />
+            }
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importando}
+          >
+            {importando ? 'Importando…' : 'Importar .docx'}
+          </Button>
           {mode === 'edit' && (
             <Button
               type="button"
@@ -166,7 +223,11 @@ export function TemplateForm({ initial, mode }: Props) {
             Use o botão <span className="text-accent">@</span> para inserir variáveis dinâmicas
           </span>
         </div>
-        <TemplateEditor initialContent={initial?.contentJson} onChange={setContentJson} />
+        <TemplateEditor
+          ref={editorRef}
+          initialContent={initial?.contentJson}
+          onChange={setContentJson}
+        />
       </div>
     </form>
   )
