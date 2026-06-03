@@ -22,6 +22,8 @@ import type { ClienteCriado } from '@/components/clientes/ClienteForm'
 import { KG_POR_SC } from '@/lib/cotacoes/unidades'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
+import { verificarPrecoNaBanda, type BandaCliente } from '@/lib/propostas/sugestao-preco'
+import { Lightbulb } from 'lucide-react'
 
 interface Cliente {
   id: string
@@ -78,6 +80,13 @@ export function PropostaCommandBar({
   const speech = useSpeechRecognition({
     onTranscript: (full) => setTexto(full),
   })
+  const [sugestao, setSugestao] = useState<{
+    sugeridoClienteBrlTon: number | null
+    sugeridoBaseBrlTon: number | null
+    precoMercadoBrlTon: number | null
+    bandaCliente: BandaCliente | null
+    warnings: string[]
+  } | null>(null)
 
   // Auto-foco ao montar
   useEffect(() => {
@@ -95,6 +104,34 @@ export function PropostaCommandBar({
     }, 150)
     return () => clearTimeout(id)
   }, [texto, usdbrl])
+
+  // Busca sugestão de preço quando temos grão + cliente identificado
+  useEffect(() => {
+    if (!parsed?.grao) {
+      setSugestao(null)
+      return
+    }
+    const clientePossivel = parsed.clienteNome
+      ? clientes
+          .map((c) => ({ cliente: c, score: scoreCliente(parsed.clienteNome!, c.nome) }))
+          .filter((x) => x.score >= 0.6)
+          .sort((a, b) => b.score - a.score)[0]?.cliente ?? null
+      : null
+
+    const params = new URLSearchParams({ grao: parsed.grao })
+    if (clientePossivel) params.set('clienteId', clientePossivel.id)
+    if (parsed.tipo) params.set('tipo', parsed.tipo)
+
+    const id = setTimeout(() => {
+      fetch(`/api/propostas/sugestao-preco?${params.toString()}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (j) setSugestao(j)
+        })
+        .catch(() => undefined)
+    }, 300)
+    return () => clearTimeout(id)
+  }, [parsed?.grao, parsed?.clienteNome, parsed?.tipo, clientes])
 
   // Match de cliente
   const clienteMatch = useMemo(() => {
@@ -428,6 +465,35 @@ export function PropostaCommandBar({
               </span>
             </div>
 
+            {/* Sugestão de preço quando ainda não digitou preço */}
+            {!parsed.precoBrlTon && sugestao && parsed.grao && (
+              <SugestaoPrecoChip
+                sugestao={sugestao}
+                grao={parsed.grao}
+                onUsar={(brlTon) => {
+                  // Injeta no texto da command-bar como "R$ X/t"
+                  const adicao = ` ${brlTon.toFixed(2)}/t`
+                  setTexto((t) => (t + adicao).replace(/\s+/g, ' ').trim())
+                }}
+              />
+            )}
+
+            {/* Aviso de preço fora da banda histórica do cliente */}
+            {parsed.precoBrlTon && sugestao?.bandaCliente && clienteEncontrado && (() => {
+              const verif = verificarPrecoNaBanda(parsed.precoBrlTon, sugestao.bandaCliente)
+              if (!verif || verif.status === 'dentro') return null
+              const pct = (verif.desvioPct * 100).toFixed(1)
+              const lado = verif.status === 'acima' ? 'acima' : 'abaixo'
+              return (
+                <div className="text-warn text-[12px] flex items-center gap-1 pt-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Preço {pct}% {lado} da banda histórica de {clienteEncontrado.nome}{' '}
+                  (R$ {sugestao.bandaCliente.minBrlTon.toFixed(0)}–
+                  {sugestao.bandaCliente.maxBrlTon.toFixed(0)}/t)
+                </div>
+              )
+            })()}
+
             {/* Validade */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-fg-3">Validade</span>
@@ -718,4 +784,66 @@ function PainelPosCriacao({ proposta, onConcluir, onNovaProposta }: PainelPosCri
 
 function mensagemWhats(numero: string, link: string): string {
   return `Olá! Segue a proposta ${numero}. Acesse o PDF: ${link}`
+}
+
+// ─────────────────────────────────────────────
+// Chip de sugestão de preço.
+// Mostra:
+//   - "Sugestão cliente: R$ X/t" se temos histórico do cliente (clique injeta)
+//   - "Sugestão padrão: R$ X/t" se só temos mercado+margem (clique injeta)
+//   - "Mercado: R$ X/t" como referência sempre
+// ─────────────────────────────────────────────
+interface SugestaoPrecoChipProps {
+  sugestao: {
+    sugeridoClienteBrlTon: number | null
+    sugeridoBaseBrlTon: number | null
+    precoMercadoBrlTon: number | null
+  }
+  grao: string
+  onUsar: (brlTon: number) => void
+}
+
+function SugestaoPrecoChip({ sugestao, grao, onUsar }: SugestaoPrecoChipProps) {
+  const cliente = sugestao.sugeridoClienteBrlTon
+  const base = sugestao.sugeridoBaseBrlTon
+  const mercado = sugestao.precoMercadoBrlTon
+
+  const principal = cliente ?? base ?? null
+  const principalLabel = cliente ? 'Sugestão cliente' : 'Sugestão padrão'
+
+  if (!principal && !mercado) return null
+
+  const kgPorSc = KG_POR_SC[grao as keyof typeof KG_POR_SC] ?? 60
+
+  return (
+    <div
+      className="flex items-center gap-2 flex-wrap pt-1"
+      style={{ borderTop: '1px dashed var(--border)' }}
+    >
+      {principal && (
+        <button
+          type="button"
+          onClick={() => onUsar(principal)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
+          style={{
+            background: 'var(--accent-soft)',
+            color: 'var(--accent)',
+            border: '1px solid rgba(200,240,81,0.3)',
+          }}
+          title={`Clique para usar R$ ${principal.toFixed(2)}/t (R$ ${((principal * kgPorSc) / 1000).toFixed(2)}/sc)`}
+        >
+          <Lightbulb className="h-3 w-3" />
+          {principalLabel}: R$ {principal.toFixed(2)}/t
+          <span className="opacity-60">
+            · R$ {((principal * kgPorSc) / 1000).toFixed(2)}/sc
+          </span>
+        </button>
+      )}
+      {mercado && (
+        <span className="text-fg-3 text-[10px] tabular-nums">
+          mercado R$ {mercado.toFixed(2)}/t
+        </span>
+      )}
+    </div>
+  )
 }
