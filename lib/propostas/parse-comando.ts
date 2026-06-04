@@ -196,25 +196,42 @@ export function parseComando(input: string, ctx: ParseContext = {}): ParsedComan
       result.consumido.push(`local:${result.local}`)
     } else {
       // Fallback B: último token capitalizado isolado (mín 4 chars) — provável cidade.
-      // Só dispara se há > 1 token capitalizado no resto, pra não roubar o nome do cliente.
-      const tokensCap = Array.from(
-        resto.matchAll(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç-]{3,}\b/g)
-      )
-      if (tokensCap.length >= 2) {
-        const ultimo = tokensCap[tokensCap.length - 1]
-        result.local = ultimo[0]
-        resto = resto.slice(0, ultimo.index) + ' ' + resto.slice(ultimo.index! + ultimo[0].length)
-        result.consumido.push(`local:${result.local}`)
+      //
+      // Só dispara se:
+      //  1. Há ≥2 tokens capitalizados (não rouba nome de 1 palavra)
+      //  2. JÁ extraímos algum sinal de proposta (grão, qtd, preço, validade,
+      //     tipo) — senão "Fazenda Rei do Gado" sozinho vira nome inteiro,
+      //     não [cliente "Fazenda Rei do" + local "Gado"].
+      const algumSinal =
+        !!result.grao ||
+        !!result.quantidadeTon ||
+        !!result.precoBrlTon ||
+        !!result.validadeEm ||
+        !!result.tipo
+      if (algumSinal) {
+        const tokensCap = Array.from(
+          resto.matchAll(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç-]{3,}\b/g)
+        )
+        if (tokensCap.length >= 2) {
+          const ultimo = tokensCap[tokensCap.length - 1]
+          result.local = ultimo[0]
+          resto = resto.slice(0, ultimo.index) + ' ' + resto.slice(ultimo.index! + ultimo[0].length)
+          result.consumido.push(`local:${result.local}`)
+        }
       }
     }
   }
 
   // 7. Resto = candidato a nome de cliente
-  const restante = limparEspacos(
-    resto
-      .replace(/\b(a|para|pra|com|de|do|da|em|por|até|ate)\b/gi, ' ')
-      .replace(/[,;.]/g, ' ')
-  )
+  //
+  // Cuidado: filler words ('a','para','de','do','da','em',...) só devem ser
+  // removidas quando estão como PREPOSIÇÃO solta (ex: "1000sc para Maria" →
+  // "Maria"), NÃO quando fazem parte de um nome próprio composto (ex:
+  // "Fazenda Rei do Gado" — o "do" precisa ficar).
+  //
+  // Heurística: uma filler word "X" só é removida se NÃO está cercada
+  // por palavras capitalizadas (que indicam nome próprio composto).
+  const restante = limparEspacos(removerFillerWordsContextual(resto).replace(/[,;.]/g, ' '))
   if (restante.length >= 2) {
     result.clienteNome = restante
   }
@@ -315,4 +332,67 @@ function addDays(date: Date, days: number): Date {
 
 function limparEspacos(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Remove filler words PORTUGUÊS apenas quando estão atuando como preposição
+ * solta — preserva quando fazem parte de nome próprio composto.
+ *
+ * Filler words: a, para, pra, com, de, do, da, dos, das, em, por, até, ate.
+ *
+ * Regra: o token é removido se TODA palavra adjacente (anterior e posterior)
+ * NÃO começa com maiúscula. Ou seja:
+ *   "1000sc para Maria"       → "Maria"           (para some)
+ *   "Fazenda Rei do Gado"     → "Fazenda Rei do Gado"  (do entre maiúsc, fica)
+ *   "Coop dos Produtores"     → "Coop dos Produtores"  (dos entre maiúsc, fica)
+ *   "venda para Casa de João" → "Casa de João"    (para some, de fica)
+ *
+ * Início ou fim de string: trata como "sem vizinho capitalizado" → remove.
+ */
+export function removerFillerWordsContextual(input: string): string {
+  const FILLERS = new Set([
+    'a',
+    'para',
+    'pra',
+    'com',
+    'de',
+    'do',
+    'da',
+    'dos',
+    'das',
+    'em',
+    'por',
+    'até',
+    'ate',
+  ])
+
+  const tokens = input.split(/(\s+)/) // mantém espaços para reconstruir
+  const palavras: string[] = []
+  const indicesEmTokens: number[] = []
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].trim()) {
+      palavras.push(tokens[i])
+      indicesEmTokens.push(i)
+    }
+  }
+
+  for (let i = 0; i < palavras.length; i++) {
+    const palavra = palavras[i]
+    const lower = palavra.toLowerCase()
+    if (!FILLERS.has(lower)) continue
+
+    const anterior = palavras[i - 1]
+    const posterior = palavras[i + 1]
+
+    const anteriorCapitalizado = !!anterior && /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(anterior)
+    const posteriorCapitalizado = !!posterior && /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(posterior)
+
+    // Se está entre 2 palavras capitalizadas → parte de nome próprio: MANTÉM
+    if (anteriorCapitalizado && posteriorCapitalizado) continue
+
+    // Caso contrário: remove o token no array original
+    tokens[indicesEmTokens[i]] = ''
+  }
+
+  return tokens.join('')
 }

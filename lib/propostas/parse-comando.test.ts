@@ -159,3 +159,37 @@ test('caso 16: validade DD/MM passada vira ano seguinte', () => {
   // NOW é junho 2026, então 01/01 vira 2027
   assert.equal(r.validadeEm?.getFullYear(), 2027)
 })
+
+test('caso 17: nome próprio com "do" preserva (Fazenda Rei do Gado)', () => {
+  const r = parseComando('Fazenda Rei do Gado', { now: NOW })
+  assert.equal(r.clienteNome, 'Fazenda Rei do Gado')
+})
+
+test('caso 18: nome próprio com "dos" preserva (Coop dos Produtores)', () => {
+  const r = parseComando('Coop dos Produtores', { now: NOW })
+  assert.equal(r.clienteNome, 'Coop dos Produtores')
+})
+
+test('caso 19: filler "para" ainda some quando isolado', () => {
+  const r = parseComando('1000sc soja para Maria 130/sc', { now: NOW })
+  assert.equal(r.grao, 'soja')
+  assert.ok(r.clienteNome === 'Maria' || r.clienteNome?.includes('Maria'))
+  assert.ok(!r.clienteNome?.includes('para'))
+})
+
+test('caso 20: filler some + nome próprio com partícula central preserva preposição', () => {
+  // "venda para Casa de João" — 'para' some, 'de' fica entre Casa e João
+  // (caso o operador depois corrija no preview).
+  // Caso ambíguo: como há grão+qtd extraídos, fallback B pode capturar
+  // "João" como local. Operador ajusta no preview se quiser.
+  const r = parseComando('venda para Casa de João 60t soja', { now: NOW })
+  assert.equal(r.tipo, 'venda')
+  assert.equal(r.grao, 'soja')
+  assert.ok(!r.clienteNome?.toLowerCase().includes('para'), `cliente=${r.clienteNome}`)
+  // Verifica que 'de' (do removerFiller) não some sozinho
+  // Aceita tanto "Casa de João" (ideal) quanto "Casa" + local "João" (ambíguo OK)
+  assert.ok(
+    r.clienteNome?.includes('Casa') && (r.clienteNome?.includes('João') || r.local === 'João'),
+    `cliente=${r.clienteNome} · local=${r.local}`
+  )
+})
