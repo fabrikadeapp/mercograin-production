@@ -13,8 +13,20 @@ interface Doc {
   signedUrl: string | null
 }
 
+interface ContratoCard {
+  id: string
+  numero: string
+  statusAssinatura: string
+  assinadoEm: string | null
+  propostaNumero: string | null
+  propostaValor: number | null
+  downloadContrato: string
+  downloadEvidencias: string
+}
+
 export default function DocumentosPage() {
   const [docs, setDocs] = useState<Doc[]>([])
+  const [contratos, setContratos] = useState<ContratoCard[]>([])
   const [titulo, setTitulo] = useState('')
   const [tipo, setTipo] = useState('outro')
   const [file, setFile] = useState<File | null>(null)
@@ -22,10 +34,17 @@ export default function DocumentosPage() {
   const [loading, setLoading] = useState(false)
 
   async function load() {
-    const r = await fetch('/api/portal/documentos')
-    if (r.ok) {
-      const j = await r.json()
+    const [docsR, ctsR] = await Promise.all([
+      fetch('/api/portal/documentos'),
+      fetch('/api/portal/contratos-assinados'),
+    ])
+    if (docsR.ok) {
+      const j = await docsR.json()
       setDocs(j.documentos)
+    }
+    if (ctsR.ok) {
+      const j = await ctsR.json()
+      setContratos(j.contratos ?? [])
     }
   }
   useEffect(() => { load() }, [])
@@ -68,6 +87,71 @@ export default function DocumentosPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Documentos</h1>
+
+      {contratos.length > 0 && (
+        <section className="rounded-lg border bg-white p-4">
+          <h2 className="font-medium mb-3">Meus contratos</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            {contratos.map((c) => (
+              <div key={c.id} className="rounded border p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-xs text-gray-500">{c.numero}</div>
+                  <span
+                    className={
+                      'rounded-full px-2 py-0.5 text-[11px] font-medium ' +
+                      (c.statusAssinatura === 'assinado'
+                        ? 'bg-green-50 text-green-800'
+                        : c.statusAssinatura === 'enviada'
+                        ? 'bg-blue-50 text-blue-800'
+                        : 'bg-gray-100 text-gray-700')
+                    }
+                  >
+                    {c.statusAssinatura}
+                  </span>
+                </div>
+                <div className="mt-1 font-medium">
+                  {c.propostaNumero ? `Proposta ${c.propostaNumero}` : 'Sem proposta'}
+                </div>
+                {c.propostaValor != null && (
+                  <div className="text-xs text-gray-600">
+                    Valor:{' '}
+                    {c.propostaValor.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </div>
+                )}
+                {c.assinadoEm && (
+                  <div className="text-xs text-gray-500">
+                    Assinado em {new Date(c.assinadoEm).toLocaleString('pt-BR')}
+                  </div>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <a
+                    href={c.downloadContrato}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded border bg-gray-50 px-2 py-1 text-xs hover:bg-gray-100"
+                  >
+                    Baixar contrato
+                  </a>
+                  {c.statusAssinatura === 'assinado' && (
+                    <a
+                      href={c.downloadEvidencias}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded border bg-green-50 px-2 py-1 text-xs text-green-800 hover:bg-green-100"
+                    >
+                      Página de evidências
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <form onSubmit={upload} className="rounded-lg border bg-white p-4 space-y-3">
         <h2 className="font-medium">Enviar novo documento</h2>
         {erro && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{erro}</div>}
