@@ -3,7 +3,15 @@
  * Uses @react-pdf/renderer for server-side PDF generation
  */
 
-import { renderToBuffer, renderToStream, Font } from '@react-pdf/renderer'
+import {
+  Document,
+  Page,
+  View,
+  Text,
+  renderToBuffer,
+  renderToStream,
+  Font,
+} from '@react-pdf/renderer'
 import React from 'react'
 import { formatCurrency, formatDate, formatCNPJ } from './utils/formatters'
 
@@ -103,112 +111,112 @@ export interface ContratoPDFData {
 
 const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
   React.createElement(
-    'Document' as any,
+    Document,
     { producer: 'BH Grain', creator: 'BH Grain System', title: `Proposta ${data.numero}` },
     React.createElement(
-      'Page' as any,
+      Page,
       { size: 'A4', style: { padding: 40, fontFamily: 'Helvetica' } },
 
       // Header
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 30, borderBottomWidth: 2, borderBottomColor: '#2563eb', paddingBottom: 10 } },
-        React.createElement('Text' as any, { style: { fontSize: 24, fontWeight: 'bold', color: '#1e40af' } }, 'PROPOSTA COMERCIAL'),
-        React.createElement('Text' as any, { style: { fontSize: 11, color: '#666', marginTop: 5 } }, `Número: ${data.numero} | Tipo: ${data.tipo === 'venda' ? 'Venda' : 'Compra'} | Status: ${data.status}`)
+        React.createElement(Text, { style: { fontSize: 24, fontWeight: 'bold', color: '#1e40af' } }, 'PROPOSTA COMERCIAL'),
+        React.createElement(Text, { style: { fontSize: 11, color: '#666', marginTop: 5 } }, `Número: ${data.numero} | Tipo: ${data.tipo === 'venda' ? 'Venda' : 'Compra'} | Status: ${data.status}`)
       ),
 
       // Client Info
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20 } },
-        React.createElement('Text' as any, { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 } }, 'CLIENTE'),
-        React.createElement('Text' as any, { style: { fontSize: 11, color: '#333' } }, data.clienteNome),
-        data.clienteCNPJ && React.createElement('Text' as any, { style: { fontSize: 10, color: '#666' } }, `CNPJ: ${formatCNPJ(data.clienteCNPJ)}`),
-        data.clienteEmail && React.createElement('Text' as any, { style: { fontSize: 10, color: '#666' } }, `Email: ${data.clienteEmail}`),
-        data.clienteEndereco && React.createElement('Text' as any, { style: { fontSize: 10, color: '#666' } }, `Endereço: ${data.clienteEndereco}`)
+        React.createElement(Text, { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 } }, 'CLIENTE'),
+        React.createElement(Text, { style: { fontSize: 11, color: '#333' } }, data.clienteNome),
+        data.clienteCNPJ && React.createElement(Text, { style: { fontSize: 10, color: '#666' } }, `CNPJ: ${formatCNPJ(data.clienteCNPJ)}`),
+        data.clienteEmail && React.createElement(Text, { style: { fontSize: 10, color: '#666' } }, `Email: ${data.clienteEmail}`),
+        data.clienteEndereco && React.createElement(Text, { style: { fontSize: 10, color: '#666' } }, `Endereço: ${data.clienteEndereco}`)
       ),
 
       // Dates
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, display: 'flex', flexDirection: 'row', justifyContent: 'space-between' } },
         React.createElement(
-          'View' as any,
+          View,
           null,
-          React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Criação'),
-          React.createElement('Text' as any, { style: { fontSize: 11 } }, formatDate(data.criadaEm))
+          React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Criação'),
+          React.createElement(Text, { style: { fontSize: 11 } }, formatDate(data.criadaEm))
         ),
         React.createElement(
-          'View' as any,
+          View,
           null,
-          React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Válida Até'),
-          React.createElement('Text' as any, { style: { fontSize: 11, fontWeight: 'bold', color: '#dc2626' } }, formatDate(data.validadeEm))
+          React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Válida Até'),
+          React.createElement(Text, { style: { fontSize: 11, fontWeight: 'bold', color: '#dc2626' } }, formatDate(data.validadeEm))
         )
       ),
 
       // Grains Table
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, borderWidth: 1, borderColor: '#e5e7eb' } },
         // Header
         React.createElement(
-          'View' as any,
+          View,
           { style: { display: 'flex', flexDirection: 'row', backgroundColor: '#f3f4f6', borderBottomWidth: 1, borderBottomColor: '#d1d5db' } },
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8 } }, 'Grão'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Quantidade'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Preço Unit.'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Subtotal')
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8 } }, 'Grão'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Quantidade'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Preço Unit.'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Subtotal')
         ),
         // Rows
         data.graos.map((grao, idx) =>
           React.createElement(
-            'View' as any,
+            View,
             { key: idx, style: { display: 'flex', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f3f4f6' } },
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8 } }, grao.grao),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, `${grao.quantidade.toLocaleString('pt-BR')}`),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, formatCurrency(toNumber(grao.preco))),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right', fontWeight: 'bold' } }, formatCurrency(toNumber(grao.subtotal)))
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8 } }, grao.grao),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, `${grao.quantidade.toLocaleString('pt-BR')}`),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, formatCurrency(toNumber(grao.preco))),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right', fontWeight: 'bold' } }, formatCurrency(toNumber(grao.subtotal)))
           )
         )
       ),
 
       // Total
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, display: 'flex', flexDirection: 'row', justifyContent: 'flex-end' } },
         React.createElement(
-          'View' as any,
+          View,
           { style: { width: 250, borderTopWidth: 2, borderTopColor: '#2563eb', paddingTop: 10 } },
           React.createElement(
-            'View' as any,
+            View,
             { style: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between' } },
-            React.createElement('Text' as any, { style: { fontSize: 12, fontWeight: 'bold' } }, 'VALOR TOTAL:'),
-            React.createElement('Text' as any, { style: { fontSize: 14, fontWeight: 'bold', color: '#2563eb' } }, formatCurrency(toNumber(data.valorTotal)))
+            React.createElement(Text, { style: { fontSize: 12, fontWeight: 'bold' } }, 'VALOR TOTAL:'),
+            React.createElement(Text, { style: { fontSize: 14, fontWeight: 'bold', color: '#2563eb' } }, formatCurrency(toNumber(data.valorTotal)))
           )
         )
       ),
 
       // Description & Notes
       data.descricao && React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 15 } },
-        React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'DESCRIÇÃO'),
-        React.createElement('Text' as any, { style: { fontSize: 10, color: '#333', lineHeight: 1.4 } }, data.descricao)
+        React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'DESCRIÇÃO'),
+        React.createElement(Text, { style: { fontSize: 10, color: '#333', lineHeight: 1.4 } }, data.descricao)
       ),
 
       data.observacoes && React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 15 } },
-        React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'OBSERVAÇÕES'),
-        React.createElement('Text' as any, { style: { fontSize: 10, color: '#666', lineHeight: 1.4 } }, data.observacoes)
+        React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'OBSERVAÇÕES'),
+        React.createElement(Text, { style: { fontSize: 10, color: '#666', lineHeight: 1.4 } }, data.observacoes)
       ),
 
       // Footer
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e7eb', fontSize: 9, color: '#666', textAlign: 'center' } },
-        React.createElement('Text' as any, null, 'BH Grain - Sistema de Gestão de Grãos'),
-        React.createElement('Text' as any, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
+        React.createElement(Text, null, 'BH Grain - Sistema de Gestão de Grãos'),
+        React.createElement(Text, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
       )
     )
   )
@@ -216,100 +224,100 @@ const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
 
 const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
   React.createElement(
-    'Document' as any,
+    Document,
     { producer: 'BH Grain', creator: 'BH Grain System', title: `Contrato ${data.numero}` },
     React.createElement(
-      'Page' as any,
+      Page,
       { size: 'A4', style: { padding: 40, fontFamily: 'Helvetica' } },
 
       // Header
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 30, borderBottomWidth: 2, borderBottomColor: '#16a34a', paddingBottom: 10 } },
-        React.createElement('Text' as any, { style: { fontSize: 24, fontWeight: 'bold', color: '#15803d' } }, 'CONTRATO DE COMPRA E VENDA'),
-        React.createElement('Text' as any, { style: { fontSize: 11, color: '#666', marginTop: 5 } }, `Número: ${data.numero} | Ref. Proposta: ${data.propostaNumero} | Status: ${data.statusAssinatura}`)
+        React.createElement(Text, { style: { fontSize: 24, fontWeight: 'bold', color: '#15803d' } }, 'CONTRATO DE COMPRA E VENDA'),
+        React.createElement(Text, { style: { fontSize: 11, color: '#666', marginTop: 5 } }, `Número: ${data.numero} | Ref. Proposta: ${data.propostaNumero} | Status: ${data.statusAssinatura}`)
       ),
 
       // Client Info
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20 } },
-        React.createElement('Text' as any, { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 } }, 'CONTRATANTE'),
-        React.createElement('Text' as any, { style: { fontSize: 11, color: '#333' } }, data.clienteNome),
-        data.clienteCNPJ && React.createElement('Text' as any, { style: { fontSize: 10, color: '#666' } }, `CNPJ: ${formatCNPJ(data.clienteCNPJ)}`),
-        data.clienteEmail && React.createElement('Text' as any, { style: { fontSize: 10, color: '#666' } }, `Email: ${data.clienteEmail}`)
+        React.createElement(Text, { style: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 } }, 'CONTRATANTE'),
+        React.createElement(Text, { style: { fontSize: 11, color: '#333' } }, data.clienteNome),
+        data.clienteCNPJ && React.createElement(Text, { style: { fontSize: 10, color: '#666' } }, `CNPJ: ${formatCNPJ(data.clienteCNPJ)}`),
+        data.clienteEmail && React.createElement(Text, { style: { fontSize: 10, color: '#666' } }, `Email: ${data.clienteEmail}`)
       ),
 
       // Contract Dates
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, display: 'flex', flexDirection: 'row', justifyContent: 'space-between' } },
         React.createElement(
-          'View' as any,
+          View,
           null,
-          React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Início'),
-          React.createElement('Text' as any, { style: { fontSize: 11 } }, formatDate(data.dataInicio))
+          React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Início'),
+          React.createElement(Text, { style: { fontSize: 11 } }, formatDate(data.dataInicio))
         ),
         data.dataFim && React.createElement(
-          'View' as any,
+          View,
           null,
-          React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Término'),
-          React.createElement('Text' as any, { style: { fontSize: 11 } }, formatDate(data.dataFim))
+          React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Data de Término'),
+          React.createElement(Text, { style: { fontSize: 11 } }, formatDate(data.dataFim))
         ),
         React.createElement(
-          'View' as any,
+          View,
           null,
-          React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Assinado em'),
-          React.createElement('Text' as any, { style: { fontSize: 11, color: data.statusAssinatura === 'assinado' ? '#16a34a' : '#dc2626' } }, data.statusAssinatura === 'assinado' ? '✓ Assinado' : 'Pendente Assinatura')
+          React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', color: '#666' } }, 'Assinado em'),
+          React.createElement(Text, { style: { fontSize: 11, color: data.statusAssinatura === 'assinado' ? '#16a34a' : '#dc2626' } }, data.statusAssinatura === 'assinado' ? '✓ Assinado' : 'Pendente Assinatura')
         )
       ),
 
       // Grains Table
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, borderWidth: 1, borderColor: '#e5e7eb' } },
         React.createElement(
-          'View' as any,
+          View,
           { style: { display: 'flex', flexDirection: 'row', backgroundColor: '#f3f4f6', borderBottomWidth: 1, borderBottomColor: '#d1d5db' } },
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8 } }, 'Grão'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Quantidade'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Preço Unit.'),
-          React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Subtotal')
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8 } }, 'Grão'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Quantidade'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Preço Unit.'),
+          React.createElement(Text, { style: { flex: 1, fontSize: 10, fontWeight: 'bold', padding: 8, textAlign: 'right' } }, 'Subtotal')
         ),
         data.graos.map((grao, idx) =>
           React.createElement(
-            'View' as any,
+            View,
             { key: idx, style: { display: 'flex', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#f3f4f6' } },
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8 } }, grao.grao),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, `${grao.quantidade.toLocaleString('pt-BR')}`),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, formatCurrency(toNumber(grao.preco))),
-            React.createElement('Text' as any, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right', fontWeight: 'bold' } }, formatCurrency(toNumber(grao.subtotal)))
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8 } }, grao.grao),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, `${grao.quantidade.toLocaleString('pt-BR')}`),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right' } }, formatCurrency(toNumber(grao.preco))),
+            React.createElement(Text, { style: { flex: 1, fontSize: 10, padding: 8, textAlign: 'right', fontWeight: 'bold' } }, formatCurrency(toNumber(grao.subtotal)))
           )
         )
       ),
 
       // Total
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 20, display: 'flex', flexDirection: 'row', justifyContent: 'flex-end' } },
         React.createElement(
-          'View' as any,
+          View,
           { style: { width: 250, borderTopWidth: 2, borderTopColor: '#16a34a', paddingTop: 10 } },
           React.createElement(
-            'View' as any,
+            View,
             { style: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between' } },
-            React.createElement('Text' as any, { style: { fontSize: 12, fontWeight: 'bold' } }, 'VALOR TOTAL:'),
-            React.createElement('Text' as any, { style: { fontSize: 14, fontWeight: 'bold', color: '#16a34a' } }, formatCurrency(toNumber(data.propostaValor)))
+            React.createElement(Text, { style: { fontSize: 12, fontWeight: 'bold' } }, 'VALOR TOTAL:'),
+            React.createElement(Text, { style: { fontSize: 14, fontWeight: 'bold', color: '#16a34a' } }, formatCurrency(toNumber(data.propostaValor)))
           )
         )
       ),
 
       // Terms
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginBottom: 15 } },
-        React.createElement('Text' as any, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'TERMOS E CONDIÇÕES'),
-        React.createElement('Text' as any, { style: { fontSize: 9, color: '#666', lineHeight: 1.4 } },
+        React.createElement(Text, { style: { fontSize: 10, fontWeight: 'bold', marginBottom: 5 } }, 'TERMOS E CONDIÇÕES'),
+        React.createElement(Text, { style: { fontSize: 9, color: '#666', lineHeight: 1.4 } },
           'Este contrato formaliza a compra e venda dos grãos listados acima nas quantidades, preços e condições especificadas. ' +
           'O pagamento deve ser efetuado conforme acordado. A entrega será realizada de acordo com os prazos estabelecidos. ' +
           'Ambas as partes concordam com os termos aqui descritos.'
@@ -318,28 +326,28 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
 
       // Signature Lines
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginTop: 40, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', paddingTop: 20, borderTopWidth: 1, borderTopColor: '#e5e7eb' } },
         React.createElement(
-          'View' as any,
+          View,
           { style: { width: '45%', textAlign: 'center' } },
-          React.createElement('View' as any, { style: { height: 40, marginBottom: 10 } }),
-          React.createElement('Text' as any, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura do Cliente')
+          React.createElement(View, { style: { height: 40, marginBottom: 10 } }),
+          React.createElement(Text, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura do Cliente')
         ),
         React.createElement(
-          'View' as any,
+          View,
           { style: { width: '45%', textAlign: 'center' } },
-          React.createElement('View' as any, { style: { height: 40, marginBottom: 10 } }),
-          React.createElement('Text' as any, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura da BH Grain')
+          React.createElement(View, { style: { height: 40, marginBottom: 10 } }),
+          React.createElement(Text, { style: { fontSize: 9, fontWeight: 'bold', borderTopWidth: 1, borderTopColor: '#333', paddingTop: 5 } }, 'Assinatura da BH Grain')
         )
       ),
 
       // Footer
       React.createElement(
-        'View' as any,
+        View,
         { style: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e7eb', fontSize: 9, color: '#666', textAlign: 'center' } },
-        React.createElement('Text' as any, null, 'BH Grain - Sistema de Gestão de Grãos'),
-        React.createElement('Text' as any, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
+        React.createElement(Text, null, 'BH Grain - Sistema de Gestão de Grãos'),
+        React.createElement(Text, { style: { marginTop: 3 } }, `Gerado em ${formatDate(new Date())} às ${new Date().toLocaleTimeString('pt-BR')}`)
       )
     )
   )
