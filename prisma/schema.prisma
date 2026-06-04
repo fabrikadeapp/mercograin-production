@@ -824,6 +824,10 @@ model Proposta {
   observacoes  String?   @db.Text
   criadaEm     DateTime  @default(now())
   enviadaEm    DateTime?
+  /// Primeira vez que o cliente abriu a proposta no portal ou via link público.
+  vistaEm      DateTime?
+  /// Quantas vezes o cliente acessou (acessos públicos + portal).
+  vistasCount  Int       @default(0)
   validadeEm   DateTime
   atualizadaEm DateTime  @updatedAt
 

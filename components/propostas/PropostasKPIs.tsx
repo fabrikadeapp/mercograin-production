@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, AlertTriangle, Clock, CheckCircle2, Target } from 'lucide-react'
+import { TrendingUp, AlertTriangle, Clock, CheckCircle2, Target, Eye } from 'lucide-react'
 import { Card } from '@/components/ui/phb'
 import { formatCurrency } from '@/lib/utils/formatters'
 
@@ -12,6 +12,7 @@ interface KPIs {
   vencidas: { count: number; valor: number }
   fechadasNoMes: { count: number; valor: number }
   hitRateMensal: number
+  taxaVisualizacao: number
 }
 
 export function PropostasKPIs() {
@@ -41,7 +42,7 @@ export function PropostasKPIs() {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
       <KPI
         icon={<TrendingUp className="h-3.5 w-3.5" />}
         label="Em aberto"
@@ -76,6 +77,13 @@ export function PropostasKPIs() {
         valor={`${(data.hitRateMensal * 100).toFixed(0)}%`}
         sub="aprovadas / decididas"
         tom="info"
+      />
+      <KPI
+        icon={<Eye className="h-3.5 w-3.5" />}
+        label="Taxa de visualização"
+        valor={`${(data.taxaVisualizacao * 100).toFixed(0)}%`}
+        sub="vistas / enviadas"
+        tom="accent"
       />
     </div>
   )

@@ -43,6 +43,7 @@ export default async function PropostaDetailPage({
       valorTotal: true,
       validadeEm: true,
       criadaEm: true,
+      vistaEm: true,
       descricao: true,
       graos: true,
       localEntrega: true,
@@ -51,6 +52,17 @@ export default async function PropostaDetailPage({
   })
 
   if (!proposta) notFound()
+
+  // F3 — Marca como vista pelo cliente (best-effort)
+  db.proposta
+    .update({
+      where: { id: proposta.id },
+      data: {
+        vistaEm: proposta.vistaEm ?? new Date(),
+        vistasCount: { increment: 1 },
+      },
+    })
+    .catch(() => undefined)
 
   const graos = (Array.isArray(proposta.graos) ? proposta.graos : []) as GraoItem[]
   const fmt = (n: number) =>

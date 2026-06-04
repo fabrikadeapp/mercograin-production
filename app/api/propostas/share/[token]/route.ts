@@ -86,6 +86,17 @@ export async function GET(
       })
       .catch(() => undefined)
 
+    // F3 — Marca como vista pelo cliente (primeira vez) e incrementa contador
+    db.proposta
+      .update({
+        where: { id: proposta.id },
+        data: {
+          vistaEm: proposta.vistaEm ?? new Date(),
+          vistasCount: { increment: 1 },
+        },
+      })
+      .catch(() => undefined)
+
     return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/pdf',

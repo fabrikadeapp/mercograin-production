@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreVertical, Send, CheckCircle2, XCircle, FileText, MessageCircle } from 'lucide-react'
+import { MoreVertical, Send, CheckCircle2, XCircle, FileText, MessageCircle, Copy } from 'lucide-react'
 import { Dialog, Button, Select } from '@/components/ui/phb'
 import { useToast } from '@/contexts/ToastContext'
 import { AprovarComPreviewModal } from './AprovarComPreviewModal'
@@ -89,6 +89,17 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
     setAprovarOpen(true)
   }
 
+  const clonar = async () => {
+    if (!confirm(`Clonar ${proposta.numero}? Nova proposta nasce como rascunho com validade +30 dias.`)) return
+    await acao(
+      `/api/propostas/${proposta.id}/clonar`,
+      'POST',
+      {},
+      'Proposta clonada',
+      'clonar'
+    )
+  }
+
   const submitPerdida = async () => {
     const ok = await acao(
       `/api/propostas/${proposta.id}/marcar-perdida`,
@@ -162,6 +173,12 @@ export function PropostaRowActions({ proposta, onRefresh }: PropostaRowActionsPr
               >
                 <MenuItem icon={<FileText className="h-3.5 w-3.5" />} label="Baixar PDF" />
               </a>
+              <MenuItem
+                icon={<Copy className="h-3.5 w-3.5" />}
+                label="Clonar (nova proposta)"
+                loading={loading === 'clonar'}
+                onClick={clonar}
+              />
               {STATUS_PODE_APROVAR.has(status) && (
                 <MenuItem
                   icon={<CheckCircle2 className="h-3.5 w-3.5" />}

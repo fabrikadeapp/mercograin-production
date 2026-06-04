@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
         validadeEm: true,
         atualizadaEm: true,
         criadaEm: true,
+        enviadaEm: true,
+        vistaEm: true,
       },
     })
 
@@ -53,8 +55,11 @@ export async function GET(request: NextRequest) {
       vencidas: { count: 0, valor: 0 },
       fechadasNoMes: { count: 0, valor: 0 },
       hitRateMensal: 0,
+      taxaVisualizacao: 0,
     }
 
+    let enviadasTotal = 0
+    let vistasTotal = 0
     let totalDecididasMes = 0
     let ganhasMes = 0
 
@@ -90,9 +95,16 @@ export async function GET(request: NextRequest) {
           totalDecididasMes++
         }
       }
+
+      // Taxa de visualização: das propostas enviadas, quantas o cliente abriu?
+      if (p.enviadaEm) {
+        enviadasTotal++
+        if (p.vistaEm) vistasTotal++
+      }
     }
 
     agg.hitRateMensal = totalDecididasMes > 0 ? ganhasMes / totalDecididasMes : 0
+    agg.taxaVisualizacao = enviadasTotal > 0 ? vistasTotal / enviadasTotal : 0
 
     return NextResponse.json(agg)
   } catch (error) {

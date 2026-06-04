@@ -1,0 +1,23 @@
+name: Propostas Expiradas
+
+# Marca propostas vencidas (validadeEm < now) como 'expirada' se ainda
+# estão em status aberto. Idempotente.
+# Endpoint: /api/cron/propostas-expiradas
+
+on:
+  schedule:
+    # 09:00 UTC = 06:00 BRT — antes do horário comercial pra book limpo
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  expirar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger propostas-expiradas endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/propostas-expiradas
