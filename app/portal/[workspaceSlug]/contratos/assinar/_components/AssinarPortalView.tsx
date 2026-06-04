@@ -493,27 +493,16 @@ export function AssinarPortalView({ workspaceSlug, token }: { workspaceSlug: str
         )}
 
         {etapa === 'assinar' && status && (
-          <div style={S.card}>
-            <Titulo icon={<FileText />}>Revisar e assinar</Titulo>
-            <p style={S.muted}>
-              Revise o contrato abaixo. Ao clicar em <strong>Assinar agora</strong>, sua assinatura
-              será registrada com validade legal (Lei 14.063/2020).
-            </p>
-            <div style={S.pdfBox}>
-              <iframe src={`/api/assinar/${token}?pdf=1`} style={{ width: '100%', height: 540, border: 0 }} title="Contrato" />
-            </div>
-            <div style={S.recap}>
-              <div><strong>Assinando como:</strong> {perfil.nomeCompleto || status.signatario?.nome}</div>
-              <div><strong>Documento:</strong> {perfil.cpfCnpj}</div>
-            </div>
-            <Botao onClick={submitAssinar} disabled={busy}>
-              {busy ? 'Registrando…' : 'Assinar agora'}
-            </Botao>
-            <p style={{ fontSize: 11, color: '#999', marginTop: 8, textAlign: 'center' }}>
-              <Lock style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle' }} /> Seu IP, dispositivo e horário serão registrados para auditoria.
-            </p>
-            {erro && <Erro msg={erro} />}
-          </div>
+          <AssinarMobileSheet
+            contratoNumero={status.contratoNumero}
+            workspaceNome={status.workspaceNome}
+            pdfSrc={`/api/assinar/${token}?pdf=1`}
+            nome={perfil.nomeCompleto || status.signatario?.nome || ''}
+            cpfCnpj={perfil.cpfCnpj || ''}
+            busy={busy}
+            onAssinar={submitAssinar}
+            erroMsg={erro}
+          />
         )}
 
         {etapa === 'sucesso' && (
@@ -610,4 +599,171 @@ const S = {
   pdfBox: { border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden', marginBottom: 12 } as React.CSSProperties,
   recap: { background: '#f9f9f9', padding: 12, borderRadius: 6, fontSize: 13, color: '#333', marginBottom: 8 } as React.CSSProperties,
   protocolo: { background: '#f5f5f5', border: '1px solid #ddd', borderRadius: 6, padding: 12, marginTop: 16, display: 'inline-block' } as React.CSSProperties,
+}
+
+// ============= Mobile-first bottom sheet (L7) =============
+function maskCpf(d?: string): string {
+  if (!d) return ''
+  const v = d.replace(/\D/g, '')
+  if (v.length === 11) return `***.${v.slice(3, 6)}.${v.slice(6, 9)}-**`
+  if (v.length === 14) return `**.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8, 12)}-**`
+  return v
+}
+
+function AssinarMobileSheet(props: {
+  contratoNumero: string
+  workspaceNome: string
+  pdfSrc: string
+  nome: string
+  cpfCnpj: string
+  busy: boolean
+  onAssinar: () => void
+  erroMsg: string | null
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [vh, setVh] = useState(0)
+  useEffect(() => {
+    const onResize = () => setVh(window.innerHeight)
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // Cores derivam do tema portal via CSS vars (funciona em light e dark)
+  const sheetBg = 'var(--portal-surface, #fff)'
+  const ink = 'var(--portal-ink, #18181b)'
+  const inkDim = 'var(--portal-ink-mute, #71717a)'
+  const accent = 'var(--portal-accent, #0a8a3a)'
+  const border = 'var(--portal-border, #e4e4e7)'
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'var(--portal-bg, #f4f4f5)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 100,
+      }}
+    >
+      {/* Header curto */}
+      <div
+        style={{
+          background: sheetBg,
+          borderBottom: `1px solid ${border}`,
+          padding: '10px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 13,
+          color: ink,
+        }}
+      >
+        <strong>{props.workspaceNome}</strong>
+        <span style={{ color: inkDim }}>Contrato {props.contratoNumero}</span>
+      </div>
+
+      {/* PDF tela cheia */}
+      <iframe
+        src={props.pdfSrc}
+        title="Contrato"
+        style={{
+          flex: 1,
+          width: '100%',
+          border: 0,
+          background: '#000',
+        }}
+      />
+
+      {/* Bottom sheet */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: sheetBg,
+          borderTopLeftRadius: 18,
+          borderTopRightRadius: 18,
+          boxShadow: '0 -8px 24px rgba(0,0,0,0.18)',
+          padding: '12px 18px 18px',
+          maxHeight: expanded ? Math.min(vh - 60, 480) : 220,
+          overflow: 'auto',
+          transition: 'max-height .2s ease',
+          color: ink,
+        }}
+      >
+        <div
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            width: 40,
+            height: 4,
+            background: border,
+            borderRadius: 2,
+            margin: '0 auto 12px',
+            cursor: 'pointer',
+          }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <strong style={{ fontSize: 15 }}>Confirmar assinatura</strong>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: 0,
+              color: inkDim,
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            {expanded ? 'Recolher' : 'Detalhes'}
+          </button>
+        </div>
+
+        <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.7 }}>
+          <div>
+            <span style={{ color: accent, fontWeight: 700, marginRight: 6 }}>✓</span>
+            Sou <strong>{props.nome || '—'}</strong>
+          </div>
+          <div>
+            <span style={{ color: accent, fontWeight: 700, marginRight: 6 }}>✓</span>
+            CPF {maskCpf(props.cpfCnpj)}
+          </div>
+          <div>
+            <span style={{ color: accent, fontWeight: 700, marginRight: 6 }}>✓</span>
+            Li e aceito o conteúdo do contrato (LGPD/Lei 14.063/2020)
+          </div>
+        </div>
+
+        {expanded && (
+          <p style={{ fontSize: 11, color: inkDim, lineHeight: 1.5, marginTop: 14 }}>
+            Ao confirmar, registramos seu IP, dispositivo, horário e geolocalização
+            aproximada (se permitir). Estes dados são armazenados como evidência da
+            assinatura e podem ser apresentados em juízo conforme Lei nº 14.063/2020.
+          </p>
+        )}
+
+        <button
+          onClick={props.onAssinar}
+          disabled={props.busy}
+          style={{
+            width: '100%',
+            marginTop: 14,
+            background: props.busy ? inkDim : accent,
+            color: '#fff',
+            padding: 14,
+            border: 0,
+            borderRadius: 12,
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: props.busy ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {props.busy ? 'Registrando…' : 'Assinar agora'}
+        </button>
+        {props.erroMsg && <Erro msg={props.erroMsg} />}
+      </div>
+    </div>
+  )
 }
