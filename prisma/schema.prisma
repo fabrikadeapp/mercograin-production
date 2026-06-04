@@ -812,24 +812,33 @@ model TaxaCambio {
 // ============================================
 
 model Proposta {
-  id           String    @id @default(cuid())
-  numero       String    @unique @db.VarChar(50)
-  clienteId    String
-  cliente      Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  tipo         String // 'venda' | 'compra'
-  graos        Json
-  valorTotal   Decimal   @db.Decimal(15, 2)
-  status       String    @default("rascunho")
-  descricao    String?   @db.Text
-  observacoes  String?   @db.Text
-  criadaEm     DateTime  @default(now())
-  enviadaEm    DateTime?
+  id                   String     @id @default(cuid())
+  numero               String     @unique @db.VarChar(50)
+  clienteId            String
+  cliente              Cliente    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipo                 String // 'venda' | 'compra'
+  graos                Json
+  valorTotal           Decimal    @db.Decimal(15, 2)
+  status               String     @default("rascunho")
+  descricao            String?    @db.Text
+  observacoes          String?    @db.Text
+  criadaEm             DateTime   @default(now())
+  enviadaEm            DateTime?
   /// Primeira vez que o cliente abriu a proposta no portal ou via link público.
-  vistaEm      DateTime?
+  vistaEm              DateTime?
   /// Quantas vezes o cliente acessou (acessos públicos + portal).
-  vistasCount  Int       @default(0)
-  validadeEm   DateTime
-  atualizadaEm DateTime  @updatedAt
+  vistasCount          Int        @default(0)
+  /// Proposta que originou esta — usado em clonagem e contra-ofertas.
+  /// Forma cadeia: original → contra-oferta → contra-contra-oferta.
+  propostaOriginalId   String?
+  propostaOriginal     Proposta?  @relation("PropostaContraOferta", fields: [propostaOriginalId], references: [id], onDelete: SetNull)
+  /// Contra-ofertas geradas a partir desta (back-relation).
+  contraOfertas        Proposta[] @relation("PropostaContraOferta")
+  /// Snapshot das mudanças quando criada como contra-oferta:
+  /// { graos: { de, para }, validadeEm: { de, para }, comentario }.
+  contraOfertaMudancas Json?
+  validadeEm           DateTime
+  atualizadaEm         DateTime   @updatedAt
 
   contratos Contrato[]
 
@@ -904,6 +913,7 @@ model Proposta {
   @@index([workspaceId, criadaEm])
   // HOT: agregações por (workspaceId, status IN [...]) com filtro temporal (sumFechadasNoMes, funil).
   @@index([workspaceId, status, atualizadaEm])
+  @@index([propostaOriginalId])
 }
 
 // ============================================
@@ -941,6 +951,18 @@ model Contrato {
   contratoOriginalId String?
   contratoOriginal   Contrato?  @relation("OperacaoTriangular", fields: [contratoOriginalId], references: [id], onDelete: SetNull)
   contratosFilhos    Contrato[] @relation("OperacaoTriangular")
+
+  /// F5 — Aditivos: contratos que alteram este (volume, prazo, condições).
+  /// Cada aditivo é um Contrato novo com tipo aditivado.
+  aditivoBaseId      String?
+  aditivoBase        Contrato?  @relation("ContratoAditivo", fields: [aditivoBaseId], references: [id], onDelete: SetNull)
+  aditivos           Contrato[] @relation("ContratoAditivo")
+  /// Tipo de aditivo (null = contrato base; senão: 'volume' | 'prazo' | 'preco' | 'cancelamento' | 'outro').
+  aditivoTipo        String?    @db.VarChar(20)
+  /// Snapshot JSON do que foi alterado em relação ao base.
+  aditivoMudancas    Json?
+  /// Justificativa do aditivo.
+  aditivoJustificativa String?  @db.Text
 
   // S2 M10
   aceite AceiteContrato?
@@ -992,6 +1014,7 @@ model Contrato {
   @@index([assinadoEm])
   @@index([workspaceId])
   @@index([contratoOriginalId])
+  @@index([aditivoBaseId])
   @@index([gerenteContaId])
   @@index([vendedorId])
   // HOT: listagens de contrato por workspace ordenadas por criadoEm DESC.

@@ -145,6 +145,7 @@ export async function POST(
           .filter(Boolean)
           .join('\n')
           .trim(),
+        propostaOriginalId: original.id,
       },
       include: { cliente: true },
     })

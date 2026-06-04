@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requireScope } from '@/lib/auth/scope'
 import { logAudit } from '@/lib/audit/log'
+import { PROPOSTA_STATUS } from '@/lib/propostas/status'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,17 +14,23 @@ const schema = z.object({
 })
 
 /**
- * POST /api/propostas/{id}/autorizar
+ * POST /api/propostas/{id}/autorizar — "VISTO" DA MESA
  *
- * Aprova ou rejeita uma proposta criada por canal não-web (WhatsApp,
- * telefone, IA autônoma) que está em `aguardando_autorizacao`.
+ * NÃO CONFUNDIR COM /api/bhgrain/propostas/[id]/aprovar:
+ *   - `autorizar`  → visto humano em proposta criada por Laura/IA/canal
+ *                    externo. Confirma que pode ser enviada ao cliente.
+ *                    Status: aguardando_autorizacao → enviada (ou cancelada).
+ *   - `aprovar`    → fluxo de Aprovacao (CommercialRule). Quando uma regra
+ *                    comercial é violada, o envio entra em workflow de
+ *                    aprovação multi-etapa. Status: pendente_aprovacao →
+ *                    pronta_para_enviar.
  *
- *  - Aprovar: status → 'enviada', autorizadoEm=now, autorizadoPorId=membership,
- *    vendedorId=membership se ainda null.
- *  - Rejeitar: status → 'cancelada'.
+ * Estados que entram em "autorizar":
+ *   - aguardando_autorizacao (criada por Laura/WhatsApp/telefone)
  *
- * Quem autoriza precisa ter visão da Mesa (owner/admin/gerente_mesa/trader
- * dono da conta ou vendedor original). Scope já cuida disso via GET.
+ * Estados resultantes:
+ *   - aprovar  → enviada (+ enviadaEm + autorizadoEm + vendedorId)
+ *   - rejeitar → cancelada (+ autorizadoEm + observacoes)
  */
 export async function POST(
   req: NextRequest,
@@ -60,7 +67,7 @@ export async function POST(
   if (!proposta) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 })
   }
-  if (proposta.status !== 'aguardando_autorizacao') {
+  if (proposta.status !== PROPOSTA_STATUS.AGUARDANDO_AUTORIZACAO) {
     return NextResponse.json(
       { error: 'proposta_nao_pendente', currentStatus: proposta.status },
       { status: 409 },
@@ -92,7 +99,7 @@ export async function POST(
     data:
       acao === 'aprovar'
         ? {
-            status: 'enviada',
+            status: PROPOSTA_STATUS.ENVIADA,
             autorizadoEm: now,
             autorizadoPorId: member?.id ?? null,
             // Se ainda não tinha vendedor, define como quem autorizou
@@ -100,7 +107,7 @@ export async function POST(
             enviadaEm: now,
           }
         : {
-            status: 'cancelada',
+            status: PROPOSTA_STATUS.CANCELADA,
             autorizadoEm: now,
             autorizadoPorId: member?.id ?? null,
             observacoes: observacao

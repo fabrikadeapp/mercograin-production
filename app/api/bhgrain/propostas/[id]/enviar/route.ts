@@ -17,6 +17,7 @@ import { db } from '@/lib/db'
 import { sendEmailRastreado } from '@/lib/email/send-rastreado'
 import { propostaEnviadaClienteTemplate } from '@/lib/email/templates/proposta-enviada-cliente'
 import { gerarTokenProposta } from '@/lib/propostas/share-token'
+import { PROPOSTA_STATUS } from '@/lib/propostas/status'
 import { notificarPorWhats } from '@/lib/whatsapp/notificar'
 import { whatsPropostaEnviada } from '@/lib/whatsapp/templates'
 
@@ -81,7 +82,7 @@ export async function POST(
       // Marca status como pendente_aprovacao
       await db.proposta.update({
         where: { id },
-        data: { status: 'pendente_aprovacao' },
+        data: { status: PROPOSTA_STATUS.PENDENTE_APROVACAO },
       })
       return NextResponse.json(
         { decisao: 'aprovacao', aprovacaoId: ap.aprovacaoId, motivos: result.motivos },
@@ -92,7 +93,7 @@ export async function POST(
     // Permitido — envia
     await db.proposta.update({
       where: { id },
-      data: { status: 'enviada', enviadaEm: new Date() },
+      data: { status: PROPOSTA_STATUS.ENVIADA, enviadaEm: new Date() },
     })
     await db.auditLog.create({
       data: {

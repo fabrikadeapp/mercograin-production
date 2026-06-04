@@ -227,7 +227,9 @@ export async function decidirAprovacao(params: {
   const novaEtapa = aprov.etapaAtual + 1
   if (novaEtapa > aprov.totalEtapas) {
     await db.aprovacao.update({ where: { id: aprov.id }, data: { status: 'aprovada' } })
-    // Promove proposta para 'pronta_para_enviar'
+    // Promove proposta para 'pronta_para_enviar' — equivale ao status canônico
+    // PROPOSTA_STATUS.PRONTA_PARA_ENVIAR (não importado aqui para evitar ciclo
+    // de dependência; literal mantido intencionalmente como contrato fixo).
     await db.proposta.update({
       where: { id: aprov.entidadeId },
       data: { status: 'pronta_para_enviar' },
