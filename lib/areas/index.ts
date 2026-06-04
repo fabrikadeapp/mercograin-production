@@ -190,6 +190,7 @@ export interface AreaSubItem {
 export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
   mesa: [
     { href: '/bhgrain', label: 'Dashboard' },
+    { href: '/bhgrain/executivo', label: 'Executivo' },
     { href: '/clientes', label: 'Clientes' },
     { href: '/propostas', label: 'Propostas' },
     { href: '/aprovacoes/propostas', label: 'Autorizações pendentes' },
