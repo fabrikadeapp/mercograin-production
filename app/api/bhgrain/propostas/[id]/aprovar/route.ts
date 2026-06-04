@@ -76,6 +76,7 @@ export async function POST(
           propostaId: id,
           workspaceId: scope.workspaceId,
           userId: scope.userId,
+          origin: request.headers.get('origin') ?? request.nextUrl.origin,
         })
       }
 

@@ -17,6 +17,8 @@ import { requirePortal } from '@/lib/portal-produtor/scope'
 import { criarContratoAutoFromProposta } from '@/lib/bhgrain/contrato-auto-create'
 import { sendEmail } from '@/lib/email/send'
 import { propostaAceitaPortalTemplate } from '@/lib/email/templates/proposta-aceita-portal'
+import { notificarPorWhats } from '@/lib/whatsapp/notificar'
+import { whatsPropostaAceita } from '@/lib/whatsapp/templates'
 
 const schema = z.object({
   aceitanteNome: z.string().min(2, 'Nome muito curto').max(200),
@@ -57,13 +59,15 @@ export async function POST(
         vendedor: {
           select: {
             email: true,
-            user: { select: { nome: true, email: true } },
+            telefoneWhats: true,
+            user: { select: { nome: true, email: true, telefone: true } },
           },
         },
         gerenteConta: {
           select: {
             email: true,
-            user: { select: { nome: true, email: true } },
+            telefoneWhats: true,
+            user: { select: { nome: true, email: true, telefone: true } },
           },
         },
       },
@@ -136,6 +140,7 @@ export async function POST(
       propostaId: proposta.id,
       workspaceId: sess.workspaceId,
       userId: sess.accessId,
+      origin: request.headers.get('origin') ?? request.nextUrl.origin,
     })
 
     // Notifica o vendedor + gerente da conta (best-effort, não bloqueia resposta)
@@ -146,6 +151,7 @@ export async function POST(
       comentario: data.comentario,
       aceitoEmISO: new Date().toISOString(),
       origin: request.headers.get('origin') ?? request.nextUrl.origin,
+      workspaceId: sess.workspaceId,
     })
 
     return NextResponse.json({
@@ -168,11 +174,13 @@ interface ProppForEmail {
   cliente: { nome: string } | null
   vendedor: {
     email: string | null
-    user: { nome: string | null; email: string | null } | null
+    telefoneWhats: string | null
+    user: { nome: string | null; email: string | null; telefone: string | null } | null
   } | null
   gerenteConta: {
     email: string | null
-    user: { nome: string | null; email: string | null } | null
+    telefoneWhats: string | null
+    user: { nome: string | null; email: string | null; telefone: string | null } | null
   } | null
 }
 
@@ -183,14 +191,25 @@ async function notificarTime(args: {
   comentario?: string
   aceitoEmISO: string
   origin: string
+  workspaceId: string
 }): Promise<void> {
   try {
-    const destinos = new Map<string, string>() // email → nome
+    // Coleta destinos únicos: para cada papel (vendedor/gerente), guarda
+    // email + telefone + nome.
+    const destinos = new Map<
+      string,
+      { nome: string; email: string | null; telefone: string | null }
+    >()
     for (const m of [args.proposta.vendedor, args.proposta.gerenteConta]) {
       if (!m) continue
       const email = m.user?.email ?? m.email
       const nome = m.user?.nome ?? email?.split('@')[0] ?? 'time comercial'
-      if (email && !destinos.has(email)) destinos.set(email, nome)
+      const telefone = m.telefoneWhats ?? m.user?.telefone ?? null
+      const chave = email ?? telefone
+      if (!chave) continue
+      if (!destinos.has(chave)) {
+        destinos.set(chave, { nome, email: email ?? null, telefone })
+      }
     }
     if (destinos.size === 0) return
 
@@ -204,31 +223,58 @@ async function notificarTime(args: {
       ? `${args.origin}/contratos/${args.contrato.contratoId}`
       : `${args.origin}/propostas`
 
-    for (const [email, nome] of destinos) {
-      const { propostaAceitaPortalTemplate } = await import(
-        '@/lib/email/templates/proposta-aceita-portal'
-      )
-      const tmpl = propostaAceitaPortalTemplate({
-        destinatarioNome: nome,
-        clienteNome: args.proposta.cliente?.nome ?? 'Cliente',
-        aceitanteNome: args.aceitanteNome,
-        comentario: args.comentario,
-        propostaNumero: args.proposta.numero,
-        valorFormatado: valorFmt,
-        contratoNumero: args.contrato?.numero ?? null,
-        linkInterno,
-        aceitoEm: args.aceitoEmISO,
-      })
-      await sendEmail({
-        to: email,
-        subject: tmpl.subject,
-        html: tmpl.html,
-        text: tmpl.text,
-        tags: [
-          { name: 'kind', value: 'proposta_aceita_portal' },
-          { name: 'proposta_numero', value: args.proposta.numero },
-        ],
-      })
+    for (const { nome, email, telefone } of destinos.values()) {
+      // 1. Email
+      if (email) {
+        const { propostaAceitaPortalTemplate } = await import(
+          '@/lib/email/templates/proposta-aceita-portal'
+        )
+        const tmpl = propostaAceitaPortalTemplate({
+          destinatarioNome: nome,
+          clienteNome: args.proposta.cliente?.nome ?? 'Cliente',
+          aceitanteNome: args.aceitanteNome,
+          comentario: args.comentario,
+          propostaNumero: args.proposta.numero,
+          valorFormatado: valorFmt,
+          contratoNumero: args.contrato?.numero ?? null,
+          linkInterno,
+          aceitoEm: args.aceitoEmISO,
+        })
+        await sendEmail({
+          to: email,
+          subject: tmpl.subject,
+          html: tmpl.html,
+          text: tmpl.text,
+          tags: [
+            { name: 'kind', value: 'proposta_aceita_portal' },
+            { name: 'proposta_numero', value: args.proposta.numero },
+          ],
+        })
+      }
+
+      // 2. WhatsApp (best-effort, condicional)
+      if (telefone) {
+        const texto = whatsPropostaAceita({
+          destinatarioNome: nome,
+          clienteNome: args.proposta.cliente?.nome ?? 'Cliente',
+          aceitanteNome: args.aceitanteNome,
+          comentario: args.comentario,
+          propostaNumero: args.proposta.numero,
+          valorFormatado: valorFmt,
+          contratoNumero: args.contrato?.numero ?? null,
+          linkInterno,
+        })
+        void notificarPorWhats({
+          workspaceId: args.workspaceId,
+          para: telefone,
+          texto,
+          categoria: 'proposta_aceita_time',
+          meta: {
+            propostaNumero: args.proposta.numero,
+            contratoId: args.contrato?.contratoId ?? null,
+          },
+        })
+      }
     }
   } catch (err) {
     console.warn('[notificarTime] best-effort falhou:', err)

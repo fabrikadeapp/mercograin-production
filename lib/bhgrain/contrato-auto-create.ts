@@ -11,11 +11,18 @@
 import { db } from '@/lib/db'
 import { nextNumber } from '@/lib/numbering/next-number'
 import { logAudit } from '@/lib/audit/log'
+import { notificarPorWhats } from '@/lib/whatsapp/notificar'
+import { whatsContratoGerado } from '@/lib/whatsapp/templates'
 
 export interface AutoCriarContratoArgs {
   propostaId: string
   workspaceId: string
   userId: string
+  /**
+   * Opcional. Quando informado, dispara notificação WhatsApp pro cliente
+   * com link do portal. Caller HTTP deve passar o origin da request.
+   */
+  origin?: string
 }
 
 export interface AutoCriarContratoResult {
@@ -48,9 +55,13 @@ export async function criarContratoAutoFromProposta(
       where: { id: args.propostaId },
       select: {
         id: true,
+        numero: true,
         tipo: true,
         clienteId: true,
         workspaceId: true,
+        valorTotal: true,
+        cliente: { select: { nome: true, whatsapp: true } },
+        workspace: { select: { name: true, slug: true } },
       },
     })
     if (!proposta) return null
@@ -97,6 +108,34 @@ export async function criarContratoAutoFromProposta(
         origem: 'aprovacao_automatica',
       },
     })
+
+    // Notifica cliente por WhatsApp (best-effort)
+    if (args.origin && proposta.cliente?.whatsapp && proposta.workspace?.slug) {
+      const valorFmt = Number(proposta.valorTotal).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      })
+      const portalUrl = `${args.origin}/portal/${proposta.workspace.slug}/contratos/${contrato.id}`
+      const texto = whatsContratoGerado({
+        clienteNome: proposta.cliente.nome,
+        workspaceNome: proposta.workspace.name,
+        contratoNumero: contrato.numero,
+        propostaNumero: proposta.numero,
+        valorFormatado: valorFmt,
+        portalUrl,
+      })
+      void notificarPorWhats({
+        workspaceId: args.workspaceId,
+        para: proposta.cliente.whatsapp,
+        texto,
+        categoria: 'contrato_gerado_cliente',
+        meta: {
+          propostaId: proposta.id,
+          contratoId: contrato.id,
+          contratoNumero: contrato.numero,
+        },
+      })
+    }
 
     return {
       contratoId: contrato.id,

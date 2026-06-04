@@ -17,6 +17,8 @@ import { db } from '@/lib/db'
 import { sendEmail } from '@/lib/email/send'
 import { propostaEnviadaClienteTemplate } from '@/lib/email/templates/proposta-enviada-cliente'
 import { gerarTokenProposta } from '@/lib/propostas/share-token'
+import { notificarPorWhats } from '@/lib/whatsapp/notificar'
+import { whatsPropostaEnviada } from '@/lib/whatsapp/templates'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -40,7 +42,8 @@ export async function POST(
         valorTotal: true,
         validadeEm: true,
         graos: true,
-        cliente: { select: { id: true, nome: true, email: true } },
+        workspaceId: true,
+        cliente: { select: { id: true, nome: true, email: true, whatsapp: true } },
         workspace: { select: { name: true, slug: true } },
       },
     })
@@ -118,14 +121,14 @@ interface PropForEnvio {
   valorTotal: { toString(): string } | number
   validadeEm: Date
   graos: unknown
-  cliente: { id: string; nome: string; email: string | null } | null
+  workspaceId: string
+  cliente: { id: string; nome: string; email: string | null; whatsapp: string | null } | null
   workspace: { name: string; slug: string | null } | null
 }
 
 async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<void> {
   try {
-    const email = p.cliente?.email
-    if (!email || !p.cliente || !p.workspace?.slug) return
+    if (!p.cliente || !p.workspace?.slug) return
 
     const valor = Number(p.valorTotal).toLocaleString('pt-BR', {
       style: 'currency',
@@ -155,27 +158,49 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
       /* ignore */
     }
 
-    const tmpl = propostaEnviadaClienteTemplate({
-      clienteNome: p.cliente.nome,
-      propostaNumero: p.numero,
-      valorFormatado: valor,
-      validadeFormatada: validade,
-      resumoItens: resumo || undefined,
-      portalUrl,
-      workspaceNome: p.workspace.name,
-      pdfPublicoUrl,
-    })
+    // 1. Email (se tem)
+    if (p.cliente.email) {
+      const tmpl = propostaEnviadaClienteTemplate({
+        clienteNome: p.cliente.nome,
+        propostaNumero: p.numero,
+        valorFormatado: valor,
+        validadeFormatada: validade,
+        resumoItens: resumo || undefined,
+        portalUrl,
+        workspaceNome: p.workspace.name,
+        pdfPublicoUrl,
+      })
+      await sendEmail({
+        to: p.cliente.email,
+        subject: tmpl.subject,
+        html: tmpl.html,
+        text: tmpl.text,
+        tags: [
+          { name: 'kind', value: 'proposta_enviada_cliente' },
+          { name: 'proposta_numero', value: p.numero },
+        ],
+      })
+    }
 
-    await sendEmail({
-      to: email,
-      subject: tmpl.subject,
-      html: tmpl.html,
-      text: tmpl.text,
-      tags: [
-        { name: 'kind', value: 'proposta_enviada_cliente' },
-        { name: 'proposta_numero', value: p.numero },
-      ],
-    })
+    // 2. WhatsApp (best-effort, condicional a instância conectada)
+    if (p.cliente.whatsapp) {
+      const texto = whatsPropostaEnviada({
+        numero: p.numero,
+        clienteNome: p.cliente.nome,
+        workspaceNome: p.workspace.name,
+        valorFormatado: valor,
+        validadeFormatada: validade,
+        graoResumo: resumo || undefined,
+        portalUrl,
+      })
+      void notificarPorWhats({
+        workspaceId: p.workspaceId,
+        para: p.cliente.whatsapp,
+        texto,
+        categoria: 'proposta_enviada_cliente',
+        meta: { propostaId: p.id, propostaNumero: p.numero },
+      })
+    }
   } catch (err) {
     console.warn('[notificarClienteEnvio] best-effort falhou:', err)
   }
