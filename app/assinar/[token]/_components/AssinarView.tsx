@@ -101,9 +101,29 @@ export function AssinarView({ token }: { token: string }) {
   } | null>(null)
 
   useEffect(() => {
-    fetch(`/api/assinar/${token}`)
-      .then(async (r) => {
+    let cancelado = false
+    ;(async () => {
+      // Tenta rotear para o portal (cadastro + LGPD + perfil único).
+      try {
+        const rp = await fetch(`/api/assinar/${token}/status-portal`)
+        const jp = await rp.json().catch(() => ({}))
+        if (cancelado) return
+        if (rp.ok && jp?.redirect) {
+          window.location.replace(jp.redirect)
+          return
+        }
+        if (!rp.ok && jp?.erro) {
+          setErro(String(jp.erro))
+          setLoading(false)
+          return
+        }
+      } catch {
+        /* fallback abaixo */
+      }
+      try {
+        const r = await fetch(`/api/assinar/${token}`)
         const j = await r.json().catch(() => ({}))
+        if (cancelado) return
         if (!r.ok) {
           setErro(String(j.erro ?? 'erro_desconhecido'))
         } else {
@@ -111,9 +131,15 @@ export function AssinarView({ token }: { token: string }) {
           if (j.signatario?.nome) setNome(j.signatario.nome)
           if (j.signatario?.cpfCnpj) setCpfCnpj(formatarCpfCnpj(j.signatario.cpfCnpj))
         }
-      })
-      .catch(() => setErro('falha_carregar'))
-      .finally(() => setLoading(false))
+      } catch {
+        if (!cancelado) setErro('falha_carregar')
+      } finally {
+        if (!cancelado) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelado = true
+    }
   }, [token])
 
   const cpfCnpjValido =

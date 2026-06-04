@@ -727,10 +727,72 @@ model ProdutorAccess {
   ativo            Boolean   @default(true)
   twoFactorEnabled Boolean   @default(false)
   totpSecret       String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+
+  // Cadastro completo do cliente da corretora (1x, reusado em todos contratos)
+  nomeCompleto        String?   @db.VarChar(255)
+  cpfCnpj             String?   @db.VarChar(20)
+  rg                  String?   @db.VarChar(30)
+  nomePai             String?   @db.VarChar(255)
+  nomeMae             String?   @db.VarChar(255)
+  profissao           String?   @db.VarChar(120)
+  nacionalidade       String?   @db.VarChar(80)
+  cargoEmpresa        String?   @db.VarChar(120)
+  telefone            String?   @db.VarChar(30)
+  whatsapp            String?   @db.VarChar(30)
+  enderecoCep         String?   @db.VarChar(12)
+  enderecoLogradouro  String?   @db.VarChar(255)
+  enderecoNumero      String?   @db.VarChar(20)
+  enderecoComplemento String?   @db.VarChar(120)
+  enderecoBairro      String?   @db.VarChar(120)
+  enderecoCidade      String?   @db.VarChar(120)
+  enderecoUf          String?   @db.VarChar(2)
+  /// Consentimentos LGPD por finalidade. Array de { finalidade, granted, ip, ua, timestamp }
+  consentimentos      Json?
+  perfilCompletoEm    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  passwordResets ProdutorPasswordReset[]
+  dadosBancarios DadosBancariosCliente[]
 
   @@index([workspaceId])
+}
+
+/// Tokens de reset de senha para clientes da corretora (portal produtor).
+/// TTL curto (1h) e hash bcrypt do token (nunca o token em claro).
+model ProdutorPasswordReset {
+  id               String         @id @default(cuid())
+  produtorAccessId String
+  produtorAccess   ProdutorAccess @relation(fields: [produtorAccessId], references: [id], onDelete: Cascade)
+  tokenHash        String         @db.VarChar(120)
+  expiresAt        DateTime
+  usedAt           DateTime?
+  requestedIp      String?        @db.VarChar(45)
+  requestedUa      String?        @db.VarChar(255)
+  createdAt        DateTime       @default(now())
+
+  @@index([produtorAccessId])
+  @@index([expiresAt])
+}
+
+/// Dados bancários do cliente (opcionais).
+model DadosBancariosCliente {
+  id               String         @id @default(cuid())
+  produtorAccessId String
+  produtorAccess   ProdutorAccess @relation(fields: [produtorAccessId], references: [id], onDelete: Cascade)
+  banco            String         @db.VarChar(80)
+  agencia          String         @db.VarChar(20)
+  conta            String         @db.VarChar(30)
+  tipoConta        String         @db.VarChar(20) // 'corrente'|'poupanca'
+  titularNome      String         @db.VarChar(255)
+  pixChave         String?        @db.VarChar(120)
+  pixTipo          String?        @db.VarChar(20) // 'cpf'|'cnpj'|'email'|'telefone'|'aleatoria'
+  principal        Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([produtorAccessId])
 }
 
 model DocumentoProdutor {
