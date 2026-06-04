@@ -175,6 +175,8 @@ model Workspace {
   produtorAccessos       ProdutorAccess[]
   documentosProdutor     DocumentoProdutor[]
   mensagensProdutor      MensagemProdutor[]
+  // Leads B2B² — clientes do cliente
+  leadsOrigem            Lead[]
   // BH Grain (Lote 2) — Inbox unificado, metas, alertas, regras, health
   conversations          Conversation[]
   conversationMessages   ConversationMessage[]
@@ -308,6 +310,52 @@ model WorkspaceFeature {
 
   @@unique([workspaceId, feature])
   @@index([feature, enabled])
+}
+
+/// Leads B2B² — clientes do cliente que se cadastraram no portal.
+/// Potencial pipeline de venda direta pelo super-admin.
+model Lead {
+  id                String         @id @default(cuid())
+  origemWorkspaceId String
+  origemWorkspace   Workspace      @relation(fields: [origemWorkspaceId], references: [id], onDelete: Cascade)
+  produtorAccessId  String         @unique
+  produtorAccess    ProdutorAccess @relation(fields: [produtorAccessId], references: [id], onDelete: Cascade)
+
+  nomeCompleto String? @db.VarChar(255)
+  email        String  @db.VarChar(200)
+  telefone     String? @db.VarChar(30)
+  whatsapp     String? @db.VarChar(30)
+  cpfCnpj      String? @db.VarChar(20)
+  cargoEmpresa String? @db.VarChar(120)
+  cidade       String? @db.VarChar(120)
+  uf           String? @db.VarChar(2)
+
+  /// 'novo' | 'qualificado' | 'em_contato' | 'proposta' | 'fechado' | 'descartado'
+  status     String  @default("novo") @db.VarChar(20)
+  observacao String? @db.Text
+  fonte      String  @default("portal_cadastro") @db.VarChar(40)
+
+  ultimoContatoEm DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+  @@index([origemWorkspaceId])
+  @@index([email])
+}
+
+/// Kill-switch global por feature, controlado APENAS pelo super-admin.
+/// Quando enabled=false aqui, NENHUM workspace consegue ligar essa feature.
+/// Quando enabled=true, cada workspace decide via WorkspaceFeature.
+model SystemFeatureFlag {
+  id        String    @id @default(cuid())
+  feature   String    @unique @db.VarChar(60)
+  enabled   Boolean   @default(false)
+  toggledAt DateTime?
+  toggledBy String?
+  notes     String?   @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 /// Log de execução de crons. Cada job de cron grava aqui ao terminar
@@ -755,6 +803,7 @@ model ProdutorAccess {
 
   passwordResets ProdutorPasswordReset[]
   dadosBancarios DadosBancariosCliente[]
+  lead           Lead?
 
   @@index([workspaceId])
 }

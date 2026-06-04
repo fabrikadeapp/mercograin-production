@@ -141,6 +141,40 @@ export async function PATCH(req: NextRequest) {
     },
   })
 
+  // Pipeline B2B² — cria lead no super-admin no primeiro perfilCompletoEm
+  if (completo && !before.perfilCompletoEm) {
+    try {
+      await db.lead.upsert({
+        where: { produtorAccessId: session.accessId },
+        create: {
+          origemWorkspaceId: session.workspaceId,
+          produtorAccessId: session.accessId,
+          nomeCompleto: updated.nomeCompleto ?? undefined,
+          email: updated.emailLogin,
+          telefone: updated.telefone ?? undefined,
+          whatsapp: updated.whatsapp ?? undefined,
+          cpfCnpj: updated.cpfCnpj ?? undefined,
+          cargoEmpresa: updated.cargoEmpresa ?? undefined,
+          cidade: updated.enderecoCidade ?? undefined,
+          uf: updated.enderecoUf ?? undefined,
+          status: 'novo',
+          fonte: 'portal_cadastro',
+        },
+        update: {
+          nomeCompleto: updated.nomeCompleto ?? undefined,
+          telefone: updated.telefone ?? undefined,
+          whatsapp: updated.whatsapp ?? undefined,
+          cpfCnpj: updated.cpfCnpj ?? undefined,
+          cargoEmpresa: updated.cargoEmpresa ?? undefined,
+          cidade: updated.enderecoCidade ?? undefined,
+          uf: updated.enderecoUf ?? undefined,
+        },
+      })
+    } catch (err) {
+      console.warn('[perfil] criar lead falhou:', err)
+    }
+  }
+
   await logAudit({
     userId: 'portal-produtor',
     workspaceId: session.workspaceId,

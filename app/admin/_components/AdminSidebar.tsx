@@ -16,6 +16,9 @@ import {
   LineChart,
   HardDriveDownload,
   Bot,
+  ToggleRight,
+  Building2,
+  Sparkles,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
@@ -28,6 +31,9 @@ interface NavItem {
 
 const NAV_ITEMS: readonly NavItem[] = [
   { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
+  { href: '/admin/system-features', icon: ToggleRight, label: 'Features globais' },
+  { href: '/admin/workspaces', icon: Building2, label: 'Workspaces' },
+  { href: '/admin/leads', icon: Sparkles, label: 'Leads (clientes do cliente)' },
   { href: '/admin/metricas', icon: LineChart, label: 'Métricas' },
   { href: '/admin/usuarios', icon: Users, label: 'Usuários' },
   { href: '/admin/assinaturas', icon: CreditCard, label: 'Assinaturas' },
