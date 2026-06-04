@@ -28,6 +28,7 @@ import { renderTemplateToPdfBuffer } from '@/lib/contratos/pdf-renderer'
 import { getSignatureProvider } from '@/lib/contratos/signature'
 import type { AuthMode } from '@/lib/contratos/signature'
 import { logAudit } from '@/lib/audit/log'
+import { notifySignatario } from '@/lib/contratos/signature/notify'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -212,6 +213,14 @@ export async function POST(
       )
     }
 
+    // Extrai tokenHashes do provider native (paridade com Zapsign/Clicksign)
+    const tokenHashes: Array<string | null> =
+      provider.name === 'native' && Array.isArray(sendResp.rawResponse?.tokens)
+        ? (sendResp.rawResponse.tokens as Array<{ tokenHash?: string }>).map(
+            (t) => t?.tokenHash ?? null,
+          )
+        : signatorios.map(() => null)
+
     // 4. Persiste AssinaturaDigital + atualiza Contrato + snapshot
     await db.$transaction(async (tx) => {
       await tx.assinaturaDigital.create({
@@ -225,17 +234,18 @@ export async function POST(
           enviadoEm: new Date(),
           signatarios: signatorios.map((s, i) => ({
             ordem: i,
+            nome: s.nome,
             name: s.nome,
             cpfCnpj: s.cpfCnpj,
             email: s.email ?? null,
+            telefone: s.telefone ?? null,
             phone: s.telefone ?? null,
             authMode: s.authMode,
             signedAt: null,
             refusedAt: null,
             ip: null,
-            signUrl:
-              sendResp.signUrls.find((u) => u.signatoryEmail === s.email)
-                ?.url ?? null,
+            tokenHash: tokenHashes[i] ?? null,
+            signUrl: sendResp.signUrls[i]?.url ?? null,
           })),
           pdfOriginalHash: pdfHash,
           webhookSecret,
@@ -265,12 +275,43 @@ export async function POST(
       },
     })
 
+    // 5. Notifica signatários (email + WhatsApp) — não bloqueia em caso de falha
+    const brandNome =
+      empresa?.nomeFantasia || empresa?.razaoSocial || undefined
+    const notifResultados = await Promise.all(
+      signatorios.map((s, i) =>
+        notifySignatario({
+          contratoNumero: contrato.numero,
+          brandNome,
+          signatario: {
+            nome: s.nome,
+            email: s.email,
+            telefone: s.telefone,
+            url: sendResp.signUrls[i]?.url ?? '',
+          },
+        }).catch((err) => {
+          console.error('[enviar-assinatura] notify signatário falhou:', err)
+          return {
+            emailEnviado: false,
+            whatsappEnviado: false,
+            erros: ['exception'],
+          }
+        }),
+      ),
+    )
+
     return NextResponse.json({
       ok: true,
       providerDocId: sendResp.providerDocId,
       provider: provider.name,
       signUrls: sendResp.signUrls,
       status: sendResp.status,
+      notificacoes: notifResultados.map((r, i) => ({
+        signatario: signatorios[i].nome,
+        emailEnviado: r.emailEnviado,
+        whatsappEnviado: r.whatsappEnviado,
+        erros: r.erros,
+      })),
     })
   } catch (e: any) {
     console.error('[enviar-assinatura]', e)

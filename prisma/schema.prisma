@@ -2635,6 +2635,12 @@ model AssinaturaDigital {
 
   webhookSecret String?
 
+  /// Revogação pelo staff antes de qualquer assinatura ser registrada.
+  /// docs/specs/assinaturapropriaonline.md §11.
+  canceladoEm     DateTime?
+  canceladoPorId  String?
+  canceladoMotivo String?   @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

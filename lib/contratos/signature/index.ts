@@ -13,9 +13,11 @@ import { db } from '@/lib/db'
 import type { SignatureProvider } from './types'
 import { MockSignatureProvider } from './mock'
 import { ZapSignProvider } from './zapsign'
+import { NativeSignatureProvider } from './native'
 
 const SIGNATURE_PROVIDERS = new Set([
   'mock',
+  'native',
   'zapsign',
   'clicksign',
   'd4sign',
@@ -24,7 +26,9 @@ const SIGNATURE_PROVIDERS = new Set([
 export async function getSignatureProvider(
   workspaceId?: string
 ): Promise<SignatureProvider> {
-  let providerNome = process.env.SIGNATURE_PROVIDER || 'mock'
+  // Default = 'native' (nosso provider próprio, sem dependência externa).
+  // Mock fica disponível só explicitamente para testes.
+  let providerNome = process.env.SIGNATURE_PROVIDER || 'native'
 
   if (workspaceId) {
     const cfg = await db.configuracaoFiscal
@@ -49,12 +53,14 @@ export async function getSignatureProvider(
     case 'clicksign':
     case 'd4sign':
       console.warn(
-        `[signature] Provider ${providerNome} ainda não implementado — usando MOCK`
+        `[signature] Provider ${providerNome} ainda não implementado — usando NATIVE`
       )
-      return new MockSignatureProvider()
+      return new NativeSignatureProvider()
     case 'mock':
-    default:
       return new MockSignatureProvider()
+    case 'native':
+    default:
+      return new NativeSignatureProvider()
   }
 }
 
@@ -69,3 +75,4 @@ export type {
 } from './types'
 export { MockSignatureProvider } from './mock'
 export { ZapSignProvider, verifyWebhookSignature } from './zapsign'
+export { NativeSignatureProvider } from './native'
