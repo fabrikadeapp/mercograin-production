@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Landing BH Grain — 5 padrões de acesso para escolha</title>
+<style>
+  :root {
+    --pageBg: #f4f4f5;
+    --ink: #0a0a0a;
+    --inkDim: #52525b;
+    --inkMute: #71717a;
+    --line: #e4e4e7;
+    --card: #fff;
+    --accent: #0a8a3a;
+    --accentDeep: #0a5f2a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; background: var(--pageBg); color: var(--ink); }
+
+  header.main { background: #fff; border-bottom: 1px solid var(--line); padding: 20px 28px; position: sticky; top: 0; z-index: 50; }
+  header.main h1 { margin: 0; font-size: 20px; }
+  header.main p { margin: 4px 0 0; color: var(--inkDim); font-size: 13px; }
+
+  nav.toc { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 28px; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 80px; z-index: 49; }
+  nav.toc a { font-size: 12px; padding: 5px 12px; border-radius: 999px; background: #f4f4f5; color: var(--ink); text-decoration: none; border: 1px solid var(--line); }
+  nav.toc a:hover { background: #e4e4e7; }
+
+  section.research { max-width: 1100px; margin: 30px auto; padding: 0 28px; }
+  section.research h2 { font-size: 17px; margin: 0 0 8px; }
+  section.research p { color: var(--inkDim); font-size: 14px; line-height: 1.55; margin: 0 0 14px; }
+  table.empresas { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 13px; }
+  table.empresas th, table.empresas td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.empresas th { background: #fafafa; font-size: 11px; color: var(--inkMute); text-transform: uppercase; letter-spacing: 0.4px; }
+  table.empresas tr:last-child td { border-bottom: 0; }
+  table.empresas .name { font-weight: 600; }
+
+  section.option {
+    max-width: 1100px; margin: 36px auto; padding: 0 28px;
+  }
+  section.option .opt-head {
+    background: #fff; border: 1px solid var(--line); border-top-left-radius: 14px; border-top-right-radius: 14px;
+    padding: 18px 24px; display: flex; align-items: flex-start; gap: 14px;
+  }
+  section.option .opt-num {
+    background: var(--accent); color: #fff; width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
+  }
+  section.option h3 { margin: 0 0 4px; font-size: 16px; }
+  section.option .opt-head p { margin: 0; color: var(--inkDim); font-size: 13px; }
+  .opt-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--inkMute); }
+  .opt-meta span { background: #fafafa; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); }
+  .opt-meta .pro { color: #065f46; border-color: #d1fae5; background: #ecfdf5; }
+  .opt-meta .con { color: #92400e; border-color: #fef3c7; background: #fffbeb; }
+
+  .preview-wrap { background: #fff; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; padding: 18px; }
+  .browser {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .browser .bar { background: #fafafa; border-bottom: 1px solid var(--line); padding: 8px 12px; display: flex; gap: 6px; align-items: center; }
+  .browser .bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .browser .bar .dot.r { background: #ff5f56; } .browser .bar .dot.y { background: #ffbd2e; } .browser .bar .dot.g { background: #27c93f; }
+  .browser .url { font-size: 11px; color: var(--inkMute); margin-left: 10px; }
+
+  /* ---------- Landings: shared header ---------- */
+  .land-head { background: #fff; padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+  .land-head .brand { font-weight: 700; font-size: 17px; color: var(--accent); }
+  .land-head .right { display: flex; gap: 10px; align-items: center; font-size: 13px; }
+  .btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn.ghost { background: transparent; }
+
+  .hero { padding: 40px 22px; text-align: center; background: linear-gradient(180deg, #f0fdf4 0%, #fff 100%); border-bottom: 1px solid var(--line); }
+  .hero h1 { font-size: 28px; margin: 0 0 8px; }
+  .hero p { color: var(--inkDim); margin: 0 0 18px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .hero .ctas { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* ---------- P1: Magic Link only ---------- */
+  .p1 .hero .ctas .btn.primary { padding: 12px 22px; }
+  .p1 .note-card { margin: 20px; padding: 16px; background: #fef3c7; border-radius: 10px; border: 1px solid #f59e0b; font-size: 13px; color: #78350f; }
+
+  /* ---------- P2: dois botões header ---------- */
+  .p2 .land-head .right .btn-corretora { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .p2 .land-head .right .btn-produtor { background: transparent; color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+  /* ---------- P3: dropdown ---------- */
+  .p3 .dropdown { position: relative; display: inline-block; }
+  .p3 .menu { position: absolute; top: 36px; right: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; min-width: 260px; padding: 6px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+  .p3 .menu a { display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; text-decoration: none; color: var(--ink); align-items: flex-start; }
+  .p3 .menu a:hover { background: #f9fafb; }
+  .p3 .menu .ico { background: var(--accent); color: #fff; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .p3 .menu small { color: var(--inkMute); display: block; margin-top: 2px; }
+
+  /* ---------- P4: subdomínio separado ---------- */
+  .p4 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .p4 .split > div { padding: 22px; }
+  .p4 .split > div:first-child { border-right: 1px solid var(--line); background: #fafffa; }
+  .p4 .split > div:last-child { background: #fffefa; }
+  .p4 .split h2 { font-size: 16px; margin: 0 0 4px; }
+  .p4 .split p { font-size: 13px; color: var(--inkDim); margin: 0 0 12px; }
+  .p4 .domain { font-size: 11px; color: var(--inkMute); font-family: monospace; margin-top: 8px; }
+
+  /* ---------- P5: 3 cards hero ---------- */
+  .p5 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 28px 22px; }
+  .p5 .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px 18px; text-align: center; }
+  .p5 .card .ico { font-size: 32px; margin-bottom: 8px; }
+  .p5 .card h3 { font-size: 15px; margin: 0 0 4px; }
+  .p5 .card p { font-size: 12px; color: var(--inkDim); margin: 0 0 12px; min-height: 36px; }
+  .p5 .card .btn { width: 100%; justify-content: center; }
+
+  /* ---------- Sub-step modal mockup ---------- */
+  .modal-mock { background: rgba(15,17,21,0.5); padding: 24px; border-radius: 12px; }
+  .modal-mock .panel { background: #fff; border-radius: 12px; max-width: 380px; margin: 0 auto; padding: 20px; }
+  .modal-mock h4 { margin: 0 0 6px; font-size: 15px; }
+  .modal-mock p { font-size: 12px; color: var(--inkDim); margin: 0 0 12px; }
+  .modal-mock input { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+  .modal-mock button { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: 0; border-radius: 8px; font-weight: 600; }
+
+  .vote-strip {
+    margin: 36px auto 12px; max-width: 1100px; padding: 16px 24px;
+    background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;
+  }
+  .vote-strip h3 { margin: 0 0 8px; font-size: 15px; }
+  .vote-strip p { margin: 0; font-size: 13px; color: var(--inkDim); }
+
+  .recommend {
+    background: #d1fae5; border: 1px solid var(--accent); border-radius: 12px;
+    padding: 12px 18px; font-size: 13px; margin: 14px 0 0;
+  }
+  .recommend strong { color: var(--accentDeep); }
+</style>
+</head>
+<body>
+
+<header class="main">
+  <h1>Acessos na landing do BH Grain · 5 padrões para escolha</h1>
+  <p>Pesquisa real de como Hotmart, Nibo, ClickSign, Pipefy, ZapSign e outros separam login de pagante / cliente-final / admin. Você escolhe 1 padrão.</p>
+</header>
+
+<nav class="toc">
+  <a href="#pesquisa">Pesquisa de mercado</a>
+  <a href="#opcao-1">1 · Magic Link puro</a>
+  <a href="#opcao-2">2 · Dois botões header</a>
+  <a href="#opcao-3">3 · Dropdown "Entrar"</a>
+  <a href="#opcao-4">4 · Subdomínios separados</a>
+  <a href="#opcao-5">5 · 3 cards no hero</a>
+</nav>
+
+<section class="research" id="pesquisa">
+  <h2>O que faz cada SaaS B2B² conhecido</h2>
+  <p>Validado via visita às landings públicas. "Cliente-final" = quem usa mas não paga (signatário no ClickSign, aluno no Hotmart, produtor no BH Grain).</p>
+  <table class="empresas">
+    <thead>
+      <tr>
+        <th>Empresa</th>
+        <th>Login do pagante</th>
+        <th>Acesso do cliente-final</th>
+        <th>Super-admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="name">ClickSign</td><td>"Entrar" → app.clicksign.com</td><td><strong>Sem login.</strong> Link por email/WhatsApp/SMS com token</td><td>Oculto</td></tr>
+      <tr><td class="name">ZapSign</td><td>"Entrar" + "Teste grátis"</td><td><strong>Sem login.</strong> Link direto: "Abra e assine em 1 clique"</td><td>Oculto</td></tr>
+      <tr><td class="name">Pipefy</td><td>"Entrar" → app-auth.pipefy.com</td><td>Sem entrada pública. Portais customizados via link após auth</td><td>Oculto</td></tr>
+      <tr><td class="name">Conta Azul</td><td>"Teste Grátis" → cadastro. + parceria.contaazul.com</td><td>"Portal do Cliente" só via convite do contador</td><td>Oculto</td></tr>
+      <tr><td class="name">Hotmart</td><td><strong>Dropdown explícito</strong> "Manage my business"</td><td><strong>Dropdown explícito</strong> "Access my purchases" → consumer.</td><td>Oculto</td></tr>
+      <tr><td class="name">Nibo</td><td><strong>2 logins visíveis</strong>: "Contador" → contador.nibo.com.br</td><td><strong>Visível</strong>: "Empresa" → empresa.nibo.com.br</td><td>Oculto</td></tr>
+      <tr><td class="name">Kiwify</td><td>"Login" único → dashboard.</td><td>Mesma URL — role detectado após auth</td><td>Oculto</td></tr>
+      <tr><td class="name">Stripe</td><td>"Entrar" → dashboard.stripe.com (merchant)</td><td>Sem login. Buyers via checkout do merchant</td><td>Oculto</td></tr>
+      <tr><td class="name">Asaas</td><td>"Acessar minha conta"</td><td><strong>Sem login.</strong> Pagador recebe link/boleto por WhatsApp</td><td>Oculto</td></tr>
+      <tr><td class="name">ZAP+ (imóveis)</td><td>canalpro.grupozap.com</td><td><strong>Domínio totalmente separado</strong>: zapimoveis.com.br</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="recommend">
+    <strong>Padrão dominante (60% da amostra):</strong> "Magic Link puro" — só pagante tem login na landing, cliente-final entra por link enviado.
+    <br/><strong>Mais visível e didático:</strong> Hotmart e Nibo expõem os dois acessos com nomes claros.
+    <br/><strong>Sem exceção:</strong> nenhum SaaS expõe super-admin na landing — todos usam URL oculta.
+  </div>
+</section>
+
+<div class="vote-strip">
+  <h3>Escolha 1 padrão entre os 5 abaixo</h3>
+  <p>Cada um já está adaptado para "Sou corretor" / "Sou produtor/cooperativa" + super-admin escondido. Sem botão "Demo" (você indicou que não tem).</p>
+</div>
+
+<!-- ============================================================= -->
+<!-- OPÇÃO 1: Magic Link puro -->
+<!-- ============================================================= -->
+<section class="option" id="opcao-1">
+  <div class="opt-head">
+    <div class="opt-num">1</div>
+    <div>
+      <h3>Magic Link puro — produtor não vê login na landing</h3>
+      <p>Header tem só um botão "Entrar" (corretor). Produtor/cooperativa entra exclusivamente pelo link que recebe da corretora (email/WhatsApp). É como ClickSign, ZapSign, Asaas, Stripe.</p>
+      <div class="opt-meta">
+        <span class="pro">✓ Conversão máxima para corretora</span>
+        <span class="pro">✓ Zero atrito no produtor</span>
+        <span class="pro">✓ Suporte simples</span>
+        <span class="con">✗ Produtor sem link não acha o portal</span>
+        <span class="con">✗ Sem SEO para produtor</span>
+      </div>
+    </div>
+  </div>
+  <div class="preview-wrap p1">
+    <div class="browser">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">bhgrain.com.br</span></div>
+      <div class="land-head">
+        <div class="brand">🌾 BH Grain</div>
+        <div class="right">
+          <a class="btn ghost">Produto</a>
+          <a class="btn ghost">Preços</a>
+          <a class="btn primary">Entrar</a>
+        </div>
+      </div>
+      <div class="hero">
+        <h1>A plataforma para corretoras de grãos</h1>
+        <p>Mesa comercial, contratos, assinatura nativa, portal para seus clientes — tudo em um lugar.</p>
+        <div class="ctas">
+          <a class="btn primary">Começar trial gratuito</a>
+        </div>
+      </div>
+      <div class="note-card">
+        <strong>É produtor ou cooperativa?</strong> Sua corretora vai te enviar um link por email/WhatsApp para acessar seus contratos. Não precisa cadastro aqui.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- OPÇÃO 2: Dois botões no header -->
+<!-- ============================================================= -->
+<section class="option" id="opcao-2">
+  <div class="opt-head">
+    <div class="opt-num">2</div>
+    <div>
+      <h3>Dois botões no header — Nibo style</h3>
+      <p>Header expõe os dois acessos lado a lado: "Sou corretor" e "Sou produtor". O produtor que perdeu o link sabe onde ir. Mais didático.</p>
+      <div class="opt-meta">
+        <span class="pro">✓ Produtor não-tecnológico acha o caminho</span>
+        <span class="pro">✓ SEO funciona para produtor</span>
+        <span class="con">✗ Polui um pouco o header</span>
+        <span class="con">✗ Confunde tipo "qual sou eu?"</span>
+      </div>
+    </div>
+  </div>
+  <div class="preview-wrap p2">
+    <div class="browser">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">bhgrain.com.br</span></div>
+      <div class="land-head">
+        <div class="brand">🌾 BH Grain</div>
+        <div class="right">
+          <a class="btn ghost">Produto</a>
+          <a class="btn ghost">Preços</a>
+          <a class="btn btn-produtor">Sou produtor</a>
+          <a class="btn btn-corretora">Sou corretor</a>
+        </div>
+      </div>
+      <div class="hero">
+        <h1>A plataforma para corretoras de grãos</h1>
+        <p>Mesa comercial, contratos, assinatura nativa, portal para seus clientes — tudo em um lugar.</p>
+        <div class="ctas">
+          <a class="btn primary">Começar trial gratuito</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- OPÇÃO 3: Dropdown "Entrar" -->
+<!-- ============================================================= -->
+<section class="option" id="opcao-3">
+  <div class="opt-head">
+    <div class="opt-num">3</div>
+    <div>
+      <h3>Dropdown "Entrar" com submenu — Hotmart style</h3>
+      <p>Um botão único "Entrar" no header. Ao clicar, abre menu com 2 destinos claros. Combina elegância do P1 com clareza do P2.</p>
+      <div class="opt-meta">
+        <span class="pro">✓ Header limpo</span>
+        <span class="pro">✓ Mesma URL para ambos</span>
+        <span class="pro">✓ Padrão validado no Hotmart (US$ 1B+)</span>
+        <span class="con">✗ Precisa de 1 clique extra</span>
+      </div>
+    </div>
+  </div>
+  <div class="preview-wrap p3">
+    <div class="browser">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">bhgrain.com.br</span></div>
+      <div class="land-head">
+        <div class="brand">🌾 BH Grain</div>
+        <div class="right">
+          <a class="btn ghost">Produto</a>
+          <a class="btn ghost">Preços</a>
+          <div class="dropdown">
+            <a class="btn primary">Entrar ▾</a>
+            <div class="menu">
+              <a>
+                <div class="ico">🏢</div>
+                <div>
+                  <div>Sou corretor</div>
+                  <small>Acesse o painel da sua corretora</small>
+                </div>
+              </a>
+              <a>
+                <div class="ico">👤</div>
+                <div>
+                  <div>Sou produtor ou cooperativa</div>
+                  <small>Acesse contratos enviados pela sua corretora</small>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero">
+        <h1>A plataforma para corretoras de grãos</h1>
+        <p>Mesa comercial, contratos, assinatura nativa, portal para seus clientes.</p>
+        <div class="ctas">
+          <a class="btn primary">Começar trial gratuito</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- OPÇÃO 4: Subdomínios separados -->
+<!-- ============================================================= -->
+<section class="option" id="opcao-4">
+  <div class="opt-head">
+    <div class="opt-num">4</div>
+    <div>
+      <h3>Subdomínios separados — Nibo / ZAP estilo</h3>
+      <p>Landing principal é vendas para corretoras. Existe domínio paralelo <code>produtor.bhgrain.com.br</code> com landing explicando "sua corretora usa BH Grain — entre aqui". Marketing 100% segmentado.</p>
+      <div class="opt-meta">
+        <span class="pro">✓ Posicionamento perfeito por persona</span>
+        <span class="pro">✓ SEO independente</span>
+        <span class="con">✗ Custa 2 landings para manter</span>
+        <span class="con">✗ Configuração DNS extra</span>
+      </div>
+    </div>
+  </div>
+  <div class="preview-wrap p4">
+    <div class="browser">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">bhgrain.com.br</span></div>
+      <div class="land-head">
+        <div class="brand">🌾 BH Grain · para corretoras</div>
+        <div class="right">
+          <a class="btn ghost">Produto</a>
+          <a class="btn primary">Entrar</a>
+        </div>
+      </div>
+      <div class="split">
+        <div>
+          <h2>Sua corretora ganha tempo e fecha mais</h2>
+          <p>Contratos, assinatura, fluxo de caixa, portal do produtor — tudo em uma plataforma.</p>
+          <a class="btn primary">Começar trial gratuito</a>
+          <div class="domain">www.bhgrain.com.br</div>
+        </div>
+        <div>
+          <h2>É produtor ou cooperativa?</h2>
+          <p>Acompanhe contratos da sua corretora num portal próprio. Acesse:</p>
+          <a class="btn" style="border-color: var(--accent); color: var(--accent); font-weight: 600;">produtor.bhgrain.com.br →</a>
+          <div class="domain">subdomínio dedicado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- OPÇÃO 5: 3 cards visuais no hero -->
+<!-- ============================================================= -->
+<section class="option" id="opcao-5">
+  <div class="opt-head">
+    <div class="opt-num">5</div>
+    <div>
+      <h3>3 cards no hero — escolha de persona logo na abertura</h3>
+      <p>O hero da home se transforma em duas grandes opções visuais (corretor / produtor) com explicação curta de cada. Funciona muito bem quando a persona não está clara à primeira vista.</p>
+      <div class="opt-meta">
+        <span class="pro">✓ Persona escolhe com 1 clique</span>
+        <span class="pro">✓ Visual impactante</span>
+        <span class="con">✗ Hero perde foco de vendas para corretora</span>
+        <span class="con">✗ Pode confundir investidor/imprensa</span>
+      </div>
+    </div>
+  </div>
+  <div class="preview-wrap p5">
+    <div class="browser">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">bhgrain.com.br</span></div>
+      <div class="land-head">
+        <div class="brand">🌾 BH Grain</div>
+        <div class="right">
+          <a class="btn ghost">Produto</a>
+          <a class="btn ghost">Preços</a>
+          <a class="btn">Contato</a>
+        </div>
+      </div>
+      <div class="hero" style="padding-bottom: 0;">
+        <h1>Inteligência de grãos para todo o ciclo</h1>
+        <p>Escolha como acessar:</p>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <div class="ico">🏢</div>
+          <h3>Sou corretor</h3>
+          <p>Mesa comercial, contratos, assinatura, fluxo financeiro</p>
+          <a class="btn primary">Entrar como corretor</a>
+        </div>
+        <div class="card">
+          <div class="ico">🌾</div>
+          <h3>Sou produtor / cooperativa</h3>
+          <p>Acompanhe contratos enviados pela sua corretora</p>
+          <a class="btn primary">Entrar como produtor</a>
+        </div>
+        <div class="card" style="background: #fafafa;">
+          <div class="ico">📞</div>
+          <h3>Quero conhecer</h3>
+          <p>Fale com a equipe — sem trial automático</p>
+          <a class="btn">Falar com vendas</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- Recomendação final + super-admin nota -->
+<!-- ============================================================= -->
+<div class="vote-strip">
+  <h3>Recomendação técnica</h3>
+  <p><strong>Padrão 3 (Dropdown estilo Hotmart)</strong> é o melhor custo-benefício: header limpo, ambos acessos visíveis com explicação curta, sem precisar criar subdomínio agora. Migra fácil para Padrão 4 depois se quiser.</p>
+  <p style="margin-top:8px;"><strong>Super-admin</strong>: continua em <code>/admin</code>, oculto, atrás de 2FA — é o padrão universal observado. Nada na landing.</p>
+</div>
+
+<section class="research">
+  <h2>Como o produtor sabe a URL?</h2>
+  <p>Independente da opção 1-5, o produtor recebe um <strong>link direto</strong> da corretora — email, WhatsApp, ou QR code num material físico. A URL inclui o slug da corretora: <code>bhgrain.com.br/portal/mercograin/login</code>. Se ele clicar em "Sou produtor" sem ter slug, a primeira tela é:</p>
+  <div style="margin: 16px 0;">
+    <div class="modal-mock">
+      <div class="panel">
+        <h4>Qual sua corretora?</h4>
+        <p>Digite o nome ou CNPJ. Encontramos seu portal automaticamente.</p>
+        <input placeholder="Ex.: Mercograin, Cargill, 12.345.678..." />
+        <button>Buscar</button>
+        <p style="margin-top:14px; font-size:11px; color: var(--inkMute);">Não sabe? Peça o link diretamente para sua corretora.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="vote-strip">
+  <h3>Como responder</h3>
+  <p>Me diz só o número da opção. Quando você escolher, eu refatoro a landing real, troco os "BH Grain" hardcoded que estão errados, e adiciono os 3 acessos.</p>
+</div>
+
+</body>
+</html>
