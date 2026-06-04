@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Portal do cliente — 12 layouts para escolha</title>
+<style>
+  :root {
+    --pageBg: #f4f4f5;
+    --ink: #18181b;
+    --inkDim: #52525b;
+    --line: #e4e4e7;
+    --card: #fff;
+    --accent: #0a8a3a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; background: var(--pageBg); color: var(--ink); }
+  header.main {
+    position: sticky; top: 0; z-index: 50;
+    background: #fff; border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+  }
+  header.main h1 { margin: 0; font-size: 18px; }
+  header.main p { margin: 4px 0 0; color: var(--inkDim); font-size: 13px; }
+  nav.toc { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 58px; z-index: 49; }
+  nav.toc a { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #f4f4f5; color: var(--ink); text-decoration: none; border: 1px solid var(--line); }
+  nav.toc a:hover { background: #e4e4e7; }
+  section.layout {
+    margin: 36px auto;
+    max-width: 1100px;
+    padding: 0 24px;
+  }
+  section.layout > h2 {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--inkDim);
+    margin: 0 0 6px;
+  }
+  section.layout > .desc { color: var(--inkDim); font-size: 13px; margin: 0 0 14px; }
+  .frame {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .frame-header {
+    background: #fafafa; border-bottom: 1px solid var(--line);
+    padding: 8px 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--inkDim);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.r { background: #ff5f56; }
+  .dot.y { background: #ffbd2e; }
+  .dot.g { background: #27c93f; }
+
+  /* ============= Layout 1: Sidebar verde + topo claro ============= */
+  .l1 { display: grid; grid-template-columns: 220px 1fr; min-height: 560px; }
+  .l1 .sb { background: #0a5f2a; color: #fff; padding: 16px; }
+  .l1 .sb .logo { font-weight: 700; margin-bottom: 24px; }
+  .l1 .sb .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 13px; opacity: 0.85; }
+  .l1 .sb .nav-item.active { background: rgba(255,255,255,0.15); opacity: 1; font-weight: 600; }
+  .l1 .main { padding: 24px; }
+  .l1 .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .l1 .greet { font-weight: 600; }
+  .l1 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .l1 .kpi { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .l1 .kpi .lbl { font-size: 11px; color: var(--inkDim); text-transform: uppercase; }
+  .l1 .kpi .val { font-size: 22px; font-weight: 600; margin-top: 4px; }
+  .l1 .kpi .sub { font-size: 11px; color: var(--inkDim); margin-top: 4px; }
+  .l1 .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .l1 .row:last-child { border-bottom: 0; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.warn { background: #fef3c7; color: #92400e; }
+  .badge.ok { background: #d1fae5; color: #065f46; }
+  .badge.info { background: #dbeafe; color: #1e40af; }
+
+  /* ============= Layout 2: Tabs no topo ============= */
+  .l2 .topbar { background: #fff; padding: 14px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .l2 .tabs { display: flex; gap: 0; padding: 0 24px; background: #fff; border-bottom: 1px solid var(--line); }
+  .l2 .tab { padding: 12px 16px; font-size: 13px; color: var(--inkDim); border-bottom: 2px solid transparent; cursor: pointer; }
+  .l2 .tab.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .l2 .body { padding: 24px; }
+  .l2 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .l2 .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px; text-align: center; }
+  .l2 .card .num { font-size: 30px; font-weight: 700; color: var(--accent); }
+  .l2 .card .lbl { color: var(--inkDim); font-size: 12px; text-transform: uppercase; margin-top: 4px; }
+  .l2 .alert { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .l2 .alert button { background: var(--accent); color: #fff; border: 0; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+
+  /* ============= Layout 3: Cards grandes ============= */
+  .l3 { padding: 32px; background: linear-gradient(180deg, #f0fdf4 0%, #f9fafb 60%); min-height: 560px; }
+  .l3 h2.title { font-size: 28px; margin: 0 0 32px; font-weight: 700; }
+  .l3 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .l3 .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px; cursor: pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .l3 .card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.08); }
+  .l3 .card .icon { width: 56px; height: 56px; border-radius: 14px; background: #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px; }
+  .l3 .card .lbl { font-size: 18px; font-weight: 600; }
+  .l3 .card .stat { color: var(--accent); font-weight: 600; margin-top: 6px; font-size: 14px; }
+  .l3 .card .arrow { float: right; color: var(--accent); font-size: 22px; margin-top: -34px; }
+
+  /* ============= Layout 4: Linha do tempo ============= */
+  .l4 { padding: 24px; max-width: 760px; margin: 0 auto; }
+  .l4 .filter { display: flex; gap: 8px; margin-bottom: 16px; }
+  .l4 .filter button { background: #fff; border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; }
+  .l4 .filter button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .l4 .event { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .l4 .event .dot-line { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .l4 .event .dot-line .d { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+  .l4 .event .dot-line .l { width: 2px; flex: 1; background: var(--line); margin-top: 4px; }
+  .l4 .event .ic { font-size: 18px; margin-right: 8px; }
+  .l4 .event .when { font-size: 11px; color: var(--inkDim); text-transform: uppercase; }
+  .l4 .event .text { font-size: 14px; margin-top: 4px; }
+  .l4 .event .actions { margin-top: 8px; display: flex; gap: 8px; }
+  .l4 .event button { background: #fff; border: 1px solid var(--line); padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .l4 .event button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ============= Signing A: PDF + form lado a lado ============= */
+  .sa { display: grid; grid-template-columns: 1fr 360px; min-height: 520px; }
+  .sa .pdf { background: #f4f4f5; padding: 24px; }
+  .sa .pdf .pdf-area { background: #fff; height: 100%; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--inkDim); font-size: 13px; }
+  .sa .form { padding: 24px; border-left: 1px solid var(--line); }
+  .sa label { display: block; margin-bottom: 14px; font-size: 12px; color: var(--inkDim); }
+  .sa input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
+  .sa .check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; padding: 8px; background: #fafafa; border-radius: 6px; margin-bottom: 10px; }
+  .sa button { width: 100%; background: var(--accent); color: #fff; padding: 12px; border: 0; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+  /* ============= Signing B: Passo a passo ============= */
+  .sb { padding: 24px; }
+  .sb .steps { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .sb .step { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--inkDim); }
+  .sb .step .num { width: 22px; height: 22px; border-radius: 50%; background: var(--line); color: var(--inkDim); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+  .sb .step.active { color: var(--ink); }
+  .sb .step.active .num { background: var(--accent); color: #fff; }
+  .sb .line { width: 36px; height: 1px; background: var(--line); }
+  .sb .pdf-area { background: #f4f4f5; height: 360px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--inkDim); border: 1px solid var(--line); margin-bottom: 16px; }
+  .sb .actions { display: flex; justify-content: space-between; }
+  .sb .actions button { padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .sb .actions button.ghost { background: transparent; border: 1px solid var(--line); }
+  .sb .actions button.primary { background: var(--accent); color: #fff; border: 0; }
+
+  /* ============= Signing C: bottom sheet mobile ============= */
+  .sc { display: flex; justify-content: center; padding: 16px; background: #18181b; }
+  .sc .phone { width: 320px; background: #fff; border-radius: 32px; overflow: hidden; border: 8px solid #18181b; }
+  .sc .phone-top { background: #fff; padding: 10px 14px; font-size: 12px; display: flex; gap: 8px; align-items: center; }
+  .sc .pdf-area { background: #f4f4f5; height: 280px; display: flex; align-items: center; justify-content: center; color: var(--inkDim); font-size: 12px; }
+  .sc .sheet { background: #fff; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); padding: 16px; border-top-left-radius: 16px; border-top-right-radius: 16px; margin-top: -16px; position: relative; }
+  .sc .sheet .grip { width: 32px; height: 4px; background: var(--line); margin: 0 auto 12px; border-radius: 2px; }
+  .sc .sheet .row { display: flex; gap: 6px; font-size: 12px; align-items: center; padding: 6px 0; }
+  .sc .sheet .row .ck { color: var(--accent); font-weight: 700; }
+  .sc .sheet button { width: 100%; background: var(--accent); color: #fff; padding: 12px; border: 0; border-radius: 10px; font-weight: 700; margin-top: 12px; }
+
+  /* ============= Signing D: form direto ============= */
+  .sd { padding: 32px; max-width: 540px; margin: 0 auto; }
+  .sd h3 { margin: 0 0 16px; }
+  .sd label { display: block; margin-bottom: 14px; font-size: 12px; color: var(--inkDim); }
+  .sd input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; }
+  .sd .check { display: flex; gap: 8px; padding: 10px; background: #fafafa; border-radius: 6px; font-size: 12px; margin-bottom: 16px; }
+  .sd button { width: 100%; background: var(--accent); color: #fff; padding: 12px; border: 0; border-radius: 8px; font-weight: 700; }
+  .sd .preview { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .sd .preview .pdf { height: 240px; background: #f4f4f5; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--inkDim); font-size: 12px; }
+
+  /* ============= Brand variants ============= */
+  .brand-card { padding: 24px; border-radius: 14px; min-height: 200px; }
+  .brand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .brand-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .swatch { width: 36px; height: 36px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); }
+  .brand-card .lbl { font-size: 11px; color: var(--inkDim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* brand 1 atual */
+  .b1 { background: #f9fafb; }
+  .b1 .card { background: #fff; border-radius: 10px; padding: 14px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .b1 .btn { background: #0a8a3a; color: #fff; padding: 10px 16px; border-radius: 8px; font-weight: 700; }
+
+  /* brand 2 dark */
+  .b2 { background: #18181b; color: #fff; }
+  .b2 .card { background: #27272a; border: 1px solid #3f3f46; border-radius: 10px; padding: 14px; }
+  .b2 .btn { background: #84cc16; color: #18181b; padding: 10px 16px; border-radius: 8px; font-weight: 700; }
+  .b2 .lbl { color: #a1a1aa; }
+
+  /* brand 3 earth */
+  .b3 { background: #faf7f0; }
+  .b3 .card { background: #fffbf4; border-radius: 10px; padding: 14px; border: 1px solid #e7dfca; }
+  .b3 h4 { font-family: Georgia, serif; margin: 0 0 8px; color: #6b4f2e; }
+  .b3 .btn { background: #4d6741; color: #fffbf4; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-family: Georgia, serif; }
+  .b3 .accent { color: #4d6741; }
+
+  /* brand 4 minimal */
+  .b4 { background: #fff; }
+  .b4 .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 0; padding: 14px; }
+  .b4 .btn { background: #ea580c; color: #fff; padding: 10px 16px; border-radius: 0; font-weight: 700; }
+  .b4 h4 { margin: 0 0 8px; letter-spacing: -0.02em; }
+
+  .vote-strip {
+    margin: 36px auto 12px;
+    max-width: 1100px;
+    padding: 16px 24px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+  }
+  .vote-strip h3 { margin: 0 0 8px; font-size: 15px; }
+  .vote-strip p { margin: 0; font-size: 13px; color: var(--inkDim); }
+</style>
+</head>
+<body>
+<header class="main">
+  <h1>Portal do cliente · 12 layouts para escolha visual</h1>
+  <p>4 estruturas + 4 telas de assinatura + 4 identidades visuais. Escolha uma de cada categoria.</p>
+</header>
+<nav class="toc">
+  <a href="#sec-estrutura">Estrutura (1-4)</a>
+  <a href="#sec-assinatura">Assinatura (5-8)</a>
+  <a href="#sec-brand">Identidade visual (9-12)</a>
+</nav>
+
+<div class="vote-strip" id="sec-estrutura">
+  <h3>1) Estrutura geral do portal — escolha uma de 4</h3>
+  <p>Esta é a moldura: o que o cliente vê quando entra na home logado.</p>
+</div>
+
+<!-- L1 -->
+<section class="layout" id="L1">
+  <h2>Layout 1 · Sidebar verde + topo claro (clássico SaaS)</h2>
+  <p class="desc">Sidebar fixa à esquerda com módulos, área principal com cards. Funciona muito bem em desktop. Padrão Pipefy/Asana/Linear.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> portal.profitsync.ia.br / mercograin</div>
+    <div class="l1">
+      <div class="sb">
+        <div class="logo">BH&nbsp;Grain</div>
+        <div class="nav-item active">◉ Início</div>
+        <div class="nav-item">⬜ Propostas</div>
+        <div class="nav-item">⬜ Contratos</div>
+        <div class="nav-item">⬜ Recebíveis</div>
+        <div class="nav-item">⬜ Documentos</div>
+        <div class="nav-item">⬜ Chat</div>
+        <div class="nav-item">⬜ Perfil</div>
+      </div>
+      <div class="main">
+        <div class="top"><div class="greet">Bem-vindo, Gustavo · Fazenda Rei do Gado</div><div style="font-size:12px;color:var(--inkDim)">[ Sair ]</div></div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Contratos</div><div class="val">3</div><div class="sub">1 aguardando</div></div>
+          <div class="kpi"><div class="lbl">A pagar</div><div class="val" style="color:#b45309">R$ 12.480</div><div class="sub">Vence em 3 dias</div></div>
+          <div class="kpi"><div class="lbl">Documentos</div><div class="val">7</div><div class="sub">No cofre</div></div>
+          <div class="kpi"><div class="lbl">Mensagens</div><div class="val">2</div><div class="sub">novas</div></div>
+        </div>
+        <div style="background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Atividade recente</div>
+          <div class="row"><span>Contrato MER-2026 · aguarda você</span><span class="badge warn">Pendente</span></div>
+          <div class="row"><span>Contrato MER-2024 · assinado</span><span class="badge ok">Assinado</span></div>
+          <div class="row"><span>Boleto vence em 3 dias</span><span class="badge info">R$ 4.200</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- L2 -->
+<section class="layout" id="L2">
+  <h2>Layout 2 · Tabs no topo (mobile-friendly)</h2>
+  <p class="desc">Sem sidebar — tudo via abas horizontais. Mais leve em celular, menos hierarquia. Estilo Stripe Dashboard ou Notion.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> portal.profitsync.ia.br / mercograin</div>
+    <div class="l2">
+      <div class="topbar">
+        <div><strong>BH Grain</strong> <span style="color:var(--inkDim);font-size:13px">· Fazenda Rei do Gado</span></div>
+        <div style="font-size:12px; color:var(--inkDim)">Gustavo &nbsp;·&nbsp; Sair</div>
+      </div>
+      <div class="tabs">
+        <div class="tab active">Início</div>
+        <div class="tab">Contratos</div>
+        <div class="tab">Recebíveis</div>
+        <div class="tab">Documentos</div>
+        <div class="tab">Chat</div>
+        <div class="tab">Perfil</div>
+      </div>
+      <div class="body">
+        <div class="grid">
+          <div class="card"><div class="num">3</div><div class="lbl">Contratos</div></div>
+          <div class="card"><div class="num">R$ 12k</div><div class="lbl">A pagar</div></div>
+          <div class="card"><div class="num">7</div><div class="lbl">Documentos</div></div>
+        </div>
+        <div class="alert">
+          <div>
+            <strong>Contrato MER-2026 aguarda sua assinatura</strong>
+            <div style="font-size:12px; color:var(--inkDim); margin-top:2px;">Enviado em 04/jun · expira em 30 dias</div>
+          </div>
+          <button>Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- L3 -->
+<section class="layout" id="L3">
+  <h2>Layout 3 · Cards grandes na home (consumer-grade)</h2>
+  <p class="desc">Sem nav fixa; home tem 4-6 cards enormes, cada um abrindo um módulo. UX em 1 clique, ótima para clientes não-técnicos.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> portal.profitsync.ia.br / mercograin</div>
+    <div class="l3">
+      <h2 class="title">Olá, Gustavo 👋</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="icon">📄</div>
+          <div class="lbl">Contratos</div>
+          <div class="stat">3 ativos · 1 aguardando você →</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="card">
+          <div class="icon">💰</div>
+          <div class="lbl">Boletos</div>
+          <div class="stat">R$ 12.480 · vence em 3 dias →</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="card">
+          <div class="icon">📁</div>
+          <div class="lbl">Documentos</div>
+          <div class="stat">7 arquivos no cofre →</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="card">
+          <div class="icon">💬</div>
+          <div class="lbl">Chat com a corretora</div>
+          <div class="stat">2 mensagens novas →</div>
+          <div class="arrow">→</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- L4 -->
+<section class="layout" id="L4">
+  <h2>Layout 4 · Linha do tempo central (feed cronológico)</h2>
+  <p class="desc">Tudo aparece como evento, cronológico decrescente. Estilo LinkedIn/Stripe Activity. Sem navegação obrigatória — você "rola" o que importa.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> portal.profitsync.ia.br / mercograin</div>
+    <div class="l4">
+      <div style="margin-bottom:18px;"><strong>Fazenda Rei do Gado</strong> <span style="color:var(--inkDim);font-size:13px">· perfil · sair</span></div>
+      <div class="filter">
+        <button class="active">Tudo</button>
+        <button>Contratos</button>
+        <button>Boletos</button>
+        <button>Mensagens</button>
+      </div>
+      <div class="event">
+        <div class="dot-line"><div class="d"></div><div class="l"></div></div>
+        <div style="flex:1">
+          <div class="when">Hoje, 14:32</div>
+          <div class="text">📄 Contrato MER-2026 · <strong>aguarda você assinar</strong></div>
+          <div class="actions"><button class="primary">Revisar e assinar</button></div>
+        </div>
+      </div>
+      <div class="event">
+        <div class="dot-line"><div class="d" style="background:#f59e0b"></div><div class="l"></div></div>
+        <div style="flex:1">
+          <div class="when">Ontem</div>
+          <div class="text">💰 Boleto MER-2024-B01 · R$ 4.200 · vence em 3 dias</div>
+          <div class="actions"><button>Baixar PDF</button><button>Copiar número</button></div>
+        </div>
+      </div>
+      <div class="event">
+        <div class="dot-line"><div class="d" style="background:#10b981"></div><div class="l"></div></div>
+        <div style="flex:1">
+          <div class="when">02/jun</div>
+          <div class="text">✅ Contrato MER-2024 assinado por todos</div>
+          <div class="actions"><button>Baixar contrato</button><button>Evidências</button></div>
+        </div>
+      </div>
+      <div class="event">
+        <div class="dot-line"><div class="d" style="background:#3b82f6"></div></div>
+        <div style="flex:1">
+          <div class="when">28/mai</div>
+          <div class="text">💬 Nova mensagem da corretora — "Confirmação do romaneio recebido"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="vote-strip" id="sec-assinatura">
+  <h3>2) Página de assinatura do contrato — escolha uma de 4</h3>
+  <p>O que aparece quando ele clica em "Assinar agora".</p>
+</div>
+
+<!-- SA: PDF + form -->
+<section class="layout" id="L5">
+  <h2>Assinar 1 · PDF + formulário lado a lado</h2>
+  <p class="desc">Tela desktop ampla: PDF à esquerda, formulário de identificação e LGPD à direita. Tradição cartorial.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> Contrato MER-2026 · assinar</div>
+    <div class="sa">
+      <div class="pdf"><div class="pdf-area">[ PDF render – página 1 de 4 ]</div></div>
+      <div class="form">
+        <h3 style="margin:0 0 14px; font-size:16px;">Assinar contrato</h3>
+        <label>Nome completo<input value="Gustavo Telles" /></label>
+        <label>CPF ou CNPJ<input value="111.444.777-35" /></label>
+        <div class="check"><input type="checkbox" checked /> Li e concordo com o conteúdo do contrato</div>
+        <div class="check"><input type="checkbox" checked /> Aceito tratamento de IP/UA para auditoria (LGPD)</div>
+        <button>✓ Assinar agora</button>
+        <div style="font-size:11px; color:var(--inkDim); margin-top:14px; line-height:1.5">Validade legal: Lei nº 14.063/2020 — assinatura eletrônica simples.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SB: Passo a passo -->
+<section class="layout" id="L6">
+  <h2>Assinar 2 · Passo a passo (wizard)</h2>
+  <p class="desc">Wizard em 3 telas: revisar PDF, identificar-se, confirmar. Reduz ansiedade e dá controle de progresso visível.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> Contrato MER-2026 · passo 1 de 3</div>
+    <div class="sb">
+      <div class="steps">
+        <div class="step active"><span class="num">1</span> Revisar</div>
+        <div class="line"></div>
+        <div class="step"><span class="num">2</span> Identificar</div>
+        <div class="line"></div>
+        <div class="step"><span class="num">3</span> Confirmar</div>
+      </div>
+      <div class="pdf-area">[ PDF tela cheia · 4 páginas · role para baixo ]</div>
+      <div class="actions">
+        <button class="ghost">← Voltar</button>
+        <button class="primary">Avançar →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SC: Bottom sheet mobile -->
+<section class="layout" id="L7">
+  <h2>Assinar 3 · Bottom sheet mobile (foco celular)</h2>
+  <p class="desc">PDF tela cheia, botão flutuante abre bottom sheet com form curto. Excelente em celular — onde 70%+ dos signatários vão estar.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> celular</div>
+    <div class="sc">
+      <div class="phone">
+        <div class="phone-top">← Contrato MER-2026</div>
+        <div class="pdf-area">[ PDF tela cheia ]</div>
+        <div class="sheet">
+          <div class="grip"></div>
+          <strong style="font-size:14px;">Confirmar assinatura</strong>
+          <div class="row"><span class="ck">✓</span> Sou Gustavo Telles</div>
+          <div class="row"><span class="ck">✓</span> CPF ***.456.789-**</div>
+          <div class="row"><span class="ck">✓</span> Li e aceito LGPD</div>
+          <button>Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SD: Form direto -->
+<section class="layout" id="L8">
+  <h2>Assinar 4 · Formulário direto + PDF pequeno embaixo</h2>
+  <p class="desc">Aposta na velocidade: form primeiro porque ele já leu o contrato no email. PDF aparece embaixo como prova final.</p>
+  <div class="frame">
+    <div class="frame-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> Contrato MER-2026</div>
+    <div class="sd">
+      <h3>Assinar contrato MER-2026</h3>
+      <label>Nome completo<input value="Gustavo Telles" /></label>
+      <label>CPF ou CNPJ<input value="111.444.777-35" /></label>
+      <div class="check"><input type="checkbox" checked /> Li e concordo com o conteúdo do contrato</div>
+      <button>✓ Assinar agora</button>
+      <div class="preview">
+        <div style="font-size:11px; color:var(--inkDim); margin-bottom:8px; text-transform:uppercase">Pré-visualização do contrato</div>
+        <div class="pdf">[ PDF iframe ~240px ]</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="vote-strip" id="sec-brand">
+  <h3>3) Identidade visual — escolha uma de 4</h3>
+  <p>Paleta + tipografia. Vou aplicar no layout estrutural que você escolher.</p>
+</div>
+
+<!-- B1 -->
+<section class="layout" id="L9">
+  <h2>Visual 1 · Verde escuro + cards brancos (atual)</h2>
+  <p class="desc">Mantém o que já está em produção. Conservador, confiável, baixo risco.</p>
+  <div class="frame">
+    <div class="brand-card b1">
+      <div class="brand-row">
+        <div class="swatch" style="background:#0a8a3a"></div>
+        <div class="swatch" style="background:#0a5f2a"></div>
+        <div class="swatch" style="background:#d1fae5"></div>
+        <div class="swatch" style="background:#fff"></div>
+        <div class="swatch" style="background:#f4f4f5;border:1px solid #e5e7eb"></div>
+      </div>
+      <div class="brand-grid" style="margin-top:14px">
+        <div class="card">
+          <div class="lbl">KPI</div>
+          <div style="font-size:24px;font-weight:700">R$ 12.480</div>
+          <div style="font-size:12px;color:#0a8a3a;font-weight:600">+8% vs último mês</div>
+        </div>
+        <div class="card">
+          <div class="lbl">Botão primário</div>
+          <button class="btn" style="border:0;cursor:pointer">Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- B2 -->
+<section class="layout" id="L10">
+  <h2>Visual 2 · Dark mode profissional (vibe Bloomberg/fintech)</h2>
+  <p class="desc">Tudo escuro, acentos verde-limão. Sinaliza precisão, mercado financeiro, pro. Atrai clientes técnicos.</p>
+  <div class="frame">
+    <div class="brand-card b2">
+      <div class="brand-row">
+        <div class="swatch" style="background:#18181b"></div>
+        <div class="swatch" style="background:#27272a"></div>
+        <div class="swatch" style="background:#3f3f46"></div>
+        <div class="swatch" style="background:#84cc16"></div>
+        <div class="swatch" style="background:#fafafa"></div>
+      </div>
+      <div class="brand-grid" style="margin-top:14px">
+        <div class="card">
+          <div class="lbl">KPI</div>
+          <div style="font-size:24px;font-weight:700;color:#fafafa">R$ 12.480</div>
+          <div style="font-size:12px;color:#84cc16;font-weight:600">+8% vs último mês</div>
+        </div>
+        <div class="card">
+          <div class="lbl">Botão primário</div>
+          <button class="btn" style="border:0;cursor:pointer">Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- B3 -->
+<section class="layout" id="L11">
+  <h2>Visual 3 · Earth tones (agro premium)</h2>
+  <p class="desc">Paleta de terra elevada: marrom-trigo, verde-musgo, creme. Tipografia serif nos títulos. Cheira a embalagem de café especial.</p>
+  <div class="frame">
+    <div class="brand-card b3">
+      <div class="brand-row">
+        <div class="swatch" style="background:#6b4f2e"></div>
+        <div class="swatch" style="background:#4d6741"></div>
+        <div class="swatch" style="background:#faf7f0"></div>
+        <div class="swatch" style="background:#fffbf4"></div>
+        <div class="swatch" style="background:#e7dfca"></div>
+      </div>
+      <div class="brand-grid" style="margin-top:14px">
+        <div class="card">
+          <h4>KPI</h4>
+          <div style="font-size:24px;font-weight:700;color:#6b4f2e">R$ 12.480</div>
+          <div class="accent" style="font-size:12px;font-weight:600">+8% vs último mês</div>
+        </div>
+        <div class="card">
+          <h4>Botão primário</h4>
+          <button class="btn" style="border:0;cursor:pointer">Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- B4 -->
+<section class="layout" id="L12">
+  <h2>Visual 4 · Minimalista preto e branco + 1 acento</h2>
+  <p class="desc">Quase sem cor. Bordas finas, texto em alto contraste, 1 cor única (laranja queimado) para ações. Foco brutal em conteúdo.</p>
+  <div class="frame">
+    <div class="brand-card b4">
+      <div class="brand-row">
+        <div class="swatch" style="background:#0a0a0a"></div>
+        <div class="swatch" style="background:#fff;border:1px solid #e5e5e5"></div>
+        <div class="swatch" style="background:#e5e5e5"></div>
+        <div class="swatch" style="background:#ea580c"></div>
+      </div>
+      <div class="brand-grid" style="margin-top:14px">
+        <div class="card">
+          <h4>KPI</h4>
+          <div style="font-size:24px;font-weight:700">R$ 12.480</div>
+          <div style="font-size:12px;color:#ea580c;font-weight:600">+8% vs último mês</div>
+        </div>
+        <div class="card">
+          <h4>Botão primário</h4>
+          <button class="btn" style="border:0;cursor:pointer">Assinar agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="vote-strip">
+  <h3>Como decidir</h3>
+  <p>Escolha uma de cada bloco: ex. <strong>L1 + L5 + L9</strong> (clássico conservador). Me responda com 3 números (ex. "1, 7, 10") e eu aplico no portal.</p>
+</div>
+
+</body>
+</html>
