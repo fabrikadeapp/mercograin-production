@@ -21,7 +21,8 @@ export const runtime = 'nodejs'
 
 const schema = z.object({
   criadaAntes: z.string(),
-  workspaceId: z.string(),
+  workspaceSlug: z.string().optional(),
+  workspaceId: z.string().optional(),
   dryRun: z.boolean().default(true),
 })
 
@@ -38,10 +39,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'criadaAntes invalido' }, { status: 400 })
   }
 
+  // Resolve workspaceId
+  let wsId = data.workspaceId
+  if (!wsId && data.workspaceSlug) {
+    const ws = await db.workspace.findUnique({
+      where: { slug: data.workspaceSlug },
+      select: { id: true },
+    })
+    if (!ws) {
+      return NextResponse.json({ error: 'Workspace nao encontrado pelo slug' }, { status: 404 })
+    }
+    wsId = ws.id
+  }
+  if (!wsId) {
+    // Lista workspaces para o caller escolher
+    const workspaces = await db.workspace.findMany({
+      select: { id: true, name: true, slug: true },
+    })
+    return NextResponse.json({ error: 'workspaceId ou workspaceSlug obrigatorio', workspaces }, { status: 400 })
+  }
+
   // 1. Lista o que seria deletado
   const propostas = await db.proposta.findMany({
     where: {
-      workspaceId: data.workspaceId,
+      workspaceId: wsId,
       criadaEm: { lt: corte },
     },
     select: {
@@ -82,7 +103,7 @@ export async function POST(request: NextRequest) {
       .create({
         data: {
           userId: 'admin_clean_mocks',
-          workspaceId: data.workspaceId,
+          workspaceId: wsId,
           acao: 'proposta_deletada_clean_mocks',
           entidade: 'proposta',
           entidadeId: p.id,

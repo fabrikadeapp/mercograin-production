@@ -32,6 +32,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { PropostasKPIs } from '@/components/propostas/PropostasKPIs'
 import { PropostaRowActions } from '@/components/propostas/PropostaRowActions'
+import { PropostaQuickStatusButtons } from '@/components/propostas/PropostaQuickStatusButtons'
 import { calcularAging, CANAL_LABEL, CANAL_ICONE } from '@/lib/propostas/aging'
 
 interface Proposta {
@@ -407,8 +408,10 @@ export default function PropostasPage() {
               quantidadeSc,
               commodity,
               scoreInterno: p.scoreInterno ?? null,
+              criadaEm: p.criadaEm,
             }
           })}
+          onRefresh={fetchPropostas}
         />
       ) : (
         <>
@@ -454,18 +457,28 @@ export default function PropostasPage() {
                       </div>
                       <p className="text-fg-2 text-small truncate">{proposta.cliente.nome}</p>
                     </Link>
-                    <div className="text-right shrink-0 flex items-start gap-2">
-                      <div>
-                        <p className="t-num-lg text-fg-1">
-                          {formatCurrency(parseFloat(proposta.valorTotal))}
-                        </p>
+                    <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                      <div className="flex items-start gap-2">
+                        <div>
+                          <p className="t-num-lg text-fg-1">
+                            {formatCurrency(parseFloat(proposta.valorTotal))}
+                          </p>
+                        </div>
+                        <PropostaRowActions
+                          proposta={{
+                            id: proposta.id,
+                            numero: proposta.numero,
+                            status: proposta.status,
+                            clienteId: proposta.cliente.id,
+                          }}
+                          onRefresh={fetchPropostas}
+                        />
                       </div>
-                      <PropostaRowActions
+                      <PropostaQuickStatusButtons
                         proposta={{
                           id: proposta.id,
                           numero: proposta.numero,
                           status: proposta.status,
-                          clienteId: proposta.cliente.id,
                         }}
                         onRefresh={fetchPropostas}
                       />
