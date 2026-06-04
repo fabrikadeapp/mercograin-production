@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/phb'
 import { NAV_LINKS } from './data'
 import { SecretAdminPortal } from './SecretAdminPortal'
+import { EntrarDropdown } from './EntrarDropdown'
 
 export function LandingNav() {
   return (
@@ -24,9 +25,7 @@ export function LandingNav() {
         </ul>
 
         <div className="flex items-center gap-2">
-          <Link href="/auth/login">
-            <Button variant="ghost" size="sm">Entrar</Button>
-          </Link>
+          <EntrarDropdown />
           <Link href="/auth/signup?plan=pro" className="hidden sm:inline-flex">
             <Button variant="primary" size="sm">Começar trial</Button>
           </Link>

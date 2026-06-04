@@ -52,24 +52,29 @@ export async function notifySignatario(
   }
 
   const nome = p.signatario.nome?.trim() || 'Sr(a).'
-  const brand = p.brandNome?.trim() || 'BH Grain'
+  const brand = p.brandNome?.trim() || ''
+  const brandHeader = brand || 'Sua corretora'
 
   // ---------- EMAIL ----------
   if (p.signatario.email) {
     try {
-      const subject = `Contrato ${p.contratoNumero} aguardando sua assinatura · ${brand}`
+      const subject = brand
+        ? `Contrato ${p.contratoNumero} aguardando sua assinatura · ${brand}`
+        : `Contrato ${p.contratoNumero} aguardando sua assinatura`
       const html = renderEmailHtml({
         nome,
         contratoNumero: p.contratoNumero,
         url: p.signatario.url,
-        brand,
+        brand: brandHeader,
       })
       const text =
         `Olá ${nome},\n\n` +
         `O contrato ${p.contratoNumero} está aguardando sua assinatura.\n` +
         `Acesse: ${p.signatario.url}\n\n` +
         `Este link tem validade legal conforme Lei 14.063/2020.\n` +
-        `Caso não reconheça, ignore esta mensagem.\n\n— ${brand}`
+        `Caso não reconheça, ignore esta mensagem.\n\n` +
+        (brand ? `— ${brand}\n` : '') +
+        `powered by BH Grain`
       const res = await sendEmail({
         to: p.signatario.email,
         subject,
@@ -93,10 +98,11 @@ export async function notifySignatario(
   if (p.signatario.telefone) {
     try {
       const msg =
-        `📄 *${brand}*\n\n` +
+        (brand ? `📄 *${brand}*\n\n` : `📄 *Documento para assinatura*\n\n`) +
         `Olá ${nome}, o contrato *${p.contratoNumero}* está aguardando sua assinatura.\n\n` +
         `Acesse o link para revisar e assinar:\n${p.signatario.url}\n\n` +
-        `_Validade legal: Lei 14.063/2020 · Assinatura eletrônica simples_`
+        `_Validade legal: Lei 14.063/2020 · Assinatura eletrônica simples_\n` +
+        `_powered by BH Grain_`
       const res = await sendWhatsAppMessage(p.signatario.telefone, msg)
       r.whatsappEnviado = res.success
       if (!res.success) {
@@ -210,8 +216,11 @@ function renderEmailHtml(p: {
     O link expira em 30 dias.
   </p>
   <hr style="border:0;border-top:1px solid #eee;margin:24px 0" />
-  <p style="font-size:11px;color:#aaa;text-align:center">
-    ${escapeHtml(p.brand)} · Trading de Grãos
+  <p style="font-size:11px;color:#aaa;text-align:center;margin:0">
+    Enviado por <strong>${escapeHtml(p.brand)}</strong>
+  </p>
+  <p style="font-size:11px;color:#ccc;text-align:center;margin:6px 0 0">
+    powered by <strong>BH Grain</strong>
   </p>
 </body></html>`
 }

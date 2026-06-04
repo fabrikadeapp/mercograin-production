@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const base = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || ''
   const link = `${base}/portal/${access.workspace.slug}/reset?token=${tokenRaw}&email=${encodeURIComponent(email)}`
-  const brand = access.workspace.name || 'BH Grain'
+  const brand = access.workspace.name || 'Portal do Produtor'
 
   await sendEmail({
     to: email,
@@ -73,8 +73,9 @@ export async function POST(req: NextRequest) {
     <a href="${link}" style="background:#0a8a3a;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600">Definir nova senha</a>
   </p>
   <p style="font-size:13px;color:#666">O link expira em ${TTL_HOURS}h. Caso não tenha solicitado, ignore este email.</p>
+  <p style="font-size:11px;color:#aaa;text-align:center;margin-top:24px">powered by <strong>BH Grain</strong></p>
 </body></html>`,
-    text: `Para redefinir sua senha acesse: ${link}\nExpira em ${TTL_HOURS}h.`,
+    text: `Para redefinir sua senha acesse: ${link}\nExpira em ${TTL_HOURS}h.\n\npowered by BH Grain`,
   }).catch((err) => console.error('[forgot] email falhou:', err))
 
   await logAudit({

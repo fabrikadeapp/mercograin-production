@@ -146,6 +146,8 @@ export interface TemplatePdfDocumentProps {
   customLogoUrl?: string | null
   itensGrao?: ItemGrao[]
   documentTitle?: string
+  /** Marca da corretora (workspace) que emite o documento. */
+  brandNome?: string
 }
 
 export function TemplatePdfDocument({
@@ -153,6 +155,7 @@ export function TemplatePdfDocument({
   customLogoUrl,
   itensGrao,
   documentTitle,
+  brandNome,
 }: TemplatePdfDocumentProps) {
   const generatedAt = new Date().toLocaleString('pt-BR', {
     dateStyle: 'short',
@@ -182,7 +185,11 @@ export function TemplatePdfDocument({
 
         {/* Footer fixo */}
         <View style={styles.footer} fixed>
-          <Text>BH Grain · Documento gerado eletronicamente</Text>
+          <Text>
+            {brandNome
+              ? `${brandNome} · Documento gerado eletronicamente · powered by BH Grain`
+              : 'Documento gerado eletronicamente · powered by BH Grain'}
+          </Text>
           <Text
             render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`}
           />
@@ -194,7 +201,12 @@ export function TemplatePdfDocument({
 
 export async function renderTemplateToPdfBuffer(
   resolvedContent: any,
-  options?: { customLogoUrl?: string | null; itensGrao?: ItemGrao[]; documentTitle?: string }
+  options?: {
+    customLogoUrl?: string | null
+    itensGrao?: ItemGrao[]
+    documentTitle?: string
+    brandNome?: string
+  },
 ): Promise<Buffer> {
   const instance = pdf(
     <TemplatePdfDocument
@@ -202,6 +214,7 @@ export async function renderTemplateToPdfBuffer(
       customLogoUrl={options?.customLogoUrl ?? null}
       itensGrao={options?.itensGrao}
       documentTitle={options?.documentTitle}
+      brandNome={options?.brandNome}
     />
   )
   // @react-pdf/renderer v4 supports toBuffer() returning a NodeJS.ReadableStream

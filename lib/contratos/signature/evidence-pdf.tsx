@@ -195,7 +195,7 @@ export function EvidenciaPdf(p: EvidenciaProps) {
           Página de Evidências de Assinatura Eletrônica
         </Text>
         <Text style={styles.subtitle}>
-          {p.brandNome ?? 'BH Grain'} · Gerado em {geradoEm}
+          {p.brandNome ?? 'Documento'} · Gerado em {geradoEm} · powered by BH Grain
         </Text>
 
         <Text style={styles.sectionHeader}>Documento</Text>
@@ -311,7 +311,7 @@ export function EvidenciaPdf(p: EvidenciaProps) {
 
         <View style={styles.footer} fixed>
           <Text>
-            {p.brandNome ?? 'BH Grain'} · Evidência de assinatura · {p.contratoNumero}
+            {p.brandNome ?? 'Documento'} · Evidência de assinatura · {p.contratoNumero} · powered by BH Grain
           </Text>
           <Text
             render={({ pageNumber, totalPages }) =>

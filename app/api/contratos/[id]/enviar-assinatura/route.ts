@@ -169,6 +169,7 @@ export async function POST(
       customLogoUrl: empresa?.logoUrl ?? null,
       itensGrao,
       documentTitle: `Contrato ${contrato.numero}`,
+      brandNome: empresa?.nomeFantasia || empresa?.razaoSocial || undefined,
     })) as Buffer
 
     const pdfHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex')
