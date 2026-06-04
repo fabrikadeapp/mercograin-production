@@ -1,0 +1,23 @@
+name: Follow-up Propostas
+
+# Dispara WhatsApp/email amigável para clientes que receberam proposta
+# há 3-7 dias e ainda não decidiram. Idempotente via audit log.
+# Endpoint: /api/cron/propostas-followup
+
+on:
+  schedule:
+    # 11:00 UTC = 08:00 BRT — começo do horário comercial
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  followup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger propostas-followup endpoint
+        run: |
+          curl -fsSL --max-time 60 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/propostas-followup

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { enviarNotificacaoProposta } from '@/lib/services/email-notifications'
+import { logAudit } from '@/lib/audit/log'
+import { podeEditar } from '@/lib/propostas/status'
 
 const updatePropostaSchema = z.object({
   numero: z.string().optional(),
@@ -87,15 +89,44 @@ export async function PUT(
       )
     }
 
-    if (proposta.status !== 'rascunho') {
+    // R3 — Proteção de edição: usa helper canônico
+    if (!podeEditar(proposta.status)) {
       return NextResponse.json(
-        { error: 'Apenas propostas em rascunho podem ser editadas' },
-        { status: 400 }
+        {
+          error: `Não é possível editar proposta com status '${proposta.status}'. Edite apenas em rascunho ou clone para criar nova.`,
+          statusAtual: proposta.status,
+        },
+        { status: 409 }
       )
     }
 
     const body = await request.json()
     const data = updatePropostaSchema.parse(body)
+
+    // Snapshot dos campos antigos para audit
+    const camposMudados: Record<string, { de: unknown; para: unknown }> = {}
+    if (data.numero != null && data.numero !== proposta.numero) {
+      camposMudados.numero = { de: proposta.numero, para: data.numero }
+    }
+    if (data.tipo != null && data.tipo !== proposta.tipo) {
+      camposMudados.tipo = { de: proposta.tipo, para: data.tipo }
+    }
+    if (data.valor != null && String(data.valor) !== proposta.valorTotal.toString()) {
+      camposMudados.valor = { de: proposta.valorTotal.toString(), para: data.valor }
+    }
+    if (data.descricao != null && data.descricao !== proposta.descricao) {
+      camposMudados.descricao = { de: proposta.descricao, para: data.descricao }
+    }
+    if (data.validadeEm != null) {
+      const novaValidade = new Date(data.validadeEm).toISOString()
+      const antigaValidade = proposta.validadeEm.toISOString()
+      if (novaValidade !== antigaValidade) {
+        camposMudados.validadeEm = { de: antigaValidade, para: novaValidade }
+      }
+    }
+    if (data.graos) {
+      camposMudados.graos = { de: proposta.graos, para: data.graos }
+    }
 
     const updated = await db.proposta.update({
       where: { id: params.id },
@@ -109,6 +140,21 @@ export async function PUT(
       },
       include: { cliente: true },
     })
+
+    // R4 — Audit log de edição se algo mudou
+    if (Object.keys(camposMudados).length > 0) {
+      await logAudit({
+        userId: scope.userId,
+        workspaceId: scope.workspaceId,
+        acao: 'proposta_editada',
+        entidade: 'proposta',
+        entidadeId: proposta.id,
+        mudancas: {
+          numero: proposta.numero,
+          campos: camposMudados,
+        },
+      }).catch(() => undefined)
+    }
 
     revalidateTag('propostas')
     return NextResponse.json(updated)
