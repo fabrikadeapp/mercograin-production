@@ -3,7 +3,7 @@
  * Uses @react-pdf/renderer for server-side PDF generation
  */
 
-import { renderToBuffer, Font } from '@react-pdf/renderer'
+import { renderToBuffer, renderToStream, Font } from '@react-pdf/renderer'
 import React from 'react'
 import { formatCurrency, formatDate, formatCNPJ } from './utils/formatters'
 
@@ -353,22 +353,9 @@ const ContratoDocument = ({ data }: { data: ContratoPDFData }) => (
  * Generate PDF stream for Proposta
  */
 export async function generatePropostaPDFStream(data: PropostaPDFData): Promise<Buffer> {
-  await ensureWarmedUp()
-  // Retry simples: 2 tentativas com 100ms entre. O bug do renderToBuffer
-  // é não-determinístico — retry resolve em ≥80% dos casos.
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const buffer = await renderToBuffer(
-        React.createElement(PropostaDocument, { data }) as any,
-      )
-      return buffer
-    } catch (error) {
-      console.error(`[pdf] proposta attempt ${attempt} falhou:`, error)
-      if (attempt === 2) throw new Error('Falha ao gerar PDF da proposta')
-      await new Promise((r) => setTimeout(r, 100))
-    }
-  }
-  throw new Error('Falha ao gerar PDF da proposta')
+  return renderPdfResiliente('proposta', () =>
+    React.createElement(PropostaDocument, { data }) as any,
+  )
 }
 
 /**
@@ -376,17 +363,76 @@ export async function generatePropostaPDFStream(data: PropostaPDFData): Promise<
  */
 export async function generateContratoPDFStream(data: ContratoPDFData): Promise<Buffer> {
   await ensureWarmedUp()
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  return renderPdfResiliente('contrato', () =>
+    React.createElement(ContratoDocument, { data }) as any,
+  )
+}
+
+// ============================================================================
+// CORE: render resiliente com fallback para renderToStream
+// ============================================================================
+
+/**
+ * Renderiza um documento React-PDF para Buffer com camadas de fallback.
+ *
+ * Bug conhecido: `Cannot read properties of null (reading 'write')` no
+ * PDFKit interno do @react-pdf acontece esporadicamente em sandboxes
+ * serverless (Next.js App Router, Vercel/Railway) por causa de estado
+ * compartilhado entre invocações.
+ *
+ * Estratégia (em camadas):
+ *   1-3. renderToBuffer com warmup reset entre tentativas
+ *   4-5. renderToStream + buffer manual (código path diferente)
+ */
+async function renderPdfResiliente(
+  tipo: string,
+  buildElement: () => React.ReactElement,
+): Promise<Buffer> {
+  await ensureWarmedUp()
+  let lastErr: unknown = null
+
+  // Camada A: renderToBuffer (mais rápido, mas mais propenso ao bug)
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const buffer = await renderToBuffer(
-        React.createElement(ContratoDocument, { data }) as any,
-      )
-      return buffer
+      return await renderToBuffer(buildElement())
     } catch (error) {
-      console.error(`[pdf] contrato attempt ${attempt} falhou:`, error)
-      if (attempt === 2) throw new Error('Falha ao gerar PDF do contrato')
-      await new Promise((r) => setTimeout(r, 100))
+      lastErr = error
+      console.warn(
+        `[pdf] ${tipo} renderToBuffer attempt ${attempt}/3 falhou:`,
+        error instanceof Error ? error.message : error,
+      )
+      warmedUp = false
+      await ensureWarmedUp()
+      await new Promise((r) => setTimeout(r, 100 * Math.pow(2, attempt - 1)))
     }
   }
-  throw new Error('Falha ao gerar PDF do contrato')
+
+  // Camada B: renderToStream (código path diferente, fallback final)
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const stream = await renderToStream(buildElement())
+      const chunks: Buffer[] = []
+      return await new Promise<Buffer>((resolve, reject) => {
+        stream.on('data', (chunk: Buffer | string) => {
+          chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+        })
+        stream.on('end', () => resolve(Buffer.concat(chunks)))
+        stream.on('error', (err: unknown) =>
+          reject(err instanceof Error ? err : new Error(String(err))),
+        )
+      })
+    } catch (error) {
+      lastErr = error
+      console.warn(
+        `[pdf] ${tipo} renderToStream attempt ${attempt}/2 falhou:`,
+        error instanceof Error ? error.message : error,
+      )
+      warmedUp = false
+      await ensureWarmedUp()
+      await new Promise((r) => setTimeout(r, 200 * attempt))
+    }
+  }
+
+  console.error(`[pdf] ${tipo} esgotou todas as tentativas:`, lastErr)
+  throw new Error(`Falha ao gerar PDF do ${tipo}`)
 }
