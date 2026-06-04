@@ -65,7 +65,24 @@ export async function notificarPorWhats(args: NotificarArgs): Promise<NotificarR
 
   try {
     const r = await sendText(instancia.instanceName, numero, args.texto)
-    // Audit best-effort
+    // Persist em NotificacaoEntrega (canônico) + WebhookLog (legado/audit)
+    db.notificacaoEntrega
+      .create({
+        data: {
+          workspaceId: args.workspaceId,
+          canal: 'whatsapp',
+          categoria: args.categoria,
+          destinatario: numero,
+          status: 'enviado',
+          providerStatus: 'sent',
+          providerStatusEm: new Date(),
+          providerMessageId: r.messageId,
+          texto: args.texto.slice(0, 2000),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          meta: (args.meta ?? null) as any,
+        },
+      })
+      .catch(() => undefined)
     db.webhookLog
       .create({
         data: {
@@ -87,6 +104,23 @@ export async function notificarPorWhats(args: NotificarArgs): Promise<NotificarR
     return { enviado: true, messageId: r.messageId }
   } catch (err) {
     const motivo = err instanceof EvolutionError ? `evolution_${err.status}` : 'erro_envio'
+    const errMsg = err instanceof Error ? err.message : 'unknown'
+    db.notificacaoEntrega
+      .create({
+        data: {
+          workspaceId: args.workspaceId,
+          canal: 'whatsapp',
+          categoria: args.categoria,
+          destinatario: numero,
+          status: 'falhou',
+          texto: args.texto.slice(0, 2000),
+          errorMotivo: errMsg.slice(0, 1000),
+          errorCodigo: err instanceof EvolutionError ? String(err.status) : null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          meta: (args.meta ?? null) as any,
+        },
+      })
+      .catch(() => undefined)
     db.webhookLog
       .create({
         data: {
@@ -95,7 +129,7 @@ export async function notificarPorWhats(args: NotificarArgs): Promise<NotificarR
             categoria: args.categoria,
             number: numero,
             workspaceId: args.workspaceId,
-            error: err instanceof Error ? err.message : 'unknown',
+            error: errMsg,
             ...(args.meta ?? {}),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any,

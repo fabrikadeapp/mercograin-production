@@ -191,6 +191,7 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
   mesa: [
     { href: '/bhgrain', label: 'Dashboard' },
     { href: '/bhgrain/executivo', label: 'Executivo' },
+    { href: '/bhgrain/saude-notificacoes', label: 'Saúde notif.' },
     { href: '/clientes', label: 'Clientes' },
     { href: '/propostas', label: 'Propostas' },
     { href: '/aprovacoes/propostas', label: 'Autorizações pendentes' },

@@ -15,7 +15,7 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { requirePortal } from '@/lib/portal-produtor/scope'
 import { criarContratoAutoFromProposta } from '@/lib/bhgrain/contrato-auto-create'
-import { sendEmail } from '@/lib/email/send'
+import { sendEmailRastreado } from '@/lib/email/send-rastreado'
 import { propostaAceitaPortalTemplate } from '@/lib/email/templates/proposta-aceita-portal'
 import { notificarPorWhats } from '@/lib/whatsapp/notificar'
 import { whatsPropostaAceita } from '@/lib/whatsapp/templates'
@@ -240,7 +240,10 @@ async function notificarTime(args: {
           linkInterno,
           aceitoEm: args.aceitoEmISO,
         })
-        await sendEmail({
+        await sendEmailRastreado({
+          workspaceId: args.workspaceId,
+          categoria: 'proposta_aceita_time_email',
+          destinatarioNome: nome,
           to: email,
           subject: tmpl.subject,
           html: tmpl.html,
@@ -249,6 +252,10 @@ async function notificarTime(args: {
             { name: 'kind', value: 'proposta_aceita_portal' },
             { name: 'proposta_numero', value: args.proposta.numero },
           ],
+          meta: {
+            propostaNumero: args.proposta.numero,
+            contratoId: args.contrato?.contratoId ?? null,
+          },
         })
       }
 

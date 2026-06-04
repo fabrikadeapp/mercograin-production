@@ -24,6 +24,7 @@ import {
   Globe,
 } from 'lucide-react'
 import { GlassCard } from '@/app/bhgrain/_components/_shared'
+import { SaudeCardCompacto } from './SaudeCardCompacto'
 
 interface DashboardData {
   mes: { receita: number; count: number; ticketMedio: number; hitRate: number }
@@ -322,6 +323,9 @@ export function DashboardExecutivo({ workspaceName }: Props) {
           </div>
         </GlassCard>
       </div>
+
+      {/* Saúde das notificações (compacto) */}
+      <SaudeCardCompacto />
 
       {/* Top clientes */}
       <GlassCard

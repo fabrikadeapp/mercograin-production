@@ -54,6 +54,10 @@ export async function handleEvolutionEvent(
     case 'MESSAGES_UPSERT':
       await handleMessageUpsert(instance, payload.data, db)
       break
+    case 'messages.update':
+    case 'MESSAGES_UPDATE':
+      await handleMessagesUpdate(instance, payload.data, db)
+      break
     case 'connection.update':
     case 'CONNECTION_UPDATE':
       await handleConnectionUpdate(instance, payload.data, db)
@@ -83,6 +87,74 @@ async function handleMessageUpsert(
   for (const msg of messages) {
     if (msg) await processMessage(instance, msg, db)
   }
+}
+
+/**
+ * messages.update — Evolution avisa quando o status de uma mensagem muda
+ * (sent → delivered → read). Atualizamos NotificacaoEntrega correspondente
+ * via providerMessageId.
+ *
+ * Formato esperado (varia entre versões da Evolution):
+ *   { key: { id }, status: 'DELIVERY_ACK' | 'READ' | 'PLAYED' | 'PENDING' | 'SERVER_ACK' }
+ * ou:
+ *   { keyId, status }
+ * ou array desses.
+ */
+async function handleMessagesUpdate(
+  _instance: InstanceCtx,
+  data: any,
+  db: DbLike
+) {
+  if (!data) return
+  const updates = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.messages)
+      ? data.messages
+      : [data]
+
+  for (const upd of updates) {
+    if (!upd) continue
+    const messageId: string | undefined =
+      upd?.key?.id ?? upd?.keyId ?? upd?.messageId ?? upd?.id
+    const rawStatus: string | undefined =
+      upd?.status ?? upd?.update?.status ?? upd?.messageStatus
+    if (!messageId || !rawStatus) continue
+
+    const status = normalizarStatusEvolution(String(rawStatus))
+    if (!status) continue
+
+    try {
+      // updateMany pra não dar erro se não encontrar (mensagens manuais
+      // não rastreadas ou criadas antes do tracking)
+      await db.notificacaoEntrega.updateMany({
+        where: { providerMessageId: messageId },
+        data: {
+          providerStatus: status,
+          providerStatusEm: new Date(),
+        },
+      })
+    } catch (err) {
+      // best-effort, nunca propaga
+      console.warn('[handleMessagesUpdate] falha:', err)
+    }
+  }
+}
+
+/**
+ * Mapeia status raw da Evolution para nossos valores canônicos.
+ *   sent / SERVER_ACK     → 'sent'
+ *   delivered / DELIVERY_ACK → 'delivered'
+ *   read / READ / PLAYED  → 'read'
+ *   failed / ERROR        → 'failed'
+ */
+export function normalizarStatusEvolution(raw: string): string | null {
+  const s = raw.toLowerCase()
+  if (s.includes('read') || s.includes('played')) return 'read'
+  if (s.includes('deliver')) return 'delivered'
+  if (s.includes('server') || s === 'sent') return 'sent'
+  if (s.includes('fail') || s.includes('error')) return 'failed'
+  if (s === 'pending') return 'sent' // pendente do lado deles = enviado do nosso
+  return null
 }
 
 export async function processMessage(

@@ -14,7 +14,7 @@ import { requireBhGrainScope } from '@/lib/bhgrain/scope-permissions'
 import { enforceRegrasEnvio } from '@/lib/bhgrain/regras-enforce'
 import { abrirAprovacao } from '@/lib/bhgrain/proposta-approval'
 import { db } from '@/lib/db'
-import { sendEmail } from '@/lib/email/send'
+import { sendEmailRastreado } from '@/lib/email/send-rastreado'
 import { propostaEnviadaClienteTemplate } from '@/lib/email/templates/proposta-enviada-cliente'
 import { gerarTokenProposta } from '@/lib/propostas/share-token'
 import { notificarPorWhats } from '@/lib/whatsapp/notificar'
@@ -170,7 +170,10 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
         workspaceNome: p.workspace.name,
         pdfPublicoUrl,
       })
-      await sendEmail({
+      await sendEmailRastreado({
+        workspaceId: p.workspaceId,
+        categoria: 'proposta_enviada_cliente_email',
+        destinatarioNome: p.cliente.nome,
         to: p.cliente.email,
         subject: tmpl.subject,
         html: tmpl.html,
@@ -179,6 +182,7 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
           { name: 'kind', value: 'proposta_enviada_cliente' },
           { name: 'proposta_numero', value: p.numero },
         ],
+        meta: { propostaId: p.id, propostaNumero: p.numero },
       })
     }
 

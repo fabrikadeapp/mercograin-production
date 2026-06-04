@@ -1,6 +1,6 @@
 // prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
@@ -28,27 +28,27 @@ model User {
   // RH / Dados pessoais do colaborador (Lote: dados RH)
   // CPF é unique mas opcional pra não quebrar registros existentes; preenchido
   // pelo owner ao convidar OU pelo próprio colaborador no wizard de completar perfil.
-  cpf                   String?   @unique
-  telefone              String?
-  rg                    String?
-  rgEmissor             String?
-  dataNascimento        DateTime?
-  pis                   String?
+  cpf                       String?   @unique
+  telefone                  String?
+  rg                        String?
+  rgEmissor                 String?
+  dataNascimento            DateTime?
+  pis                       String?
   // Endereço residencial (campos diretos pra permitir filtros/relatórios).
-  enderecoCep           String?
-  enderecoRua           String?
-  enderecoNumero        String?
-  enderecoComplemento   String?
-  enderecoBairro        String?
-  enderecoCidade        String?
-  enderecoUF            String?
+  enderecoCep               String?
+  enderecoRua               String?
+  enderecoNumero            String?
+  enderecoComplemento       String?
+  enderecoBairro            String?
+  enderecoCidade            String?
+  enderecoUF                String?
   // Banco + PIX em JSON ({ banco, agencia, conta, tipo, titular, pix, pixTipo })
-  dadosBancariosJson    Json?
+  dadosBancariosJson        Json?
   contatoEmergenciaNome     String?
   contatoEmergenciaTelefone String?
   // True quando colaborador completou o wizard obrigatório. Owner é
   // considerado completo automaticamente (não precisa do wizard).
-  perfilCompleto        Boolean   @default(false)
+  perfilCompleto            Boolean   @default(false)
 
   // 2FA TOTP (S2 M10)
   totpSecret     String?
@@ -120,6 +120,7 @@ model Workspace {
   whatsappInstance       WhatsAppInstance?
   whatsappContacts       WhatsAppContact[]
   whatsappMessages       WhatsAppMessage[]
+  notificacoesEntrega    NotificacaoEntrega[]
   // Originação & Fixação (Epic 1)
   contratosFixacao       ContratoFixacao[]
   fixacoes               Fixacao[]
@@ -210,8 +211,8 @@ model Workspace {
   /// do nome em maiúscula. Editável em Gestão → Dados da empresa.
   codigo String? @db.VarChar(8)
 
-  contadores NumberingCounter[]
-  features   WorkspaceFeature[]
+  contadores         NumberingCounter[]
+  features           WorkspaceFeature[]
   lauraConversations LauraConversation[]
 
   // Purchase-first: licença vinculada (criada antes do workspace, depois ligada)
@@ -233,15 +234,15 @@ model Workspace {
 
 /// Conversa entre cliente externo e o sistema via canal (WhatsApp, Telefone).
 model LauraConversation {
-  id              String    @id @default(cuid())
-  workspaceId     String
-  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  canal           String    @db.VarChar(20)
-  handle          String    @db.VarChar(40)
-  clienteId       String?
-  cliente         Cliente?  @relation("ClienteLauraConv", fields: [clienteId], references: [id], onDelete: SetNull)
-  status          String    @default("aberta") @db.VarChar(20)
-  intentDetectado String?   @db.VarChar(40)
+  id               String         @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  canal            String         @db.VarChar(20)
+  handle           String         @db.VarChar(40)
+  clienteId        String?
+  cliente          Cliente?       @relation("ClienteLauraConv", fields: [clienteId], references: [id], onDelete: SetNull)
+  status           String         @default("aberta") @db.VarChar(20)
+  intentDetectado  String?        @db.VarChar(40)
   ultimaMensagemEm DateTime?
   messages         LauraMessage[]
 
@@ -310,21 +311,21 @@ model WorkspaceFeature {
 /// Log de execução de crons. Cada job de cron grava aqui ao terminar
 /// pra permitir monitoring em /admin/crons.
 model CronExecution {
-  id          String   @id @default(cuid())
+  id         String    @id @default(cuid())
   /// Nome do cron (ex: 'apurar-comissoes', 'bhgrain-health')
-  cron        String   @db.VarChar(60)
+  cron       String    @db.VarChar(60)
   /// 'success' | 'error' | 'partial'
-  status      String   @db.VarChar(20)
+  status     String    @db.VarChar(20)
   /// Timestamp de início
-  startedAt   DateTime @default(now())
+  startedAt  DateTime  @default(now())
   /// Timestamp de fim (null se ainda rodando)
-  finishedAt  DateTime?
+  finishedAt DateTime?
   /// Duração em ms
-  durationMs  Int?
+  durationMs Int?
   /// Mensagem de erro ou resumo
-  message     String?  @db.Text
+  message    String?   @db.Text
   /// Metadados estruturados (records processed, etc)
-  meta        Json?
+  meta       Json?
 
   @@index([cron, startedAt])
   @@index([status])
@@ -350,14 +351,14 @@ model NumberingCounter {
 }
 
 model WorkspaceMember {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  email       String
-  role        String // 'owner' | 'admin' | 'member' | 'viewer'
-  status      String    @default("active") // 'active' | 'invited' | 'suspended'
+  id             String    @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email          String
+  role           String // 'owner' | 'admin' | 'member' | 'viewer'
+  status         String    @default("active") // 'active' | 'invited' | 'suspended'
   /// Perfil comercial granular (legado, mantido para compat).
   commercialRole String?
 
@@ -388,13 +389,13 @@ model WorkspaceMember {
   funcoes String[] @default([])
 
   // Relations para atribuição comercial
-  clientesResponsavel        Cliente[]            @relation("ClienteResponsavel")
-  clienteAtendimentos        ClienteAtendimento[]
-  propostasGerente           Proposta[]           @relation("PropostaGerente")
-  propostasVendedor          Proposta[]           @relation("PropostaVendedor")
-  propostasAutorizadas       Proposta[]           @relation("PropostaAutorizadoPor")
-  contratosGerente           Contrato[]           @relation("ContratoGerente")
-  contratosVendedor          Contrato[]           @relation("ContratoVendedor")
+  clientesResponsavel  Cliente[]            @relation("ClienteResponsavel")
+  clienteAtendimentos  ClienteAtendimento[]
+  propostasGerente     Proposta[]           @relation("PropostaGerente")
+  propostasVendedor    Proposta[]           @relation("PropostaVendedor")
+  propostasAutorizadas Proposta[]           @relation("PropostaAutorizadoPor")
+  contratosGerente     Contrato[]           @relation("ContratoGerente")
+  contratosVendedor    Contrato[]           @relation("ContratoVendedor")
 
   inviteToken String?   @unique
   invitedAt   DateTime?
@@ -511,20 +512,20 @@ model ContratoTemplateVersao {
 /// onboarding (criar senha + dados da empresa), criamos User + Workspace e
 /// ligamos via workspaceId. Status 'pending' até ativação.
 model License {
-  id                   String    @id @default(cuid())
-  codigo               String    @unique // ex: BHG-2026-A4F2X9
-  workspaceId          String?   @unique
+  id                   String     @id @default(cuid())
+  codigo               String     @unique // ex: BHG-2026-A4F2X9
+  workspaceId          String?    @unique
   workspace            Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   stripeCustomerId     String
-  stripeSubscriptionId String?   @unique
+  stripeSubscriptionId String?    @unique
   email                String
   nomeComprador        String?
   plano                String // 'starter' | 'pro' | 'enterprise' (slug do Plan)
-  status               String    @default("pending") // pending | active | onboarding | canceled
-  onboardingToken      String?   @unique
+  status               String     @default("pending") // pending | active | onboarding | canceled
+  onboardingToken      String?    @unique
   onboardingExpiresAt  DateTime?
   metadataJson         Json?
-  createdAt            DateTime  @default(now())
+  createdAt            DateTime   @default(now())
   ativadaEm            DateTime?
 
   @@index([email])
@@ -656,10 +657,10 @@ model Cliente {
   contratos          Contrato[]
   boletos            Boleto[]
   contratosFuturos   ContratoFuturo[]
-  cargas             OrdemCarga[]       @relation("ClienteCargas")
+  cargas             OrdemCarga[]        @relation("ClienteCargas")
   whatsappContacts   WhatsAppContact[]
   // Originação (Epic 1) — produtor recebe adiantamentos
-  adiantamentos      Adiantamento[]     @relation("ProdutorAdiantamentos")
+  adiantamentos      Adiantamento[]      @relation("ProdutorAdiantamentos")
   // Compliance (Epic 5)
   talhoes            Talhao[]
   // S4 M1 — propriedades rurais (KYC compliance)
@@ -675,10 +676,10 @@ model Cliente {
   /// Atribuição comercial: responsável atual pela conta (gerente de conta).
   /// Snapshot por momento — Cliente.responsavel = quem cuida agora.
   /// Histórico fica em ClienteAtendimento.
-  responsavelId String?
-  responsavel   WorkspaceMember?     @relation("ClienteResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
-  atendimentos  ClienteAtendimento[]
-  lauraConversations LauraConversation[] @relation("ClienteLauraConv")
+  responsavelId      String?
+  responsavel        WorkspaceMember?     @relation("ClienteResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  atendimentos       ClienteAtendimento[]
+  lauraConversations LauraConversation[]  @relation("ClienteLauraConv")
 
   @@index([email])
   @@index([cnpj])
@@ -691,16 +692,16 @@ model Cliente {
 /// Registro ativo: fimEm IS NULL. Trocar de gerente: fechar o ativo (set fimEm)
 /// e criar um novo registro.
 model ClienteAtendimento {
-  id          String           @id @default(cuid())
-  clienteId   String
-  cliente     Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  memberId    String
-  member      WorkspaceMember  @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  inicioEm    DateTime         @default(now())
-  fimEm       DateTime?
-  motivo      String?          // 'inicial' | 'transferencia' | 'ferias' | 'desligamento' | 'manual'
-  observacao  String?          @db.Text
-  createdAt   DateTime         @default(now())
+  id         String          @id @default(cuid())
+  clienteId  String
+  cliente    Cliente         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  inicioEm   DateTime        @default(now())
+  fimEm      DateTime?
+  motivo     String? // 'inicial' | 'transferencia' | 'ferias' | 'desligamento' | 'manual'
+  observacao String?         @db.Text
+  createdAt  DateTime        @default(now())
 
   @@index([clienteId, fimEm])
   @@index([memberId])
@@ -718,7 +719,7 @@ model ProdutorAccess {
   cliente          Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   emailLogin       String    @unique
   passwordHash     String?
-  tokenInicial     String?   // hash bcrypt do token de setup (1-time)
+  tokenInicial     String? // hash bcrypt do token de setup (1-time)
   acessoCriadoEm   DateTime?
   ultimoLogin      DateTime?
   ativo            Boolean   @default(true)
@@ -736,14 +737,14 @@ model DocumentoProdutor {
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   clienteId    String
   cliente      Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  tipo         String    // 'contrato' | 'nf' | 'cpr' | 'comprovante' | 'outro'
+  tipo         String // 'contrato' | 'nf' | 'cpr' | 'comprovante' | 'outro'
   titulo       String    @db.VarChar(255)
   descricao    String?   @db.Text
   arquivoUrl   String    @db.Text
   arquivoHash  String?   @db.VarChar(128)
   tamanhoBytes Int
   mimeType     String    @db.VarChar(120)
-  enviadoPor   String    // 'corretora' | 'produtor'
+  enviadoPor   String // 'corretora' | 'produtor'
   uploaderId   String?
   visivel      Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -758,7 +759,7 @@ model MensagemProdutor {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   clienteId   String
   cliente     Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  remetente   String    // 'corretora' | 'produtor'
+  remetente   String // 'corretora' | 'produtor'
   texto       String    @db.Text
   lidaEm      DateTime?
   createdAt   DateTime  @default(now())
@@ -833,34 +834,34 @@ model Proposta {
 
   // BH Grain — campos opcionais aditivos (Lote 2). UI exibe '—' quando null.
   scoreInterno          Int?
-  scoreLabel            String?  // 'alta' | 'media' | 'baixa' | 'risco'
-  custoEstimado         Decimal? @db.Decimal(15, 2)
-  margemPercent         Decimal? @db.Decimal(6, 3)
-  lucroBrutoEstimado    Decimal? @db.Decimal(15, 2)
+  scoreLabel            String? // 'alta' | 'media' | 'baixa' | 'risco'
+  custoEstimado         Decimal?  @db.Decimal(15, 2)
+  margemPercent         Decimal?  @db.Decimal(6, 3)
+  lucroBrutoEstimado    Decimal?  @db.Decimal(15, 2)
   cotacaoRefId          String?
-  cotacaoRef            Cotacao? @relation("PropostaCotacaoRef", fields: [cotacaoRefId], references: [id], onDelete: SetNull)
-  cotacaoFonte          String?  @db.VarChar(60)
+  cotacaoRef            Cotacao?  @relation("PropostaCotacaoRef", fields: [cotacaoRefId], references: [id], onDelete: SetNull)
+  cotacaoFonte          String?   @db.VarChar(60)
   cotacaoCapturadaEm    DateTime?
   validadeCotacao       DateTime?
-  marketPriceAtCreation Decimal? @db.Decimal(15, 4)
-  lossReason            String?  @db.VarChar(60)
-  nextBestAction        String?  @db.VarChar(60)
-  nextBestActionReason  String?  @db.Text
+  marketPriceAtCreation Decimal?  @db.Decimal(15, 4)
+  lossReason            String?   @db.VarChar(60)
+  nextBestAction        String?   @db.VarChar(60)
+  nextBestActionReason  String?   @db.Text
 
   // BH Grain — Logística (Lote 12 / Fase F)
-  origem            String?  @db.VarChar(120)
-  destino           String?  @db.VarChar(120)
-  localEntrega      String?  @db.VarChar(120)
-  modalTransporte   String?  @db.VarChar(20)  // 'rodoviario' | 'ferroviario' | 'hidroviario' | 'multimodal'
-  freteTipo         String?  @db.VarChar(20)  // 'incluso' | 'comprador' | 'vendedor' | 'definir'
-  freteCustoTotal   Decimal? @db.Decimal(15, 2)
-  freteCustoUnit    Decimal? @db.Decimal(15, 4)
-  prazoLogistico    DateTime?
-  incoterm          String?  @db.VarChar(10)
+  origem              String?   @db.VarChar(120)
+  destino             String?   @db.VarChar(120)
+  localEntrega        String?   @db.VarChar(120)
+  modalTransporte     String?   @db.VarChar(20) // 'rodoviario' | 'ferroviario' | 'hidroviario' | 'multimodal'
+  freteTipo           String?   @db.VarChar(20) // 'incluso' | 'comprador' | 'vendedor' | 'definir'
+  freteCustoTotal     Decimal?  @db.Decimal(15, 2)
+  freteCustoUnit      Decimal?  @db.Decimal(15, 4)
+  prazoLogistico      DateTime?
+  incoterm            String?   @db.VarChar(10)
   armazemOrigemRefId  String?
-  armazemOrigemRef    Armazem? @relation("PropostaArmazemOrigem", fields: [armazemOrigemRefId], references: [id], onDelete: SetNull)
+  armazemOrigemRef    Armazem?  @relation("PropostaArmazemOrigem", fields: [armazemOrigemRefId], references: [id], onDelete: SetNull)
   armazemDestinoRefId String?
-  armazemDestinoRef   Armazem? @relation("PropostaArmazemDestino", fields: [armazemDestinoRefId], references: [id], onDelete: SetNull)
+  armazemDestinoRef   Armazem?  @relation("PropostaArmazemDestino", fields: [armazemDestinoRefId], references: [id], onDelete: SetNull)
 
   // BH Grain — Estoque vinculado (Lote 12 / Fase F)
   loteEstoqueRefId String?
@@ -868,18 +869,21 @@ model Proposta {
 
   // BH Grain — Qualidade (Lote 12 / Fase F)
   /// JSON estruturado: { umidadeMax?, impurezaMax?, ph?, proteinaMin?, ardidosMax?, avariadosMax?, padraoComercial?, observacoes? }
-  qualidadeSpec    Json?
+  qualidadeSpec Json?
 
   // Atribuição comercial — quem é dono da conta e quem fechou.
-  gerenteContaId     String?
-  gerenteConta       WorkspaceMember? @relation("PropostaGerente", fields: [gerenteContaId], references: [id], onDelete: SetNull)
-  vendedorId         String?
-  vendedor           WorkspaceMember? @relation("PropostaVendedor", fields: [vendedorId], references: [id], onDelete: SetNull)
+  gerenteContaId   String?
+  gerenteConta     WorkspaceMember? @relation("PropostaGerente", fields: [gerenteContaId], references: [id], onDelete: SetNull)
+  vendedorId       String?
+  vendedor         WorkspaceMember? @relation("PropostaVendedor", fields: [vendedorId], references: [id], onDelete: SetNull)
   /// Canal pelo qual a proposta foi autorizada: 'web' | 'whatsapp' | 'telefone' | 'ia_autonomo'
-  canalAutorizacao   String?
-  autorizadoEm       DateTime?
-  autorizadoPorId    String?
-  autorizadoPor      WorkspaceMember? @relation("PropostaAutorizadoPor", fields: [autorizadoPorId], references: [id], onDelete: SetNull)
+  canalAutorizacao String?
+  autorizadoEm     DateTime?
+  autorizadoPorId  String?
+  autorizadoPor    WorkspaceMember? @relation("PropostaAutorizadoPor", fields: [autorizadoPorId], references: [id], onDelete: SetNull)
+
+  // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
+  ofertaOrigem Oferta?
 
   @@index([clienteId])
   @@index([status])
@@ -896,9 +900,6 @@ model Proposta {
   @@index([workspaceId, criadaEm])
   // HOT: agregações por (workspaceId, status IN [...]) com filtro temporal (sumFechadasNoMes, funil).
   @@index([workspaceId, status, atualizadaEm])
-
-  // S10 M2 — origem em Oferta aceita (1:1 oferta → 1 proposta)
-  ofertaOrigem Oferta?
 }
 
 // ============================================
@@ -1148,9 +1149,9 @@ model Plan {
   /// Disponibilidade do agente AI no plano:
   /// 'none' = sem AI; 'managed' = AI com chave da plataforma (limites por plano);
   /// 'byok_allowed' = AI managed + opcional cliente trazer chave própria (Enterprise)
-  aiAccess           String @default("none")
+  aiAccess          String @default("none")
   /// Limite de mensagens AI / mês quando aiAccess='managed' (0 = ilimitado)
-  aiMonthlyMessages  Int    @default(0)
+  aiMonthlyMessages Int    @default(0)
 
   features  PlanFeature[]
   createdAt DateTime      @default(now())
@@ -1212,34 +1213,34 @@ model ContratoFuturo {
 // ============================================
 
 model Armazem {
-  id            String        @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  nome          String
-  tipo          String // 'silo' | 'granel' | 'horizontal' | 'misto'
-  capacidadeSc  Int // capacidade em sacas 60kg
-  endereco      String?
-  cidade        String?
-  uf            String?       @db.VarChar(2)
-  cep           String?       @db.VarChar(10)
-  contato       String?
-  telefone      String?
-  observacao    String?       @db.Text
-  ativo         Boolean       @default(true)
+  id               String        @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  nome             String
+  tipo             String // 'silo' | 'granel' | 'horizontal' | 'misto'
+  capacidadeSc     Int // capacidade em sacas 60kg
+  endereco         String?
+  cidade           String?
+  uf               String?       @db.VarChar(2)
+  cep              String?       @db.VarChar(10)
+  contato          String?
+  telefone         String?
+  observacao       String?       @db.Text
+  ativo            Boolean       @default(true)
   /// Próprio (galpão da empresa) ou terceirizado (Fornecedor)
-  proprio       Boolean       @default(true)
-  fornecedorId  String?
-  fornecedor    Fornecedor?   @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  ordensOrigem  OrdemCarga[]  @relation("ArmazemOrigem")
-  ordensDestino OrdemCarga[]  @relation("ArmazemDestino")
+  proprio          Boolean       @default(true)
+  fornecedorId     String?
+  fornecedor       Fornecedor?   @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  ordensOrigem     OrdemCarga[]  @relation("ArmazemOrigem")
+  ordensDestino    OrdemCarga[]  @relation("ArmazemDestino")
   // Operação Física (Epic 2)
-  balancas      Balanca[]
-  lotesEstoque  LoteEstoque[]
+  balancas         Balanca[]
+  lotesEstoque     LoteEstoque[]
   // BH Grain (Fase F) — propostas que indicam este armazém como origem/destino
-  propostasOrigem  Proposta[] @relation("PropostaArmazemOrigem")
-  propostasDestino Proposta[] @relation("PropostaArmazemDestino")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  propostasOrigem  Proposta[]    @relation("PropostaArmazemOrigem")
+  propostasDestino Proposta[]    @relation("PropostaArmazemDestino")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@index([workspaceId, ativo])
   @@index([fornecedorId])
@@ -1433,7 +1434,7 @@ model LoteEstoque {
   // S5 M9 EUDR
   talhaoLotes    TalhaoLote[]
   // BH Grain (Fase F) — propostas que reservam volume deste lote
-  propostasRef   Proposta[]   @relation("PropostaLoteEstoque")
+  propostasRef   Proposta[]         @relation("PropostaLoteEstoque")
 
   @@unique([workspaceId, numero])
   @@index([workspaceId, cultura, status])
@@ -1682,9 +1683,9 @@ model WhatsAppMessage {
 
   /// Recebida durante pausa da integração WhatsApp. UI exibe estilo opaco,
   /// IA/scoring/alertas IGNORAM até o admin "processar tudo".
-  silenced         Boolean   @default(false)
-  silencedBatchId  String?   @db.VarChar(40)
-  silencedAt       DateTime?
+  silenced        Boolean   @default(false)
+  silencedBatchId String?   @db.VarChar(40)
+  silencedAt      DateTime?
 
   // Timestamps
   timestamp DateTime // timestamp do WhatsApp
@@ -2241,19 +2242,19 @@ model Guia {
   contribuinteDoc  String // CPF/CNPJ
   contribuinteNome String
 
-  periodoApuracao String   // 'YYYYMM' ou data
-  valorPrincipal  Decimal  @db.Decimal(15, 2)
-  multa           Decimal  @default(0) @db.Decimal(15, 2)
-  juros           Decimal  @default(0) @db.Decimal(15, 2)
-  valorTotal      Decimal  @db.Decimal(15, 2)
+  periodoApuracao String // 'YYYYMM' ou data
+  valorPrincipal  Decimal @db.Decimal(15, 2)
+  multa           Decimal @default(0) @db.Decimal(15, 2)
+  juros           Decimal @default(0) @db.Decimal(15, 2)
+  valorTotal      Decimal @db.Decimal(15, 2)
 
   vencimento DateTime
 
-  codigoBarras    String?
-  linhaDigitavel  String?
+  codigoBarras   String?
+  linhaDigitavel String?
 
-  status  String    @default("aberto") // 'aberto' | 'pago' | 'cancelado'
-  pagoEm  DateTime?
+  status String    @default("aberto") // 'aberto' | 'pago' | 'cancelado'
+  pagoEm DateTime?
 
   uf String? // GNRE / GARE
 
@@ -2976,10 +2977,10 @@ model ComissaoRegra {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  nome        String
-  descricao   String?
+  nome         String
+  descricao    String?
   /// 'global' | 'cultura' | 'mesa' | 'corretor' | 'cliente'
-  escopoTipo  String?
+  escopoTipo   String?
   /// Filtro JSON do escopo (ex.: { cultura: 'soja' })
   escopoFiltro Json?
 
@@ -3006,13 +3007,13 @@ model ComissaoApurada {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  contratoId String  @unique
+  contratoId String         @unique
   regraId    String?
   regra      ComissaoRegra? @relation(fields: [regraId], references: [id], onDelete: SetNull)
 
-  valorContrato       Decimal @db.Decimal(15, 2)
-  pctTotalAplicado    Float
-  valorTotalComissao  Decimal @db.Decimal(15, 2)
+  valorContrato      Decimal @db.Decimal(15, 2)
+  pctTotalAplicado   Float
+  valorTotalComissao Decimal @db.Decimal(15, 2)
 
   corretorId      String?
   valorCorretor   Decimal @default(0) @db.Decimal(15, 2)
@@ -3023,8 +3024,8 @@ model ComissaoApurada {
   valorHouse      Decimal @default(0) @db.Decimal(15, 2)
 
   /// 'apurada' | 'paga' | 'cancelada'
-  status  String    @default("apurada")
-  pagaEm  DateTime?
+  status String    @default("apurada")
+  pagaEm DateTime?
 
   createdAt DateTime @default(now())
 
@@ -3143,11 +3144,11 @@ model ConversationMessage {
 
   /// Recebida durante pausa da integração. UI exibe estilo opaco,
   /// IA/scoring/alertas IGNORAM até o admin "processar tudo".
-  silenced         Boolean   @default(false)
+  silenced        Boolean   @default(false)
   /// ID da sessão de pausa em que essa mensagem caiu. Permite agrupar
   /// "todas as silenciadas durante a pausa de ontem" ao reativar.
-  silencedBatchId  String?   @db.VarChar(40)
-  silencedAt       DateTime?
+  silencedBatchId String?   @db.VarChar(40)
+  silencedAt      DateTime?
 
   occurredAt DateTime @default(now())
   createdAt  DateTime @default(now())
@@ -3229,9 +3230,9 @@ model CommercialAlert {
   relatedEntityType String? @db.VarChar(30) // 'Proposta' | 'Cliente' | 'Cotacao' | 'Integration' | 'Meta'
   relatedEntityId   String?
 
-  status      String   @default("aberto") @db.VarChar(15) // 'aberto' | 'resolvido' | 'ignorado'
-  resolvedAt  DateTime?
-  resolvedBy  String?
+  status     String    @default("aberto") @db.VarChar(15) // 'aberto' | 'resolvido' | 'ignorado'
+  resolvedAt DateTime?
+  resolvedBy String?
 
   createdAt DateTime @default(now())
 
@@ -3246,14 +3247,14 @@ model CommercialRule {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  name      String  @db.VarChar(120)
-  type      String  @db.VarChar(40) // 'margem_minima' | 'validade_proposta' | 'desconto_max' | 'aprovacao_valor' | 'aprovacao_margem' | 'bloqueio_preco_vencido' | 'follow_up' | 'canal_preferencial'
-  commodity String? @db.VarChar(40)
+  name      String   @db.VarChar(120)
+  type      String   @db.VarChar(40) // 'margem_minima' | 'validade_proposta' | 'desconto_max' | 'aprovacao_valor' | 'aprovacao_margem' | 'bloqueio_preco_vencido' | 'follow_up' | 'canal_preferencial'
+  commodity String?  @db.VarChar(40)
   threshold Decimal? @db.Decimal(15, 4)
-  action    String  @db.VarChar(20) // 'alertar' | 'bloquear' | 'aprovar' | 'sugerir'
+  action    String   @db.VarChar(20) // 'alertar' | 'bloquear' | 'aprovar' | 'sugerir'
   params    Json?
 
-  active    Boolean @default(true)
+  active Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3281,13 +3282,13 @@ model IntegrationHealth {
   /// Toggle do usuário: quando true, workers e webhooks PARAM de ingerir
   /// eventos desta integração. UI fica cinza. Não deleta credencial,
   /// só bloqueia ingestão temporariamente.
-  paused      Boolean   @default(false)
+  paused       Boolean   @default(false)
   /// Quando pausedUntil > now, considera-se ainda em pausa.
   /// Permite "pausar até segunda" sem precisar lembrar de reativar.
   /// Null + paused=true = pausa indefinida.
-  pausedUntil DateTime?
-  pausedBy    String?   // userId que pausou
-  pausedReason String?  @db.VarChar(255) // motivo livre opcional
+  pausedUntil  DateTime?
+  pausedBy     String? // userId que pausou
+  pausedReason String?   @db.VarChar(255) // motivo livre opcional
 
   updatedAt DateTime @updatedAt
 
@@ -3352,3 +3353,72 @@ model IntegrationCredential {
   @@index([workspaceId, channel, enabled])
 }
 
+// ============================================
+// SAÚDE DAS NOTIFICAÇÕES (Épico SN)
+// Tabela dedicada para tracking unificado de envios de email + WhatsApp,
+// incluindo delivery confirmation via webhook Evolution.
+// ============================================
+
+/// Registro estruturado de cada notificação outbound (email ou WhatsApp).
+/// Substitui parcialmente WebhookLog para esse fim e permite:
+///   - Lookup eficiente por providerMessageId (delivery confirmation)
+///   - Agregação de saúde por workspace + canal + janela temporal
+///   - Retry manual (reenviar com mesmo destinatário + texto)
+model NotificacaoEntrega {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// 'whatsapp' | 'email'
+  canal     String @db.VarChar(20)
+  /// Categoria semântica: 'proposta_enviada_cliente' | 'proposta_aceita_time' |
+  /// 'contrato_gerado_cliente' | 'proposta_enviada_cliente_email' | etc.
+  categoria String @db.VarChar(60)
+
+  /// Email ou telefone normalizado (apenas dígitos para WhatsApp).
+  destinatario     String  @db.VarChar(200)
+  /// Nome do destinatário para exibição.
+  destinatarioNome String? @db.VarChar(200)
+
+  /// Status do nosso lado:
+  ///   'enviado'   — chamamos provider e retornou ok
+  ///   'falhou'    — provider retornou erro ou indisponível
+  ///   'pendente'  — registrado, aguardando confirmação (raro)
+  status String @default("enviado") @db.VarChar(20)
+
+  /// Status do provedor (delivery): 'sent' | 'delivered' | 'read' | 'failed'.
+  /// Atualizado pelo webhook Evolution para WhatsApp. Email não atualiza.
+  providerStatus   String?   @db.VarChar(20)
+  /// Quando o status do provedor mudou pra última vez.
+  providerStatusEm DateTime?
+
+  /// ID retornado pelo provider (Evolution messageId, Resend id).
+  /// Indexado para lookup rápido vindo do webhook.
+  providerMessageId String? @db.VarChar(255)
+
+  /// Texto completo da mensagem (truncado a 2000 chars para auditoria).
+  texto   String? @db.Text
+  /// Assunto do email (null para WhatsApp).
+  assunto String? @db.VarChar(500)
+
+  /// Motivo de falha (mensagem do erro). Null se sucesso.
+  errorMotivo String? @db.Text
+  /// Código de erro do provider (ex: HTTP status da Evolution).
+  errorCodigo String? @db.VarChar(20)
+
+  /// Metadata estruturada (propostaId, contratoId, etc.) para correlação.
+  meta Json?
+
+  /// Quantas vezes esse envio foi retentado manualmente.
+  retryCount Int       @default(0)
+  /// Última tentativa de retry (se houver).
+  retryEm    DateTime?
+
+  criadoEm DateTime @default(now())
+
+  @@index([workspaceId, criadoEm])
+  @@index([workspaceId, canal, criadoEm])
+  @@index([workspaceId, status, criadoEm])
+  @@index([providerMessageId])
+  @@index([criadoEm])
+}
