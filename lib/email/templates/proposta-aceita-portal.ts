@@ -12,6 +12,8 @@ export interface PropostaAceitaPortalArgs {
   clienteNome: string
   /** Nome de quem clicou no portal (pode ser representante). */
   aceitanteNome: string
+  /** Comentário opcional deixado pelo cliente no momento do aceite. */
+  comentario?: string
   /** Ex: MCG2026060501P */
   propostaNumero: string
   /** Valor formatado (R$ X.XXX,XX). */
@@ -49,6 +51,14 @@ export function propostaAceitaPortalTemplate(args: PropostaAceitaPortalArgs) {
         ${contrato ? `<li>Contrato gerado: <strong style="font-family:'SF Mono',Monaco,monospace;">${contrato}</strong></li>` : '<li style="color:#b85;">Atenção: contrato não foi gerado automaticamente. Verifique o template padrão.</li>'}
       </ul>
     </div>
+    ${
+      args.comentario
+        ? `<div style="padding:12px 14px;border-left:3px solid ${COLORS.accent};background:#f7faf3;border-radius:0 6px 6px 0;margin:0 0 14px 0;">
+            <p style="margin:0;font-size:12px;color:${COLORS.textMuted};">Comentário do cliente:</p>
+            <p style="margin:4px 0 0 0;font-size:14px;color:#222;">${escapeHtml(args.comentario)}</p>
+          </div>`
+        : ''
+    }
     <p style="margin:0;font-size:13px;color:${COLORS.textMuted};">
       Acesse o sistema para acompanhar a próxima etapa: envio para assinatura digital.
     </p>

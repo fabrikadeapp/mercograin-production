@@ -21,6 +21,7 @@ export function PropostaAceiteActions({ propostaId }: Props) {
   const [modalAberto, setModalAberto] = useState<'aceitar' | 'recusar' | 'preview' | null>(null)
   const [motivo, setMotivo] = useState('')
   const [aceitanteNome, setAceitanteNome] = useState('')
+  const [comentario, setComentario] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [preview, setPreview] = useState<PreviewResp | null>(null)
@@ -50,7 +51,10 @@ export function PropostaAceiteActions({ propostaId }: Props) {
       const r = await fetch(`/api/portal/propostas/${propostaId}/aceitar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aceitanteNome: aceitanteNome.trim() }),
+        body: JSON.stringify({
+          aceitanteNome: aceitanteNome.trim(),
+          comentario: comentario.trim() || undefined,
+        }),
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) {
@@ -190,19 +194,37 @@ export function PropostaAceiteActions({ propostaId }: Props) {
                 </div>
               )}
               {modalAberto === 'aceitar' && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Seu nome completo *
-                  </label>
-                  <input
-                    type="text"
-                    value={aceitanteNome}
-                    onChange={(e) => setAceitanteNome(e.target.value)}
-                    placeholder="João Silva"
-                    className="w-full rounded-md border px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
-                    autoFocus
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Seu nome completo *
+                    </label>
+                    <input
+                      type="text"
+                      value={aceitanteNome}
+                      onChange={(e) => setAceitanteNome(e.target.value)}
+                      placeholder="João Silva"
+                      className="w-full rounded-md border px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Observação (opcional)
+                    </label>
+                    <textarea
+                      value={comentario}
+                      onChange={(e) => setComentario(e.target.value)}
+                      rows={2}
+                      maxLength={500}
+                      placeholder="Ex: confirmo entrega em Sorriso até 30/06; condicional a OK do logística."
+                      className="w-full rounded-md border px-3 py-2 text-sm focus:border-green-600 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      Sua observação fica registrada junto com o aceite e visível para o vendedor.
+                    </p>
+                  </div>
+                </>
               )}
               {modalAberto === 'recusar' && (
                 <div>

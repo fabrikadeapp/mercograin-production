@@ -20,6 +20,7 @@ import { propostaAceitaPortalTemplate } from '@/lib/email/templates/proposta-ace
 
 const schema = z.object({
   aceitanteNome: z.string().min(2, 'Nome muito curto').max(200),
+  comentario: z.string().max(500).optional(),
   geoLat: z.number().optional(),
   geoLng: z.number().optional(),
 })
@@ -90,6 +91,7 @@ export async function POST(
     const carimbo = [
       `[aceita pelo cliente em ${new Date().toISOString()}]`,
       `por: ${data.aceitanteNome}`,
+      data.comentario ? `comentário: ${data.comentario}` : null,
       ip ? `ip: ${ip}` : null,
       ua ? `ua: ${ua.slice(0, 120)}` : null,
       data.geoLat != null && data.geoLng != null
@@ -121,6 +123,7 @@ export async function POST(
           mudancas: {
             numero: proposta.numero,
             aceitanteNome: data.aceitanteNome,
+            comentario: data.comentario ?? null,
             ip,
             ua: ua?.slice(0, 200) ?? null,
           } as any,
@@ -140,6 +143,7 @@ export async function POST(
       proposta,
       contrato,
       aceitanteNome: data.aceitanteNome,
+      comentario: data.comentario,
       aceitoEmISO: new Date().toISOString(),
       origin: request.headers.get('origin') ?? request.nextUrl.origin,
     })
@@ -176,6 +180,7 @@ async function notificarTime(args: {
   proposta: ProppForEmail
   contrato: { contratoId: string; numero: string; novo: boolean } | null
   aceitanteNome: string
+  comentario?: string
   aceitoEmISO: string
   origin: string
 }): Promise<void> {
@@ -207,6 +212,7 @@ async function notificarTime(args: {
         destinatarioNome: nome,
         clienteNome: args.proposta.cliente?.nome ?? 'Cliente',
         aceitanteNome: args.aceitanteNome,
+        comentario: args.comentario,
         propostaNumero: args.proposta.numero,
         valorFormatado: valorFmt,
         contratoNumero: args.contrato?.numero ?? null,

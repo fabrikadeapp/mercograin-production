@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getPortalSession } from '@/lib/portal-produtor/auth'
 import { PropostaAceiteActions } from './_components/PropostaAceiteActions'
+import { PropostaTimeline } from './_components/PropostaTimeline'
 
 interface GraoItem {
   grao?: string
@@ -168,6 +169,8 @@ export default async function PropostaDetailPage({
           aviso para assinar.
         </section>
       )}
+
+      <PropostaTimeline propostaId={proposta.id} />
     </div>
   )
 }

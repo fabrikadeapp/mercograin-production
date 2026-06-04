@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Users, Filter, Pencil, Trash2, X } from 'lucide-react'
+import { Plus, Users, Filter, Pencil, Trash2, X, KeyRound, FileText } from 'lucide-react'
 import {
   AppShell,
   PageHeader,
@@ -39,6 +39,16 @@ interface PaginatedResponse {
   pages: number
 }
 
+interface ClienteStats {
+  temPortal: boolean
+  portalAtivo: boolean
+  ultimoLoginPortal: string | null
+  ultimaPropostaEm: string | null
+  ultimaPropostaNumero: string | null
+  receitaYTD: number
+  propostasYTD: number
+}
+
 const TIPO_OPTIONS = [
   { value: '', label: 'Todos os tipos' },
   { value: 'comprador', label: 'Comprador' },
@@ -60,6 +70,7 @@ export default function ClientesPage() {
 
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<Record<string, ClienteStats>>({})
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [tipo, setTipo] = useState(searchParams.get('tipo') || '')
   const [ativo, setAtivo] = useState(searchParams.get('ativo') || '')
@@ -105,6 +116,20 @@ export default function ClientesPage() {
       setClientes(data.data)
       setTotal(data.total)
       setPages(data.pages)
+
+      // Enriquece com stats (paralelo, best-effort)
+      if (data.data.length > 0) {
+        fetch('/api/clientes/stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: data.data.map((c) => c.id) }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((j) => {
+            if (j && typeof j === 'object') setStats(j as Record<string, ClienteStats>)
+          })
+          .catch(() => undefined)
+      }
     } catch (err) {
       showError('Erro ao carregar clientes')
       console.error(err)
@@ -170,6 +195,75 @@ export default function ClientesPage() {
       accessor: (c) => (
         <Chip variant={c.ativo ? 'pos' : 'neutral'}>{c.ativo ? 'Ativo' : 'Inativo'}</Chip>
       ),
+    },
+    {
+      key: 'portal',
+      header: 'Portal',
+      accessor: (c) => {
+        const s = stats[c.id]
+        if (!s) return <span className="text-fg-3 text-[11px]">—</span>
+        if (s.temPortal) {
+          return (
+            <Chip variant={s.portalAtivo ? 'pos' : 'neutral'}>
+              <KeyRound className="h-3 w-3 mr-1" />
+              {s.portalAtivo ? 'Ativo' : 'Bloqueado'}
+            </Chip>
+          )
+        }
+        return (
+          <Link
+            href={`/clientes/${c.id}/portal`}
+            className="text-[11px] text-accent underline"
+          >
+            criar acesso
+          </Link>
+        )
+      },
+    },
+    {
+      key: 'ultimaProposta',
+      header: 'Última proposta',
+      accessor: (c) => {
+        const s = stats[c.id]
+        if (!s?.ultimaPropostaEm) return <span className="text-fg-3 text-[11px]">—</span>
+        return (
+          <div className="text-[11px]">
+            <p className="text-fg-1 t-num">
+              {new Date(s.ultimaPropostaEm).toLocaleDateString('pt-BR')}
+            </p>
+            {s.ultimaPropostaNumero && (
+              <p className="text-fg-3" style={{ fontFamily: 'var(--f-mono)' }}>
+                {s.ultimaPropostaNumero}
+              </p>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'receitaYTD',
+      header: 'Receita YTD',
+      isNumeric: true,
+      accessor: (c) => {
+        const s = stats[c.id]
+        if (!s || s.receitaYTD === 0)
+          return <span className="text-fg-3 text-[11px]">—</span>
+        return (
+          <div className="text-right">
+            <p className="text-fg-1 tabular-nums text-small font-medium">
+              {s.receitaYTD.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                maximumFractionDigits: 0,
+              })}
+            </p>
+            <p className="text-fg-3 text-[11px] tabular-nums">
+              <FileText className="h-2.5 w-2.5 inline mr-0.5" />
+              {s.propostasYTD} {s.propostasYTD === 1 ? 'proposta' : 'propostas'}
+            </p>
+          </div>
+        )
+      },
     },
     {
       key: 'criadaEm',

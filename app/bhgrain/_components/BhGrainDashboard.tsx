@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Sparkles, Zap, Filter as FilterIcon } from 'lucide-react'
+import { Sparkles, Zap, Filter as FilterIcon, BarChart3, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { PropostasAguardandoCard } from './PropostasAguardandoCard'
 import { InboxCard } from './InboxCard'
@@ -186,6 +186,56 @@ export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: P
           )}
         </div>
       </header>
+
+      {/* Atalho — Dashboard executivo (visão de dono) */}
+      <Link
+        href="/bhgrain/executivo"
+        className="flex items-center justify-between gap-3 rounded-lg transition hover:opacity-90"
+        style={{
+          padding: '12px 16px',
+          background: 'linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%)',
+          border: '1px solid var(--border)',
+          textDecoration: 'none',
+          color: 'var(--text)',
+          marginBottom: 4,
+        }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            style={{
+              display: 'inline-flex',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'var(--accent)',
+              color: 'var(--accent-ink)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <BarChart3 style={{ width: 16, height: 16 }} />
+          </span>
+          <div className="min-w-0">
+            <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>
+              Dashboard executivo
+            </p>
+            <p
+              className="truncate"
+              style={{ fontSize: 11, color: 'var(--text-mute)', margin: 0 }}
+            >
+              Visão de dono · mês × anterior · 6 meses · hit rate por canal · top clientes
+            </p>
+          </div>
+        </div>
+        <span
+          className="flex items-center gap-1 shrink-0"
+          style={{ fontSize: 11, color: 'var(--text-mute)' }}
+        >
+          Abrir
+          <ArrowRight style={{ width: 12, height: 12 }} />
+        </span>
+      </Link>
 
       {/* FilterBar — conforme design: período (incl. Personalizar) + commodity + Filtros avançados */}
       <FilterBar
