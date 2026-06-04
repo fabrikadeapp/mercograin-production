@@ -50,6 +50,27 @@ export async function GET(
         }>)
       : []
 
+    // Branding da workspace para cabeçalho do PDF público
+    const empresa = await db.dadosEmpresa.findFirst({
+      where: { workspaceId: proposta.cliente.workspaceId },
+      select: { logoUrl: true, razaoSocial: true, nomeFantasia: true },
+    })
+    const ws = await db.workspace.findUnique({
+      where: { id: proposta.cliente.workspaceId },
+      select: { name: true },
+    })
+    let logoAbsoluta: string | undefined
+    if (empresa?.logoUrl) {
+      if (/^https?:\/\//.test(empresa.logoUrl)) {
+        logoAbsoluta = empresa.logoUrl
+      } else if (empresa.logoUrl.startsWith('/')) {
+        const origin = request.headers.get('origin') ?? request.nextUrl.origin
+        logoAbsoluta = `${origin}${empresa.logoUrl}`
+      } else {
+        logoAbsoluta = empresa.logoUrl
+      }
+    }
+
     const pdfData: PropostaPDFData = {
       numero: proposta.numero,
       status: proposta.status,
@@ -64,6 +85,8 @@ export async function GET(
       observacoes: proposta.observacoes || undefined,
       criadaEm: proposta.criadaEm,
       validadeEm: proposta.validadeEm,
+      brandLogoUrl: logoAbsoluta,
+      brandNome: empresa?.nomeFantasia || empresa?.razaoSocial || ws?.name || undefined,
     }
 
     const pdfBuffer = await generatePropostaPDFStream(pdfData)

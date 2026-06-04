@@ -31,6 +31,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency, formatDate } from '@/lib/utils/formatters'
 import { Cotacao } from '@/components/ui/cotacoes'
 import type { Grao as GraoKey } from '@/lib/cotacoes/unidades'
+import { PainelGestaoProposta } from '@/components/propostas/PainelGestaoProposta'
 
 interface GraoItem {
   grao: string
@@ -313,6 +314,12 @@ export default function PropostaDetalhesPage() {
             <p className="eyebrow mb-3">Especificação de grãos</p>
             <DenseTable columns={graoColumns} rows={proposta.graos} rowKey={(g) => g.grao} />
           </div>
+
+          <PainelGestaoProposta
+            propostaId={proposta.id}
+            statusInicial={proposta.status}
+            onChange={() => fetchProposta()}
+          />
         </div>
 
         <div className="space-y-6">

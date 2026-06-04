@@ -8,6 +8,7 @@ import {
   Page,
   View,
   Text,
+  Image,
   renderToBuffer,
   renderToStream,
   Font,
@@ -84,6 +85,10 @@ export interface PropostaPDFData {
   observacoes?: string
   criadaEm: Date
   validadeEm: Date
+  /** Logo da corretora (workspace) — URL pública ou data URI. */
+  brandLogoUrl?: string
+  /** Nome da corretora para fallback quando não há logo. */
+  brandNome?: string
 }
 
 export interface ContratoPDFData {
@@ -112,17 +117,57 @@ export interface ContratoPDFData {
 const PropostaDocument = ({ data }: { data: PropostaPDFData }) => (
   React.createElement(
     Document,
-    { producer: 'BH Grain', creator: 'BH Grain System', title: `Proposta ${data.numero}` },
+    { producer: data.brandNome ?? 'BH Grain', creator: data.brandNome ?? 'BH Grain System', title: `Proposta ${data.numero}` },
     React.createElement(
       Page,
       { size: 'A4', style: { padding: 40, fontFamily: 'Helvetica' } },
 
-      // Header
+      // Header — logo (esquerda) + título (direita)
       React.createElement(
         View,
-        { style: { marginBottom: 30, borderBottomWidth: 2, borderBottomColor: '#2563eb', paddingBottom: 10 } },
-        React.createElement(Text, { style: { fontSize: 24, fontWeight: 'bold', color: '#1e40af' } }, 'PROPOSTA COMERCIAL'),
-        React.createElement(Text, { style: { fontSize: 11, color: '#666', marginTop: 5 } }, `Número: ${data.numero} | Tipo: ${data.tipo === 'venda' ? 'Venda' : 'Compra'} | Status: ${data.status}`)
+        {
+          style: {
+            marginBottom: 30,
+            borderBottomWidth: 2,
+            borderBottomColor: '#2563eb',
+            paddingBottom: 10,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          },
+        },
+        // Bloco esquerdo: logo (se houver) + nome
+        React.createElement(
+          View,
+          { style: { flexDirection: 'row', alignItems: 'center', flex: 1 } },
+          data.brandLogoUrl &&
+            React.createElement(Image, {
+              src: data.brandLogoUrl,
+              style: { width: 80, height: 40, marginRight: 12, objectFit: 'contain' },
+            }),
+          data.brandNome && !data.brandLogoUrl &&
+            React.createElement(
+              Text,
+              { style: { fontSize: 14, fontWeight: 'bold', color: '#1e40af', marginRight: 12 } },
+              data.brandNome,
+            ),
+        ),
+        // Bloco direito: título + meta
+        React.createElement(
+          View,
+          { style: { alignItems: 'flex-end' } },
+          React.createElement(Text, { style: { fontSize: 22, fontWeight: 'bold', color: '#1e40af' } }, 'PROPOSTA COMERCIAL'),
+          React.createElement(
+            Text,
+            { style: { fontSize: 10, color: '#666', marginTop: 5 } },
+            `Número: ${data.numero}`,
+          ),
+          React.createElement(
+            Text,
+            { style: { fontSize: 10, color: '#666' } },
+            `Tipo: ${data.tipo === 'venda' ? 'Venda' : 'Compra'} · Status: ${data.status}`,
+          ),
+        ),
       ),
 
       // Client Info

@@ -52,6 +52,29 @@ export async function GET(
         }>)
       : []
 
+    // Branding da workspace (corretora) para colocar no cabeçalho do PDF
+    const empresa = await db.dadosEmpresa.findFirst({
+      where: { workspaceId: scope.workspaceId },
+      select: { logoUrl: true, razaoSocial: true, nomeFantasia: true },
+    })
+    const workspace = await db.workspace.findUnique({
+      where: { id: scope.workspaceId },
+      select: { name: true },
+    })
+
+    // Resolver logoUrl para URL absoluta acessível pelo @react-pdf
+    let logoAbsoluta: string | undefined
+    if (empresa?.logoUrl) {
+      if (/^https?:\/\//.test(empresa.logoUrl)) {
+        logoAbsoluta = empresa.logoUrl
+      } else if (empresa.logoUrl.startsWith('/')) {
+        const origin = request.headers.get('origin') ?? request.nextUrl.origin
+        logoAbsoluta = `${origin}${empresa.logoUrl}`
+      } else {
+        logoAbsoluta = empresa.logoUrl
+      }
+    }
+
     // Prepare PDF data
     const pdfData: PropostaPDFData = {
       numero: proposta.numero,
@@ -67,6 +90,12 @@ export async function GET(
       observacoes: proposta.observacoes || undefined,
       criadaEm: proposta.criadaEm,
       validadeEm: proposta.validadeEm,
+      brandLogoUrl: logoAbsoluta,
+      brandNome:
+        empresa?.nomeFantasia ||
+        empresa?.razaoSocial ||
+        workspace?.name ||
+        undefined,
     }
 
     // Generate PDF (returns Buffer directly — sem stream)

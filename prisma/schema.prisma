@@ -121,6 +121,8 @@ model Workspace {
   whatsappContacts       WhatsAppContact[]
   whatsappMessages       WhatsAppMessage[]
   notificacoesEntrega    NotificacaoEntrega[]
+  propostaNotas          PropostaNota[]
+  propostaAgendas        PropostaAgenda[]
   // Originação & Fixação (Epic 1)
   contratosFixacao       ContratoFixacao[]
   fixacoes               Fixacao[]
@@ -840,7 +842,9 @@ model Proposta {
   validadeEm           DateTime
   atualizadaEm         DateTime   @updatedAt
 
-  contratos Contrato[]
+  contratos    Contrato[]
+  notas        PropostaNota[]
+  agendamentos PropostaAgenda[]
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -954,15 +958,15 @@ model Contrato {
 
   /// F5 — Aditivos: contratos que alteram este (volume, prazo, condições).
   /// Cada aditivo é um Contrato novo com tipo aditivado.
-  aditivoBaseId      String?
-  aditivoBase        Contrato?  @relation("ContratoAditivo", fields: [aditivoBaseId], references: [id], onDelete: SetNull)
-  aditivos           Contrato[] @relation("ContratoAditivo")
+  aditivoBaseId        String?
+  aditivoBase          Contrato?  @relation("ContratoAditivo", fields: [aditivoBaseId], references: [id], onDelete: SetNull)
+  aditivos             Contrato[] @relation("ContratoAditivo")
   /// Tipo de aditivo (null = contrato base; senão: 'volume' | 'prazo' | 'preco' | 'cancelamento' | 'outro').
-  aditivoTipo        String?    @db.VarChar(20)
+  aditivoTipo          String?    @db.VarChar(20)
   /// Snapshot JSON do que foi alterado em relação ao base.
-  aditivoMudancas    Json?
+  aditivoMudancas      Json?
   /// Justificativa do aditivo.
-  aditivoJustificativa String?  @db.Text
+  aditivoJustificativa String?    @db.Text
 
   // S2 M10
   aceite AceiteContrato?
@@ -3448,4 +3452,70 @@ model NotificacaoEntrega {
   @@index([workspaceId, status, criadoEm])
   @@index([providerMessageId])
   @@index([criadoEm])
+}
+
+// ============================================
+// GESTÃO DE PROPOSTAS — Notas + Agenda (Epico B)
+// Permite operador registrar conversas, anotacoes,
+// e agendar próximos contatos.
+// ============================================
+
+/// Nota livre do operador na proposta. Visível só pra equipe.
+/// Ex: "Cliente pediu prazo de 7d", "Comparando com Cargill, R$ 5/sc abaixo"
+model PropostaNota {
+  id          String    @id @default(cuid())
+  propostaId  String
+  proposta    Proposta  @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  texto     String  @db.Text
+  /// Quem escreveu (User.id ou 'sistema').
+  autorId   String
+  /// Nome do autor cacheado para display rápido sem join.
+  autorNome String? @db.VarChar(200)
+  /// Categoria opcional pra colorir/filtrar.
+  /// 'conversa' | 'objecao' | 'concorrencia' | 'oportunidade' | 'outro'
+  categoria String? @db.VarChar(30)
+
+  criadaEm     DateTime @default(now())
+  atualizadaEm DateTime @updatedAt
+
+  @@index([propostaId, criadaEm])
+  @@index([workspaceId, criadaEm])
+}
+
+/// Agendamento de próximo contato com a proposta.
+/// Ex: "Ligar amanhã às 14h", "Mandar nova cotação na sexta"
+model PropostaAgenda {
+  id          String    @id @default(cuid())
+  propostaId  String
+  proposta    Proposta  @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  titulo          String   @db.VarChar(200)
+  descricao       String?  @db.Text
+  /// Quando o lembrete deve disparar.
+  agendadoPara    DateTime
+  /// Quem cuida (User.id).
+  responsavelId   String
+  responsavelNome String?  @db.VarChar(200)
+
+  /// 'pendente' | 'concluido' | 'cancelado'
+  status              String    @default("pendente") @db.VarChar(20)
+  concluidoEm         DateTime?
+  /// Resultado da execução (opcional, pra histórico).
+  concluidoComentario String?   @db.Text
+
+  /// Flag de notificação disparada (para evitar duplicação no cron).
+  notificadoEm DateTime?
+
+  criadaEm     DateTime @default(now())
+  atualizadaEm DateTime @updatedAt
+
+  @@index([propostaId, agendadoPara])
+  @@index([workspaceId, agendadoPara])
+  @@index([responsavelId, status, agendadoPara])
+  @@index([status, agendadoPara])
 }
