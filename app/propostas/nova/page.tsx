@@ -18,7 +18,7 @@ import {
 import { useToast } from '@/contexts/ToastContext'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { KG_POR_BU, KG_POR_SC, type Grao as GraoKey } from '@/lib/cotacoes/unidades'
-import { PropostaCommandBar } from '@/components/propostas/PropostaCommandBar'
+import { NovaPropostaFluxo } from '@/components/propostas/NovaPropostaFluxo'
 
 interface Cliente {
   id: string
@@ -331,11 +331,10 @@ export default function NovaPropostaPage() {
         }
       />
 
-      {/* Command-bar sempre visível — funciona mesmo sem clientes (modal inline) */}
+      {/* Fluxo guiado em 2 etapas: cliente → proposta */}
       <div className="mb-6">
-        <PropostaCommandBar
+        <NovaPropostaFluxo
           clientes={clientes}
-          usdbrl={usdbrl}
           marginsMap={marginsMap}
           onClienteCriado={(c) => {
             setClientes((prev) => [...prev, { id: c.id, nome: c.nome }])
