@@ -192,17 +192,8 @@ export async function GET(req: NextRequest) {
           }))
         : [{ label: 'Mesa direta', pct: 100, color: 'var(--accent)' }]
 
-    // Eficiência logística — sem dado real ainda, retorna comingSoon
-    const logistica = {
-      custoMedioT: null,
-      leadTime: null,
-      ocupacaoArmazem: null,
-      quebraContratual: null,
-      slaEntrega: null,
-      nps: null as string | null,
-      npsLabel: 'NPS pendente',
-      comingSoon: true,
-    }
+    // Eficiência logística removida do payload por ora — sem dado real.
+    // Frontend deve ocultar a seção quando ausente.
 
     // KPIs
     const kpis = [
@@ -238,7 +229,6 @@ export async function GET(req: NextRequest) {
       topClientes,
       origemGraos,
       canalVenda,
-      logistica,
       contratosYtd,
       empty: propostasYtd.length === 0,
     })

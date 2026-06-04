@@ -13,15 +13,33 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   if (!nota) return NextResponse.json({ error: 'Não encontrada' }, { status: 404 })
   if (!nota.chave) return NextResponse.json({ error: 'Nota não autorizada' }, { status: 400 })
 
-  // Se já temos URL salva (Supabase Storage), redireciona direto
+  // Se temos URL salva e ela NÃO é fake (legado mock://), redireciona direto.
   if (nota.danfeUrl && !nota.danfeUrl.startsWith('mock://')) {
     return NextResponse.redirect(nota.danfeUrl)
   }
 
   const provider = await getProvider(scope.workspaceId)
-  const r = await provider.baixarDANFE(nota.chave)
-  if ('url' in r) return NextResponse.json({ url: r.url, mock: r.url.startsWith('mock://') })
-  return new NextResponse(new Uint8Array(r as Buffer), {
-    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename=DANFE-${nota.chave}.pdf` },
-  })
+  try {
+    const r = await provider.baixarDANFE(nota.chave)
+    if ('url' in r) {
+      if (r.url.startsWith('mock://')) {
+        return NextResponse.json(
+          { error: 'DANFE indisponível — provider fiscal não configurado.' },
+          { status: 503 },
+        )
+      }
+      return NextResponse.redirect(r.url)
+    }
+    return new NextResponse(new Uint8Array(r as Buffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename=DANFE-${nota.chave}.pdf`,
+      },
+    })
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'DANFE indisponível' },
+      { status: 503 },
+    )
+  }
 }

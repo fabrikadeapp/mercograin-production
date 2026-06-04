@@ -1,25 +1,17 @@
 /**
  * GET /api/fluxo-caixa/resumo
- * Consolida KPIs + projeção + a receber/pagar a partir de Boleto + Proposta.
+ * Consolida KPIs + projeção + a receber/pagar a partir de Boleto + MovimentoFinanceiro.
  *
- * "A pagar" não tem model próprio ainda → MOCK server-side com TODO.
- * "Saldo atual" também não tem fonte de saldo bancário → derivamos
- * (boletos pagos cumulativos – mock-pagar cumulativo) como proxy.
+ * Mudanças vs versão anterior:
+ *  - "A pagar" agora vem de MovimentoFinanceiro (tipo='despesa', !conciliado).
+ *  - SaldoAtual = boletos pagos - despesas conciliadas (proxy honesto).
+ *  - Removidos MOCK_PAGAR_PROX_7D e _flags.pagarMock.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getScope } from '@/lib/auth/scope'
 import { db } from '@/lib/db'
 
 const MESES_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-
-// TODO: criar model FinanceiroPagar e remover este mock
-const MOCK_PAGAR_PROX_7D = [
-  { id: 'mp1', descricao: 'Frete · Transrodo Log.', doc: 'FT-1842', diasOffset: 0, valor: 184000, status: 'vencido' },
-  { id: 'mp2', descricao: 'Armazenagem · CESP', doc: 'AM-0942', diasOffset: 1, valor: 96000, status: 'agendado' },
-  { id: 'mp3', descricao: 'Insumos · Bayer', doc: 'NF-12842', diasOffset: 2, valor: 412000, status: 'agendado' },
-  { id: 'mp4', descricao: 'Folha · 38 funcionários', doc: 'FL-10/26', diasOffset: 5, valor: 318000, status: 'agendado' },
-  { id: 'mp5', descricao: 'Impostos · ICMS-ST', doc: 'GR-091026', diasOffset: 7, valor: 110000, status: 'atenção' },
-]
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +20,7 @@ export async function GET(request: NextRequest) {
     if (!scope) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereOwn: any = scope.whereOwn()
     const now = new Date()
     const in7 = new Date(now.getTime() + 7 * 86400000)
@@ -35,9 +28,25 @@ export async function GET(request: NextRequest) {
     const in90 = new Date(now.getTime() + 90 * 86400000)
     const ago30 = new Date(now.getTime() - 30 * 86400000)
 
-    const [pagosTotal, abertos30, vencidosAbertos, aReceberProx7d, propostasGrao, pagosUlt30, pagosAnt30] = await Promise.all([
+    const [
+      pagosTotal,
+      despesasConciliadasTotal,
+      abertos30,
+      vencidosAbertos,
+      aReceberProx7d,
+      aPagarProx7d,
+      despesasAbertas30,
+      vencidasPagar,
+      propostasGrao,
+      pagosUlt30,
+      pagosAnt30,
+    ] = await Promise.all([
       db.boleto.aggregate({
         where: { ...whereOwn, status: 'pago' },
+        _sum: { valor: true },
+      }),
+      db.movimentoFinanceiro.aggregate({
+        where: { ...whereOwn, tipo: 'despesa', conciliado: true },
         _sum: { valor: true },
       }),
       db.boleto.findMany({
@@ -48,9 +57,7 @@ export async function GET(request: NextRequest) {
         },
         select: { id: true, valor: true, status: true },
       }),
-      db.boleto.count({
-        where: { ...whereOwn, status: 'vencido' },
-      }),
+      db.boleto.count({ where: { ...whereOwn, status: 'vencido' } }),
       db.boleto.findMany({
         where: {
           ...whereOwn,
@@ -68,6 +75,40 @@ export async function GET(request: NextRequest) {
         orderBy: { vencimento: 'asc' },
         take: 10,
       }),
+      db.movimentoFinanceiro.findMany({
+        where: {
+          ...whereOwn,
+          tipo: 'despesa',
+          conciliado: false,
+          data: { gte: now, lte: in7 },
+        },
+        select: {
+          id: true,
+          descricao: true,
+          natureza: true,
+          valor: true,
+          data: true,
+        },
+        orderBy: { data: 'asc' },
+        take: 10,
+      }),
+      db.movimentoFinanceiro.findMany({
+        where: {
+          ...whereOwn,
+          tipo: 'despesa',
+          conciliado: false,
+          data: { lte: in30 },
+        },
+        select: { id: true, valor: true, data: true },
+      }),
+      db.movimentoFinanceiro.count({
+        where: {
+          ...whereOwn,
+          tipo: 'despesa',
+          conciliado: false,
+          data: { lt: now },
+        },
+      }),
       db.proposta.findMany({
         where: { ...whereOwn, status: 'aceita' },
         select: { graos: true, valorTotal: true },
@@ -80,7 +121,10 @@ export async function GET(request: NextRequest) {
         where: {
           ...whereOwn,
           status: 'pago',
-          confirmadoEm: { gte: new Date(ago30.getTime() - 30 * 86400000), lt: ago30 },
+          confirmadoEm: {
+            gte: new Date(ago30.getTime() - 30 * 86400000),
+            lt: ago30,
+          },
         },
         _sum: { valor: true },
       }),
@@ -89,19 +133,25 @@ export async function GET(request: NextRequest) {
     const totalAReceber30d = abertos30.reduce((s, b) => s + Number(b.valor), 0)
     const totalAtrasados = abertos30.filter((b) => b.status === 'vencido').length
 
-    const totalAPagar30d = MOCK_PAGAR_PROX_7D.reduce((s, x) => s + x.valor, 0)
-    const vencidosPagar = MOCK_PAGAR_PROX_7D.filter((x) => x.status === 'vencido').length
+    const totalAPagar30d = despesasAbertas30.reduce(
+      (s, d) => s + Number(d.valor),
+      0,
+    )
 
-    const saldoAtual = Number(pagosTotal._sum.valor || 0) - totalAPagar30d * 0 // proxy: ignora pagamentos por enquanto
+    // Saldo proxy = entradas confirmadas - saídas conciliadas
+    const saldoAtual =
+      Number(pagosTotal._sum.valor || 0) -
+      Number(despesasConciliadasTotal._sum.valor || 0)
     const projecao90 = saldoAtual + totalAReceber30d * 3 - totalAPagar30d * 3
 
     const ult30 = Number(pagosUlt30._sum.valor || 0)
     const ant30 = Number(pagosAnt30._sum.valor || 0)
     const deltaSaldo = ant30 > 0 ? ((ult30 - ant30) / ant30) * 100 : 0
 
-    // Composição: receita por grão (das propostas aceitas)
+    // Composição por grão (propostas aceitas)
     const graoMap: Record<string, number> = { soja: 0, milho: 0, trigo: 0, outros: 0 }
     for (const p of propostasGrao) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const arr = Array.isArray(p.graos) ? (p.graos as any[]) : []
       for (const g of arr) {
         const key = ['soja', 'milho', 'trigo'].includes(g?.grao) ? g.grao : 'outros'
@@ -116,7 +166,7 @@ export async function GET(request: NextRequest) {
       { label: 'Outras receitas', valor: graoMap.outros, pct: (graoMap.outros / totalReceita) * 100, color: 'var(--info)' },
     ]
 
-    // Projeção 14 pontos diários (fluxo simples): receita média/dia – pagar média/dia
+    // Projeção 14 dias (linear simples)
     const recPorDia = totalAReceber30d / 30
     const pagPorDia = totalAPagar30d / 30
     let saldo = saldoAtual
@@ -138,36 +188,42 @@ export async function GET(request: NextRequest) {
       valor: Number(b.valor),
       status: b.status,
     }))
-
-    const aPagarProx7dPayload = MOCK_PAGAR_PROX_7D.map((x) => ({
-      id: x.id,
-      descricao: x.descricao,
-      doc: x.doc,
-      vencimento: new Date(now.getTime() + x.diasOffset * 86400000),
-      valor: x.valor,
-      status: x.status,
+    const aPagarProx7dPayload = aPagarProx7d.map((d) => ({
+      id: d.id,
+      descricao: d.descricao,
+      doc: d.natureza,
+      vencimento: d.data,
+      valor: Number(d.valor),
+      status: d.data < now ? 'vencido' : 'agendado',
     }))
 
     return NextResponse.json({
       saldoAtual,
-      aReceber30d: { total: totalAReceber30d, titulos: abertos30.length, atrasados: totalAtrasados },
-      aPagar30d: { total: totalAPagar30d, compromissos: MOCK_PAGAR_PROX_7D.length, vencidos: vencidosPagar },
+      aReceber30d: {
+        total: totalAReceber30d,
+        titulos: abertos30.length,
+        atrasados: totalAtrasados,
+      },
+      aPagar30d: {
+        total: totalAPagar30d,
+        compromissos: despesasAbertas30.length,
+        vencidos: vencidasPagar,
+      },
       projecao90d: projecao90,
       deltaSaldo,
-      deltaAReceber: 0, // TODO: comparar com 30d atrás
-      deltaAPagar: 0,
-      deltaProjecao: 0,
+      // Deltas comparados com janelas 30d anteriores ainda não calculados —
+      // expostos como null para o frontend renderizar "—".
+      deltaAReceber: null,
+      deltaAPagar: null,
+      deltaProjecao: null,
       composicao,
       projecaoSerie,
       aReceberProx7d: aReceberProx7dPayload,
       aPagarProx7d: aPagarProx7dPayload,
-      _flags: {
-        pagarMock: true, // TODO: criar model FinanceiroPagar
-      },
       vencidosAbertos,
       in90: in90.toISOString(),
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('GET /fluxo-caixa/resumo error:', e)
     return NextResponse.json({ error: 'Erro' }, { status: 500 })
   }
