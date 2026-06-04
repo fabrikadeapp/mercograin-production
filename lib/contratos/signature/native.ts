@@ -51,7 +51,11 @@ export class NativeSignatureProvider implements SignatureProvider {
    */
   async send(payload: SignaturePayload): Promise<SignatureResponse> {
     const providerDocId = `native:${crypto.randomBytes(8).toString('hex')}`
-    const base = this.opts.baseUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? ''
+    const base =
+      this.opts.baseUrl ??
+      process.env.NEXTAUTH_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      ''
 
     // Gera token por signatário. assinaturaId aqui é o providerDocId
     // (será cruzado depois com AssinaturaDigital.id na persistência).
