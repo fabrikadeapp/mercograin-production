@@ -13,18 +13,29 @@ export const config = {
 
 // Rotas públicas — usuário deslogado pode acessar sem ser redirecionado pra login.
 // /ativar/* (purchase-first) e /comprar (compra sem login) são essenciais aqui.
-const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite', '/status', '/ativar', '/comprar']
+const PUBLIC_PATHS = ['/', '/precos', '/sobre', '/contato', '/legal', '/aceite', '/status', '/ativar', '/comprar', '/assinar']
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth
   const path = req.nextUrl.pathname
 
   // S12 M10 — Portal Produtor: auth separada (cookie bh_portal_session).
-  // /portal/[slug]/login e /portal/[slug]/setup são públicos; demais
-  // /portal/* exigem o cookie do portal (validado nas próprias páginas/APIs).
+  // /portal              → entrada multi-corretora (pública)
+  // /portal/[slug]       → home do portal (exige cookie)
+  // /portal/[slug]/login | setup | reset → públicos
+  // /portal/[slug]/contratos/assinar → público (cliente vem do email; token = credencial)
+  // demais /portal/[slug]/* → exigem cookie bh_portal_session
+  if (path === '/portal' || path === '/portal/') {
+    return NextResponse.next()
+  }
   if (path.startsWith('/portal/')) {
     const sub = path.split('/').slice(3).join('/') // após /portal/{slug}/
-    const isPublicPortal = sub === 'login' || sub === 'setup' || sub === ''
+    const isPublicPortal =
+      sub === '' ||
+      sub === 'login' ||
+      sub === 'setup' ||
+      sub === 'reset' ||
+      sub.startsWith('contratos/assinar')
     if (isPublicPortal) return NextResponse.next()
     const hasPortalCookie = !!req.cookies.get('bh_portal_session')?.value
     if (!hasPortalCookie) {
