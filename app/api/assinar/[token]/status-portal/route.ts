@@ -53,7 +53,12 @@ export async function GET(
   const email = (s.email ?? '').toString().toLowerCase().trim()
   const access = email
     ? await db.produtorAccess.findUnique({
-        where: { emailLogin: email },
+        where: {
+          workspaceId_emailLogin: {
+            workspaceId: a.workspaceId,
+            emailLogin: email,
+          },
+        },
         select: { id: true, passwordHash: true, perfilCompletoEm: true, tokenInicial: true },
       })
     : null

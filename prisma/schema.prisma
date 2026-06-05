@@ -767,7 +767,8 @@ model ProdutorAccess {
   workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   clienteId        String    @unique
   cliente          Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  emailLogin       String    @unique
+  /// Email do produtor — único POR workspace (mesmo email pode atender várias corretoras).
+  emailLogin       String
   passwordHash     String?
   tokenInicial     String? // hash bcrypt do token de setup (1-time)
   acessoCriadoEm   DateTime?
@@ -805,7 +806,9 @@ model ProdutorAccess {
   dadosBancarios DadosBancariosCliente[]
   lead           Lead?
 
+  @@unique([workspaceId, emailLogin])
   @@index([workspaceId])
+  @@index([emailLogin])
 }
 
 /// Tokens de reset de senha para clientes da corretora (portal produtor).

@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Email/senha inválidos' }, { status: 400 })
     }
-    const access = await db.produtorAccess.findUnique({
+    const access = await db.produtorAccess.findFirst({
       where: { emailLogin: parsed.data.email.toLowerCase() },
+      orderBy: { ultimoLogin: 'desc' },
     })
     if (!access || !access.ativo || !access.passwordHash) {
       return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 })

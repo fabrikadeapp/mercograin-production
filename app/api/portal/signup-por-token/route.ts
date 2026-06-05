@@ -64,9 +64,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'signatario_sem_email' }, { status: 400 })
   }
 
-  // Se já existe access para esse email — rejeita (usar /login ou /reset).
-  const existente = await db.produtorAccess.findUnique({
-    where: { emailLogin: email },
+  // Se já existe access para esse email NESTE workspace, rejeita (usar /login ou /reset).
+  const existente = await db.produtorAccess.findFirst({
+    where: { emailLogin: email, workspaceId: a.workspaceId },
   })
   if (existente && existente.passwordHash) {
     return NextResponse.json({ error: 'conta_ja_existe_login' }, { status: 409 })

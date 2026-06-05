@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-    const access = await db.produtorAccess.findUnique({
-      where: { emailLogin: parsed.data.email.toLowerCase() },
+    const access = await db.produtorAccess.findFirst({
+      where: { emailLogin: parsed.data.email.toLowerCase(), tokenInicial: { not: null } },
     })
     if (!access || !access.ativo || !access.tokenInicial) {
       return NextResponse.json({ error: 'Token inválido ou já utilizado' }, { status: 400 })

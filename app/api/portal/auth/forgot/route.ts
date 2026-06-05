@@ -26,8 +26,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
   const email = parsed.data.email.toLowerCase()
-  const access = await db.produtorAccess.findUnique({
+  const access = await db.produtorAccess.findFirst({
     where: { emailLogin: email },
+    orderBy: { ultimoLogin: 'desc' },
     include: {
       workspace: { select: { slug: true, name: true } },
       cliente: { select: { nome: true } },

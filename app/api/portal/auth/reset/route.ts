@@ -32,8 +32,9 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     )
   }
-  const access = await db.produtorAccess.findUnique({
+  const access = await db.produtorAccess.findFirst({
     where: { emailLogin: parsed.data.email.toLowerCase() },
+    orderBy: { ultimoLogin: 'desc' },
   })
   if (!access || !access.ativo) {
     return NextResponse.json({ error: 'Link inválido' }, { status: 400 })
