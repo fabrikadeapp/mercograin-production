@@ -13,6 +13,7 @@ import {
   LineChart,
   Menu,
   LogOut,
+  Sprout,
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -36,6 +37,7 @@ export function PortalShell({
   const base = `/portal/${slug}`
   const nav = [
     { href: base, label: 'Início', icon: Home, exact: true },
+    { href: `${base}/solicitar-cotacao`, label: 'Solicitar cotação', icon: Sprout },
     { href: `${base}/propostas`, label: 'Propostas', icon: FileText },
     { href: `${base}/contratos`, label: 'Contratos', icon: FileText },
     { href: `${base}/recebiveis`, label: 'Boletos', icon: Wallet },

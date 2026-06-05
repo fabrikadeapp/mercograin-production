@@ -177,6 +177,8 @@ model Workspace {
   mensagensProdutor      MensagemProdutor[]
   // Leads B2B² — clientes do cliente
   leadsOrigem            Lead[]
+  // Solicitações de cotação iniciadas no portal pelo produtor
+  solicitacoesCotacao    SolicitacaoCotacao[]
   // BH Grain (Lote 2) — Inbox unificado, metas, alertas, regras, health
   conversations          Conversation[]
   conversationMessages   ConversationMessage[]
@@ -703,25 +705,26 @@ model Cliente {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  propostas          Proposta[]
-  contratos          Contrato[]
-  boletos            Boleto[]
-  contratosFuturos   ContratoFuturo[]
-  cargas             OrdemCarga[]        @relation("ClienteCargas")
-  whatsappContacts   WhatsAppContact[]
+  propostas           Proposta[]
+  solicitacoesCotacao SolicitacaoCotacao[]
+  contratos           Contrato[]
+  boletos             Boleto[]
+  contratosFuturos    ContratoFuturo[]
+  cargas              OrdemCarga[]         @relation("ClienteCargas")
+  whatsappContacts    WhatsAppContact[]
   // Originação (Epic 1) — produtor recebe adiantamentos
-  adiantamentos      Adiantamento[]      @relation("ProdutorAdiantamentos")
+  adiantamentos       Adiantamento[]       @relation("ProdutorAdiantamentos")
   // Compliance (Epic 5)
-  talhoes            Talhao[]
+  talhoes             Talhao[]
   // S4 M1 — propriedades rurais (KYC compliance)
-  propriedadesRurais PropriedadeRural[]
-  listaSujaEntries   ListaSuja[]
+  propriedadesRurais  PropriedadeRural[]
+  listaSujaEntries    ListaSuja[]
   // S2 M10
-  pushSubscriptions  PushSubscription[]
+  pushSubscriptions   PushSubscription[]
   // S12 M10 — portal produtor (B2C lite)
-  produtorAccess     ProdutorAccess?
-  documentosProdutor DocumentoProdutor[]
-  mensagensProdutor  MensagemProdutor[]
+  produtorAccess      ProdutorAccess?
+  documentosProdutor  DocumentoProdutor[]
+  mensagensProdutor   MensagemProdutor[]
 
   /// Atribuição comercial: responsável atual pela conta (gerente de conta).
   /// Snapshot por momento — Cliente.responsavel = quem cuida agora.
@@ -927,6 +930,45 @@ model TaxaCambio {
 // PROPOSTAS COMERCIAIS
 // ============================================
 
+/// Solicitação de cotação iniciada PELO produtor no portal.
+/// É um "pré-pedido" que entra na caixa da corretora — o corretor então
+/// aceita e converte em uma Proposta formal.
+model SolicitacaoCotacao {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clienteId        String
+  cliente          Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  /// ProdutorAccess que criou (opcional para registros antigos).
+  produtorAccessId String?
+
+  /// 'venda' | 'compra' (do ponto de vista do produtor: 'venda' = quer vender)
+  tipo             String   @default("venda") @db.VarChar(10)
+  grao             String   @db.VarChar(40) // 'soja' | 'milho' | 'trigo' | 'sorgo' | outro
+  quantidade       Decimal  @db.Decimal(14, 2)
+  unidade          String   @default("t") @db.VarChar(8) // 't' | 'sc'
+  precoAlvo        Decimal? @db.Decimal(15, 2)
+  prazoEntregaDias Int?
+  localEntrega     String?  @db.VarChar(160)
+  observacao       String?  @db.Text
+
+  /// 'pendente' | 'em_analise' | 'convertida' | 'recusada' | 'cancelada'
+  status          String    @default("pendente") @db.VarChar(20)
+  /// Proposta gerada quando a solicitação foi aceita.
+  propostaId      String?   @unique
+  proposta        Proposta? @relation("PropostaFromSolicitacao", fields: [propostaId], references: [id], onDelete: SetNull)
+  /// Quem da corretora respondeu.
+  respondidoPorId String?
+  respondidoEm    DateTime?
+  motivoRecusa    String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([clienteId])
+}
+
 model Proposta {
   id                   String     @id @default(cuid())
   numero               String     @unique @db.VarChar(50)
@@ -956,9 +998,10 @@ model Proposta {
   validadeEm           DateTime
   atualizadaEm         DateTime   @updatedAt
 
-  contratos    Contrato[]
-  notas        PropostaNota[]
-  agendamentos PropostaAgenda[]
+  contratos         Contrato[]
+  notas             PropostaNota[]
+  agendamentos      PropostaAgenda[]
+  solicitacaoOrigem SolicitacaoCotacao? @relation("PropostaFromSolicitacao")
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

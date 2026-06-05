@@ -92,7 +92,7 @@ export function Hero() {
           }}
         >
           <Sparkles className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
-          Mesa de operações para tradings de grãos
+          BH Grain · Plataforma para corretoras e tradings de grãos
         </div>
 
         <h1

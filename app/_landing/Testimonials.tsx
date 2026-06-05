@@ -5,7 +5,7 @@
  * 1. Edite o array `TESTIMONIALS` abaixo. Substitua o objeto com `quote: '__PLACEHOLDER__'`
  *    por um depoimento real (preencha `quote`, `authorName`, `authorRole`).
  * 2. Opcional: suba a logo da corretora em `/public/landing/logo-<empresa>.svg`
- *    e referencie em `companyLogoUrl` (ex.: `/landing/logo-mercograin.svg`).
+ *    e referencie em `companyLogoUrl` (ex.: `/landing/logo-corretora.svg`).
  * 3. Plug no `LandingPage.tsx` entre `<Pricing />` e `<Faq />`:
  *      import { Testimonials } from './Testimonials'
  *      <Testimonials />
@@ -26,13 +26,13 @@ interface Testimonial {
 }
 
 const TESTIMONIALS: Testimonial[] = [
-  // Placeholder — corretora piloto MercoGrain. Trocar por quote real quando disponível.
+  // Placeholder oculto — depoimento real será adicionado quando corretora-piloto autorizar.
   {
-    id: 'mercograin-placeholder',
+    id: 'piloto-placeholder',
     quote: '__PLACEHOLDER__',
     authorName: '',
     authorRole: '',
-    companyName: 'MercoGrain',
+    companyName: '',
   },
 ]
 
