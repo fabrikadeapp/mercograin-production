@@ -186,7 +186,7 @@ export function TemplatePdfDocument({
       <Page size="A4" style={styles.page} wrap>
         {/* Header fixo no topo de cada página */}
         <View style={styles.header} fixed>
-          <PdfLogo customLogoUrl={customLogoUrl ?? null} />
+          <PdfLogo customLogoUrl={customLogoUrl ?? null} brandNome={brandNome ?? null} />
           <View>
             {documentTitle ? (
               <Text style={[styles.headerMeta, { fontWeight: 700, color: '#444' }]}>

@@ -20,6 +20,8 @@ const styles = StyleSheet.create({
 
 export interface PdfLogoProps {
   customLogoUrl?: string | null
+  /** Nome da corretora — usado no fallback quando não há logo PNG/JPG. */
+  brandNome?: string | null
 }
 
 /**
@@ -30,13 +32,37 @@ export interface PdfLogoProps {
  * O componente <Image /> do @react-pdf/renderer aceita URLs http(s), data URLs
  * (data:image/png;base64,...) e paths absolutos do sistema de arquivos.
  */
-export function PdfLogo({ customLogoUrl }: PdfLogoProps) {
-  if (customLogoUrl && customLogoUrl.trim().length > 0) {
+function isSvgUrl(url: string): boolean {
+  return /\.svg(\?|#|$)/i.test(url)
+}
+
+export function PdfLogo({ customLogoUrl, brandNome }: PdfLogoProps) {
+  // react-pdf não renderiza SVG no <Image/> — ignora e usa default em texto.
+  if (customLogoUrl && customLogoUrl.trim().length > 0 && !isSvgUrl(customLogoUrl)) {
     try {
       return <Image src={customLogoUrl} style={styles.customLogo} />
     } catch {
       // fall through to default
     }
+  }
+  // Fallback dinâmico: usa o nome da corretora quando disponível.
+  const brand = (brandNome ?? '').trim()
+  if (brand) {
+    const initials = brand
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
+    return (
+      <View style={styles.logoContainer}>
+        <View style={styles.logoMark}>
+          <Text style={styles.logoMarkText}>{initials || 'M'}</Text>
+        </View>
+        <Text style={styles.logoBrand}>{brand}</Text>
+      </View>
+    )
   }
   return (
     <View style={styles.logoContainer}>
