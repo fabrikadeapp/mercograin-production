@@ -76,6 +76,32 @@ export function AssinaturaDigitalPanel({
     reload()
   }, [contratoId])
 
+  async function abrirModal() {
+    // Tenta pré-carregar dados do cliente para 1-clique enviar.
+    try {
+      const r = await fetch(`/api/contratos/${contratoId}/signatarios-sugeridos`)
+      if (r.ok) {
+        const j = await r.json()
+        const s = j?.sugestoes?.[0]
+        if (s && (s.name || s.cpfCnpj || s.email)) {
+          setSignatorios([
+            {
+              ordem: 0,
+              name: s.name ?? '',
+              cpfCnpj: s.cpfCnpj ?? '',
+              email: s.email ?? '',
+              phone: s.phone ?? '',
+              authMode: 'simple',
+            },
+          ])
+        }
+      }
+    } catch {
+      // ignora — modal abre com campos vazios
+    }
+    setOpenSendModal(true)
+  }
+
   async function enviar() {
     if (signatorios.some((s) => !s.name || !s.cpfCnpj)) {
       toast.error('Preencha nome e CPF/CNPJ de todos os signatários')
@@ -171,7 +197,7 @@ export function AssinaturaDigitalPanel({
           <p className="text-fg-2 text-small">
             Nenhum fluxo de assinatura criado ainda.
           </p>
-          <Button leftIcon={<Send className="h-4 w-4" />} onClick={() => setOpenSendModal(true)}>
+          <Button leftIcon={<Send className="h-4 w-4" />} onClick={abrirModal}>
             Enviar para assinatura
           </Button>
         </div>
