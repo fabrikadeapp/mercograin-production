@@ -326,3 +326,78 @@ html.portal-dark {
   color: var(--portal-ink-mute);
   font-size: 13px;
 }
+
+/* ============================================================ */
+/* Contraste global — força inputs/tabelas/textos a usar tokens  */
+/* do portal, sem dependência de tailwind genérico.              */
+/* ============================================================ */
+.portal-root input,
+.portal-root select,
+.portal-root textarea {
+  background: var(--portal-surface) !important;
+  color: var(--portal-ink) !important;
+  border: 1px solid var(--portal-border) !important;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.portal-root input::placeholder,
+.portal-root textarea::placeholder {
+  color: var(--portal-ink-mute) !important;
+  opacity: 0.8;
+}
+.portal-root input:focus,
+.portal-root select:focus,
+.portal-root textarea:focus {
+  outline: 2px solid var(--portal-accent);
+  outline-offset: 1px;
+}
+
+.portal-root table {
+  color: var(--portal-ink);
+}
+.portal-root table th {
+  color: var(--portal-ink-mute);
+  background: var(--portal-surface-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+}
+.portal-root table td {
+  color: var(--portal-ink);
+}
+.portal-root table tr {
+  border-top: 1px solid var(--portal-border);
+}
+
+/* Texto em descrições/labels que apareciam transparentes demais */
+.portal-root .text-gray-500,
+.portal-root .text-gray-600,
+.portal-root .text-gray-700 {
+  color: var(--portal-ink-dim) !important;
+}
+.portal-root .text-gray-900,
+.portal-root .text-black {
+  color: var(--portal-ink) !important;
+}
+.portal-root h1,
+.portal-root h2,
+.portal-root h3,
+.portal-root h4 {
+  color: var(--portal-ink);
+}
+
+/* Cards/boxes do tailwind antigo */
+.portal-root .bg-white {
+  background: var(--portal-surface) !important;
+}
+.portal-root .bg-gray-50 {
+  background: var(--portal-surface-2) !important;
+}
+.portal-root .border,
+.portal-root .border-t,
+.portal-root .border-b {
+  border-color: var(--portal-border) !important;
+}

@@ -42,9 +42,8 @@ export function PortalShell({
     { href: `${base}/contratos`, label: 'Contratos', icon: FileText },
     { href: `${base}/recebiveis`, label: 'Boletos', icon: Wallet },
     { href: `${base}/documentos`, label: 'Documentos', icon: Folder },
-    { href: `${base}/chat`, label: 'Chat', icon: MessageSquare },
-    { href: `${base}/cotacoes`, label: 'Cotações', icon: LineChart },
-    { href: `${base}/perfil`, label: 'Perfil', icon: User },
+    { href: `${base}/chat`, label: 'Falar com corretora', icon: MessageSquare },
+    { href: `${base}/perfil`, label: 'Meu perfil', icon: User },
   ]
 
   return (
