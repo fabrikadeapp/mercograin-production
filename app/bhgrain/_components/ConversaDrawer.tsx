@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { Send, Loader2 } from 'lucide-react'
 import { Drawer } from './Drawer'
 import { Skeleton, ErrorState, EmptyState, Badge, useJson } from './_shared'
 
@@ -139,12 +141,84 @@ export function ConversaDrawer({
               })}
           </ul>
 
-          <div className="mt-4 p-3 rounded border text-[11px] text-vg-fg-3" style={{ borderColor: 'var(--vg-border-subtle)' }}>
-            Envio de resposta direto pelo BH Grain ainda não está disponível.
-            Use o canal original (WhatsApp/Portal/IG) para responder.
-          </div>
+          {conv?.clienteId ? (
+            <ReplyForm
+              clienteId={conv.clienteId}
+              channelLabel={CHANNEL_LABEL[conv.channel] ?? conv.channel}
+              onSent={() => window.location.reload()}
+            />
+          ) : (
+            <div className="mt-4 p-3 rounded border text-[11px] text-vg-fg-3" style={{ borderColor: 'var(--vg-border-subtle)' }}>
+              Esta conversa não está vinculada a um cliente — responda pelo canal original.
+            </div>
+          )}
         </div>
       )}
     </Drawer>
+  )
+}
+
+function ReplyForm({
+  clienteId,
+  channelLabel,
+  onSent,
+}: {
+  clienteId: string
+  channelLabel: string
+  onSent: () => void
+}) {
+  const [texto, setTexto] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [ok, setOk] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!texto.trim()) return
+    setBusy(true)
+    setErro(null)
+    setOk(false)
+    try {
+      const r = await fetch(`/api/clientes/${clienteId}/mensagens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) {
+        setErro(j.error ?? 'erro')
+        return
+      }
+      setTexto('')
+      setOk(true)
+      setTimeout(onSent, 800)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4 flex flex-col gap-2">
+      <div className="text-mini text-fg-2">
+        Responder via portal · também notifica por email + WhatsApp ({channelLabel})
+      </div>
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder="Digite sua resposta…"
+        rows={3}
+        className="w-full rounded border border-border-1 bg-bg-1 p-2 text-small text-fg-1"
+      />
+      {erro && <div className="text-mini text-neg">Erro: {erro}</div>}
+      {ok && <div className="text-mini text-pos">Mensagem enviada (portal + email + WhatsApp).</div>}
+      <button
+        type="submit"
+        disabled={busy || !texto.trim()}
+        className="inline-flex items-center justify-center gap-1.5 rounded bg-accent px-3 py-1.5 text-small font-medium text-bg-0 disabled:opacity-50"
+      >
+        {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+        Enviar
+      </button>
+    </form>
   )
 }

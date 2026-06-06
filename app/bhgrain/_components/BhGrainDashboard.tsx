@@ -3,14 +3,12 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Sparkles, Zap, Filter as FilterIcon, BarChart3, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import { PropostasAguardandoCard } from './PropostasAguardandoCard'
 import { InboxCard } from './InboxCard'
 import { PrecosCard } from './PrecosCard'
-import { PropostasCard } from './PropostasCard'
-import { PipelineCard } from './PipelineCard'
 import { IndicadoresCard } from './IndicadoresCard'
 import { FaturamentoMetaCard } from './FaturamentoMetaCard'
 import { HealthCard } from './HealthCard'
+import { FluxoCards } from './FluxoCards'
 import { PropostaDetailDrawer } from './PropostaDetailDrawer'
 import { ConversaDrawer } from './ConversaDrawer'
 import { DateRangePopover } from './DateRangePopover'
@@ -70,8 +68,6 @@ export function BhGrainDashboard({
       .then((j) => setInsight(j as InsightData))
       .catch(() => setInsight({ show: false }))
   }, [])
-
-  const openProposta = useCallback((id: string) => setPropostaId(id), [])
 
   const eyebrowTimestamp = useMemo(() => {
     const d = new Date()
@@ -312,38 +308,26 @@ export function BhGrainDashboard({
       </FilterBar>
 
       {/*
-        Nova organização (conforme briefing):
-        - Linha 1: Inbox unificado (esq) + Preços ao vivo (dir)
-        - Linha 2: Pipeline de propostas (esq, span 2) + Indicadores comerciais (dir)
-        - Linha 3: Clientes + Propostas + Faturamento & Meta (3 col)
-        - Linha 4: Health de integrações (horizontal full-width)
-
-        Mobile mantém ordem priorizada: Inbox → Propostas → Pipeline → Preços → Clientes → Indicadores → Faturamento.
+        Nova organização — fluxo-céntrica:
+        - Linha 1: 4 cards de fluxo (Solicitações → Revisão → No cliente → Contratos)
+        - Linha 2: Inbox unificado + Preços ao vivo (operacional)
+        - Linha 3: Indicadores comerciais + Faturamento & Meta (BI)
+        - Linha 4: Health de integrações
       */}
 
-      {/* Linha 1 — Inbox + Preços (com abas Spot/CBOT/Câmbio integradas).
-          Não reagem aos filtros do dashboard (são streams independentes). */}
+      {/* Linha 1 — Fluxo principal das 4 etapas */}
+      <FluxoCards />
+
+      {/* Linha 2 — Inbox unificado + Preços ao vivo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <InboxCard onOpenConversa={setConversaId} />
         <PrecosCard />
       </div>
 
-      {/* Cards que reagem ao FilterBar: Pipeline, Indicadores, Clientes,
-          Propostas, Faturamento. Tudo dentro do Provider compartilhado. */}
+      {/* Linha 3 — Indicadores + Faturamento (BI/análise) */}
       <DashboardFiltersProvider state={{ periodo, commodity, customRange }}>
-        {/* Linha 2 — Pipeline (span 2) + Indicadores */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2">
-            <PipelineCard onOpenProposta={openProposta} />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <IndicadoresCard />
-        </div>
-
-        {/* Linha 3 — Aguardando envio + Enviadas + Faturamento & Meta
-            (Clientes movido pra navbar — acessível por Mesa → Clientes) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PropostasAguardandoCard onOpenProposta={openProposta} />
-          <PropostasCard onOpenProposta={openProposta} />
           <FaturamentoMetaCard />
         </div>
       </DashboardFiltersProvider>

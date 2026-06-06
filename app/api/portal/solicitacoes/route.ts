@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { requirePortal } from '@/lib/portal-produtor/scope'
 import { sendEmail } from '@/lib/email-service'
 import { logAudit } from '@/lib/audit/log'
+import { autoConverterSolicitacao } from '@/lib/solicitacoes/auto-converter'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -74,6 +75,11 @@ export async function POST(req: NextRequest) {
     },
   })
 
+  // Tenta converter automaticamente em proposta (cruzando com cotação CEPEA).
+  // Se OK, a solicitação vai direto para "em_analise" e proposta fica em rascunho
+  // aguardando revisão humana. Se falhar, fica pendente no card "Não processadas".
+  const autoResult = await autoConverterSolicitacao(sol)
+
   // Email para a equipe da corretora
   const staffEmails = await db.user.findMany({
     where: {
@@ -122,5 +128,9 @@ export async function POST(req: NextRequest) {
     mudancas: { tipo: d.tipo, grao: d.grao, quantidade: d.quantidade },
   }).catch(() => undefined)
 
-  return NextResponse.json({ ok: true, solicitacao: sol })
+  return NextResponse.json({
+    ok: true,
+    solicitacao: sol,
+    autoConvert: autoResult,
+  })
 }
