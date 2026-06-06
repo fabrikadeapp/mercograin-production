@@ -1,18 +1,66 @@
 'use client'
 import * as React from 'react'
-import { TopNav } from './TopNav'
+import { useSession } from 'next-auth/react'
+import { AreaShell } from './AreaShell'
 
 export interface AppShellProps {
   children: React.ReactNode
 }
 
+interface NavState {
+  features: Record<string, boolean>
+  permittedAreas?: string[]
+  userName?: string
+  workspaceName?: string
+  loaded: boolean
+}
+
+/**
+ * AppShell — topbar + sidebar contextual.
+ *
+ * Busca features habilitadas via /api/me/nav-context (server resolve).
+ * Enquanto carrega, exibe o shell em modo neutro (sem features).
+ */
 export function AppShell({ children }: AppShellProps) {
+  const { data: session } = useSession()
+  const [state, setState] = React.useState<NavState>({
+    features: {},
+    loaded: false,
+  })
+
+  React.useEffect(() => {
+    let cancel = false
+    if (!session?.user) {
+      setState((s) => ({ ...s, loaded: true }))
+      return
+    }
+    fetch('/api/me/nav-context')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancel || !j) return
+        setState({
+          features: j.features ?? {},
+          permittedAreas: j.permittedAreas,
+          userName: j.userName,
+          workspaceName: j.workspaceName,
+          loaded: true,
+        })
+      })
+      .catch(() => setState((s) => ({ ...s, loaded: true })))
+    return () => {
+      cancel = true
+    }
+  }, [session?.user])
+
   return (
-    <div className="min-h-screen bg-bg-0">
-      <TopNav />
-      <main className="flex-1 min-w-0">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-6 md:py-8">{children}</div>
-      </main>
-    </div>
+    <AreaShell
+      enabledFeatures={state.features}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      permittedAreas={state.permittedAreas as any}
+      userName={state.userName}
+      workspaceName={state.workspaceName}
+    >
+      {children}
+    </AreaShell>
   )
 }

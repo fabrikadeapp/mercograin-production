@@ -11,22 +11,25 @@
  * têm acesso a TODAS as áreas independente desse array.
  */
 
-export const AREAS = ['mesa', 'financeiro', 'fiscal', 'gestao'] as const
+export const AREAS = ['mesa', 'operacao', 'financeiro', 'gestao'] as const
 export type Area = (typeof AREAS)[number]
 
 export const AREA_LABEL: Record<Area, string> = {
   mesa: 'Mesa',
+  operacao: 'Operação',
   financeiro: 'Financeiro',
-  fiscal: 'Fiscal',
   gestao: 'Gestão',
 }
 
 export const AREA_DESCRICAO: Record<Area, string> = {
   mesa: 'Vendas, propostas, clientes, cotações e contratos.',
-  financeiro: 'Tesouraria, movimentos, conciliação bancária e DRE.',
-  fiscal: 'Notas fiscais, livros, SPED e compliance tributário.',
-  gestao: 'Metas, indicadores executivos, equipe e configurações.',
+  operacao: 'Logística, romaneios, estoque e compliance ambiental.',
+  financeiro: 'Tesouraria, fluxo de caixa, boletos, DRE e relatórios.',
+  gestao: 'Equipe, configurações, fiscal, integrações e BI executivo.',
 }
+
+// Compatibilidade: código legado pode referenciar 'fiscal' como área separada.
+// Agora 'fiscal' é redirecionado para 'gestao'.
 
 /**
  * Mapeamento prefix-rota → área. Verificado por prefixo (startsWith).
@@ -46,9 +49,14 @@ const ROUTE_AREAS: Array<{ prefix: string; area: Area }> = [
   { prefix: '/auditoria', area: 'gestao' },
   { prefix: '/webhooks', area: 'gestao' },
 
-  // Fiscal / tributário
-  { prefix: '/fiscal', area: 'fiscal' },
-  { prefix: '/eudr', area: 'fiscal' },
+  // Fiscal / compliance — agrupado em Gestão.
+  { prefix: '/fiscal', area: 'gestao' },
+
+  // Operação — logística, romaneios, compliance ambiental
+  { prefix: '/operacao', area: 'operacao' },
+  { prefix: '/logistica', area: 'operacao' },
+  { prefix: '/propriedades', area: 'operacao' },
+  { prefix: '/eudr', area: 'operacao' },
 
   // Financeiro / tesouraria
   { prefix: '/financeiro', area: 'financeiro' },
@@ -75,9 +83,6 @@ const ROUTE_AREAS: Array<{ prefix: string; area: Area }> = [
   { prefix: '/futuros', area: 'mesa' },
   { prefix: '/risco', area: 'mesa' },
   { prefix: '/originacao', area: 'mesa' },
-  { prefix: '/operacao', area: 'mesa' },
-  { prefix: '/logistica', area: 'mesa' },
-  { prefix: '/propriedades', area: 'mesa' },
   { prefix: '/classificados', area: 'mesa' },
   { prefix: '/whatsapp', area: 'mesa' },
   { prefix: '/aprovacoes', area: 'mesa' },
@@ -171,10 +176,10 @@ export function getDefaultRouteFor(user: AreaAccessUser): string {
  * Entry point (página inicial) de cada área.
  */
 export const AREA_ENTRY: Record<Area, string> = {
-  mesa: '/bhgrain',
+  mesa: '/dashboard',
+  operacao: '/operacao',
   financeiro: '/financeiro',
-  fiscal: '/fiscal',
-  gestao: '/admin-empresa',
+  gestao: '/configuracoes',
 }
 
 /**
@@ -218,24 +223,22 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
     { href: '/relatorios/dre', label: 'DRE' },
     { href: '/relatorios/aging-pagamentos', label: 'Aging' },
   ],
-  fiscal: [
-    { href: '/fiscal', label: 'Dashboard' },
-    { href: '/fiscal/notas', label: 'NF-e' },
-    { href: '/fiscal/sped', label: 'SPED' },
-    { href: '/fiscal/guias', label: 'Guias' },
-    { href: '/fiscal/simulador-uf', label: 'Simulador UF' },
-    { href: '/fiscal/configuracao', label: 'Configuração' },
-    { href: '/eudr', label: 'EUDR' },
-    { href: '/auditoria', label: 'Auditoria' },
+  operacao: [
+    { href: '/operacao', label: 'Visão da operação' },
+    { href: '/logistica', label: 'Logística' },
+    { href: '/propriedades', label: 'Propriedades' },
+    { href: '/eudr', label: 'EUDR / compliance ambiental' },
   ],
   gestao: [
-    { href: '/admin-empresa', label: 'Dashboard' },
+    { href: '/configuracoes', label: 'Configurações' },
     { href: '/gestao/equipe', label: 'Equipe' },
     { href: '/configuracoes/empresa', label: 'Empresa' },
     { href: '/configuracoes/integracoes', label: 'Integrações' },
     { href: '/configuracoes/ai', label: 'Agente IA' },
     { href: '/relatorios/clevel', label: 'C-Level BI' },
-    { href: '/assinatura', label: 'Assinatura' },
-    { href: '/configuracoes', label: 'Configurações' },
+    { href: '/assinatura', label: 'Plano & assinatura' },
+    { href: '/fiscal', label: 'Fiscal & SPED' },
+    { href: '/auditoria', label: 'Auditoria' },
+    { href: '/webhooks', label: 'Webhooks' },
   ],
 }
