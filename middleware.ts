@@ -117,7 +117,17 @@ export default auth((req) => {
     // ou /api/* (chamadas internas do app).
     const isPerfilPath = path === '/perfil' || path.startsWith('/perfil/')
     const isApiPath = path.startsWith('/api/')
-    if (isAdmin && !hasWorkspace && !isPerfilPath && !isApiPath && !isPublic && !path.startsWith('/auth')) {
+    const isAdminAreaPath = path === '/admin' || path.startsWith('/admin/')
+    // Super-admin (role=admin sem workspace) SÓ pode estar em /admin, /perfil ou /api.
+    // Qualquer outra rota → manda para /admin sem exceção.
+    if (
+      isAdmin &&
+      !hasWorkspace &&
+      !isAdminAreaPath &&
+      !isPerfilPath &&
+      !isApiPath &&
+      !path.startsWith('/auth')
+    ) {
       return NextResponse.redirect(new URL('/admin', req.url))
     }
 
