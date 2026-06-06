@@ -21,6 +21,8 @@ import { DashboardFiltersProvider } from './DashboardFiltersContext'
 interface Props {
   firstName: string
   workspaceName: string
+  /** Features habilitadas no workspace. Cards opcionais conferem aqui. */
+  enabledFeatures?: Record<string, boolean>
 }
 
 type Periodo = 'hoje' | '7d' | '15d' | '30d' | 'custom'
@@ -42,7 +44,15 @@ interface InsightData {
   propostasCount?: number
 }
 
-export function BhGrainDashboard({ firstName, workspaceName: _workspaceName }: Props) {
+export function BhGrainDashboard({
+  firstName,
+  workspaceName: _workspaceName,
+  enabledFeatures = {},
+}: Props) {
+  // Helper para mostrar cards opcionais
+  const has = (key: string) => enabledFeatures[key] === true
+  // No-op para evitar TS warning quando nenhum card opcional ainda usa
+  void has
   const [propostaId, setPropostaId] = useState<string | null>(null)
   const [conversaId, setConversaId] = useState<string | null>(null)
   const [periodo, setPeriodo] = useState<Periodo>('30d')

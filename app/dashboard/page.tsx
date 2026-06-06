@@ -9,6 +9,7 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { loadFeaturesFor } from '@/lib/features'
 import { AppShell } from '@/components/ui/phb'
 import { BhGrainDashboard } from '@/app/bhgrain/_components/BhGrainDashboard'
 
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
   const scope = await getScope()
   if (!scope) redirect('/auth/login')
 
-  const [user, workspace] = await Promise.all([
+  const [user, workspace, features] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: { nome: true, email: true },
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
       where: { id: scope.workspaceId },
       select: { name: true },
     }),
+    loadFeaturesFor(scope.workspaceId).catch(() => ({})),
   ])
 
   const firstName =
@@ -42,6 +44,7 @@ export default async function DashboardPage() {
       <BhGrainDashboard
         firstName={firstName}
         workspaceName={workspace?.name ?? 'Workspace'}
+        enabledFeatures={features as Record<string, boolean>}
       />
     </AppShell>
   )
