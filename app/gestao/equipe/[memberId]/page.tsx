@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { BhGrainShell } from '@/app/bhgrain/_components/BhGrainShell'
+import { AppShell } from '@/components/ui/phb'
 import { MemberPerformance } from './_components/MemberPerformance'
 
 export const dynamic = 'force-dynamic'
@@ -56,15 +56,8 @@ export default async function MemberPage({
   if (!member) notFound()
 
   return (
-    <BhGrainShell
-      userName={user?.nome ?? user?.email ?? null}
-      workspaceName={workspace?.name ?? null}
-      userEmail={user?.email ?? null}
-      userRole={user?.role ?? null}
-      workspaceRole={membership?.role ?? null}
-      areasPermitidas={membership?.areasPermitidas ?? null}
-    >
+    <AppShell>
       <MemberPerformance memberId={member.id} memberName={member.user?.nome ?? member.email} />
-    </BhGrainShell>
+    </AppShell>
   )
 }

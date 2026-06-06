@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import Link from 'next/link'
-import { BhGrainShell } from '@/app/bhgrain/_components/BhGrainShell'
+import { AppShell } from '@/components/ui/phb'
 import { Mail, User, Building, Calendar, Shield, ArrowRight } from 'lucide-react'
 import { getScope } from '@/lib/auth/scope'
 
@@ -41,14 +41,7 @@ export default async function PerfilPage() {
   if (!user) redirect('/auth/login')
 
   return (
-    <BhGrainShell
-      userName={user.nome ?? user.email}
-      workspaceName={workspace?.name ?? null}
-      userEmail={user.email}
-      userRole={user.role}
-      workspaceRole={membership?.role ?? null}
-      areasPermitidas={membership?.areasPermitidas ?? null}
-    >
+    <AppShell>
       <div className="space-y-4">
         <header style={{ paddingTop: 4 }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>
@@ -106,7 +99,7 @@ export default async function PerfilPage() {
           />
         </section>
       </div>
-    </BhGrainShell>
+    </AppShell>
   )
 }
 

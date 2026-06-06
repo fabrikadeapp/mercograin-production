@@ -6,7 +6,7 @@ import {
   resolveMesaScope,
   wherePropostaMesa,
 } from '@/lib/equipe/scope-mesa'
-import { BhGrainShell } from '@/app/bhgrain/_components/BhGrainShell'
+import { AppShell } from '@/components/ui/phb'
 import { PropostasAutorizacaoBoard } from './_components/PropostasAutorizacaoBoard'
 
 export const dynamic = 'force-dynamic'
@@ -55,15 +55,8 @@ export default async function PropostasAutorizacaoPage() {
   ])
 
   return (
-    <BhGrainShell
-      userName={user?.nome ?? user?.email ?? null}
-      workspaceName={workspace?.name ?? null}
-      userEmail={user?.email ?? null}
-      userRole={user?.role ?? null}
-      workspaceRole={membership?.role ?? null}
-      areasPermitidas={membership?.areasPermitidas ?? null}
-    >
+    <AppShell>
       <PropostasAutorizacaoBoard initial={propostas as any} />
-    </BhGrainShell>
+    </AppShell>
   )
 }

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { BhGrainShell } from '@/app/bhgrain/_components/BhGrainShell'
+import { AppShell } from '@/components/ui/phb'
 import { isFeatureEnabled } from '@/lib/features'
 
 export const dynamic = 'force-dynamic'
@@ -67,14 +67,7 @@ export default async function LauraPage() {
   ).length
 
   return (
-    <BhGrainShell
-      userName={user?.nome ?? user?.email ?? null}
-      workspaceName={workspace?.name ?? null}
-      userEmail={user?.email ?? null}
-      userRole={user?.role ?? null}
-      workspaceRole={membership?.role ?? null}
-      areasPermitidas={membership?.areasPermitidas ?? null}
-    >
+    <AppShell>
       <div className="space-y-4">
         <header style={{ paddingTop: 4 }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>
@@ -254,7 +247,7 @@ export default async function LauraPage() {
           </table>
         </section>
       </div>
-    </BhGrainShell>
+    </AppShell>
   )
 }
 

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { PageHeader, Card, KPICard } from '@/components/ui/phb'
-import { BhGrainShellServer } from '@/app/_shared/BhGrainShellServer'
+import { AppShell } from '@/components/ui/phb'
 import { FileText, FileWarning, FileCheck, Cog, Receipt } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -40,7 +40,7 @@ export default async function FiscalHubPage() {
   const competenciaAtual = `${hoje.getFullYear()}${String(hoje.getMonth() + 1).padStart(2, '0')}`
 
   return (
-    <BhGrainShellServer>
+    <AppShell>
       <PageHeader
         eyebrow="Operações · Fiscal"
         title="Fiscal NF-e + SPED"
@@ -176,6 +176,6 @@ export default async function FiscalHubPage() {
           </div>
         </Card>
       )}
-    </BhGrainShellServer>
+    </AppShell>
   )
 }

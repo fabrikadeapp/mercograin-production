@@ -35,7 +35,6 @@ export * from './feedback/EmptyState'
 export * from './feedback/Skeleton'
 
 // Shell
-export * from './shell/Sidebar'
 export * from './shell/PageHeader'
 export * from './shell/AppShell'
 export * from './shell/PaletteSwitcher'

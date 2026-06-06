@@ -15,7 +15,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { PageHeader, Card } from '@/components/ui/phb'
-import { BhGrainShellServer } from '@/app/_shared/BhGrainShellServer'
+import { AppShell } from '@/components/ui/phb'
 import { getScope } from '@/lib/auth/scope'
 import { loadFinanceiroSnapshot } from '@/lib/financeiro/dashboard-snapshot'
 import { ReceitaDespesaChart } from './_components/ReceitaDespesaChart'
@@ -78,7 +78,7 @@ export default async function FinanceiroHub() {
   const mesLabel = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   return (
-    <BhGrainShellServer>
+    <AppShell>
       <PageHeader
         eyebrow={`Financeiro · ${mesLabel.toUpperCase()}`}
         title="Resultado do mês"
@@ -348,7 +348,7 @@ export default async function FinanceiroHub() {
           )}
         </Card>
       </div>
-    </BhGrainShellServer>
+    </AppShell>
   )
 }
 
