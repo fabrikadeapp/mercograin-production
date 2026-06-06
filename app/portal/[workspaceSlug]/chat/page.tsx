@@ -61,24 +61,41 @@ export default function ChatPage() {
     <div className="flex h-[70vh] flex-col rounded-lg border bg-white">
       <div className="border-b p-3 font-medium">Chat com a corretora</div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
-        {msgs.map((m) => (
-          <div
-            key={m.id}
-            className={
-              'max-w-[75%] rounded-lg px-3 py-2 text-sm ' +
-              (m.remetente === 'produtor'
-                ? 'ml-auto bg-green-600 text-white'
-                : 'mr-auto bg-gray-100 text-gray-900')
-            }
-          >
-            <div>{m.texto}</div>
-            <div className="mt-1 text-[10px] opacity-70">
-              {new Date(m.createdAt).toLocaleString('pt-BR')}
+        {msgs.map((m) => {
+          const isProd = m.remetente === 'produtor'
+          return (
+            <div
+              key={m.id}
+              style={{
+                maxWidth: '75%',
+                marginLeft: isProd ? 'auto' : 0,
+                marginRight: isProd ? 0 : 'auto',
+                padding: '8px 12px',
+                borderRadius: 12,
+                fontSize: 14,
+                background: isProd ? 'var(--portal-accent)' : 'var(--portal-surface-2)',
+                color: isProd ? '#ffffff' : 'var(--portal-ink)',
+                border: isProd
+                  ? '1px solid var(--portal-accent-deep)'
+                  : '1px solid var(--portal-border)',
+              }}
+            >
+              <div style={{ lineHeight: 1.4 }}>{m.texto}</div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 10,
+                  opacity: 0.85,
+                  color: isProd ? '#ffffff' : 'var(--portal-ink-mute)',
+                }}
+              >
+                {new Date(m.createdAt).toLocaleString('pt-BR')}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         {msgs.length === 0 && (
-          <div className="py-6 text-center text-sm text-gray-500">Nenhuma mensagem ainda.</div>
+          <div className="portal-empty">Nenhuma mensagem ainda.</div>
         )}
         <div ref={endRef} />
       </div>

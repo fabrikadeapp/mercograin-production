@@ -76,7 +76,12 @@ export function RecebiveisView() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Recebíveis</h1>
+      <h1 className="text-2xl font-semibold">Boletos</h1>
+      <p style={{ fontSize: 13, color: 'var(--portal-ink-dim)', marginTop: -4, marginBottom: 8 }}>
+        Os boletos são emitidos pela corretora quando o contrato é fechado.
+        Você os recebe aqui com o link para baixar PDF e o número para copiar.
+        Em caso de dúvidas sobre vencimento ou valor, fale com a sua corretora pelo chat.
+      </p>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Kpi label="Em aberto" valor={data.resumo.totalAberto} cor="#1a73e8" />
