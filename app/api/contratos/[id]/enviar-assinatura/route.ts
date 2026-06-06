@@ -165,11 +165,38 @@ export async function POST(
           .filter((it) => it.quantidadeSc > 0 || it.precoSc > 0)
       : []
 
+    // Coleta dados do staff que está assinando/enviando — entra como
+    // assinatura prévia no PDF (Lei 14.063/2020 art. 4º).
+    const staffUser = await db.user.findUnique({
+      where: { id: scope.userId },
+      select: { nome: true, email: true },
+    })
+    const staffMember = await db.workspaceMember.findFirst({
+      where: { workspaceId: scope.workspaceId, userId: scope.userId },
+      select: { cargo: true },
+    })
+    const staffIp =
+      req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+      req.headers.get('x-real-ip') ??
+      null
+
     const pdfBuffer = (await renderTemplateToPdfBuffer(resolved, {
       customLogoUrl: empresa?.logoUrl ?? null,
       itensGrao,
       documentTitle: `Contrato ${contrato.numero}`,
       brandNome: empresa?.nomeFantasia || empresa?.razaoSocial || undefined,
+      assinaturaStaff: {
+        nome: staffUser?.nome ?? staffUser?.email ?? 'Representante',
+        cargo: staffMember?.cargo ?? null,
+        email: staffUser?.email ?? null,
+        assinadoEm: new Date().toISOString(),
+        ip: staffIp,
+        empresaNome:
+          empresa?.razaoSocial ||
+          empresa?.nomeFantasia ||
+          undefined,
+        empresaCnpj: empresa?.cnpj ?? null,
+      },
     })) as Buffer
 
     const pdfHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex')

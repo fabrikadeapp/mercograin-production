@@ -141,6 +141,23 @@ function renderBlock(node: any, key: any): any {
   }
 }
 
+export interface AssinaturaStaff {
+  /** Nome do staff da corretora que enviou o contrato. */
+  nome: string
+  /** Cargo na corretora (opcional). */
+  cargo?: string | null
+  /** Email para auditoria. */
+  email?: string | null
+  /** Data/hora do envio (ISO). */
+  assinadoEm: string
+  /** IP do staff no momento do envio. */
+  ip?: string | null
+  /** Razão social/nome fantasia da corretora. */
+  empresaNome?: string | null
+  /** CNPJ da corretora. */
+  empresaCnpj?: string | null
+}
+
 export interface TemplatePdfDocumentProps {
   resolvedContent: any
   customLogoUrl?: string | null
@@ -148,6 +165,8 @@ export interface TemplatePdfDocumentProps {
   documentTitle?: string
   /** Marca da corretora (workspace) que emite o documento. */
   brandNome?: string
+  /** Assinatura prévia do staff que enviou o contrato. */
+  assinaturaStaff?: AssinaturaStaff
 }
 
 export function TemplatePdfDocument({
@@ -156,6 +175,7 @@ export function TemplatePdfDocument({
   itensGrao,
   documentTitle,
   brandNome,
+  assinaturaStaff,
 }: TemplatePdfDocumentProps) {
   const generatedAt = new Date().toLocaleString('pt-BR', {
     dateStyle: 'short',
@@ -183,6 +203,79 @@ export function TemplatePdfDocument({
         {/* Conteúdo Tiptap renderizado */}
         {renderBlock(resolvedContent, 'root')}
 
+        {/* Assinatura prévia do staff (vendedor/corretora) */}
+        {assinaturaStaff ? (
+          <View
+            style={{
+              marginTop: 32,
+              padding: 14,
+              border: '1px solid #0a8a3a',
+              borderRadius: 6,
+              backgroundColor: '#f0fdf4',
+            }}
+            wrap={false}
+          >
+            <Text
+              style={{
+                fontSize: 9,
+                color: '#0a5f2a',
+                textTransform: 'uppercase',
+                letterSpacing: 0.6,
+                marginBottom: 6,
+                fontWeight: 700,
+              }}
+            >
+              ✓ Assinado eletronicamente pela corretora
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 24 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: '#666', marginBottom: 2 }}>
+                  Representante
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>
+                  {assinaturaStaff.nome}
+                </Text>
+                {assinaturaStaff.cargo ? (
+                  <Text style={{ fontSize: 9, color: '#444' }}>
+                    {assinaturaStaff.cargo}
+                  </Text>
+                ) : null}
+                {assinaturaStaff.email ? (
+                  <Text style={{ fontSize: 9, color: '#666' }}>
+                    {assinaturaStaff.email}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: '#666', marginBottom: 2 }}>
+                  Pela empresa
+                </Text>
+                <Text style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>
+                  {assinaturaStaff.empresaNome ?? brandNome ?? '—'}
+                </Text>
+                {assinaturaStaff.empresaCnpj ? (
+                  <Text style={{ fontSize: 9, color: '#444' }}>
+                    CNPJ: {assinaturaStaff.empresaCnpj}
+                  </Text>
+                ) : null}
+                <Text style={{ fontSize: 9, color: '#666' }}>
+                  {new Date(assinaturaStaff.assinadoEm).toLocaleString('pt-BR')}
+                </Text>
+                {assinaturaStaff.ip ? (
+                  <Text style={{ fontSize: 8, color: '#888' }}>
+                    IP: {assinaturaStaff.ip}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+            <Text style={{ fontSize: 8, color: '#666', marginTop: 10, lineHeight: 1.4 }}>
+              Assinatura eletrônica simples conforme Lei 14.063/2020 art. 4º
+              inciso I. Este contrato aguarda agora a contra-assinatura da outra
+              parte para se tornar plenamente vinculante.
+            </Text>
+          </View>
+        ) : null}
+
         {/* Footer fixo */}
         <View style={styles.footer} fixed>
           <Text>
@@ -206,6 +299,7 @@ export async function renderTemplateToPdfBuffer(
     itensGrao?: ItemGrao[]
     documentTitle?: string
     brandNome?: string
+    assinaturaStaff?: AssinaturaStaff
   },
 ): Promise<Buffer> {
   const instance = pdf(
@@ -215,6 +309,7 @@ export async function renderTemplateToPdfBuffer(
       itensGrao={options?.itensGrao}
       documentTitle={options?.documentTitle}
       brandNome={options?.brandNome}
+      assinaturaStaff={options?.assinaturaStaff}
     />
   )
   // @react-pdf/renderer v4 supports toBuffer() returning a NodeJS.ReadableStream
