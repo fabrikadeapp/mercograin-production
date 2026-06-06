@@ -44,8 +44,9 @@ export const NAV: Record<Area, NavItem[]> = {
     { href: '/classificados', label: 'Classificados', icon: 'Store', requires: 'classificados' },
   ],
   operacao: [
-    { href: '/operacao', label: 'Visão da operação', icon: 'Truck' },
-    // Opcionais
+    // A área "Operação" só aparece quando feature 'logistica' está ON globalmente
+    // (veja AREA_REQUIRES em AreaShell.tsx).
+    { href: '/operacao', label: 'Visão da operação', icon: 'Truck', requires: 'logistica' },
     { href: '/logistica', label: 'Logística', icon: 'Truck', requires: 'logistica' },
     { href: '/propriedades', label: 'Propriedades', icon: 'MapPin', requires: 'eudr' },
     { href: '/eudr', label: 'EUDR / Compliance ambiental', icon: 'Leaf', requires: 'eudr' },

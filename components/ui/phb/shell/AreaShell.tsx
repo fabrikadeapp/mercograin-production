@@ -11,21 +11,34 @@ import { cn } from '@/lib/utils/cn'
 
 export interface AreaShellProps {
   children: React.ReactNode
-  /** Mapa de features habilitadas para o workspace. */
   enabledFeatures: Record<string, boolean>
-  /** Áreas que o usuário tem permissão (vazio = todas). */
   permittedAreas?: Area[]
-  /** Nome para exibir no canto. */
   userName?: string
-  /** Nome do workspace (corretora). */
   workspaceName?: string
 }
 
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const C = (Icons as any)[name] as React.ComponentType<{ size?: number }> | undefined
+  const C = (Icons as any)[name] as React.ComponentType<{ size?: number; className?: string }> | undefined
   if (!C) return <Icons.Square size={size} />
   return <C size={size} />
+}
+
+/** Áreas que dependem de uma feature para aparecer no topnav. */
+const AREA_REQUIRES: Partial<Record<Area, string>> = {
+  operacao: 'logistica',
+  // mesa/financeiro/gestao são sempre visíveis (core)
+}
+
+function isAreaVisible(
+  area: Area,
+  enabledFeatures: Record<string, boolean>,
+  itemCount: number,
+): boolean {
+  const req = AREA_REQUIRES[area]
+  if (req && enabledFeatures[req] !== true) return false
+  if (itemCount === 0) return false
+  return true
 }
 
 export function AreaShell({
@@ -37,47 +50,111 @@ export function AreaShell({
 }: AreaShellProps) {
   const pathname = usePathname() || ''
   const currentArea = (routeToArea(pathname) ?? 'mesa') as Area
-  const accessibleAreas = !permittedAreas || permittedAreas.length === 0
+  const [openArea, setOpenArea] = React.useState<Area | null>(null)
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const accessibleAreas = (!permittedAreas || permittedAreas.length === 0
     ? AREAS
     : AREAS.filter((a) => permittedAreas.includes(a))
+  ).filter((a) =>
+    isAreaVisible(a, enabledFeatures, visibleItems(NAV[a] ?? [], enabledFeatures).length),
+  )
 
-  const sidebarItems: NavItem[] = visibleItems(NAV[currentArea] ?? [], enabledFeatures)
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + '/')
+  function openWith(a: Area) {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpenArea(a)
+  }
+  function scheduleClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setOpenArea(null), 180)
+  }
 
   return (
     <div className="min-h-screen bg-bg-0 text-fg-1">
-      {/* Topbar com 4 áreas */}
-      <header className="sticky top-0 z-30 border-b border-border-1 bg-bg-0/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-4 px-4 md:px-8">
+      {/* Topbar */}
+      <header className="sticky top-0 z-30 border-b border-border-1 bg-bg-0/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-6 px-4 md:px-8">
           <Brand />
-          <nav className="hidden flex-1 items-center gap-1 md:flex">
+
+          {/* Desktop nav */}
+          <nav className="hidden flex-1 items-center md:flex">
             {accessibleAreas.map((a) => {
-              const active = a === currentArea
-              const firstItem = visibleItems(NAV[a] ?? [], enabledFeatures)[0]
-              const href = firstItem?.href ?? '/dashboard'
+              const items = visibleItems(NAV[a] ?? [], enabledFeatures)
+              const isActive = a === currentArea
+              const isOpen = openArea === a
               return (
-                <Link
+                <div
                   key={a}
-                  href={href}
-                  className={cn(
-                    'rounded-md px-3 py-1.5 text-small transition-colors',
-                    active
-                      ? 'bg-bg-2 text-fg-1 font-semibold'
-                      : 'text-fg-2 hover:text-fg-1 hover:bg-bg-2/60',
-                  )}
+                  className="relative"
+                  onMouseEnter={() => openWith(a)}
+                  onMouseLeave={scheduleClose}
                 >
-                  {AREA_LABEL[a]}
-                </Link>
+                  <button
+                    type="button"
+                    onClick={() => setOpenArea(isOpen ? null : a)}
+                    className={cn(
+                      'inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-small transition-colors',
+                      isActive
+                        ? 'text-fg-1 font-semibold'
+                        : 'text-fg-2 hover:text-fg-1',
+                    )}
+                    aria-expanded={isOpen}
+                    aria-haspopup="menu"
+                  >
+                    {AREA_LABEL[a]}
+                    <Icons.ChevronDown
+                      size={14}
+                      className={cn(
+                        'transition-transform',
+                        isOpen ? 'rotate-180' : '',
+                      )}
+                    />
+                  </button>
+                  {isOpen && items.length > 0 && (
+                    <div
+                      role="menu"
+                      onMouseEnter={() => openWith(a)}
+                      onMouseLeave={scheduleClose}
+                      className="absolute left-0 top-full z-40 mt-1 w-[340px] rounded-md border border-border-1 bg-bg-1 p-2 shadow-lg"
+                    >
+                      <div className="px-2 pb-1 pt-1 text-mini uppercase tracking-[0.6px] text-fg-3">
+                        {AREA_LABEL[a]}
+                      </div>
+                      <ul className="space-y-0.5">
+                        {items.map((it) => (
+                          <li key={it.href}>
+                            <Link
+                              role="menuitem"
+                              href={it.href}
+                              onClick={() => setOpenArea(null)}
+                              className="flex items-start gap-3 rounded-md p-2 text-fg-1 transition-colors hover:bg-bg-2"
+                            >
+                              <span className="mt-0.5 text-fg-2">
+                                <Icon name={it.icon} />
+                              </span>
+                              <div className="min-w-0">
+                                <div className="text-small font-medium leading-tight text-fg-1">
+                                  {it.label}
+                                </div>
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </nav>
+
           <div className="ml-auto flex items-center gap-3">
             {workspaceName && (
               <span className="hidden text-mini text-fg-2 md:inline">{workspaceName}</span>
             )}
             {userName && (
-              <span className="text-mini text-fg-1 font-medium">{userName}</span>
+              <span className="hidden text-mini text-fg-1 font-medium md:inline">{userName}</span>
             )}
             <button
               onClick={() => signOut({ callbackUrl: '/auth/login' })}
@@ -87,66 +164,71 @@ export function AreaShell({
             >
               <Icons.LogOut size={16} />
             </button>
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="rounded-md p-1.5 text-fg-2 hover:bg-bg-2 hover:text-fg-1 md:hidden"
+              aria-label="Menu"
+            >
+              <Icons.Menu size={18} />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Sidebar contextual + conteúdo */}
-      <div className="mx-auto flex max-w-[1440px] gap-6 px-4 md:px-8">
-        <aside className="hidden w-56 shrink-0 py-6 md:block">
-          <div className="text-mini uppercase tracking-[0.6px] text-fg-3 mb-2 px-2">
-            {AREA_LABEL[currentArea]}
-          </div>
-          <nav className="space-y-0.5">
-            {sidebarItems.map((it) => (
-              <Link
-                key={it.href}
-                href={it.href}
-                className={cn(
-                  'flex items-center gap-2 rounded-md px-2 py-1.5 text-small',
-                  isActive(it.href)
-                    ? 'bg-bg-2 text-fg-1 font-medium'
-                    : 'text-fg-2 hover:text-fg-1 hover:bg-bg-2/60',
-                )}
+      {/* Mobile sheet */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="ml-auto h-full w-[300px] overflow-y-auto bg-bg-1 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <Brand />
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-1.5 text-fg-2 hover:bg-bg-2"
+                aria-label="Fechar"
               >
-                <Icon name={it.icon} />
-                {it.label}
-              </Link>
-            ))}
-            {sidebarItems.length === 0 && (
-              <div className="px-2 py-3 text-mini text-fg-3">
-                Nenhum recurso ativo nesta área. Fale com a BH Grain para liberar.
-              </div>
-            )}
-          </nav>
-        </aside>
-
-        {/* Mobile: dropdown horizontal de áreas como tabs */}
-        <div className="md:hidden -mx-4 overflow-x-auto px-4 py-2">
-          <div className="flex gap-1">
-            {accessibleAreas.map((a) => {
-              const active = a === currentArea
-              const firstItem = visibleItems(NAV[a] ?? [], enabledFeatures)[0]
-              return (
-                <Link
-                  key={a}
-                  href={firstItem?.href ?? '/dashboard'}
-                  className={cn(
-                    'rounded-full px-3 py-1 text-mini whitespace-nowrap',
-                    active
-                      ? 'bg-accent text-bg-0 font-semibold'
-                      : 'bg-bg-2 text-fg-2',
-                  )}
-                >
-                  {AREA_LABEL[a]}
-                </Link>
-              )
-            })}
-          </div>
+                <Icons.X size={18} />
+              </button>
+            </div>
+            <nav className="space-y-4">
+              {accessibleAreas.map((a) => {
+                const items = visibleItems(NAV[a] ?? [], enabledFeatures)
+                return (
+                  <div key={a}>
+                    <div className="mb-1 text-mini uppercase tracking-[0.6px] text-fg-3">
+                      {AREA_LABEL[a]}
+                    </div>
+                    <ul className="space-y-0.5">
+                      {items.map((it) => (
+                        <li key={it.href}>
+                          <Link
+                            href={it.href}
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-2 rounded-md p-2 text-small text-fg-1 hover:bg-bg-2"
+                          >
+                            <Icon name={it.icon} />
+                            {it.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </nav>
+          </aside>
         </div>
+      )}
 
-        <main className="min-w-0 flex-1 py-6 md:py-8">{children}</main>
-      </div>
+      {/* Conteúdo (sem sidebar) */}
+      <main className="mx-auto min-w-0 max-w-[1440px] px-4 py-6 md:px-8 md:py-8">
+        {children}
+      </main>
     </div>
   )
 }
