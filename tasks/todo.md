@@ -312,5 +312,28 @@ C1 (estado) ──► C2 (dep) ──► C3 (tela) ──► C4 (QA)
 
 **Verificações:** `tsc` limpo; `next build` EXIT:0; 12 testes OK; migration + flags confirmados no Railway.
 
-### ⏳ Pendente de DEPLOY
-Tudo desta sessão (EPIC C Kanban + EPIC D menu + 4 telas + 2 pendências + EPIC E comissionamento) está commitado local mas NÃO deployado. Próximo: commit + push (auto-deploy Railway).
+### Review — YOLO: Fase 1 da spec completa — ✅ DEPLOYADO
+
+**Deploy `4567a81e` SUCCESS** em produção (commit 2e323f4, 52 arquivos). Tudo no ar.
+
+**Fase 1 (spec) — todos os itens fechados:**
+- F1-01 ✅ alertas de compliance (`/api/mesa/alertas-compliance`: KYC/CAR/cadastro)
+- F1-02 ✅ `Oferta.qualidadeSpec` + `janelaEntrega` (migration aplicada)
+- F1-03 ✅ motor de match (`lib/match` + `/api/match/sugerir` + `/match`, feature 'match', 7 testes)
+- F1-04 ✅ coberto (Kanban + status + corretagem + dossiê; sem model Negocio duplicado)
+- F1-05 ✅ corretagem completa (% E R$/ton, quem paga, prevista→faturada→recebida, aging)
+- F1-06 ✅ tipo 'corretagem' no editor de templates
+- F1-07 ✅ dossiê (`/api/dossie` + `/contratos/[id]/dossie`, feature 'dossie')
+
+**Kill-switch:** features novas (`match`, `dossie`, `comissionamento`) com flag global + por-workspace. Habilitadas para Mercograin. Nada deletado.
+
+**Qualidade:** 107 testes passando, `tsc` limpo, `next build` EXIT:0. RELATORIO_AUDITORIA.md com status completo F1-F4.
+
+**Migrations aplicadas no Railway:** workspace_design_system, comissionamento_colaborador, corretagem_completa, oferta_qualidade.
+
+### Fases 2/3/4 — estado (auditado no RELATORIO)
+Maioria ✅ ou 🟡 já cobertos pelo sistema existente (calculadora, cotações, dashboards, portal, conciliação, equipe). Pendências reais menores: captura WhatsApp→oferta estruturada (F2-01), checklist exportação (F4-05), ranking/metas. Não bloqueiam o produto vendável — documentados para próximas rodadas.
+
+### Acesso
+- Login: www.profitsync.ia.br · admin@mercograin.com · Merco@2026!
+- Captação pública de lead: /portal/mercograin/cadastro

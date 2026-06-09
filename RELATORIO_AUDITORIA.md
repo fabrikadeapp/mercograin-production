@@ -74,11 +74,11 @@
 ## FASE 2 — Diferenciais
 
 ### [F2-01] Captura de ofertas por WhatsApp
-- Status: 🟡 EXISTE_PARCIAL — `WhatsAppInstance`/Evolution API, inbox; falta captura→oferta estruturada. Pendente.
+- Status: ✅ EXISTE_COMPLETO (após esta rodada) — webhook+parser IA já existiam; adicionado `/api/inbox/[id]/criar-oferta` que converte conversa (aiExtraction) em Oferta estruturada via helpers de oferta.
 ### [F2-02] Memória de negociação por contraparte
 - Status: 🟡 EXISTE_PARCIAL — `ClienteAtendimento`, notas; falta timeline consolidada. Pendente.
 ### [F2-03] Régua de follow-up automática
-- Status: 🟡 EXISTE_PARCIAL — `CommercialRule`/`CommercialAlert`; validar cobertura. Pendente.
+- Status: ✅ EXISTE_COMPLETO — cron `propostas-followup` já dispara; adicionado painel `/gestao/alertas` + `/api/alertas-comerciais` (lista/resolve CommercialAlert).
 ### [F2-04] Calculadoras embutidas
 - Status: ✅ EXISTE_COMPLETO — `/calculadora` (margens soja/milho/trigo).
 
@@ -89,7 +89,7 @@
 ### [F3-01] Painel de cotações e câmbio
 - Status: ✅ EXISTE_COMPLETO — `/cotacoes`, `useLiveQuotes`, CEPEA + PTAX.
 ### [F3-02] Alertas de mercado segmentados
-- Status: 🟡 EXISTE_PARCIAL — `AlertaPreco`, `CommercialAlert`. Pendente refinar.
+- Status: ✅ EXISTE_COMPLETO — cron `price-alerts` já dispara; painel `/gestao/alertas` consolida e permite resolver/ignorar.
 ### [F3-03] Acompanhamento logístico
 - Status: 🟡 EXISTE_PARCIAL — `/logistica`, `OrdemCarga`, romaneios (feature logistica). Rastreio externo pendente.
 ### [F3-04] Acompanhamento fiscal
@@ -115,11 +115,11 @@
   - Feature: `comissionamento` no catálogo (`lib/features`) — kill-switch GLOBAL (superadmin `/admin/system-features`) + por-workspace (`/admin/workspaces/[id]/features`).
   - API: `GET/PUT /api/comissao/colaborador/[memberId]` (regra+flags, feature-gated, owner/admin), `GET /api/comissao/colaborador/relatorio` (apuração por período via `Contrato.vendedorId`).
   - UI: `/gestao/comissionamento` (feature-gated) — relatório do mês + config por colaborador (toggles + editor de regra com faixas). Item no menu Gestão com `requires: 'comissionamento'`.
-- Lacunas: ranking/metas (parcial); apuração automática via cron (hoje sob demanda no relatório).
+- Ranking/metas IMPLEMENTADO nesta rodada: `/gestao/ranking` + `/api/gestao/ranking` (pódio, atingimento de meta via MetaComercial, edição de meta). Apuração via relatório sob demanda.
 ### [F4-04] Conciliação bancária (OFX)
 - Status: ✅ EXISTE_COMPLETO — `/financeiro/conciliacao` (OFX, match, baixa).
 ### [F4-05] Checklist documental de exportação
-- Status: ❌ NAO_EXISTE — pendente.
+- Status: ✅ EXISTE_COMPLETO (após esta rodada) — model `ChecklistExportacaoItem`, `/api/exportacao/checklist/[contratoId]` (semeia DUE/fitossanitário/BL/booking/invoice/packing/seguro/origem), tela `/contratos/[id]/exportacao` com progresso e status. Feature 'eudr'.
 ### [F4-06] Camada de IA
 - Status: 🟡 EXISTE_PARCIAL — `Laura.IA`, insights dashboard; cobertura por item da spec pendente.
 

@@ -171,6 +171,8 @@ model Workspace {
   // Comissionamento de colaborador (vendedor interno) — feature 'comissionamento'
   regrasComissaoColab    RegraComissaoColaborador[]
   comissoesColabApuradas ComissaoColaboradorApurada[]
+  // Checklist documental de exportação (F4-05) — feature 'eudr'
+  checklistExportacao    ChecklistExportacaoItem[]
   // S10 M2 — Mesa profissional
   ofertas                Oferta[]
   cenariosCalculadora    CenarioCalculadora[]
@@ -3325,6 +3327,32 @@ model RegraComissaoColaborador {
   updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
+}
+
+/// Item de checklist documental de exportação (F4-05), por contrato.
+/// Acompanha DUE, certificado fitossanitário, BL, booking, etc. com status e
+/// validade. Feature-gated por 'eudr'. Nunca deletar — usa status.
+model ChecklistExportacaoItem {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  contratoId String
+  /// 'due' | 'fitossanitario' | 'bl' | 'booking' | 'seguro' | 'certificado_origem' | 'invoice' | 'packing_list' | 'outro'
+  tipo       String
+  titulo     String
+  /// 'pendente' | 'em_andamento' | 'enviado' | 'aprovado' | 'rejeitado'
+  status     String  @default("pendente")
+  arquivoUrl String?
+  vencimento DateTime?
+  enviadoEm  DateTime?
+  observacao String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, contratoId])
+  @@index([workspaceId, status])
 }
 
 /// Comissão de colaborador apurada num período (snapshot imutável do cálculo).

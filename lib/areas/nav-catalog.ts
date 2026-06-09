@@ -100,6 +100,8 @@ export const NAV: Record<Area, NavItem[]> = {
     },
     { href: '/admin-empresa', label: 'Dashboard administrativo', icon: 'LayoutDashboard' },
     { href: '/gestao/comissionamento', label: 'Comissionamento', icon: 'Percent', requires: 'comissionamento' },
+    { href: '/gestao/ranking', label: 'Ranking & Metas', icon: 'Trophy' },
+    { href: '/gestao/alertas', label: 'Alertas comerciais', icon: 'Bell' },
     { href: '/auditoria', label: 'Auditoria', icon: 'ShieldAlert' },
     { href: '/assinatura', label: 'Plano & assinatura', icon: 'CreditCard' },
     { href: '/perfil', label: 'Meu perfil', icon: 'User' },
