@@ -11,6 +11,9 @@
 
 export const PROPOSTA_STATUS = {
   RASCUNHO: 'rascunho',
+  /** Rascunho gerado automaticamente pela IA/varredura — equivale a RASCUNHO
+   *  para fins de fluxo (revisar → enviar). */
+  RASCUNHO_IA: 'rascunho_ia',
   /** Aguarda visto do staff (proposta criada via canal WhatsApp/IA/telefone). */
   AGUARDANDO_AUTORIZACAO: 'aguardando_autorizacao',
   /** Aguarda decisão de aprovação multi-etapa (CommercialRule). */
