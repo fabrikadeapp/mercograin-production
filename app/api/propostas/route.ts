@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           cliente: {
-            select: { id: true, nome: true },
+            select: { id: true, nome: true, email: true, whatsapp: true },
           },
         },
         orderBy: { criadaEm: 'desc' },

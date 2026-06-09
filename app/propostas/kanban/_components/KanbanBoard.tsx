@@ -13,8 +13,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useToast } from '@/contexts/ToastContext'
-import { Skeleton } from '@/components/ui/phb'
-import { ChevronLeft, Plus, GripVertical } from 'lucide-react'
+import { Skeleton, Dialog, Button } from '@/components/ui/phb'
+import { ChevronLeft, Plus, Send, Mail, MessageCircle, AlertTriangle } from 'lucide-react'
 
 interface GraoItem { grao?: string; commodity?: string; quantidade?: number; quantidadeSc?: number }
 interface Proposta {
@@ -24,7 +24,8 @@ interface Proposta {
   valorTotal: string
   validadeEm?: string
   criadaEm: string
-  cliente?: { nome?: string }
+  enviadaEm?: string | null
+  cliente?: { nome?: string; email?: string | null; whatsapp?: string | null }
   graos?: unknown
 }
 
@@ -72,6 +73,9 @@ export function KanbanBoard() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<string | null>(null)
   const [filtro, setFiltro] = useState<(typeof COMMODITIES)[number]>('todas')
+  // Proposta aguardando confirmação de envio ao cliente (drop em "Enviada").
+  const [confirmarEnvio, setConfirmarEnvio] = useState<Proposta | null>(null)
+  const [enviando, setEnviando] = useState(false)
   const toast = useToast()
 
   const load = useCallback(() => {
@@ -115,6 +119,13 @@ export function KanbanBoard() {
       return
     }
 
+    // Mover para "Enviada" sem ter enviado ao cliente ainda → confirma o envio
+    // real (WhatsApp/email) em vez de só trocar o status no banco.
+    if (col.target === 'enviada' && !p.enviadaEm) {
+      setConfirmarEnvio(p)
+      return
+    }
+
     const anterior = p.status
     // otimista
     setPropostas((cur) => cur.map((x) => (x.id === p.id ? { ...x, status: col.target } : x)))
@@ -136,6 +147,37 @@ export function KanbanBoard() {
       // rollback
       setPropostas((cur) => cur.map((x) => (x.id === p.id ? { ...x, status: anterior } : x)))
       toast.error(e?.message || 'Não foi possível mover a proposta')
+    }
+  }
+
+  /**
+   * Confirma o envio real da proposta ao cliente. Usa o endpoint de envio do
+   * BH Grain, que aplica regras comerciais, muda o status p/ "enviada", marca
+   * enviadaEm e dispara as notificações (WhatsApp/email). Trata os 3 desfechos:
+   * permitido, aprovação pendente e bloqueado por regra.
+   */
+  async function executarEnvio(p: Proposta) {
+    setEnviando(true)
+    try {
+      const res = await fetch(`/api/bhgrain/propostas/${p.id}/enviar`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.status === 202 || data?.decisao === 'aprovacao') {
+        toast.info(`${p.numero} aguarda aprovação interna antes de ir ao cliente.`)
+      } else if (res.status === 409 || data?.decisao === 'bloqueado') {
+        const motivos = Array.isArray(data?.motivos) ? data.motivos.join(' · ') : 'Regra comercial impediu o envio.'
+        toast.error(`Envio bloqueado: ${motivos}`)
+      } else if (res.ok) {
+        toast.success(`${p.numero} enviada ao cliente ✓`)
+      } else {
+        throw new Error(data?.error || 'Falha no envio')
+      }
+      setConfirmarEnvio(null)
+      load() // reflete novo status/enviadaEm
+    } catch (e: any) {
+      toast.error(e?.message || 'Não foi possível enviar a proposta')
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -229,6 +271,52 @@ export function KanbanBoard() {
           )
         })}
       </div>
+
+      {/* Confirmação de envio ao cliente — só dispara o envio real ao confirmar */}
+      {confirmarEnvio && (() => {
+        const p = confirmarEnvio
+        const tem = !!(p.cliente?.email || p.cliente?.whatsapp)
+        return (
+          <Dialog
+            open
+            onOpenChange={(o) => { if (!o && !enviando) setConfirmarEnvio(null) }}
+            title="Enviar proposta ao cliente?"
+            description={`A proposta ${p.numero} ainda não foi enviada. Ao confirmar, ela será enviada para ${p.cliente?.nome ?? 'o cliente'} pelos canais cadastrados.`}
+            footer={
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setConfirmarEnvio(null)} disabled={enviando}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => executarEnvio(p)} disabled={enviando || !tem}>
+                  <Send size={14} className="mr-1.5" />
+                  {enviando ? 'Enviando…' : 'Confirmar envio'}
+                </Button>
+              </div>
+            }
+          >
+            <div className="space-y-2 text-[13px]">
+              <div className="flex items-center gap-2 text-[var(--text)]">
+                <Mail size={15} className={p.cliente?.email ? 'text-[var(--success)]' : 'text-[var(--text-dim)]'} />
+                <span className={p.cliente?.email ? '' : 'text-[var(--text-dim)]'}>
+                  {p.cliente?.email ?? 'Sem e-mail cadastrado'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[var(--text)]">
+                <MessageCircle size={15} className={p.cliente?.whatsapp ? 'text-[var(--success)]' : 'text-[var(--text-dim)]'} />
+                <span className={p.cliente?.whatsapp ? '' : 'text-[var(--text-dim)]'}>
+                  {p.cliente?.whatsapp ?? 'Sem WhatsApp cadastrado'}
+                </span>
+              </div>
+              {!tem && (
+                <div className="mt-2 flex items-start gap-2 rounded-[var(--r-sm)] border border-[var(--danger)] bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] p-2.5 text-[12px] text-[var(--danger)]">
+                  <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
+                  <span>O cliente não tem e-mail nem WhatsApp cadastrado. Cadastre um contato antes de enviar.</span>
+                </div>
+              )}
+            </div>
+          </Dialog>
+        )
+      })()}
     </div>
   )
 }

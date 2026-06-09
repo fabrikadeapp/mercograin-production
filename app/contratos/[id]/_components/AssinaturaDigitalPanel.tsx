@@ -107,6 +107,16 @@ export function AssinaturaDigitalPanel({
       toast.error('Preencha nome e CPF/CNPJ de todos os signatários')
       return
     }
+    // Já existe fluxo ativo? (defesa na UI — o servidor também bloqueia com 409)
+    if (ass && ass.status !== 'cancelado') {
+      toast.error('Este contrato já foi enviado para assinatura.')
+      return
+    }
+    // Confirmação explícita de envio ao(s) signatário(s).
+    const nomes = signatorios.map((s) => s.name).filter(Boolean).join(', ')
+    if (!window.confirm(`Enviar o contrato para assinatura de ${nomes}?\n\nUm e-mail/WhatsApp com o link de assinatura será enviado agora.`)) {
+      return
+    }
     setBusy(true)
     try {
       const r = await fetch(`/api/contratos/${contratoId}/enviar-assinatura`, {
