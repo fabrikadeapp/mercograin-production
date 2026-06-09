@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   ArrowUpRight,
   Inbox,
+  MessageCircle,
 } from 'lucide-react'
 
 /* ───────────────────────── helpers ───────────────────────── */
@@ -180,6 +181,9 @@ export function MesaOperacoes({
         <FixacoesCard q={fixacoes} />
         <RiscoCard q={risco} enabled={enabledFeatures?.hedge !== false} />
       </div>
+
+      {/* ───── inbox resumo ───── */}
+      <InboxResumoCard />
 
       {/* ───── rodapé status ───── */}
       <StatusBar q={integracoes} />
@@ -463,6 +467,35 @@ function MiniRow({ href, icon, iconColor, title, sub, right }: { href: string; i
 }
 
 /* ───────────────────────── rodapé status ───────────────────────── */
+
+interface ConvResumo { id: string; channel: string; contactName: string | null; lastMessageText: string | null; aiStatus: string; unreadCount: number; clienteId: string | null }
+function InboxResumoCard() {
+  const inbox = useJson<{ conversations: ConvResumo[] }>('/api/inbox?limit=5')
+  const convs = inbox.data?.conversations ?? []
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-[18px] py-[14px]">
+        <h3 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--text)]"><MessageCircle size={15} /> Inbox unificado</h3>
+        <Link href="/inbox" className="text-[12px] font-medium text-[var(--accent-2)]">Abrir inbox →</Link>
+      </div>
+      {inbox.loading ? (
+        <div className="space-y-2 p-4"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div>
+      ) : convs.length === 0 ? (
+        <EmptyState icon={Inbox} title="Sem mensagens" description="Conversas de WhatsApp/e-mail/portal aparecem aqui." />
+      ) : convs.map((c) => (
+        <Link key={c.id} href="/inbox" className="flex items-center gap-3 border-t border-[var(--border)] px-[18px] py-2.5 first:border-t-0 hover:bg-[var(--row-hover)]">
+          <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-[var(--surface-2)] text-[var(--text-mute)]"><MessageCircle size={14} /></div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[12.5px] font-semibold text-[var(--text)]">{c.contactName || 'Contato'}</div>
+            <div className="truncate text-[11px] text-[var(--text-mute)]">{c.lastMessageText || '—'}</div>
+          </div>
+          {c.aiStatus === 'pronta_para_proposta' && <span className="rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[9.5px] font-semibold text-[var(--success)]">pronta</span>}
+          {c.unreadCount > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[var(--danger)] px-1 text-[9px] font-bold text-white">{c.unreadCount}</span>}
+        </Link>
+      ))}
+    </Card>
+  )
+}
 
 function StatusBar({ q }: { q: ReturnType<typeof useJson<{ items: IntegracaoItem[]; resumo: { online: number; total: number } }>> }) {
   return (

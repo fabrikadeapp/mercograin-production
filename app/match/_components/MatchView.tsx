@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, Skeleton, EmptyState } from '@/components/ui/phb'
+import { useToast } from '@/contexts/ToastContext'
 import { GitMerge, ArrowRight } from 'lucide-react'
 
 interface MatchItem {
@@ -18,6 +19,26 @@ export function MatchView() {
   const [matches, setMatches] = useState<MatchItem[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
+  const [busy, setBusy] = useState<string | null>(null)
+  const router = useRouter()
+  const toast = useToast()
+
+  async function criarNegocio(m: MatchItem) {
+    const key = `${m.ofertaId}-${m.demandaId}`
+    setBusy(key)
+    try {
+      const res = await fetch('/api/negocios', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ofertaVendaId: m.ofertaId, demandaCompraId: m.demandaId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Falha')
+      toast.success(`Negócio ${data.negocio?.numero ?? ''} criado`)
+      router.push('/negocios')
+    } catch (e: any) {
+      toast.error(e?.message || 'Não foi possível criar o negócio')
+    } finally { setBusy(null) }
+  }
 
   useEffect(() => {
     fetch('/api/match/sugerir')
@@ -65,9 +86,9 @@ export function MatchView() {
               {m.razoes.map((r, i) => (
                 <span key={i} className="rounded-full bg-[var(--success-soft)] px-2.5 py-1 text-[11px] font-medium text-[var(--success)]">{r}</span>
               ))}
-              <Link href="/propostas/nova" className="ml-auto inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-[var(--accent)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-ink)]">
-                Criar negócio <ArrowRight size={13} />
-              </Link>
+              <button onClick={() => criarNegocio(m)} disabled={busy === `${m.ofertaId}-${m.demandaId}`} className="ml-auto inline-flex items-center gap-1.5 rounded-[var(--r-sm)] bg-[var(--accent)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-ink)] disabled:opacity-50">
+                {busy === `${m.ofertaId}-${m.demandaId}` ? 'Criando…' : 'Criar negócio'} <ArrowRight size={13} />
+              </button>
             </div>
           )}
         </Card>

@@ -50,8 +50,10 @@ export const NAV: Record<Area, NavItem[]> = {
         { href: '/calculadora', label: 'Calculadora', icon: 'Calculator' },
       ],
     },
-    { href: '/solicitacoes', label: 'Solicitações', icon: 'Inbox' },
+    { href: '/inbox', label: 'Inbox unificado', icon: 'Inbox' },
+    { href: '/solicitacoes', label: 'Solicitações', icon: 'MessageSquare' },
     { href: '/match', label: 'Match de ofertas', icon: 'GitMerge', requires: 'match' },
+    { href: '/negocios', label: 'Negócios', icon: 'Handshake', requires: 'match' },
     { href: '/cotacoes', label: 'Cotações ao vivo', icon: 'TrendingUp' },
     { href: '/aprovacoes', label: 'Aprovações', icon: 'CheckSquare' },
     // Opcionais (feature-flagged)

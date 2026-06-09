@@ -173,6 +173,8 @@ model Workspace {
   comissoesColabApuradas ComissaoColaboradorApurada[]
   // Checklist documental de exportação (F4-05) — feature 'eudr'
   checklistExportacao    ChecklistExportacaoItem[]
+  // Deal flow — negócio que une oferta+demanda+2 contrapartes (F1-04)
+  negocios               Negocio[]
   // S10 M2 — Mesa profissional
   ofertas                Oferta[]
   cenariosCalculadora    CenarioCalculadora[]
@@ -3327,6 +3329,52 @@ model RegraComissaoColaborador {
   updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
+}
+
+/// Negócio / Deal (F1-04) — une uma oferta (venda) e uma demanda (compra),
+/// as DUAS contrapartes (comprador + vendedor) e os termos finais. Pipeline por
+/// estágios com data/responsável. Nasce de um match. Feature 'match'.
+model Negocio {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  numero      String    @db.VarChar(60)
+
+  /// Oferta de venda e demanda de compra que originaram o negócio.
+  ofertaVendaId  String?
+  demandaCompraId String?
+
+  /// As duas contrapartes (Cliente).
+  vendedorClienteId  String?
+  compradorClienteId String?
+
+  /// Termos finais negociados.
+  cultura    String?
+  qtdSc      Decimal? @db.Decimal(14, 2)
+  precoSc    Decimal? @db.Decimal(10, 2)
+  precoMoeda String   @default("BRL") @db.VarChar(3)
+
+  /// Vínculos quando o negócio avança (proposta/contrato gerados).
+  propostaId String?
+  contratoId String?
+
+  /// Estágio: 'captado' | 'match' | 'negociacao' | 'fechado' | 'embarque' |
+  /// 'liquidacao' | 'comissao_recebida' | 'cancelado'.
+  estagio        String   @default("match")
+  /// Responsável atual (WorkspaceMember).
+  responsavelId  String?
+  /// Data da última mudança de estágio.
+  estagioMudadoEm DateTime @default(now())
+  /// Histórico de estágios [{ estagio, em, por }].
+  historico      Json?
+
+  observacao String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, numero])
+  @@index([workspaceId, estagio])
 }
 
 /// Item de checklist documental de exportação (F4-05), por contrato.
