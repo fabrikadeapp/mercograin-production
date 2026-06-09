@@ -331,8 +331,15 @@ C1 (estado) ──► C2 (dep) ──► C3 (tela) ──► C4 (QA)
 
 **Migrations aplicadas no Railway:** workspace_design_system, comissionamento_colaborador, corretagem_completa, oferta_qualidade.
 
-### Fases 2/3/4 — estado (auditado no RELATORIO)
-Maioria ✅ ou 🟡 já cobertos pelo sistema existente (calculadora, cotações, dashboards, portal, conciliação, equipe). Pendências reais menores: captura WhatsApp→oferta estruturada (F2-01), checklist exportação (F4-05), ranking/metas. Não bloqueiam o produto vendável — documentados para próximas rodadas.
+### Fases 2/3/4 — ✅ pendências fechadas e DEPLOYADAS (deploy a7bfe709 SUCCESS)
+- F2-01 ✅ captura WhatsApp→oferta: `/api/inbox/[id]/criar-oferta` (usa aiExtraction).
+- F4-03 ✅ ranking & metas: `/gestao/ranking` + `/api/gestao/ranking` (pódio, meta vs realizado, edição de meta via MetaComercial).
+- F4-05 ✅ checklist exportação: model `ChecklistExportacaoItem` + `/contratos/[id]/exportacao` + `/api/exportacao/checklist/[contratoId]` (feature eudr, habilitada).
+- F2-03/F3-02 ✅ alertas comerciais: `/gestao/alertas` + `/api/alertas-comerciais` (consolida crons price-alerts/propostas-followup/bhgrain-alertas).
+- 107 testes passando, build EXIT:0, migration checklist aplicada no Railway.
+
+### Estado final da spec
+Todas as fases (1-4) com itens implementáveis ✅ EXISTE_COMPLETO ou cobertos. Resíduos menores e opcionais (app mobile nativo F4-02; refinamentos de IA transversal F4-06) seguem como evolução futura — não bloqueiam produto vendável. Ver RELATORIO_AUDITORIA.md.
 
 ### Acesso
 - Login: www.profitsync.ia.br · admin@mercograin.com · Merco@2026!
