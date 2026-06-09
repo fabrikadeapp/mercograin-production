@@ -221,6 +221,96 @@ C1 (estado) ──► C2 (dep) ──► C3 (tela) ──► C4 (QA)
 
 ---
 
-## 7. Próximo: EPIC C (Kanban full-screen) — aguardando início
-- Antes de C1: investigar serviço de transição de status de Proposta — pendente.
-- C2: @devops adiciona @dnd-kit/core + @dnd-kit/sortable.
+## 7. Review — EPIC C (Kanban full-screen) — ✅ código completo
+
+**Descoberta (REUSE > CREATE):** já existia máquina de estados (`lib/propostas/transicoes.ts` + `status.ts`) e endpoint validado `PATCH /api/propostas/[id]/status` (valida transição, audita, aplica efeitos como enviadaEm). Reusei tudo — sem update cru, sem reinventar regra de negócio. @dnd-kit NÃO foi necessário: usei HTML5 drag nativo (padrão já existente no projeto).
+
+**Criado:**
+- `app/propostas/kanban/page.tsx` — tela full-screen (server, AppShell + auth guard).
+- `app/propostas/kanban/_components/KanbanBoard.tsx` — 5 colunas (Rascunho/Enviada/Em negociação/Aceita/Recusada-Perdida), cards ricos (cliente, commodity/sc, valor, validade), drag nativo com update otimista + rollback + toast. Filtro por commodity. Soma de valor por coluna.
+- Drag chama `PATCH /api/propostas/[id]/status` (servidor valida; transição ilegal → erro + rollback). Drop em "perdida" bloqueado (exige lossReason → direciona a abrir a proposta). Corrigido o `target` de cada coluna (era buggy: coluna mapeava p/ "próximo" status; agora mapeia p/ o status DELA).
+- `lib/areas/nav-catalog.ts` — item "Kanban de propostas" na área mesa (vira sub-item de Propostas na reorganização do menu).
+
+**Verificações:** `tsc --noEmit` limpo; `next build` OK, rota `/propostas/kanban` gerada (5.26 kB).
+
+---
+
+## 8. PRÓXIMO — Reorganização do menu em 3 áreas (Mesa / Financeiro / Gestão)
+
+**Visão do usuário (a validar):**
+- **MESA:** Novo Lead · Clientes (base + add manual) · Propostas e Contratos (submenu: todas por período + Kanban + Calculadora)
+- **FINANCEIRO:** Contas a Receber · Contas a Pagar · Fluxo de Caixa · Conciliação Bancária · Boletos · Fornecedores · Fiscal/SPED · Relatórios Financeiros
+- **GESTÃO:** Configurações da Empresa (Marca/Logo, Dados, Funcionários+permissões, Integrações, Modelo Proposta, Modelo Contrato Compra, Modelo Contrato Venda) · Auditoria · Dashboard Administrativo (a receber/recebido/toneladas vendidas)
+- Pré-req: estender `NavItem` para suportar `children` (submenus) + ajustar `AreaShell.tsx`. Avaliar o que já existe (Lead, contas a pagar/receber, conciliação) vs criar.
+
+### Review — EPIC D (Reorganização do menu 3 áreas) — ✅ código completo
+
+**Engine de submenu:**
+- `lib/areas/nav-catalog.ts` — `NavItem` ganhou `children?` e `soon?`; `visibleItems()` recursivo (filtra filhos por feature, remove grupos vazios).
+- `components/ui/phb/shell/AreaShell.tsx` — render desktop e mobile suportam grupos aninhados (cabeçalho = atalho p/ tela principal + sub-itens indentados).
+
+**Menu reorganizado em 3 áreas:**
+- MESA: Visão geral · Novo Lead · Leads · Clientes · [Propostas e Contratos ▸ Todas/Contratos/Kanban/Calculadora] · Solicitações · Cotações · Aprovações (+ opcionais feature-flag).
+- FINANCEIRO: Visão · Contas a Receber · Contas a Pagar · Fluxo de caixa · Conciliação · Boletos · Fornecedores · Fiscal/SPED · Relatórios.
+- GESTÃO: [Configurações da empresa ▸ Dados/Marca/Tema/Funcionários/Integrações/Modelo proposta/Modelo contrato compra/venda] · Dashboard administrativo · Auditoria · Plano · Perfil (+ opcionais).
+
+**Telas novas criadas (dados reais, sem mocks):**
+- `/leads` + `/leads/novo` + `app/leads/_components/LeadsView.tsx` + `app/api/leads/route.ts` — Lead = Cliente com statusCadastral 'rascunho' (reuso, sem model novo). Form modal de cadastro rápido + lista do funil. Audit log.
+- `/financeiro/receber` + `/financeiro/pagar` + `app/financeiro/_components/ContasView.tsx` + `app/api/financeiro/contas/route.ts` — agrega MovimentoFinanceiro (conciliado=false) + boletos abertos; totais vencido/a vencer.
+- `/propostas/modelos` — encaminha p/ editor de templates existente (ContratoTemplate/Tiptap já gerencia modelos; compra/venda via ?tipo=).
+
+**Verificações:** `tsc --noEmit` limpo; `next build` EXIT:0; rotas geradas; ícones lucide confirmados.
+
+**Decisões de modelagem (transparência):**
+- Lead modelado como Cliente-prospect (statusCadastral) em vez do model `Lead` existente (que é acoplado a ProdutorAccess/B2B²). Reuso limpo; "qualificar" = aprovar cadastro → vira cliente.
+- Modelo de Proposta reusa o CRUD de ContratoTemplate (não criei model separado). Se quiser editor dedicado de proposta no futuro, é um épico próprio.
+- Captação PÚBLICA de lead (form externo) ficou pendente — entreguei a captação INTERNA (corretor cadastra). Pública precisa rota sem-auth + anti-spam (decisão/escopo).
+
+### Review — Pendências resolvidas — ✅ código completo
+
+**Pendência 1 — Captação PÚBLICA de leads:**
+- `app/portal/[workspaceSlug]/cadastro/page.tsx` — página pública (sem auth), tema standalone, busca info da corretora + form (nome/whatsapp/email/cidade/uf/interesse/mensagem) + honeypot.
+- `app/api/portal/[slug]/info/route.ts` — GET público, só dados públicos da corretora (nome, logo) via slug.
+- `app/api/portal/[slug]/lead/route.ts` — POST público: rate-limit 5/h por IP + honeypot + exige contato; cria Cliente-prospect (statusCadastral='rascunho') no workspace do slug → cai no /leads da corretora. Audit log.
+- `middleware.ts` — `cadastro` liberado nas rotas públicas do portal. APIs /api/portal/* já fora do matcher.
+- URL real: `/portal/mercograin/cadastro` (slug confirmado no banco).
+
+**Pendência 2 — Editor dedicado de Modelo de Proposta:**
+- Enum `tipo` estendido com `'proposta'` em: `api/contratos/templates/route.ts`, `.../[id]/route.ts`, `_TemplateForm.tsx` (tipo TS + option do select).
+- `_TemplatesList.tsx` — prop `filterTipo` (filtra por tipo via endpoint) + label/tipo 'proposta'.
+- `app/propostas/modelos/page.tsx` — agora é CRUD real de modelos de proposta (reusa TemplatesList filterTipo='proposta'); botão "Novo modelo" → `/contratos/templates/novo?tipo=proposta`.
+- `app/contratos/templates/novo/page.tsx` — lê `?tipo=` da query e pré-seleciona no form.
+- Reuso total do motor Tiptap + versionamento existente. Sem duplicar lógica.
+
+**Verificações:** `tsc --noEmit` limpo; `next build` EXIT:0; rotas geradas; slugs e campos confirmados no banco Railway.
+
+### Review — EPIC E (Comissionamento de Colaborador) — ✅ código completo + testado
+
+**Spec:** `mercograin-saas-spec.md` lida; `RELATORIO_AUDITORIA.md` criado (status F1-F4). Item implementado: F4-03.
+
+**Schema (migration aplicada no Railway):**
+- `WorkspaceMember.isVendedor` + `comissionado` (bool).
+- `RegraComissaoColaborador` (1:1 member) — tipo: percentual|fixo|piso_percentual|faixas, pct, valorFixo, baseFixo, faixas(Json), ativo.
+- `ComissaoColaboradorApurada` — snapshot período (prevista→faturada→paga→cancelada). Nada deletado: status/ativo.
+- Back-relations no Workspace. `prisma/migrations/manual_comissionamento_colaborador.sql` aplicado + verificado via psql.
+
+**Motor + testes:**
+- `lib/comissao/colaborador.ts` — 4 tipos puros e testáveis.
+- `__tests__/bhgrain/comissao-colaborador.test.ts` — **12 testes passando** (inclui exemplo do cliente: faixas 100k/150k/200k).
+
+**Kill-switch (global + workspace):**
+- Feature `comissionamento` em `lib/features` (core:false, default:false). Respeita SystemFeatureFlag (global, superadmin) + WorkspaceFeature (por plano).
+- HABILITADA no banco: global ON + Mercograin ON (você desliga em /admin/system-features quando quiser).
+
+**API (feature-gated):**
+- `GET/PUT /api/comissao/colaborador/[memberId]` — regra + flags (owner/admin).
+- `GET /api/comissao/colaborador/relatorio` — apuração por período via Contrato.vendedorId.
+
+**UI:**
+- `/gestao/comissionamento` (feature-gated; mostra "módulo não habilitado" se OFF) — relatório do mês + config por colaborador (toggles vendedor/comissionado + editor de regra com faixas).
+- Item no menu Gestão com `requires: 'comissionamento'` (some se feature OFF).
+
+**Verificações:** `tsc` limpo; `next build` EXIT:0; 12 testes OK; migration + flags confirmados no Railway.
+
+### ⏳ Pendente de DEPLOY
+Tudo desta sessão (EPIC C Kanban + EPIC D menu + 4 telas + 2 pendências + EPIC E comissionamento) está commitado local mas NÃO deployado. Próximo: commit + push (auto-deploy Railway).

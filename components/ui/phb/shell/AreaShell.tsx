@@ -122,25 +122,59 @@ export function AreaShell({
                         {AREA_LABEL[a]}
                       </div>
                       <ul className="space-y-0.5">
-                        {items.map((it) => (
-                          <li key={it.href}>
-                            <Link
-                              role="menuitem"
-                              href={it.href}
-                              onClick={() => setOpenArea(null)}
-                              className="flex items-start gap-3 rounded-md p-2 text-fg-1 transition-colors hover:bg-bg-2"
-                            >
-                              <span className="mt-0.5 text-fg-2">
+                        {items.map((it) =>
+                          it.children && it.children.length > 0 ? (
+                            <li key={it.href} className="pt-1">
+                              {/* Cabeçalho do grupo (também é atalho para a tela principal) */}
+                              <Link
+                                role="menuitem"
+                                href={it.href}
+                                onClick={() => setOpenArea(null)}
+                                className="flex items-center gap-2 rounded-md px-2 py-1 text-mini font-semibold uppercase tracking-[0.4px] text-fg-2 transition-colors hover:text-fg-1"
+                              >
                                 <Icon name={it.icon} />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="text-small font-medium leading-tight text-fg-1">
-                                  {it.label}
+                                {it.label}
+                              </Link>
+                              <ul className="mt-0.5 space-y-0.5 border-l border-border-1 pl-2.5">
+                                {it.children.map((sub) => (
+                                  <li key={sub.href}>
+                                    <Link
+                                      role="menuitem"
+                                      href={sub.href}
+                                      onClick={() => setOpenArea(null)}
+                                      className="flex items-center gap-2.5 rounded-md p-2 text-fg-1 transition-colors hover:bg-bg-2"
+                                    >
+                                      <span className="text-fg-3">
+                                        <Icon name={sub.icon} />
+                                      </span>
+                                      <span className="text-small font-medium leading-tight">
+                                        {sub.label}
+                                      </span>
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </li>
+                          ) : (
+                            <li key={it.href}>
+                              <Link
+                                role="menuitem"
+                                href={it.href}
+                                onClick={() => setOpenArea(null)}
+                                className="flex items-start gap-3 rounded-md p-2 text-fg-1 transition-colors hover:bg-bg-2"
+                              >
+                                <span className="mt-0.5 text-fg-2">
+                                  <Icon name={it.icon} />
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-small font-medium leading-tight text-fg-1">
+                                    {it.label}
+                                  </div>
                                 </div>
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
+                              </Link>
+                            </li>
+                          ),
+                        )}
                       </ul>
                     </div>
                   )}
@@ -214,6 +248,22 @@ export function AreaShell({
                             <Icon name={it.icon} />
                             {it.label}
                           </Link>
+                          {it.children && it.children.length > 0 && (
+                            <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border-1 pl-2">
+                              {it.children.map((sub) => (
+                                <li key={sub.href}>
+                                  <Link
+                                    href={sub.href}
+                                    onClick={() => setMobileOpen(false)}
+                                    className="flex items-center gap-2 rounded-md p-2 text-small text-fg-2 hover:bg-bg-2 hover:text-fg-1"
+                                  >
+                                    <Icon name={sub.icon} />
+                                    {sub.label}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </li>
                       ))}
                     </ul>

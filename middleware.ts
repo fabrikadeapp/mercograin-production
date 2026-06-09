@@ -35,6 +35,7 @@ export default auth((req) => {
       sub === 'login' ||
       sub === 'setup' ||
       sub === 'reset' ||
+      sub === 'cadastro' ||
       sub.startsWith('contratos/assinar')
     if (isPublicPortal) return NextResponse.next()
     const hasPortalCookie = !!req.cookies.get('bh_portal_session')?.value

@@ -86,6 +86,25 @@ export const FEATURES = {
     core: false,
     default: false,
   },
+  comissionamento: {
+    label: 'Comissionamento de Colaborador',
+    description:
+      'Comissão por vendedor interno: % fixo, valor fixo, piso+%, faixas progressivas. Apuração por período.',
+    core: false,
+    default: false,
+  },
+  match: {
+    label: 'Motor de Match',
+    description: 'Cruza ofertas (venda) × demandas (compra) por produto, volume, preço, região e qualidade.',
+    core: false,
+    default: false,
+  },
+  dossie: {
+    label: 'Dossiê do Negócio',
+    description: 'Histórico consolidado por negócio: timeline, documentos, contrato, NF, romaneio, comissão.',
+    core: false,
+    default: false,
+  },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES

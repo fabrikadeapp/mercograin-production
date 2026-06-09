@@ -168,6 +168,9 @@ model Workspace {
   // S8 M6 — Comissão hierárquica
   comissaoRegras         ComissaoRegra[]
   comissoesApuradas      ComissaoApurada[]
+  // Comissionamento de colaborador (vendedor interno) — feature 'comissionamento'
+  regrasComissaoColab    RegraComissaoColaborador[]
+  comissoesColabApuradas ComissaoColaboradorApurada[]
   // S10 M2 — Mesa profissional
   ofertas                Oferta[]
   cenariosCalculadora    CenarioCalculadora[]
@@ -447,6 +450,17 @@ model WorkspaceMember {
   /// gerente_fiscal | assistente | compliance | ti
   funcoes String[] @default([])
 
+  /// Marca o colaborador como VENDEDOR (recebe atribuição de negócios e entra
+  /// nos relatórios de venda por colaborador). Editável em /gestao/equipe.
+  isVendedor Boolean @default(false)
+
+  /// Marca o colaborador como COMISSIONADO (sua venda gera comissão própria,
+  /// conforme a regra em `regraComissao`). Independente de isVendedor.
+  comissionado Boolean @default(false)
+
+  /// Regra de comissão individual deste colaborador (1:1, opcional).
+  regraComissao RegraComissaoColaborador?
+
   // Relations para atribuição comercial
   clientesResponsavel  Cliente[]            @relation("ClienteResponsavel")
   clienteAtendimentos  ClienteAtendimento[]
@@ -455,6 +469,7 @@ model WorkspaceMember {
   propostasAutorizadas Proposta[]           @relation("PropostaAutorizadoPor")
   contratosGerente     Contrato[]           @relation("ContratoGerente")
   contratosVendedor    Contrato[]           @relation("ContratoVendedor")
+  comissoesColaborador ComissaoColaboradorApurada[]
 
   inviteToken String?   @unique
   invitedAt   DateTime?
@@ -3185,11 +3200,27 @@ model ComissaoRegra {
   /// Filtro JSON do escopo (ex.: { cultura: 'soja' })
   escopoFiltro Json?
 
+  /// Base de cálculo da corretagem: 'percentual' (% sobre valor) ou
+  /// 'por_tonelada' (R$ × toneladas do negócio). Default mantém compat.
+  baseCalculo String @default("percentual") // 'percentual' | 'por_tonelada'
+
   pctTotal      Float
   pctCorretor   Float
   pctOriginador Float?
   pctMesa       Float?
   pctHouse      Float?
+
+  /// R$ por tonelada (usado quando baseCalculo='por_tonelada').
+  valorPorTonelada Decimal? @db.Decimal(12, 4)
+
+  /// Quem paga a corretagem: 'comprador' | 'vendedor' | 'ambos'.
+  quemPaga String @default("comprador")
+  /// Quando quemPaga='ambos', % da corretagem que cabe ao comprador (resto ao
+  /// vendedor). Ex.: 50 = meio a meio. Ignorado nos demais casos.
+  rateioCompradorPct Float @default(100)
+
+  /// Prazo de recebimento (dias após faturamento) — usado p/ aging/alertas.
+  prazoRecebimentoDias Int @default(30)
 
   ativo      Boolean @default(true)
   prioridade Int     @default(0)
@@ -3216,6 +3247,17 @@ model ComissaoApurada {
   pctTotalAplicado   Float
   valorTotalComissao Decimal @db.Decimal(15, 2)
 
+  /// Base aplicada nesta apuração (snapshot): 'percentual' | 'por_tonelada'.
+  baseCalculo      String  @default("percentual")
+  /// Toneladas do negócio (quando base='por_tonelada') — para auditoria.
+  toneladas        Decimal @default(0) @db.Decimal(14, 3)
+  valorPorTonelada Decimal @default(0) @db.Decimal(12, 4)
+
+  /// Quem paga e rateio entre contrapartes (snapshot da regra).
+  quemPaga          String  @default("comprador") // comprador|vendedor|ambos
+  valorComprador    Decimal @default(0) @db.Decimal(15, 2)
+  valorVendedorPaga Decimal @default(0) @db.Decimal(15, 2)
+
   corretorId      String?
   valorCorretor   Decimal @default(0) @db.Decimal(15, 2)
   originadorId    String?
@@ -3224,14 +3266,95 @@ model ComissaoApurada {
   valorMesa       Decimal @default(0) @db.Decimal(15, 2)
   valorHouse      Decimal @default(0) @db.Decimal(15, 2)
 
-  /// 'apurada' | 'paga' | 'cancelada'
-  status String    @default("apurada")
-  pagaEm DateTime?
+  /// Pipeline de corretagem: 'prevista' | 'faturada' | 'recebida' | 'cancelada'.
+  /// (Valores legados 'apurada'|'paga' continuam aceitos; default permanece.)
+  status String @default("apurada")
+
+  /// Aging — datas do ciclo de recebimento.
+  faturadaEm   DateTime?
+  vencimentoEm DateTime?
+  recebidaEm   DateTime?
+  pagaEm       DateTime?
+
+  /// Rateio entre múltiplos corretores quando houver mais de um.
+  /// [{ corretorId, nome, valor, recebidoEm? }]
+  rateioCorretores Json?
 
   createdAt DateTime @default(now())
 
   @@index([workspaceId, status])
+  @@index([workspaceId, vencimentoEm])
   @@index([corretorId])
+}
+
+/// Regra de comissão INDIVIDUAL de um colaborador (vendedor interno).
+/// 1:1 com WorkspaceMember. Suporta 4 modelos de cálculo via `tipo`:
+///   - 'percentual'        → `pct` sobre o valor vendido no período
+///   - 'fixo'              → `valorFixo` por período (ou por negócio, via baseFixo)
+///   - 'piso_percentual'   → max(valorFixo, pct × vendido)  (piso garantido + %)
+///   - 'faixas'            → tabela progressiva: `faixas` = [{ ate, pct?, valor? }]
+///       ordenada por `ate` crescente; aplica a faixa cujo teto cobre o vendido.
+/// Feature-gated por 'comissionamento' (kill-switch superadmin).
+model RegraComissaoColaborador {
+  id          String          @id @default(cuid())
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  memberId    String          @unique
+  member      WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  tipo String @default("percentual") // 'percentual' | 'fixo' | 'piso_percentual' | 'faixas'
+
+  /// % aplicado (0–100). Usado em 'percentual' e 'piso_percentual'.
+  pct Float @default(0)
+
+  /// Valor fixo em BRL. Usado em 'fixo' (valor do período/negócio) e
+  /// 'piso_percentual' (piso garantido).
+  valorFixo Decimal? @db.Decimal(15, 2)
+
+  /// Para 'fixo': base do valor fixo. 'periodo' = por apuração; 'negocio' = por contrato.
+  baseFixo String @default("periodo") // 'periodo' | 'negocio'
+
+  /// Tabela de faixas progressivas (tipo='faixas'):
+  /// [{ ate: number(BRL vendido), pct?: number, valor?: number }, ...]
+  /// A última faixa pode ter ate=null (ou muito alto) = "acima de".
+  faixas Json?
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+/// Comissão de colaborador apurada num período (snapshot imutável do cálculo).
+/// Status: prevista → faturada → paga. Nunca deletar — desativar/cancelar.
+model ComissaoColaboradorApurada {
+  id          String          @id @default(cuid())
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  /// Janela de apuração (ex.: mês de competência).
+  periodoInicio DateTime
+  periodoFim    DateTime
+
+  valorVendido   Decimal @db.Decimal(15, 2)
+  qtdContratos   Int     @default(0)
+  tipoRegra      String  // snapshot do tipo aplicado
+  regraSnapshot  Json?   // snapshot da regra no momento da apuração (auditoria)
+  valorComissao  Decimal @db.Decimal(15, 2)
+
+  status   String    @default("prevista") // 'prevista' | 'faturada' | 'paga' | 'cancelada'
+  pagaEm   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, memberId, periodoInicio, periodoFim])
+  @@index([workspaceId, status])
+  @@index([memberId])
 }
 
 // ============================================
@@ -3255,6 +3378,11 @@ model Oferta {
   validaAte      DateTime
   status         String    @default("aberta") @db.VarChar(15) // 'aberta'|'aceita'|'expirada'|'cancelada'
   publica        Boolean   @default(false)
+  /// Especificação de qualidade (F1-02): { ph, umidade, avariados, proteina, ... }.
+  /// Usada pelo motor de match para compatibilidade fina.
+  qualidadeSpec  Json?
+  /// Janela de embarque/entrega desejada (data alvo). Usada no match por janela.
+  janelaEntrega  DateTime?
   proprietarioId String
   proprietario   User      @relation("OfertaProprietario", fields: [proprietarioId], references: [id], onDelete: Cascade)
   observacao     String?   @db.Text

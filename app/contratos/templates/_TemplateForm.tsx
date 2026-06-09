@@ -16,7 +16,7 @@ import { TemplateEditor, type TemplateEditorHandle } from '@/components/contrato
 export interface TemplateFormInitial {
   id?: string
   nome?: string
-  tipo?: 'venda' | 'compra' | 'intermediacao' | 'outros'
+  tipo?: 'venda' | 'compra' | 'intermediacao' | 'outros' | 'proposta' | 'corretagem'
   descricao?: string | null
   contentJson?: any
   isDefault?: boolean
@@ -187,8 +187,10 @@ export function TemplateForm({ initial, mode }: Props) {
               value={tipo}
               onChange={(e) => setTipo(e.target.value as any)}
               options={[
-                { value: 'venda', label: 'Venda' },
-                { value: 'compra', label: 'Compra' },
+                { value: 'venda', label: 'Contrato de Venda' },
+                { value: 'compra', label: 'Contrato de Compra' },
+                { value: 'proposta', label: 'Proposta' },
+                { value: 'corretagem', label: 'Nota de corretagem' },
                 { value: 'intermediacao', label: 'Intermediação' },
                 { value: 'outros', label: 'Outros' },
               ]}

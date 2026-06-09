@@ -22,18 +22,37 @@ export interface NavItem {
   group?: string
   /** True = não exibir na sidebar (acesso direto via URL). */
   hidden?: boolean
+  /**
+   * Sub-itens aninhados. Quando presente, o item vira um grupo no dropdown:
+   * o `label` é o cabeçalho da seção e os `children` são os links indentados.
+   * O `href` do pai continua válido (atalho para a tela principal do grupo).
+   */
+  children?: NavItem[]
+  /** Marca item ainda não implementado (exibido como "em breve", não clicável). */
+  soon?: boolean
 }
 
 /** Navegação completa por área. */
 export const NAV: Record<Area, NavItem[]> = {
   mesa: [
     { href: '/dashboard', label: 'Visão geral', icon: 'LayoutDashboard' },
+    { href: '/leads/novo', label: 'Novo Lead', icon: 'UserPlus' },
+    { href: '/leads', label: 'Leads', icon: 'Sparkles' },
+    { href: '/clientes', label: 'Clientes', icon: 'Users' },
+    {
+      href: '/propostas',
+      label: 'Propostas e Contratos',
+      icon: 'FileText',
+      children: [
+        { href: '/propostas', label: 'Todas as propostas', icon: 'ListChecks' },
+        { href: '/contratos', label: 'Todos os contratos', icon: 'FileText' },
+        { href: '/propostas/kanban', label: 'Kanban', icon: 'Kanban' },
+        { href: '/calculadora', label: 'Calculadora', icon: 'Calculator' },
+      ],
+    },
     { href: '/solicitacoes', label: 'Solicitações', icon: 'Inbox' },
-    { href: '/propostas', label: 'Propostas', icon: 'ListChecks' },
-    { href: '/contratos', label: 'Contratos', icon: 'FileText' },
-    { href: '/clientes', label: 'Clientes & CRM', icon: 'Users' },
+    { href: '/match', label: 'Match de ofertas', icon: 'GitMerge', requires: 'match' },
     { href: '/cotacoes', label: 'Cotações ao vivo', icon: 'TrendingUp' },
-    { href: '/calculadora', label: 'Calculadora', icon: 'Calculator' },
     { href: '/aprovacoes', label: 'Aprovações', icon: 'CheckSquare' },
     // Opcionais (feature-flagged)
     { href: '/originacao', label: 'Originação', icon: 'Sprout', requires: 'originacao' },
@@ -53,20 +72,38 @@ export const NAV: Record<Area, NavItem[]> = {
   ],
   financeiro: [
     { href: '/financeiro', label: 'Visão financeira', icon: 'TrendingUp' },
+    { href: '/financeiro/receber', label: 'Contas a Receber', icon: 'ArrowDownCircle' },
+    { href: '/financeiro/pagar', label: 'Contas a Pagar', icon: 'ArrowUpCircle' },
     { href: '/fluxo-de-caixa', label: 'Fluxo de caixa', icon: 'Coins' },
+    { href: '/financeiro/conciliacao', label: 'Conciliação bancária', icon: 'GitCompare' },
     { href: '/boletos', label: 'Boletos', icon: 'Wallet' },
+    { href: '/financeiro/corretagem', label: 'Corretagem', icon: 'Receipt' },
     { href: '/fornecedores', label: 'Fornecedores', icon: 'Package' },
-    { href: '/relatorios', label: 'Relatórios', icon: 'BarChart3' },
+    { href: '/fiscal', label: 'Fiscal & SPED', icon: 'FileText' },
+    { href: '/relatorios', label: 'Relatórios financeiros', icon: 'BarChart3' },
   ],
   gestao: [
-    { href: '/perfil', label: 'Meu perfil', icon: 'User' },
-    { href: '/configuracoes/marca', label: 'Marca & Logo', icon: 'Image' },
-    { href: '/configuracoes/tema', label: 'Aparência & Tema', icon: 'Palette' },
-    { href: '/configuracoes', label: 'Configurações', icon: 'Settings' },
-    { href: '/assinatura', label: 'Plano & assinatura', icon: 'CreditCard' },
-    { href: '/fiscal', label: 'Fiscal & SPED', icon: 'Receipt' },
+    {
+      href: '/configuracoes',
+      label: 'Configurações da empresa',
+      icon: 'Settings',
+      children: [
+        { href: '/configuracoes/empresa', label: 'Dados da empresa', icon: 'Building2' },
+        { href: '/configuracoes/marca', label: 'Marca & Logo', icon: 'Image' },
+        { href: '/configuracoes/tema', label: 'Aparência & Tema', icon: 'Palette' },
+        { href: '/gestao/equipe', label: 'Funcionários & permissões', icon: 'Users' },
+        { href: '/configuracoes/integracoes', label: 'Integrações', icon: 'Plug' },
+        { href: '/propostas/modelos', label: 'Modelo de proposta', icon: 'FileText' },
+        { href: '/contratos/templates?tipo=compra', label: 'Modelo de contrato (compra)', icon: 'FileSignature' },
+        { href: '/contratos/templates?tipo=venda', label: 'Modelo de contrato (venda)', icon: 'FileSignature' },
+      ],
+    },
+    { href: '/admin-empresa', label: 'Dashboard administrativo', icon: 'LayoutDashboard' },
+    { href: '/gestao/comissionamento', label: 'Comissionamento', icon: 'Percent', requires: 'comissionamento' },
     { href: '/auditoria', label: 'Auditoria', icon: 'ShieldAlert' },
-    { href: '/webhooks', label: 'Webhooks', icon: 'Server' },
+    { href: '/assinatura', label: 'Plano & assinatura', icon: 'CreditCard' },
+    { href: '/perfil', label: 'Meu perfil', icon: 'User' },
+    { href: '/webhooks', label: 'Webhooks', icon: 'Server', hidden: true },
     // Opcionais
     { href: '/whatsapp', label: 'WhatsApp Bot', icon: 'MessageCircle' },
     { href: '/laura', label: 'Laura.IA', icon: 'Bot', requires: 'laura_ai' },
@@ -83,9 +120,17 @@ export function visibleItems(
   items: NavItem[],
   enabledFeatures: Record<string, boolean>,
 ): NavItem[] {
-  return items.filter((it) => {
-    if (it.hidden) return false
-    if (!it.requires) return true
-    return enabledFeatures[it.requires] === true
-  })
+  return items
+    .filter((it) => {
+      if (it.hidden) return false
+      if (!it.requires) return true
+      return enabledFeatures[it.requires] === true
+    })
+    .map((it) =>
+      it.children
+        ? { ...it, children: visibleItems(it.children, enabledFeatures) }
+        : it,
+    )
+    // Remove grupos que ficaram sem filhos visíveis.
+    .filter((it) => !it.children || it.children.length > 0)
 }

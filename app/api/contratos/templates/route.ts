@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 const templateSchema = z.object({
   nome: z.string().min(1),
-  tipo: z.enum(['venda', 'compra', 'intermediacao', 'outros']),
+  tipo: z.enum(['venda', 'compra', 'intermediacao', 'outros', 'proposta', 'corretagem']),
   descricao: z.string().optional().nullable(),
   contentJson: z.any(),
   variaveis: z.any().optional().nullable(),

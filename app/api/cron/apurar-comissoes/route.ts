@@ -94,6 +94,10 @@ async function handle(req: Request) {
           escopoFiltro: (r.escopoFiltro as any) ?? null,
           ativo: r.ativo,
           prioridade: r.prioridade,
+          baseCalculo: r.baseCalculo,
+          valorPorTonelada: r.valorPorTonelada != null ? Number(r.valorPorTonelada) : null,
+          quemPaga: r.quemPaga,
+          rateioCompradorPct: r.rateioCompradorPct,
         }))
 
         const regra = selecionarRegra(regras, {
@@ -107,7 +111,18 @@ async function handle(req: Request) {
           continue
         }
 
-        const dist = distribuirComissao(regra, valorContrato)
+        // Toneladas do negócio (proposta.graos[].quantidade está em toneladas).
+        const graos = contrato.proposta?.graos as any
+        const toneladas = Array.isArray(graos)
+          ? graos.reduce((s: number, g: any) => s + (Number(g?.quantidade) || 0), 0)
+          : 0
+
+        const dist = distribuirComissao(regra, valorContrato, toneladas)
+
+        // Selecionar a regra completa do DB para snapshot dos campos novos.
+        const regraDb = regrasDb.find((r) => r.id === regra.id)
+        const prazoDias = regraDb?.prazoRecebimentoDias ?? 30
+        const vencimentoEm = new Date(Date.now() + prazoDias * 86_400_000)
 
         // Tenta achar originadorId via corretor (S6 M5: corretor pode ser também originador)
         let originadorId: string | null = null
@@ -128,6 +143,12 @@ async function handle(req: Request) {
               valorContrato,
               pctTotalAplicado: regra.pctTotal,
               valorTotalComissao: dist.valorTotal,
+              baseCalculo: regraDb?.baseCalculo ?? 'percentual',
+              toneladas,
+              valorPorTonelada: regraDb?.valorPorTonelada ?? 0,
+              quemPaga: dist.quemPaga,
+              valorComprador: dist.valorComprador,
+              valorVendedorPaga: dist.valorVendedorPaga,
               corretorId: contrato.corretorId,
               valorCorretor: dist.corretor,
               originadorId,
@@ -135,7 +156,9 @@ async function handle(req: Request) {
               mesaId: contrato.mesaId,
               valorMesa: dist.mesa,
               valorHouse: dist.house,
-              status: 'apurada',
+              // Pipeline: nasce 'prevista' (com aging); faturada/recebida vêm de ações.
+              status: 'prevista',
+              vencimentoEm,
             },
           })
 

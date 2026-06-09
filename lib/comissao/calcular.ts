@@ -19,6 +19,15 @@ export interface RegraInput {
   escopoFiltro?: Record<string, any> | null
   ativo?: boolean
   prioridade?: number
+  // F1-05 — corretagem completa
+  /** 'percentual' (default) | 'por_tonelada' */
+  baseCalculo?: string | null
+  /** R$/ton quando baseCalculo='por_tonelada' */
+  valorPorTonelada?: number | null
+  /** 'comprador' (default) | 'vendedor' | 'ambos' */
+  quemPaga?: string | null
+  /** % que cabe ao comprador quando quemPaga='ambos' (resto ao vendedor) */
+  rateioCompradorPct?: number | null
 }
 
 export interface ContratoCtx {
@@ -34,6 +43,10 @@ export interface DistribuicaoComissao {
   originador: number
   mesa: number
   house: number
+  /** Quem paga (snapshot) e rateio entre contrapartes. */
+  quemPaga: string
+  valorComprador: number
+  valorVendedorPaga: number
 }
 
 /** True se a regra (escopo + filtro) aplica ao contexto do contrato. */
@@ -84,11 +97,31 @@ function round2(n: number): number {
 
 export function distribuirComissao(
   regra: RegraInput,
-  valorContrato: number
+  valorContrato: number,
+  toneladas = 0
 ): DistribuicaoComissao {
   const v = Number(valorContrato) || 0
   const pctTotal = regra.pctTotal
-  const valorTotal = round2((v * pctTotal) / 100)
+
+  // Base de cálculo: percentual (default) ou R$ por tonelada.
+  const valorTotal =
+    regra.baseCalculo === 'por_tonelada'
+      ? round2((Number(regra.valorPorTonelada) || 0) * (Number(toneladas) || 0))
+      : round2((v * pctTotal) / 100)
+
+  // "Quem paga" + rateio entre contrapartes (sobre o total da corretagem).
+  const quemPaga = regra.quemPaga || 'comprador'
+  let valorComprador = 0
+  let valorVendedorPaga = 0
+  if (quemPaga === 'comprador') {
+    valorComprador = valorTotal
+  } else if (quemPaga === 'vendedor') {
+    valorVendedorPaga = valorTotal
+  } else {
+    const pctComp = regra.rateioCompradorPct == null ? 100 : regra.rateioCompradorPct
+    valorComprador = round2((valorTotal * pctComp) / 100)
+    valorVendedorPaga = round2(valorTotal - valorComprador)
+  }
 
   const partes = {
     corretor: regra.pctCorretor || 0,
@@ -104,28 +137,18 @@ export function distribuirComissao(
   let valorMesa: number
   let valorHouse: number
 
-  if (somaPartes <= 0) {
-    // Sem distribuição definida: tudo para house
+  // A distribuição entre as partes é proporcional aos pcts informados, mas
+  // SEMPRE normalizada para somar exatamente `valorTotal` (funciona tanto para
+  // base percentual quanto por_tonelada — o "todo" a repartir é valorTotal).
+  if (somaPartes <= 0 || valorTotal <= 0) {
     valorCorretor = 0
     valorOriginador = 0
     valorMesa = 0
     valorHouse = valorTotal
-  } else if (somaPartes <= pctTotal + 0.0001) {
-    // Cabe dentro do pctTotal — calcular em proporção de valorContrato
-    valorCorretor = round2((v * partes.corretor) / 100)
-    valorOriginador = round2((v * partes.originador) / 100)
-    valorMesa = round2((v * partes.mesa) / 100)
-    // House absorve residual (incluindo arredondamentos)
-    valorHouse = round2(
-      valorTotal - valorCorretor - valorOriginador - valorMesa
-    )
-    if (valorHouse < 0) valorHouse = 0
   } else {
-    // Soma excede pctTotal → normaliza proporcionalmente ao valorTotal
-    const k = valorTotal / ((v * somaPartes) / 100)
-    valorCorretor = round2(((v * partes.corretor) / 100) * k)
-    valorOriginador = round2(((v * partes.originador) / 100) * k)
-    valorMesa = round2(((v * partes.mesa) / 100) * k)
+    valorCorretor = round2((valorTotal * partes.corretor) / somaPartes)
+    valorOriginador = round2((valorTotal * partes.originador) / somaPartes)
+    valorMesa = round2((valorTotal * partes.mesa) / somaPartes)
     valorHouse = round2(
       valorTotal - valorCorretor - valorOriginador - valorMesa
     )
@@ -138,5 +161,8 @@ export function distribuirComissao(
     originador: valorOriginador,
     mesa: valorMesa,
     house: valorHouse,
+    quemPaga,
+    valorComprador,
+    valorVendedorPaga,
   }
 }

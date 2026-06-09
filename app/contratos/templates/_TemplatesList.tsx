@@ -26,7 +26,7 @@ import { useToast } from '@/contexts/ToastContext'
 interface Template {
   id: string
   nome: string
-  tipo: 'venda' | 'compra' | 'intermediacao' | 'outros'
+  tipo: 'venda' | 'compra' | 'intermediacao' | 'outros' | 'proposta' | 'corretagem'
   descricao: string | null
   ativo: boolean
   isDefault: boolean
@@ -37,11 +37,13 @@ interface Template {
 const TIPO_LABEL: Record<Template['tipo'], string> = {
   venda: 'Venda',
   compra: 'Compra',
+  proposta: 'Proposta',
+  corretagem: 'Nota de corretagem',
   intermediacao: 'Intermediação',
   outros: 'Outros',
 }
 
-export function TemplatesList() {
+export function TemplatesList({ filterTipo }: { filterTipo?: Template['tipo'] } = {}) {
   const router = useRouter()
   const { success, error: showError } = useToast()
   const [templates, setTemplates] = useState<Template[]>([])
@@ -51,7 +53,10 @@ export function TemplatesList() {
   async function load() {
     setLoading(true)
     try {
-      const res = await fetch('/api/contratos/templates')
+      const url = filterTipo
+        ? `/api/contratos/templates?tipo=${filterTipo}`
+        : '/api/contratos/templates'
+      const res = await fetch(url)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao carregar')
       setTemplates(data.templates || [])
@@ -64,7 +69,8 @@ export function TemplatesList() {
 
   useEffect(() => {
     load()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterTipo])
 
   async function handleDuplicate(t: Template) {
     setBusy(t.id)
