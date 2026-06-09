@@ -50,6 +50,30 @@ export async function varrerVendedoresEGerarRascunhos(input: VarreduraInput): Pr
   }
   if (!Number.isFinite(cotacaoPreco) || (cotacaoPreco as number) <= 0) return []
 
+  // Registra a DEMANDA (Oferta tipo=compra) — aparece em /demandas.
+  // Idempotência best-effort: não bloqueia o fluxo se falhar.
+  try {
+    const { gerarNumeroOferta, calcValidaAte } = await import('@/lib/ofertas/service')
+    const owner = await db.workspaceMember.findFirst({ where: { workspaceId: input.workspaceId }, select: { userId: true } })
+    if (owner?.userId) {
+      await db.oferta.create({
+        data: {
+          workspaceId: input.workspaceId,
+          numero: gerarNumeroOferta(),
+          tipo: 'compra',
+          cultura: grao,
+          qtdSc: input.quantidade,
+          precoSc: cotacaoPreco as number,
+          validadeHoras: 72,
+          validaAte: calcValidaAte(72),
+          status: 'aberta',
+          proprietarioId: owner.userId,
+          observacao: 'Demanda capturada automaticamente.',
+        },
+      })
+    }
+  } catch { /* não bloqueia a varredura */ }
+
   // Vendedores ativos do grão (tipo vendedor|ambos), exceto a origem.
   const vendedores = await db.cliente.findMany({
     where: {

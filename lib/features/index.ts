@@ -105,6 +105,12 @@ export const FEATURES = {
     core: false,
     default: false,
   },
+  demandas: {
+    label: 'Demandas de Compra',
+    description: 'Pedidos de compra estruturados (quem quer comprar), tratados pela IA por canal.',
+    core: false,
+    default: false,
+  },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES

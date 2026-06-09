@@ -52,6 +52,7 @@ export const NAV: Record<Area, NavItem[]> = {
     },
     { href: '/inbox', label: 'Inbox unificado', icon: 'Inbox' },
     { href: '/solicitacoes', label: 'Solicitações', icon: 'MessageSquare' },
+    { href: '/demandas', label: 'Demandas de compra', icon: 'ShoppingCart', requires: 'demandas' },
     { href: '/match', label: 'Match de ofertas', icon: 'GitMerge', requires: 'match' },
     { href: '/negocios', label: 'Negócios', icon: 'Handshake', requires: 'match' },
     { href: '/cotacoes', label: 'Cotações ao vivo', icon: 'TrendingUp' },
