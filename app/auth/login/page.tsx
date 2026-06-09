@@ -29,6 +29,16 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
+    // Trava de segurança: se por qualquer motivo o signIn pendurar (rede,
+    // cookie, redirect cross-domain), libera o botão e mostra erro em vez de
+    // ficar eternamente em "Conectando...".
+    const watchdog = setTimeout(() => {
+      setLoading((cur) => {
+        if (cur) setError('A conexão demorou demais. Verifique sua senha e tente novamente.')
+        return false
+      })
+    }, 15000)
+
     try {
       const result = await signIn('credentials', {
         email,
@@ -41,40 +51,49 @@ export default function LoginPage() {
         redirect: false,
       })
 
-      if (!result?.ok) {
+      // result pode vir null/undefined em falhas de rede — trata como erro.
+      if (!result || !result.ok || result.error) {
         const errMsg = (result as any)?.error || ''
         if (errMsg.includes('2FA_REQUIRED')) {
           setTwofa(true)
           setError('')
-          setLoading(false)
           return
         }
         if (errMsg.includes('2FA_INVALID')) {
           setError('Código 2FA inválido')
-          setLoading(false)
+          return
+        }
+        if (errMsg.toLowerCase().includes('muitas tentativas')) {
+          setError(errMsg)
           return
         }
         setError('Email ou senha inválidos')
-        setLoading(false)
         return
       }
 
-      // Decide redirect: se houver plan e user não tem assinatura ativa, vai pro checkout
+      // Sucesso. Decide destino.
+      let destino = '/dashboard'
       if (plan) {
         try {
           const sess = await getSession()
           const subStatus = (sess?.user as any)?.subscriptionStatus
           if (!['trialing', 'active'].includes(subStatus)) {
-            router.push(`/assinatura/checkout?plan=${plan}`)
-            return
+            destino = `/assinatura/checkout?plan=${plan}`
           }
         } catch {
           /* ignore */
         }
       }
-      router.push('/dashboard')
+      clearTimeout(watchdog)
+      // Navegação "hard": força o servidor a reavaliar a sessão com o cookie
+      // recém-setado (mais confiável que router.push após login).
+      window.location.assign(destino)
+      return
     } catch (err) {
-      setError('Erro ao fazer login')
+      setError('Erro ao fazer login. Tente novamente.')
+    } finally {
+      clearTimeout(watchdog)
+      // Garante que o botão nunca fica preso (exceto no sucesso, que já navegou).
       setLoading(false)
     }
   }
