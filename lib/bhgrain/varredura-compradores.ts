@@ -91,7 +91,7 @@ export async function varrerCompradoresEGerarRascunhos(input: VarreduraInput): P
         clienteId: comp.id,
         numero,
         tipo: 'venda',
-        graos: { grao, commodity: grao, quantidade: input.quantidade, unidade: input.unidade ?? 'sc', preco },
+        graos: [{ grao, commodity: grao, quantidade: input.quantidade, unidade: input.unidade ?? 'sc', preco, subtotal: preco * input.quantidade }],
         valorTotal,
         status: 'rascunho_ia',
         validadeEm: new Date(Date.now() + 24 * 3600 * 1000),

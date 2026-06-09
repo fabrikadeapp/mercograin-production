@@ -98,7 +98,22 @@ export default function PropostaDetalhesPage() {
       const response = await fetch(`/api/propostas/${id}`)
       if (!response.ok) throw new Error('Erro ao buscar proposta')
       const data = await response.json()
-      setProposta(data)
+      // Normaliza `graos`: propostas geradas por IA/varredura gravam como objeto
+      // único ({grao, quantidade, preco}); a tela espera sempre um array.
+      const rawGraos = data?.graos
+      const graos: GraoItem[] = Array.isArray(rawGraos)
+        ? rawGraos
+        : rawGraos && typeof rawGraos === 'object'
+          ? [
+              {
+                grao: rawGraos.grao ?? rawGraos.commodity ?? '—',
+                quantidade: Number(rawGraos.quantidade ?? rawGraos.quantidadeSc ?? 0),
+                preco: Number(rawGraos.preco ?? 0),
+                subtotal: Number(rawGraos.subtotal ?? (Number(rawGraos.quantidade ?? 0) * Number(rawGraos.preco ?? 0))),
+              } as GraoItem,
+            ]
+          : []
+      setProposta({ ...data, graos })
     } catch (err) {
       showError('Erro ao carregar proposta')
       console.error(err)

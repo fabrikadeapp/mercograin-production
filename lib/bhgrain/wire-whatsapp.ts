@@ -217,13 +217,15 @@ async function criarRascunhoIA(
       clienteId: contact.clienteId,
       numero,
       tipo: 'venda',
-      graos: {
+      graos: [{
+        grao: grao,
         commodity: c.commodity,
         quantidade: c.quantidade,
         unidade: c.unidade ?? 'sc',
         preco,
+        subtotal: preco * (c.quantidade ?? 0),
         localEntrega: c.localEntrega ?? null,
-      },
+      }],
       valorTotal: margem.valorTotal,
       status: 'rascunho_ia',
       validadeEm: validadeProposta,

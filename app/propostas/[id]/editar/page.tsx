@@ -95,7 +95,15 @@ export default function EditarPropostaPage() {
       }
 
       setProposta(data)
-      setGraos(data.graos || [])
+      // Normaliza graos para array (propostas de IA gravam como objeto único).
+      const rg = data.graos
+      setGraos(
+        Array.isArray(rg)
+          ? rg
+          : rg && typeof rg === 'object'
+            ? [{ grao: rg.grao ?? rg.commodity ?? '', quantidade: Number(rg.quantidade ?? rg.quantidadeSc ?? 0), preco: Number(rg.preco ?? rg.precoSc ?? 0), subtotal: Number(rg.subtotal ?? 0) }]
+            : [],
+      )
     } catch (err) {
       showError('Erro ao carregar proposta')
       console.error(err)
