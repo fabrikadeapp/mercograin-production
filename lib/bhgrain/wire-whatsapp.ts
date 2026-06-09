@@ -99,11 +99,33 @@ export async function wireBhGrainFromWhatsApp(input: WireInput): Promise<void> {
       data: { aiStatus: classification.status },
     })
 
-    // 5. Se pronto-para-proposta → tenta criar Rascunho IA
+    // 5. Se pronto-para-proposta → cria Rascunho IA p/ o remetente
     if (classification.status === 'pronta_para_proposta') {
       await criarRascunhoIA(input.workspaceId, input.contactId, classification).catch((e) =>
         captureError(e, { where: 'wire-whatsapp.criarRascunhoIA', workspaceId: input.workspaceId })
       )
+
+      // 6. Varredura: se a feature 'match' está ON e é uma oferta de venda,
+      // gera rascunhos para os compradores compatíveis (preço CEPEA+margem).
+      // Sempre rascunho — revisão humana na fila de ação.
+      try {
+        const { isFeatureEnabled } = await import('@/lib/features')
+        const intencao = String((classification as any).intencao ?? '')
+        const ehVenda = /venda|oferta_venda/.test(intencao) || !/compra|demanda/.test(intencao)
+        if (ehVenda && (await isFeatureEnabled(input.workspaceId, 'match')) && classification.commodity && classification.quantidade != null) {
+          const contact = await db.whatsAppContact.findUnique({ where: { id: input.contactId }, select: { clienteId: true } })
+          const { varrerCompradoresEGerarRascunhos } = await import('./varredura-compradores')
+          await varrerCompradoresEGerarRascunhos({
+            workspaceId: input.workspaceId,
+            grao: classification.commodity,
+            quantidade: classification.quantidade,
+            unidade: classification.unidade ?? 'sc',
+            origemClienteId: contact?.clienteId ?? null,
+          })
+        }
+      } catch (e) {
+        captureError(e, { where: 'wire-whatsapp.varredura', workspaceId: input.workspaceId })
+      }
     }
   } catch (e) {
     // Falha silenciosa — não pode quebrar webhook

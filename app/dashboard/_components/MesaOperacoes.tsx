@@ -169,6 +169,9 @@ export function MesaOperacoes({
         <CotacoesKPI quotes={quotes.data} loading={quotes.loading} />
       </div>
 
+      {/* ───── inbox resumo (entre KPIs e fila/pipeline) ───── */}
+      <InboxResumoCard />
+
       {/* ───── fila + pipeline ───── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.05fr]">
         <FilaAcaoCard fila={fila} />
@@ -181,9 +184,6 @@ export function MesaOperacoes({
         <FixacoesCard q={fixacoes} />
         <RiscoCard q={risco} enabled={enabledFeatures?.hedge !== false} />
       </div>
-
-      {/* ───── inbox resumo ───── */}
-      <InboxResumoCard />
 
       {/* ───── rodapé status ───── */}
       <StatusBar q={integracoes} />

@@ -54,10 +54,10 @@ export async function GET(req: NextRequest) {
       include: { cliente: { select: { nome: true } } },
     }),
     db.proposta.findMany({
-      where: scope.whereOwn({ status: 'rascunho' }),
+      where: scope.whereOwn({ status: { in: ['rascunho', 'rascunho_ia'] } }),
       orderBy: { criadaEm: 'asc' },
       take: 50,
-      include: { cliente: { select: { nome: true } } },
+      select: { id: true, numero: true, status: true, criadaEm: true, cliente: { select: { nome: true } } },
     }),
     db.proposta.findMany({
       where: scope.whereOwn({ status: 'cancelada' }),
@@ -85,11 +85,14 @@ export async function GET(req: NextRequest) {
   }
 
   for (const p of rascunhos) {
+    const porIA = p.status === 'rascunho_ia'
     items.push({
       id: p.id,
       origem: 'rascunho',
       cliente: p.cliente?.nome ?? 'Cliente',
-      resumo: `Proposta ${p.numero} montada · aguardando seu envio`,
+      resumo: porIA
+        ? `Proposta ${p.numero} gerada por IA (WhatsApp) · revisar e enviar`
+        : `Proposta ${p.numero} montada · aguardando seu envio`,
       horas: horasDesde(p.criadaEm),
       createdAt: p.criadaEm.toISOString(),
       href: `/propostas/${p.id}`,

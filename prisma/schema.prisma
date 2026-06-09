@@ -175,6 +175,8 @@ model Workspace {
   checklistExportacao    ChecklistExportacaoItem[]
   // Deal flow — negócio que une oferta+demanda+2 contrapartes (F1-04)
   negocios               Negocio[]
+  // Margem por grão × cliente × tipo (automação WhatsApp→proposta)
+  margensCliente         MargemCliente[]
   // S10 M2 — Mesa profissional
   ofertas                Oferta[]
   cenariosCalculadora    CenarioCalculadora[]
@@ -732,6 +734,7 @@ model Cliente {
   updatedAt           DateTime  @updatedAt
 
   propostas           Proposta[]
+  margensCliente      MargemCliente[]
   solicitacoesCotacao SolicitacaoCotacao[]
   contratos           Contrato[]
   boletos             Boleto[]
@@ -3329,6 +3332,30 @@ model RegraComissaoColaborador {
   updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
+}
+
+/// Margem pré-setada por cliente × grão × tipo de operação. Sobrepõe a margem
+/// global por commodity (CommodityMarginRule) na geração automática de preço.
+/// Cascata de resolução: MargemCliente(cliente,grão,tipo) > CommodityMarginRule(grão) > default.
+model MargemCliente {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  clienteId   String
+  cliente     Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  grao String  // 'soja' | 'milho' | 'trigo' | ...
+  tipo String  // 'compra' | 'venda'
+  /// Margem em % (ex.: 1.5 = 1,5%).
+  pct  Float
+
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, clienteId, grao, tipo])
+  @@index([workspaceId, clienteId])
 }
 
 /// Negócio / Deal (F1-04) — une uma oferta (venda) e uma demanda (compra),
