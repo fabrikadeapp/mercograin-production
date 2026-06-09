@@ -16,6 +16,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { PageHeader, Card, DenseTable, Badge, Skeleton, EmptyState } from '@/components/ui/phb'
+import { useToast } from '@/contexts/ToastContext'
 import type { DenseTableColumn } from '@/components/ui/phb'
 import { useLiveQuotes } from '@/lib/quotes/useLiveQuotes'
 import {
@@ -27,6 +28,7 @@ import {
   ArrowUpRight,
   Inbox,
   MessageCircle,
+  Phone,
 } from 'lucide-react'
 
 /* ───────────────────────── helpers ───────────────────────── */
@@ -135,6 +137,7 @@ export function MesaOperacoes({
   const risco = useJson<{ items: RiscoItem[]; alertas: number }>('/api/mesa/risco')
   const integracoes = useJson<{ items: IntegracaoItem[]; resumo: { online: number; total: number } }>('/api/mesa/integracoes')
   const quotes = useLiveQuotes()
+  const [pedidoOpen, setPedidoOpen] = useState(false)
 
   const hora = new Date().getHours()
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
@@ -151,6 +154,9 @@ export function MesaOperacoes({
         }
         actions={
           <div className="flex items-center gap-2">
+            <button onClick={() => setPedidoOpen(true)} className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[var(--border-strong)] px-4 py-2 text-sm font-medium text-[var(--text-mute)] transition-colors hover:text-[var(--text)]">
+              <Phone size={15} /> Registrar pedido
+            </button>
             <Link href="/propostas/kanban" className="inline-flex items-center gap-2 rounded-[var(--r-sm)] border border-[var(--border-strong)] px-4 py-2 text-sm font-medium text-[var(--text-mute)] transition-colors hover:text-[var(--text)]">
               <LayoutGrid size={15} /> Kanban
             </Link>
@@ -160,6 +166,7 @@ export function MesaOperacoes({
           </div>
         }
       />
+      {pedidoOpen && <PedidoManualModal onClose={() => setPedidoOpen(false)} onDone={() => { setPedidoOpen(false); fila.reload() }} />}
 
       {/* ───── KPIs ───── */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -519,5 +526,82 @@ function StatusBar({ q }: { q: ReturnType<typeof useJson<{ items: IntegracaoItem
         </>
       )}
     </Card>
+  )
+}
+
+/* ───────────────────────── Registrar pedido (manual) ───────────────────────── */
+
+function PedidoManualModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [operacao, setOperacao] = useState<'compra' | 'venda'>('compra')
+  const [grao, setGrao] = useState('soja')
+  const [quantidade, setQuantidade] = useState(1000)
+  const [unidade, setUnidade] = useState<'sc' | 't'>('sc')
+  const [origem, setOrigem] = useState<'telefone' | 'presencial' | 'manual'>('telefone')
+  const [saving, setSaving] = useState(false)
+  const toast = useToast()
+
+  async function salvar() {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/mesa/pedido-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operacao, grao, quantidade: Number(quantidade), unidade, origem }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Falha ao registrar')
+      if (data.rascunhosGerados > 0) toast.success(`${data.rascunhosGerados} rascunho(s) de ${operacao} gerado(s) na fila de ação`)
+      else toast.error(data.aviso || 'Pedido registrado, sem clientes compatíveis')
+      onDone()
+    } catch (e: any) {
+      toast.error(e?.message || 'Erro ao registrar pedido')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-md rounded-[var(--r-lg)] border border-[var(--border-strong)] bg-[var(--surface-1)] p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-1 text-[17px] font-semibold text-[var(--text)]">Registrar pedido</h2>
+        <p className="mb-4 text-[12.5px] text-[var(--text-mute)]">Pedido recebido por telefone ou presencialmente. O sistema varre os clientes compatíveis e gera rascunhos na fila de ação.</p>
+        <div className="space-y-3">
+          <div>
+            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-wide text-[var(--text-mute)]">Operação</span>
+            <div className="grid grid-cols-2 gap-2">
+              {(['compra', 'venda'] as const).map((o) => (
+                <button key={o} onClick={() => setOperacao(o)} className={`rounded-[var(--r-sm)] border px-3 py-2 text-[13px] font-medium capitalize ${operacao === o ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] text-[var(--text)]' : 'border-[var(--border)] text-[var(--text-mute)]'}`}>
+                  {o === 'compra' ? 'Cliente quer comprar' : 'Cliente quer vender'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block"><span className="mb-1 block font-mono text-[10px] uppercase text-[var(--text-mute)]">Grão</span>
+              <select value={grao} onChange={(e) => setGrao(e.target.value)} className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)]">
+                <option value="soja">Soja</option><option value="milho">Milho</option><option value="trigo">Trigo</option><option value="sorgo">Sorgo</option>
+              </select>
+            </label>
+            <label className="block"><span className="mb-1 block font-mono text-[10px] uppercase text-[var(--text-mute)]">Origem</span>
+              <select value={origem} onChange={(e) => setOrigem(e.target.value as any)} className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)]">
+                <option value="telefone">Telefone</option><option value="presencial">Presencial</option><option value="manual">Outro</option>
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-[2fr_1fr] gap-3">
+            <label className="block"><span className="mb-1 block font-mono text-[10px] uppercase text-[var(--text-mute)]">Quantidade</span>
+              <input type="number" value={quantidade} onChange={(e) => setQuantidade(+e.target.value)} className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)]" />
+            </label>
+            <label className="block"><span className="mb-1 block font-mono text-[10px] uppercase text-[var(--text-mute)]">Unidade</span>
+              <select value={unidade} onChange={(e) => setUnidade(e.target.value as any)} className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] text-[var(--text)]">
+                <option value="sc">sacas</option><option value="t">toneladas</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-[var(--r-sm)] px-4 py-2 text-sm text-[var(--text-mute)]">Cancelar</button>
+          <button onClick={salvar} disabled={saving} className="rounded-[var(--r-sm)] bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-50">{saving ? 'Processando…' : 'Registrar e varrer'}</button>
+        </div>
+      </div>
+    </div>
   )
 }

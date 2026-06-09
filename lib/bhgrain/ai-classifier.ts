@@ -36,9 +36,30 @@ export interface ClassificationResult {
   prazoEntrega?: string
   condicaoPagamento?: string
   urgencia?: 'baixa' | 'media' | 'alta'
+  /** Operação detectada: 'venda' (oferta) | 'compra' (demanda) | null. */
+  operacao?: 'venda' | 'compra' | null
   confianca: number // 0..1
   fonte: 'heuristica' | 'openai' | 'erro'
   dadosFaltantes: string[]
+}
+
+/**
+ * Detecta se a mensagem é uma OFERTA (vender) ou DEMANDA (comprar).
+ * Heurística por verbos/expressões. Retorna null se ambíguo.
+ */
+export function detectarOperacao(text: string): 'venda' | 'compra' | null {
+  const t = (text || '').toLowerCase()
+  const compra = /\b(quero comprar|preciso comprar|comprar|compro|comprando|procuro|preciso de|busco|demanda|interesse em comprar|tomador)\b/i.test(t)
+  const venda = /\b(quero vender|vender|vendo|vendendo|tenho|ofere[çc]o|disponho|disponível para venda|tenho dispon[íi]vel|ofertar)\b/i.test(t)
+  if (compra && !venda) return 'compra'
+  if (venda && !compra) return 'venda'
+  // ambíguo (ambos ou nenhum): tenta desempate por ordem (verbo mais à esquerda)
+  if (compra && venda) {
+    const iC = t.search(/\b(comprar|compro|comprando|procuro|preciso de|busco)\b/)
+    const iV = t.search(/\b(vender|vendo|vendendo|tenho|ofere[çc]o)\b/)
+    if (iC >= 0 && iV >= 0) return iC < iV ? 'compra' : 'venda'
+  }
+  return null
 }
 
 const COMMODITY_PATTERNS: Array<[RegExp, string]> = [
@@ -104,6 +125,7 @@ export function classificarHeuristica(text: string): ClassificationResult {
       commodity,
       quantidade,
       unidade,
+      operacao: detectarOperacao(text),
       confianca: dadosFaltantes.length === 0 ? 0.75 : 0.55,
       fonte: 'heuristica',
       dadosFaltantes,

@@ -105,23 +105,33 @@ export async function wireBhGrainFromWhatsApp(input: WireInput): Promise<void> {
         captureError(e, { where: 'wire-whatsapp.criarRascunhoIA', workspaceId: input.workspaceId })
       )
 
-      // 6. Varredura: se a feature 'match' está ON e é uma oferta de venda,
-      // gera rascunhos para os compradores compatíveis (preço CEPEA+margem).
-      // Sempre rascunho — revisão humana na fila de ação.
+      // 6. Varredura espelhada (feature 'match'):
+      //    - operação VENDA  → varre COMPRADORES, gera propostas de venda (CEPEA + margem)
+      //    - operação COMPRA → varre VENDEDORES,  gera propostas de compra (CEPEA − margem)
+      //    Sempre rascunho — revisão humana na fila de ação.
       try {
         const { isFeatureEnabled } = await import('@/lib/features')
-        const intencao = String((classification as any).intencao ?? '')
-        const ehVenda = /venda|oferta_venda/.test(intencao) || !/compra|demanda/.test(intencao)
-        if (ehVenda && (await isFeatureEnabled(input.workspaceId, 'match')) && classification.commodity && classification.quantidade != null) {
+        const op = (classification as any).operacao as 'venda' | 'compra' | null | undefined
+        // fallback por intenção textual se a operação não foi detectada
+        const operacao: 'venda' | 'compra' =
+          op ?? (/compra|demanda/.test(String((classification as any).intencao ?? '')) ? 'compra' : 'venda')
+
+        if ((await isFeatureEnabled(input.workspaceId, 'match')) && classification.commodity && classification.quantidade != null) {
           const contact = await db.whatsAppContact.findUnique({ where: { id: input.contactId }, select: { clienteId: true } })
-          const { varrerCompradoresEGerarRascunhos } = await import('./varredura-compradores')
-          await varrerCompradoresEGerarRascunhos({
+          const base = {
             workspaceId: input.workspaceId,
             grao: classification.commodity,
             quantidade: classification.quantidade,
             unidade: classification.unidade ?? 'sc',
             origemClienteId: contact?.clienteId ?? null,
-          })
+          }
+          if (operacao === 'compra') {
+            const { varrerVendedoresEGerarRascunhos } = await import('./varredura-vendedores')
+            await varrerVendedoresEGerarRascunhos(base)
+          } else {
+            const { varrerCompradoresEGerarRascunhos } = await import('./varredura-compradores')
+            await varrerCompradoresEGerarRascunhos(base)
+          }
         }
       } catch (e) {
         captureError(e, { where: 'wire-whatsapp.varredura', workspaceId: input.workspaceId })
