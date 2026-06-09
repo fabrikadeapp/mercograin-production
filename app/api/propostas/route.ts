@@ -72,6 +72,12 @@ export async function GET(request: NextRequest) {
     if (status) {
       where.status = status
     }
+    // Por padrão, /propostas mostra só o que AINDA NÃO virou contrato.
+    // Propostas com contrato vinculado já são acompanhadas em /contratos.
+    // Para incluí-las, passe ?incluirComContrato=1.
+    if (searchParams.get('incluirComContrato') !== '1') {
+      where.contratos = { none: {} }
+    }
     if (clienteId) {
       where.clienteId = clienteId
     }

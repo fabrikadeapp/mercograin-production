@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BH Grain · Manual da Plataforma — MercoGrain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#1A2A24; --ink-2:#52635C; --ink-3:#8A988F;
+    --paper:#FBFAF6; --card:#FFFFFF; --line:#E7E4DA;
+    --green:#1F6B4A; --green-soft:#EAF2EC; --gold:#B58A3C; --gold-soft:#F6EFE0;
+    --accent:#1F6B4A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 28px}
+
+  /* CAPA */
+  .cover{background:linear-gradient(160deg,#1F6B4A 0%,#15543A 100%);color:#fff;padding:64px 0 56px}
+  .cover .wrap{display:flex;flex-direction:column;gap:6px}
+  .cover .logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+  .cover .logo .mark{width:40px;height:40px;border-radius:11px;background:#C8F051;display:grid;place-items:center;font-weight:800;color:#15543A;font-size:20px}
+  .cover .logo .name{font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .cover .logo .name small{display:block;font-weight:400;font-size:11px;opacity:.7;letter-spacing:.04em}
+  .cover .eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#C8F051;margin-bottom:14px}
+  .cover h1{font-family:'Fraunces',serif;font-size:clamp(34px,5vw,52px);font-weight:600;line-height:1.08;letter-spacing:-.02em}
+  .cover .sub{font-size:17px;opacity:.9;max-width:600px;margin-top:16px}
+  .cover .meta{margin-top:32px;display:flex;gap:28px;flex-wrap:wrap;font-size:13px;opacity:.85;border-top:1px solid rgba(255,255,255,.18);padding-top:20px}
+  .cover .meta b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.65;margin-bottom:2px;font-weight:600}
+
+  /* INTRO */
+  section{padding:46px 0}
+  .lead{font-size:18px;color:var(--ink-2);max-width:680px}
+  .lead strong{color:var(--ink)}
+
+  h2{font-family:'Fraunces',serif;font-size:28px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:12px}
+  h2 .na{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green);background:var(--green-soft);padding:3px 10px;border-radius:7px;font-weight:500}
+  .sec-desc{color:var(--ink-2);font-size:15px;max-width:680px;margin-bottom:26px}
+
+  /* TOC */
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 28px;margin-top:-30px;position:relative;z-index:2;box-shadow:0 12px 40px rgba(20,42,30,.06)}
+  .toc h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-3);margin-bottom:14px;font-weight:600}
+  .toc ol{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px}
+  .toc a{display:flex;align-items:baseline;gap:10px;text-decoration:none;color:var(--ink);font-size:14.5px;font-weight:500;padding:5px 0}
+  .toc a:hover{color:var(--green)}
+  .toc a .n{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green);min-width:22px}
+
+  /* MÓDULO */
+  .mod{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 32px;margin-bottom:18px}
+  .mod-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+  .mod-icon{width:46px;height:46px;border-radius:12px;background:var(--green-soft);display:grid;place-items:center;flex-shrink:0;font-size:22px}
+  .mod-head h3{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .mod-head p{color:var(--ink-2);font-size:14px;margin-top:3px}
+  .feat{list-style:none;display:flex;flex-direction:column;gap:13px}
+  .feat li{display:flex;gap:12px;align-items:flex-start;font-size:14.5px}
+  .feat li .tick{width:20px;height:20px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;flex-shrink:0;margin-top:1px;font-size:12px;font-weight:700}
+  .feat li b{font-weight:600}
+  .feat li span{color:var(--ink-2)}
+
+  .tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);background:var(--gold-soft);padding:2px 8px;border-radius:5px;margin-left:8px;vertical-align:middle;font-weight:500}
+
+  /* DESTAQUE */
+  .highlight{background:linear-gradient(135deg,#15543A,#1F6B4A);color:#fff;border-radius:18px;padding:36px;margin:30px 0}
+  .highlight h3{font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin-bottom:10px}
+  .highlight p{opacity:.92;font-size:15px;max-width:640px}
+  .highlight .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:24px}
+  .highlight .step{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:16px}
+  .highlight .step .sn{font-family:'JetBrains Mono',monospace;font-size:11px;color:#C8F051;margin-bottom:6px}
+  .highlight .step b{display:block;font-size:14px;margin-bottom:3px}
+  .highlight .step span{font-size:12.5px;opacity:.85}
+
+  /* GRID 2 col */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+  /* NOTA */
+  .note{border-left:3px solid var(--gold);background:var(--gold-soft);padding:16px 20px;border-radius:0 10px 10px 0;font-size:14px;color:#6b5524;margin-top:14px}
+  .note b{color:#5a4015}
+
+  /* PLANOS / kill switch */
+  .config-card{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:22px 26px}
+
+  /* RODAPÉ */
+  footer{background:#15543A;color:#fff;padding:40px 0;margin-top:30px}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  footer .logo{font-weight:700;font-size:16px}
+  footer p{opacity:.7;font-size:13px}
+  footer a{color:#C8F051;text-decoration:none}
+
+  @media(max-width:680px){.toc ol,.grid2{grid-template-columns:1fr}}
+  @media print{body{background:#fff}.cover,.highlight,footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+
+<!-- ========== CAPA ========== -->
+<header class="cover">
+  <div class="wrap">
+    <div class="logo">
+      <div class="mark">B</div>
+      <div class="name">BH Grain<small>Plataforma · MercoGrain</small></div>
+    </div>
+    <div class="eyebrow">Manual da Plataforma</div>
+    <h1>Sua mesa de operações de grãos, digital de ponta a ponta.</h1>
+    <p class="sub">Tudo o que a plataforma BH Grain faz pela MercoGrain hoje — do primeiro contato com o produtor até a comissão recebida.</p>
+    <div class="meta">
+      <div><b>Para</b>MercoGrain Trading</div>
+      <div><b>Acesso</b>www.profitsync.ia.br</div>
+      <div><b>Documento</b>Visão geral de capacidades ativas</div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== TOC ========== -->
+<div class="wrap">
+  <nav class="toc">
+    <h3>O que você encontra neste manual</h3>
+    <ol>
+      <li><a href="#mesa"><span class="n">01</span> Mesa de Operações</a></li>
+      <li><a href="#inbox"><span class="n">02</span> Atendimento & WhatsApp</a></li>
+      <li><a href="#automacao"><span class="n">03</span> Proposta automática por IA</a></li>
+      <li><a href="#match"><span class="n">04</span> Match & Negócios</a></li>
+      <li><a href="#propostas"><span class="n">05</span> Propostas & Contratos</a></li>
+      <li><a href="#corretagem"><span class="n">06</span> Corretagem & Comissões</a></li>
+      <li><a href="#financeiro"><span class="n">07</span> Financeiro</a></li>
+      <li><a href="#equipe"><span class="n">08</span> Equipe & Metas</a></li>
+      <li><a href="#exportacao"><span class="n">09</span> Exportação & Compliance</a></li>
+      <li><a href="#gestao"><span class="n">10</span> Configurações & Marca</a></li>
+    </ol>
+  </nav>
+</div>
+
+<!-- ========== INTRO ========== -->
+<section class="wrap">
+  <p class="lead">A BH Grain reúne <strong>num só lugar</strong> tudo o que hoje vive espalhado entre WhatsApp, planilhas e a cabeça do corretor. Cada conversa, proposta, contrato e comissão fica registrado, rastreável e seguro — e a plataforma trabalha junto com a equipe, sugerindo negócios e calculando preços automaticamente, sempre com a palavra final do corretor.</p>
+  <div class="note"><b>Como ler este manual:</b> cada módulo abaixo está <b>ativo e funcionando</b> na conta da MercoGrain. As funcionalidades marcadas com <span class="tag">novo</span> foram entregues nas últimas atualizações.</div>
+</section>
+
+<!-- ========== 01 MESA ========== -->
+<section class="wrap" id="mesa">
+  <h2><span class="na">01</span> Mesa de Operações</h2>
+  <p class="sec-desc">A tela inicial do corretor: um raio-X do dia inteiro em uma olhada, com tudo que precisa de ação no topo.</p>
+  <div class="mod">
+    <div class="mod-head">
+      <div class="mod-icon">📊</div>
+      <div><h3>Dashboard do dia</h3><p>Atualizado em tempo real, sem precisar atualizar a página.</p></div>
+    </div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Indicadores no topo</b> — <span>propostas e contratos por situação, total vendido (hoje, semana, quinzena e 30 dias) e cotações ao vivo de soja, milho, trigo e dólar.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Cotações em tempo real</b> — <span>preços CEPEA/ESALQ e câmbio PTAX atualizando sozinhos. Botão abre o painel completo com todas as praças.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Fila de ação unificada</b> — <span>tudo que exige decisão agora numa lista só, ordenada por urgência: pedidos de clientes, rascunhos a enviar e propostas travadas — cada uma com o tempo parado e um botão de ação.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Pipeline de propostas</b> — <span>acompanhamento de todas as propostas em jogo, com cliente, commodity, volume, preço, validade e situação.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Cards de atenção</b> — <span>contratos aguardando assinatura, fixações de preço com prazo e alertas de risco/limite de crédito.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Rodapé de status</b> — <span>saúde das integrações (CEPEA, Banco Central, Braspag, WhatsApp, Instagram, e-mail) num relance.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 02 INBOX ========== -->
+<section class="wrap" id="inbox">
+  <h2><span class="na">02</span> Atendimento & WhatsApp <span class="tag">novo</span></h2>
+  <p class="sec-desc">O trabalho do corretor acontece no WhatsApp. A plataforma traz tudo para dentro do sistema, sem nada se perder no scroll.</p>
+  <div class="mod">
+    <div class="mod-head">
+      <div class="mod-icon">💬</div>
+      <div><h3>Inbox unificado</h3><p>WhatsApp, e-mail e portal do produtor em uma caixa só.</p></div>
+    </div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Todas as conversas num lugar</b> — <span>mensagens de WhatsApp, e-mail e portal do produtor reunidas, com filtro por canal e contador de não lidas.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Leitura inteligente</b> — <span>a IA lê cada mensagem e marca: "pronta para proposta", "faltam dados", "não comercial". O corretor sabe na hora o que merece atenção.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Resumo na Mesa</b> — <span>as últimas conversas aparecem direto no dashboard, com um clique para abrir o inbox completo.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Vínculo com o cliente</b> — <span>cada conversa já liga ao cadastro do cliente quando ele existe.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 03 AUTOMAÇÃO ========== -->
+<section class="wrap" id="automacao">
+  <div class="highlight">
+    <h3>🤖 Proposta automática por IA <span style="font-size:12px;background:rgba(200,240,81,.2);color:#C8F051;padding:3px 9px;border-radius:6px;vertical-align:middle;font-family:'JetBrains Mono',monospace">DESTAQUE</span></h3>
+    <p>Quando um produtor manda no WhatsApp algo como "tenho 500 toneladas de soja para vender", a plataforma faz sozinha o trabalho pesado — e entrega tudo pronto para o corretor só revisar e enviar. <b>Nada vai para o cliente sem a palavra final do corretor.</b></p>
+    <div class="steps">
+      <div class="step"><div class="sn">PASSO 1</div><b>Lê e entende</b><span>A IA identifica produto, volume, preço e intenção (compra ou venda).</span></div>
+      <div class="step"><div class="sn">PASSO 2</div><b>Registra o pedido</b><span>Cria a oferta estruturada — nada se perde na conversa.</span></div>
+      <div class="step"><div class="sn">PASSO 3</div><b>Varre os clientes</b><span>Procura na base quais clientes compram aquele grão e combinam com o pedido.</span></div>
+      <div class="step"><div class="sn">PASSO 4</div><b>Monta as propostas</b><span>Gera um rascunho de proposta para cada cliente compatível, com preço calculado (cotação do dia + margem).</span></div>
+      <div class="step"><div class="sn">PASSO 5</div><b>Você decide</b><span>Os rascunhos caem na fila de ação. O corretor revisa, ajusta e envia.</span></div>
+    </div>
+  </div>
+  <div class="note"><b>Preço sempre certo:</b> a margem pode ser pré-configurada por grão, por cliente e por tipo de operação (compra/venda). A plataforma usa a cotação CEPEA do dia e aplica a margem correta para cada cliente automaticamente.</div>
+</section>
+
+<!-- ========== 04 MATCH ========== -->
+<section class="wrap" id="match">
+  <h2><span class="na">04</span> Match & Negócios <span class="tag">novo</span></h2>
+  <p class="sec-desc">A plataforma cruza quem quer vender com quem quer comprar e organiza cada negócio do começo ao fim.</p>
+  <div class="grid2">
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">🔗</div><div><h3>Motor de match</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Cruza ofertas de venda com demandas de compra por produto, volume, preço, região e qualidade.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Mostra os melhores cruzamentos com uma nota de compatibilidade.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Com um clique, transforma um match em negócio.</span></div></li>
+      </ul>
+    </div>
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">🤝</div><div><h3>Funil de negócios</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Cada negócio guarda as duas pontas: comprador e vendedor.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Quadro visual por etapa: captado → negociação → fechado → embarque → liquidação → comissão recebida.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Arrastar para mover de etapa; cada passo registra data e responsável.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 05 PROPOSTAS ========== -->
+<section class="wrap" id="propostas">
+  <h2><span class="na">05</span> Propostas & Contratos</h2>
+  <p class="sec-desc">Do rascunho ao contrato assinado, com modelos próprios e assinatura digital.</p>
+  <div class="mod">
+    <div class="mod-head"><div class="mod-icon">📄</div><div><h3>Ciclo completo do negócio</h3></div></div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Pipeline e Kanban</b> — <span>acompanhe as propostas em lista ou em quadro visual; arraste o card para avançar de etapa (rascunho → enviada → em análise → aceita → contrato).</span></div></li>
+      <li><span class="tick">✓</span><div><b>Modelos personalizáveis</b> — <span>crie modelos próprios de proposta e de contrato (compra e venda) com texto editável e campos automáticos (cliente, valor, data). Cada modelo guarda histórico de versões.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Assinatura digital</b> — <span>contratos assinados eletronicamente pelas duas partes, com validade jurídica.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Clientes & CRM</b> — <span>base completa de clientes e prospects, com captação de leads (inclusive por formulário público que o produtor preenche sozinho) e funil de qualificação.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Cotações & Calculadora</b> — <span>preços ao vivo e calculadora de margens por grão para precificar na hora.</span></div></li>
+    </ul>
+  </div>
+  <div class="mod">
+    <div class="mod-head"><div class="mod-icon">📁</div><div><h3>Dossiê do negócio <span class="tag">novo</span></h3><p>Todo o histórico de um negócio em um clique.</p></div></div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><span>Reúne num só lugar: termos, contrato, notas fiscais, romaneios, assinatura e comissão.</span></div></li>
+      <li><span class="tick">✓</span><div><span>Linha do tempo completa de tudo que aconteceu — proteção contra qualquer disputa.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 06 CORRETAGEM ========== -->
+<section class="wrap" id="corretagem">
+  <h2><span class="na">06</span> Corretagem & Comissões <span class="tag">novo</span></h2>
+  <p class="sec-desc">O P&L do corretor, controlado de ponta a ponta — desde o cálculo até o recebimento.</p>
+  <div class="grid2">
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">💰</div><div><h3>Corretagem (da corretora)</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Cálculo por <b>percentual</b> ou por <b>R$ por tonelada</b>.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Define quem paga: comprador, vendedor ou ambos, com rateio.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Ciclo <b>prevista → faturada → recebida</b>, com aviso de comissão atrasada.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Rateio entre vários corretores no mesmo negócio.</span></div></li>
+      </ul>
+    </div>
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">📈</div><div><h3>Comissão do vendedor interno</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Cada colaborador pode ser marcado como vendedor e comissionado.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Regra individual: <b>percentual fixo, valor fixo, piso + percentual</b> ou <b>faixas progressivas</b> (ex.: até R$100 mil → 1%, até R$150 mil → 1,5%, acima → 2%).</span></div></li>
+        <li><span class="tick">✓</span><div><span>Apuração automática por período, com relatório.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 07 FINANCEIRO ========== -->
+<section class="wrap" id="financeiro">
+  <h2><span class="na">07</span> Financeiro</h2>
+  <p class="sec-desc">Visão clara de entradas e saídas, com conciliação automática.</p>
+  <div class="mod">
+    <div class="mod-head"><div class="mod-icon">🏦</div><div><h3>Gestão financeira</h3></div></div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Contas a Receber e a Pagar</b> <span class="tag">novo</span> — <span>recebíveis e despesas em aberto, com totais de vencido e a vencer.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Fluxo de caixa</b> — <span>previsão e saldo consolidados.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Conciliação bancária</b> — <span>importa o extrato (OFX) e casa automaticamente os lançamentos.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Boletos</b> — <span>emissão e acompanhamento integrados (Braspag).</span></div></li>
+      <li><span class="tick">✓</span><div><b>Fornecedores e Relatórios</b> — <span>cadastro de fornecedores e relatórios financeiros.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 08 EQUIPE ========== -->
+<section class="wrap" id="equipe">
+  <h2><span class="na">08</span> Equipe & Metas <span class="tag">novo</span></h2>
+  <p class="sec-desc">Acompanhe o desempenho de cada vendedor e estimule a competição saudável.</p>
+  <div class="grid2">
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">👥</div><div><h3>Gestão de equipe</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Cadastre funcionários e defina o que cada um pode acessar e cadastrar (permissões por área).</span></div></li>
+        <li><span class="tick">✓</span><div><span>Transferência de carteira de clientes entre colaboradores.</span></div></li>
+      </ul>
+    </div>
+    <div class="mod">
+      <div class="mod-head"><div class="mod-icon">🏆</div><div><h3>Ranking & metas</h3></div></div>
+      <ul class="feat">
+        <li><span class="tick">✓</span><div><span>Pódio dos vendedores por volume vendido e comissão no período.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Meta por vendedor com barra de atingimento.</span></div></li>
+        <li><span class="tick">✓</span><div><span>Painel de alertas comerciais: propostas paradas, margem baixa, preços vencidos, follow-ups.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 09 EXPORTAÇÃO ========== -->
+<section class="wrap" id="exportacao">
+  <h2><span class="na">09</span> Exportação & Compliance <span class="tag">novo</span></h2>
+  <p class="sec-desc">Para negócios de exportação, nenhum documento fica para trás.</p>
+  <div class="mod">
+    <div class="mod-head"><div class="mod-icon">🚢</div><div><h3>Checklist documental & verificações</h3></div></div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Checklist de embarque</b> — <span>DUE, certificado fitossanitário, BL, booking, invoice, packing list, seguro e certificado de origem — cada item com situação e prazo, mostrando o progresso do embarque.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Verificação de compliance (KYC)</b> — <span>checagem de CNPJ, listas restritivas e cadastro ambiental rural (CAR), com alertas de documentos vencendo.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Rastreabilidade EUDR</b> — <span>cadeia de custódia e declaração de origem para o mercado europeu.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 10 GESTÃO ========== -->
+<section class="wrap" id="gestao">
+  <h2><span class="na">10</span> Configurações & Identidade</h2>
+  <p class="sec-desc">A plataforma com a cara da MercoGrain.</p>
+  <div class="mod">
+    <div class="mod-head"><div class="mod-icon">⚙️</div><div><h3>Sua corretora, do seu jeito</h3></div></div>
+    <ul class="feat">
+      <li><span class="tick">✓</span><div><b>Marca e logotipo</b> — <span>seu logo nos PDFs de contratos, propostas e boletos.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Aparência</b> <span class="tag">novo</span> — <span>escolha entre vários temas visuais para deixar o sistema com a identidade da corretora.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Integrações</b> — <span>WhatsApp, Instagram e e-mail conectados à plataforma.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Auditoria</b> — <span>registro de quem fez o quê e quando, em cada operação financeira e contratual.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Portal do Produtor</b> — <span>seus clientes acessam contratos, documentos e conversam com a mesa por um portal próprio.</span></div></li>
+    </ul>
+  </div>
+  <div class="config-card" style="margin-top:18px">
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px">🔒 Segurança & flexibilidade</h3>
+    <p style="color:var(--ink-2);font-size:14px">Todos os dados ficam isolados por corretora — o que é da MercoGrain só a MercoGrain vê. Acesso protegido por senha e autenticação em duas etapas. Cada módulo pode ser ligado ou desligado conforme o plano contratado, sem perder nada do que já foi cadastrado.</p>
+  </div>
+</section>
+
+<!-- ========== FECHAMENTO ========== -->
+<section class="wrap">
+  <div class="highlight" style="text-align:center">
+    <h3>Tudo conversa entre si.</h3>
+    <p style="margin:0 auto">Uma mensagem de WhatsApp vira oferta, que vira proposta, que vira contrato, que gera comissão — e cada passo fica guardado no dossiê do negócio. É a operação inteira da MercoGrain trabalhando junta, num só lugar, com a plataforma fazendo o trabalho repetitivo e o corretor decidindo o que importa.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="logo">BH Grain · MercoGrain</div>
+      <p style="margin-top:4px">Mesa de operações para trading de grãos.</p>
+    </div>
+    <p>Acesse em <a href="https://www.profitsync.ia.br">www.profitsync.ia.br</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -15,18 +15,25 @@ export default async function AprovacoesPage() {
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
 
-  const aprovacoes = await db.aprovacao.findMany({
-    where: { ...scope.whereOwn(), status: 'pendente' },
-    include: {
-      workflow: { select: { nome: true, etapas: true, entidade: true } },
-      solicitante: { select: { nome: true, email: true } },
-      decisoes: {
-        include: { aprovador: { select: { nome: true } } },
-        orderBy: { etapa: 'asc' },
+  // Resiliente: dados órfãos (ex.: solicitante removido) não devem quebrar a
+  // tela inteira. Em caso de falha, mostra estado vazio.
+  let aprovacoes: any[] = []
+  try {
+    aprovacoes = await db.aprovacao.findMany({
+      where: { ...scope.whereOwn(), status: 'pendente' },
+      include: {
+        workflow: { select: { nome: true, etapas: true, entidade: true } },
+        solicitante: { select: { nome: true, email: true } },
+        decisoes: {
+          include: { aprovador: { select: { nome: true } } },
+          orderBy: { etapa: 'asc' },
+        },
       },
-    },
-    orderBy: { prazoEtapaAtual: 'asc' },
-  })
+      orderBy: { prazoEtapaAtual: 'asc' },
+    })
+  } catch {
+    aprovacoes = []
+  }
 
   return (
     <AppShell>
