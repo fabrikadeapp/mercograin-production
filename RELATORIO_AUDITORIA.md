@@ -33,8 +33,8 @@
 - Ação: pendente (Fase 1 — alta prioridade na spec).
 
 ### [F1-04] Gestão de negócios (deal flow)
-- Status: ✅ COBERTO (decisão YOLO)
-- O pipeline de negócio é coberto por: Kanban de propostas (estágios rascunho→aceita→contrato), status de Contrato, corretagem (prevista→faturada→recebida) e Dossiê (timeline com data/responsável por evento). Não foi criado model Negocio duplicado (evita reescrever o pipeline existente).
+- Status: ✅ EXISTE_COMPLETO (após esta rodada)
+- Implementado: model `Negocio` que une oferta+demanda+comprador+vendedor+termos; 7 estágios (captado→match→negociação→fechado→embarque→liquidação→comissão_recebida) com data/responsável/histórico; `/api/negocios` (criar de match + funil), `/api/negocios/[id]` (mover estágio); tela `/negocios` (Kanban drag). Match→negócio funcional.
 - ORIGINAL: 🟡 EXISTE_PARCIAL
 - Evidência: pipeline de propostas com Kanban (`/propostas/kanban`, criado nesta sessão) — estágios rascunho→enviada→análise→aceita→contrato. Proposta/Contrato referenciam cliente, vendedor, gerente.
 - Lacunas: estágios completos da spec (embarque/entrega → liquidação → comissão recebida); negócio que referencia as DUAS contrapartes (comprador + vendedor) simultaneamente.
