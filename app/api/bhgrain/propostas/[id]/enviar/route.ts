@@ -90,7 +90,12 @@ export async function POST(
       )
     }
 
-    // Permitido — envia
+    // Permitido — envia.
+    // E-mail é o canal DOCUMENTAL principal (prova formal em disputa): aguardamos
+    // o resultado e registramos. WhatsApp é complemento best-effort (aviso rápido).
+    const origin = request.headers.get('origin') ?? request.nextUrl.origin
+    const emailResult = await notificarClienteEnvio(p, origin)
+
     await db.proposta.update({
       where: { id },
       data: { status: PROPOSTA_STATUS.ENVIADA, enviadaEm: new Date() },
@@ -102,13 +107,21 @@ export async function POST(
         entidade: 'Proposta',
         entidadeId: id,
         workspaceId: scope.workspaceId,
+        mudancas: {
+          emailEnviado: emailResult.emailEnviado,
+          emailDestino: p.cliente?.email ?? null,
+          whatsappEnfileirado: emailResult.whatsappEnfileirado,
+        },
       },
     })
 
-    // Notifica cliente por email (best-effort, não bloqueia resposta)
-    void notificarClienteEnvio(p, request.headers.get('origin') ?? request.nextUrl.origin)
-
-    return NextResponse.json({ decisao: 'permitido', enviada: true })
+    return NextResponse.json({
+      decisao: 'permitido',
+      enviada: true,
+      emailEnviado: emailResult.emailEnviado,
+      // Alerta documental: cliente sem e-mail → não há prova formal de envio.
+      semEmailDocumental: !p.cliente?.email,
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro interno'
     const status = msg.includes('autoriz') ? 401 : msg.includes('Acesso') || msg.includes('Permissão') ? 403 : 400
@@ -127,9 +140,17 @@ interface PropForEnvio {
   workspace: { name: string; slug: string | null } | null
 }
 
-async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<void> {
+interface ResultadoNotificacao {
+  /** E-mail documental efetivamente enviado ao cliente. */
+  emailEnviado: boolean
+  /** Aviso por WhatsApp enfileirado (best-effort, complementar). */
+  whatsappEnfileirado: boolean
+}
+
+async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<ResultadoNotificacao> {
+  const res: ResultadoNotificacao = { emailEnviado: false, whatsappEnfileirado: false }
   try {
-    if (!p.cliente || !p.workspace?.slug) return
+    if (!p.cliente || !p.workspace?.slug) return res
 
     const valor = Number(p.valorTotal).toLocaleString('pt-BR', {
       style: 'currency',
@@ -171,6 +192,7 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
         workspaceNome: p.workspace.name,
         pdfPublicoUrl,
       })
+      // E-mail é o registro documental — aguardamos e marcamos o sucesso.
       await sendEmailRastreado({
         workspaceId: p.workspaceId,
         categoria: 'proposta_enviada_cliente_email',
@@ -185,6 +207,7 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
         ],
         meta: { propostaId: p.id, propostaNumero: p.numero },
       })
+      res.emailEnviado = true
     }
 
     // 2. WhatsApp (best-effort, condicional a instância conectada)
@@ -205,8 +228,12 @@ async function notificarClienteEnvio(p: PropForEnvio, origin: string): Promise<v
         categoria: 'proposta_enviada_cliente',
         meta: { propostaId: p.id, propostaNumero: p.numero },
       })
+      res.whatsappEnfileirado = true
     }
   } catch (err) {
-    console.warn('[notificarClienteEnvio] best-effort falhou:', err)
+    // E-mail falhou (canal documental) — não derruba o envio, mas fica registrado
+    // como emailEnviado=false para o operador reagir.
+    console.warn('[notificarClienteEnvio] falha ao notificar:', err)
   }
+  return res
 }

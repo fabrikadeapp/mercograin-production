@@ -168,7 +168,12 @@ export function KanbanBoard() {
         const motivos = Array.isArray(data?.motivos) ? data.motivos.join(' · ') : 'Regra comercial impediu o envio.'
         toast.error(`Envio bloqueado: ${motivos}`)
       } else if (res.ok) {
-        toast.success(`${p.numero} enviada ao cliente ✓`)
+        if (data?.semEmailDocumental || data?.emailEnviado === false) {
+          // Enviada, mas sem o registro documental por e-mail — alerta o operador.
+          toast.warning(`${p.numero} enviada, mas SEM e-mail (registro formal). Cadastre o e-mail do cliente.`)
+        } else {
+          toast.success(`${p.numero} enviada ao cliente por e-mail ✓`)
+        }
       } else {
         throw new Error(data?.error || 'Falha no envio')
       }
@@ -275,42 +280,48 @@ export function KanbanBoard() {
       {/* Confirmação de envio ao cliente — só dispara o envio real ao confirmar */}
       {confirmarEnvio && (() => {
         const p = confirmarEnvio
-        const tem = !!(p.cliente?.email || p.cliente?.whatsapp)
+        const temEmail = !!p.cliente?.email
         return (
           <Dialog
             open
             onOpenChange={(o) => { if (!o && !enviando) setConfirmarEnvio(null) }}
             title="Enviar proposta ao cliente?"
-            description={`A proposta ${p.numero} ainda não foi enviada. Ao confirmar, ela será enviada para ${p.cliente?.nome ?? 'o cliente'} pelos canais cadastrados.`}
+            description={`A proposta ${p.numero} ainda não foi enviada. Ao confirmar, ela será enviada para ${p.cliente?.nome ?? 'o cliente'}.`}
             footer={
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" onClick={() => setConfirmarEnvio(null)} disabled={enviando}>
                   Cancelar
                 </Button>
-                <Button onClick={() => executarEnvio(p)} disabled={enviando || !tem}>
+                <Button onClick={() => executarEnvio(p)} disabled={enviando || !temEmail}>
                   <Send size={14} className="mr-1.5" />
                   {enviando ? 'Enviando…' : 'Confirmar envio'}
                 </Button>
               </div>
             }
           >
-            <div className="space-y-2 text-[13px]">
-              <div className="flex items-center gap-2 text-[var(--text)]">
-                <Mail size={15} className={p.cliente?.email ? 'text-[var(--success)]' : 'text-[var(--text-dim)]'} />
-                <span className={p.cliente?.email ? '' : 'text-[var(--text-dim)]'}>
+            <div className="space-y-2.5 text-[13px]">
+              {/* E-mail — canal documental principal (prova formal) */}
+              <div className="rounded-[var(--r-sm)] border border-[var(--border)] p-2.5">
+                <div className="flex items-center gap-2">
+                  <Mail size={15} className={temEmail ? 'text-[var(--success)]' : 'text-[var(--danger)]'} />
+                  <span className="font-medium text-[var(--text)]">E-mail</span>
+                  <span className="ml-auto rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">Documental</span>
+                </div>
+                <p className={`mt-1 ${temEmail ? 'text-[var(--text-mute)]' : 'text-[var(--danger)]'}`}>
                   {p.cliente?.email ?? 'Sem e-mail cadastrado'}
-                </span>
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-[var(--text)]">
+              {/* WhatsApp — aviso complementar */}
+              <div className="flex items-center gap-2 px-1 text-[var(--text)]">
                 <MessageCircle size={15} className={p.cliente?.whatsapp ? 'text-[var(--success)]' : 'text-[var(--text-dim)]'} />
                 <span className={p.cliente?.whatsapp ? '' : 'text-[var(--text-dim)]'}>
-                  {p.cliente?.whatsapp ?? 'Sem WhatsApp cadastrado'}
+                  {p.cliente?.whatsapp ? `WhatsApp (aviso): ${p.cliente.whatsapp}` : 'Sem WhatsApp — aviso complementar não sairá'}
                 </span>
               </div>
-              {!tem && (
-                <div className="mt-2 flex items-start gap-2 rounded-[var(--r-sm)] border border-[var(--danger)] bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] p-2.5 text-[12px] text-[var(--danger)]">
+              {!temEmail && (
+                <div className="mt-1 flex items-start gap-2 rounded-[var(--r-sm)] border border-[var(--danger)] bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] p-2.5 text-[12px] text-[var(--danger)]">
                   <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" />
-                  <span>O cliente não tem e-mail nem WhatsApp cadastrado. Cadastre um contato antes de enviar.</span>
+                  <span>O cliente não tem <strong>e-mail</strong>, que é o registro formal em caso de disputa. Cadastre o e-mail antes de enviar.</span>
                 </div>
               )}
             </div>
