@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BH Grain · 10 Design Systems Premium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Manrope:wght@400;500;600;700;800&family=Libre+Franklin:wght@300;400;500;600;700&family=Archivo:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   BASE / CHROME — neutro para não interferir nos previews
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background: #0a0a0c;
+  color: #e7e7ea;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.page-head {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 72px 32px 40px;
+  text-align: center;
+}
+.page-head .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #C8F051;
+  margin-bottom: 20px;
+}
+.page-head h1 {
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  background: linear-gradient(180deg, #fff 0%, #9aa0ab 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.page-head p {
+  margin-top: 18px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #9aa0ab;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Índice de navegação */
+.toc {
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.toc a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  color: #c4c7cd;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+.toc a:hover {
+  border-color: rgba(200,240,81,0.4);
+  background: rgba(200,240,81,0.06);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.toc a .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #6b7280;
+  min-width: 18px;
+}
+.toc a .swatch {
+  width: 14px; height: 14px; border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* Wrapper de cada proposta */
+.ds-section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 32px 24px;
+}
+.ds-label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.ds-label .left { display: flex; align-items: baseline; gap: 16px; }
+.ds-label .idx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: #6b7280;
+  letter-spacing: 0.1em;
+}
+.ds-label h2 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.ds-label .tag {
+  font-size: 12px;
+  color: #9aa0ab;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.ds-label .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+  line-height: 1.7;
+}
+.ds-label .meta b { color: #c4c7cd; font-weight: 500; }
+
+/* O frame que isola cada design system */
+.frame {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+/* Paleta de cores embaixo de cada preview */
+.palette {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.palette .chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: #9aa0ab;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
+.palette .chip i {
+  width: 16px; height: 16px; border-radius: 4px; display: block;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+
+.foot {
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 32px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.divider-space { height: 8px; }
+
+/* ============================================================
+   MOCKUP COMUM — estrutura reutilizada, estilizada via tokens
+   Cada .ds define suas próprias CSS vars; .app herda delas.
+   ============================================================ */
+.app {
+  --r: 16px;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  padding: 0;
+  min-height: 600px;
+}
+
+/* TOP NAVIGATION (horizontal) */
+.topnav {
+  display: flex; align-items: center; gap: 22px;
+  padding: 0 30px; height: 60px;
+  background: var(--side-bg, var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex; align-items: center; gap: 11px;
+  padding-right: 8px;
+}
+.brand .logo {
+  width: 30px; height: 30px; border-radius: var(--logo-r, 9px);
+  background: var(--accent);
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 15px; color: var(--accent-ink);
+  font-family: var(--font-sans);
+  flex-shrink: 0;
+}
+.brand .name { font-weight: 700; font-size: 14.5px; letter-spacing: -0.01em; color: var(--text); white-space: nowrap; }
+.brand .name small { display: block; font-weight: 400; font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.04em; }
+.nav-sep { width: 1px; height: 24px; background: var(--border); }
+.nav-list { display: flex; align-items: center; gap: 3px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 13px; border-radius: var(--nav-r, 10px);
+  color: var(--text-mute); font-size: 13px; font-weight: 500;
+  cursor: pointer; position: relative; white-space: nowrap;
+}
+.nav-item svg { width: 16px; height: 16px; stroke: currentColor; flex-shrink: 0; }
+.nav-item.active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text, var(--text));
+}
+.nav-item.active::after {
+  content: ''; position: absolute; left: 13px; right: 13px; bottom: -19px;
+  height: 2px; border-radius: 2px 2px 0 0; background: var(--accent);
+  display: var(--nav-bar-display, block);
+}
+.nav-end { display: flex; align-items: center; gap: 12px; }
+.nav-icon {
+  width: 34px; height: 34px; border-radius: var(--nav-r, 10px);
+  border: 1px solid var(--border); display: grid; place-items: center;
+  color: var(--text-mute); cursor: pointer; position: relative;
+}
+.nav-icon svg { width: 16px; height: 16px; stroke: currentColor; }
+.nav-icon .dot-n { position: absolute; top: 7px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.side-user {
+  display: flex; align-items: center; gap: 9px; padding: 5px 12px 5px 6px;
+  border-radius: var(--nav-r, 10px); border: 1px solid var(--border);
+}
+.side-user .av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-2, var(--accent)); flex-shrink: 0; display:grid; place-items:center; font-size:11px; font-weight:700; color: var(--accent-ink); }
+.side-user .u-name { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.2; }
+.side-user .u-role { font-size: 10px; color: var(--text-mute); }
+
+/* MAIN */
+.main { padding: 24px 30px 32px; overflow: hidden; }
+.topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.16em; color: var(--text-dim); margin-bottom: 9px;
+}
+.h-title { font-family: var(--font-display, var(--font-sans)); font-size: var(--title-size, 27px); font-weight: var(--title-weight, 600); letter-spacing: -0.022em; color: var(--text); line-height: 1.1; }
+.h-title em { font-family: var(--font-serif, inherit); font-style: italic; font-weight: 400; color: var(--accent); }
+.h-sub { font-size: 13.5px; color: var(--text-mute); margin-top: 7px; }
+.top-actions { display: flex; gap: 10px; align-items: center; }
+
+.search {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--surface-2, var(--surface)); border: 1px solid var(--border);
+  border-radius: var(--input-r, 10px); padding: 9px 14px; min-width: 230px;
+  color: var(--text-dim); font-size: 13px;
+}
+.search svg { width: 15px; height: 15px; stroke: currentColor; }
+
+.btn {
+  border: 1px solid transparent; cursor: pointer;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+  padding: 9px 16px; border-radius: var(--btn-r, 10px);
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.btn svg { width: 15px; height: 15px; stroke: currentColor; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); box-shadow: var(--btn-glow, none); }
+.btn.ghost { background: var(--surface-2, transparent); color: var(--text-mute); border-color: var(--border); }
+
+/* KPI STRIP */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; align-items: stretch; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px;
+  box-shadow: var(--shadow-card, none); position: relative; overflow: hidden;
+}
+.kpi.hero { background: var(--hero-bg, var(--accent)); border-color: var(--hero-border, transparent); }
+.kpi .k-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.13em; color: var(--text-mute); display: flex; align-items: center; gap: 8px; }
+.kpi .k-label .live { display: inline-flex; align-items: center; gap: 5px; color: var(--success); letter-spacing: 0.08em; }
+.kpi .k-label .live i { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 0 var(--success); animation: pulse-live 1.8s ease-out infinite; }
+@keyframes pulse-live { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 55%, transparent); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.kpi.hero .k-label { color: var(--hero-label, rgba(0,0,0,0.55)); }
+.kpi .k-val { font-family: var(--font-num, var(--font-sans)); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; margin-top: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+.kpi.hero .k-val { color: var(--hero-text, var(--accent-ink)); }
+.kpi .k-delta { display: inline-flex; align-items: center; gap: 4px; margin-top: 9px; font-size: 11.5px; font-weight: 600; font-family: var(--font-num, var(--font-sans)); }
+.kpi .k-delta.up { color: var(--success); }
+.kpi .k-delta.dn { color: var(--danger); }
+.kpi.hero .k-delta.up { color: var(--hero-delta, rgba(0,0,0,0.62)); }
+.kpi .k-delta svg { width: 12px; height: 12px; stroke: currentColor; }
+.kpi .spark { position: absolute; bottom: 0; left: 0; right: 0; height: 34px; opacity: 0.85; }
+/* card de cotações ocupa a mesma altura dos KPIs normais */
+.quotes-kpi { display: flex; flex-direction: column; }
+/* lista de 4 cotações distribuída no espaço disponível do box */
+.qlist { margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.qrow { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 3px 0; border-top: 1px solid var(--border); }
+.qrow:first-child { border-top: none; }
+.qsym { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 5px; }
+.qsym.soja { color: var(--grain-soja, #C5E861); background: color-mix(in srgb, var(--grain-soja, #C5E861) 15%, transparent); }
+.qsym.milho { color: var(--grain-milho, #FFB020); background: color-mix(in srgb, var(--grain-milho, #FFB020) 15%, transparent); }
+.qsym.trigo { color: var(--grain-trigo, #E8843D); background: color-mix(in srgb, var(--grain-trigo, #E8843D) 15%, transparent); }
+.qsym.usd { color: var(--grain-usd, #4DD9B0); background: color-mix(in srgb, var(--grain-usd, #4DD9B0) 15%, transparent); }
+.qpr { font-family: var(--font-num, var(--font-mono)); font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; transition: color .15s ease; text-align: right; }
+.qdl { font-family: var(--font-num, var(--font-mono)); font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 52px; text-align: right; }
+.qdl.up { color: var(--success); }
+.qdl.dn { color: var(--danger); }
+
+/* contagem de ativas ao lado do título (poupa altura) */
+.kcount {
+  margin-left: auto;
+  font-family: var(--font-num, var(--font-sans));
+  font-size: 11px; font-weight: 700; letter-spacing: 0;
+  text-transform: none; color: var(--accent-2, var(--accent));
+  background: color-mix(in srgb, var(--accent-2, var(--accent)) 13%, transparent);
+  padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+
+/* FUNIL (propostas / contratos) — card de mesma altura dos demais */
+.funnel-kpi { display: flex; flex-direction: column; }
+.flist { margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.frow { display: flex; align-items: center; gap: 9px; padding: 3px 0; }
+.frow .fdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.frow .fdot.ok { background: var(--success); }
+.frow .fdot.info { background: var(--info); }
+.frow .fdot.warn { background: var(--warn); }
+.frow .fdot.neg { background: var(--danger); }
+.frow .fn { font-size: 12.5px; color: var(--text-mute); flex: 1; }
+.frow .fv { font-family: var(--font-num, var(--font-sans)); font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* VENDIDO — dia / semana / quinzena / 30 dias */
+.sold-kpi { display: flex; flex-direction: column; }
+.slist { margin-top: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.srow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 3px 0; border-top: 1px solid var(--border); }
+.srow:first-child { border-top: none; }
+.srow .sn { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+.srow .sv { font-family: var(--font-num, var(--font-sans)); font-size: 13.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
+.srow .sv em { font-style: normal; font-weight: 500; font-size: 11px; color: var(--text-mute); }
+.srow.hi .sv { font-size: 17px; color: var(--accent); }
+.srow.hi .sn { color: var(--text-mute); }
+
+/* botão expandir cotações */
+.q-expand {
+  margin-left: auto; width: 24px; height: 24px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 7px; background: transparent;
+  color: var(--text-mute); cursor: pointer; display: grid; place-items: center;
+  transition: all .15s ease;
+}
+.q-expand svg { width: 13px; height: 13px; stroke: currentColor; }
+.q-expand:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* tempo das mensagens no painel direito */
+.msgt { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+
+/* ===== RODAPÉ DE STATUS (uma linha) ===== */
+.statusbar {
+  margin-top: 18px; display: flex; align-items: center; gap: 14px; flex-wrap: nowrap;
+  padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--r);
+  background: var(--surface); box-shadow: var(--shadow-card, none); overflow-x: auto;
+}
+.statusbar .sb-group { display: flex; align-items: center; gap: 14px; }
+.statusbar .sb-item {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12px; color: var(--text-mute); font-weight: 500;
+}
+.statusbar .sb-item small { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-dim); }
+.statusbar .sb-item .ch-i { width: 14px; height: 14px; color: var(--text-mute); }
+.statusbar .sb-item .sd { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.statusbar .sb-item .sd.ok { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 20%, transparent); }
+.statusbar .sb-item .sd.warn { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent); }
+.statusbar .sb-sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+.statusbar .sb-uptime { margin-left: auto; }
+
+/* ===== MODAL DE COTAÇÕES ===== */
+.qm-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(6,7,10,0.55); backdrop-filter: blur(5px);
+  display: grid; place-items: center; padding: 28px;
+  animation: qm-fade .18s ease;
+}
+@keyframes qm-fade { from { opacity: 0; } to { opacity: 1; } }
+.qm-dialog {
+  width: min(720px, 100%); max-height: 86vh; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border-strong, var(--border));
+  border-radius: calc(var(--r) + 4px); overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+  animation: qm-pop .22s cubic-bezier(0.2,0.8,0.2,1);
+  font-family: var(--font-sans); color: var(--text);
+}
+@keyframes qm-pop { from { transform: translateY(16px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.qm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 22px 24px 18px; border-bottom: 1px solid var(--border); }
+.qm-eyebrow { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-dim); margin-bottom: 7px; }
+.qm-title { font-family: var(--font-display, var(--font-sans)); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; display: flex; align-items: center; gap: 12px; }
+.qm-close { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2, transparent); color: var(--text-mute); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+.qm-close svg { width: 17px; height: 17px; stroke: currentColor; }
+.qm-close:hover { color: var(--text); border-color: var(--border-strong, var(--text-dim)); }
+.qm-tabs { display: flex; gap: 6px; padding: 14px 24px 0; }
+.qm-tab { font-size: 12.5px; font-weight: 500; color: var(--text-mute); padding: 7px 13px; border-radius: 999px; cursor: pointer; border: 1px solid transparent; }
+.qm-tab.active { background: var(--accent); color: var(--accent-ink); }
+.qm-tab:not(.active):hover { background: var(--surface-2, var(--row-hover)); color: var(--text); }
+.qm-body { padding: 10px 12px 8px; overflow-y: auto; }
+.qm-row { display: grid; grid-template-columns: 34px 1.4fr 1fr 0.9fr 0.7fr; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; }
+.qm-row:hover { background: var(--row-hover, rgba(255,255,255,0.03)); }
+.qm-ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 13px; font-weight: 700; font-family: var(--font-mono); }
+.qm-nm { font-size: 14px; font-weight: 600; color: var(--text); }
+.qm-nm small { display: block; font-size: 11px; font-weight: 400; color: var(--text-mute); font-family: var(--font-mono); margin-top: 2px; }
+.qm-src { font-size: 11.5px; color: var(--text-mute); font-family: var(--font-mono); }
+.qm-price { font-family: var(--font-num, var(--font-mono)); font-size: 15px; font-weight: 700; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; transition: color .15s ease; }
+.qm-chg { font-family: var(--font-num, var(--font-mono)); font-size: 12.5px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.qm-chg.up { color: var(--success); }
+.qm-chg.dn { color: var(--danger); }
+.qm-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); font-family: var(--font-mono); }
+.qm-foot .qm-upd b { color: var(--success); }
+.qm-group-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); padding: 14px 12px 4px; }
+
+/* CONTENT GRID */
+.grid2 { display: grid; grid-template-columns: 1.75fr 1fr; gap: 18px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--shadow-card, none); overflow: hidden;
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: 17px 20px; border-bottom: 1px solid var(--border); }
+.card-head h3 { font-family: var(--font-display, var(--font-sans)); font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.card-head .link { font-size: 12px; color: var(--accent-2, var(--accent)); font-weight: 500; cursor: pointer; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  font-family: var(--font-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-dim); text-align: left;
+  padding: 11px 20px; font-weight: 500; background: var(--thead-bg, transparent);
+}
+thead th.num { text-align: right; }
+tbody td { padding: 13px 20px; font-size: 13px; color: var(--text); border-top: 1px solid var(--border); }
+tbody td.num { text-align: right; font-family: var(--font-num, var(--font-mono)); font-variant-numeric: tabular-nums; }
+tbody td .sub { display: block; font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+tbody tr:hover td { background: var(--row-hover, transparent); }
+.cli { display: flex; align-items: center; gap: 10px; }
+.cli .av2 { width: 26px; height: 26px; border-radius: 7px; background: var(--surface-2, var(--border)); display:grid; place-items:center; font-size:11px; font-weight:700; color: var(--text-mute); flex-shrink:0; }
+.cli .nm { font-weight: 600; }
+
+/* BADGE */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--badge-r, 999px); font-size: 11px; font-weight: 600; font-family: var(--font-sans); }
+.badge::before { content:''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.badge.ok { background: var(--success-soft); color: var(--success); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.neg { background: var(--danger-soft); color: var(--danger); }
+.badge.info { background: var(--info-soft); color: var(--info); }
+
+/* COMMODITY ROWS (right column) */
+.quote { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-top: 1px solid var(--border); }
+.quote:first-of-type { border-top: none; }
+.quote .ic { width: 36px; height: 36px; border-radius: var(--input-r, 10px); display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+.quote .qn { flex: 1; }
+.quote .qn b { font-size: 13.5px; font-weight: 600; color: var(--text); display: block; }
+.quote .qn span { font-size: 11px; color: var(--text-mute); font-family: var(--font-mono); }
+.quote .qp { text-align: right; }
+.quote .qp b { font-family: var(--font-num, var(--font-mono)); font-size: 14px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.quote .qp .ch { font-size: 11px; font-weight: 600; font-family: var(--font-num, var(--font-mono)); }
+.quote .qp .ch.up { color: var(--success); }
+.quote .qp .ch.dn { color: var(--danger); }
+
+.health-card { padding: 18px 20px; }
+.health-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.health-row:first-child { border-top: none; }
+.health-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.health-row .hn { font-size: 12.5px; color: var(--text); flex: 1; }
+.health-row .hs { font-size: 11px; font-family: var(--font-mono); color: var(--text-mute); }
+
+/* small inline progress */
+.progress { height: 6px; border-radius: 99px; background: var(--border); overflow: hidden; margin-top: 14px; }
+.progress > i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+
+@media (max-width: 1100px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 920px) {
+  .topnav { overflow-x: auto; }
+  .nav-list { flex: none; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="eyebrow">BH Grain · MercoGrain · Mesa de Operações</div>
+  <h1>10 Direções de Design System</h1>
+  <p>Cada proposta renderiza a <b>mesma tela real</b> do produto — dashboard da mesa de operações com KPIs, pipeline de propostas e cotações de commodities — em uma linguagem visual distinta, premium e de aparência humana. Escolha a direção; ela vira o sistema de tokens do app.</p>
+</div>
+
+<nav class="toc">
+  <a href="#ds1"><span class="num">01</span><span class="swatch" style="background:#C8F051"></span>Lime Noir</a>
+  <a href="#ds2"><span class="num">02</span><span class="swatch" style="background:#FF8A3D"></span>Terminal Pro</a>
+  <a href="#ds3"><span class="num">03</span><span class="swatch" style="background:#B8895A"></span>Editorial Serif</a>
+  <a href="#ds4"><span class="num">04</span><span class="swatch" style="background:#1F6B4A"></span>Linen Light</a>
+  <a href="#ds5"><span class="num">05</span><span class="swatch" style="background:#4F7CFF"></span>Carbon Steel</a>
+  <a href="#ds6"><span class="num">06</span><span class="swatch" style="background:#3FA34D"></span>Verdant Agro</a>
+  <a href="#ds7"><span class="num">07</span><span class="swatch" style="background:#E5484D"></span>Swiss Grid</a>
+  <a href="#ds8"><span class="num">08</span><span class="swatch" style="background:#7C5CFF"></span>Aurora Glass</a>
+  <a href="#ds9"><span class="num">09</span><span class="swatch" style="background:#D4A017"></span>Cognac Premium</a>
+  <a href="#ds10"><span class="num">10</span><span class="swatch" style="background:#2DD4BF"></span>Slate Mint</a>
+</nav>
+
+<!-- =================================================================
+     TEMPLATE DO MOCKUP — reproduzido por JS em cada seção via clone.
+     Para legibilidade do arquivo, escrevo o markup uma vez no template
+     e clono para cada design system com a classe de tema aplicada.
+     ================================================================= -->
+<template id="mock">
+  <div class="app">
+    <header class="topnav">
+      <div class="brand">
+        <div class="logo">B</div>
+        <div class="name">BH Grain<small>MercoGrain</small></div>
+      </div>
+      <div class="nav-sep"></div>
+      <nav class="nav-list">
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Mesa
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+          Clientes
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+          Contratos
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          Cotações
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Boletos
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Fluxo de Caixa
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </nav>
+      <div class="nav-end">
+        <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="dot-n"></span></div>
+        <div class="side-user">
+          <div class="av">RC</div>
+          <div>
+            <div class="u-name">Ricardo Campos</div>
+            <div class="u-role">Trader · Mesa</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Bom dia · Terça, 08 Jun · 09:14</div>
+          <div class="h-title">Mesa de <em>Operações</em></div>
+          <div class="h-sub">Soja em alta de 1,2% · 3 propostas aguardando sua resposta</div>
+        </div>
+        <div class="top-actions">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Buscar cliente, contrato…
+          </div>
+          <button class="btn primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Nova proposta
+          </button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <!-- FUNIL DE PROPOSTAS -->
+        <div class="kpi funnel-kpi">
+          <div class="k-label">Propostas <span class="kcount">24 ativas</span></div>
+          <div class="flist">
+            <div class="frow"><span class="fdot ok"></span><span class="fn">Aceitas</span><span class="fv">7</span></div>
+            <div class="frow"><span class="fdot info"></span><span class="fn">Aguardando</span><span class="fv">4</span></div>
+            <div class="frow"><span class="fdot warn"></span><span class="fn">Enviadas</span><span class="fv">12</span></div>
+            <div class="frow"><span class="fdot neg"></span><span class="fn">Recusadas</span><span class="fv">1</span></div>
+          </div>
+        </div>
+
+        <!-- FUNIL DE CONTRATOS -->
+        <div class="kpi funnel-kpi">
+          <div class="k-label">Contratos <span class="kcount">16 ativos</span></div>
+          <div class="flist">
+            <div class="frow"><span class="fdot ok"></span><span class="fn">Assinados</span><span class="fv">5</span></div>
+            <div class="frow"><span class="fdot info"></span><span class="fn">Aguardando</span><span class="fv">2</span></div>
+            <div class="frow"><span class="fdot warn"></span><span class="fn">Enviados</span><span class="fv">8</span></div>
+            <div class="frow"><span class="fdot neg"></span><span class="fn">Recusados</span><span class="fv">1</span></div>
+          </div>
+        </div>
+
+        <!-- VENDIDO: dia / semana / quinzena / 30 dias -->
+        <div class="kpi sold-kpi">
+          <div class="k-label">Vendido</div>
+          <div class="slist">
+            <div class="srow hi"><span class="sn">Hoje</span><span class="sv">R$ 842k <em>· 9,1k t</em></span></div>
+            <div class="srow"><span class="sn">Semana</span><span class="sv">R$ 4,8M <em>· 48,2k t</em></span></div>
+            <div class="srow"><span class="sn">Quinzena</span><span class="sv">R$ 9,3M <em>· 94,1k t</em></span></div>
+            <div class="srow"><span class="sn">30 dias</span><span class="sv">R$ 18,6M <em>· 188k t</em></span></div>
+          </div>
+        </div>
+
+        <!-- COTAÇÕES AO VIVO -->
+        <div class="kpi quotes-kpi">
+          <div class="k-label">Cotações <span class="live"><i></i>ao vivo</span>
+            <button class="q-expand" data-open-quotes title="Ver todas as cotações">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </button>
+          </div>
+          <div class="qlist">
+            <div class="qrow" data-base="132.84" data-open="131.25" data-unit="sc">
+              <span class="qsym soja">SOJA</span>
+              <span class="qpr">R$ 132,84</span>
+              <span class="qdl up">▲ 1,21%</span>
+            </div>
+            <div class="qrow" data-base="58.12" data-open="58.32" data-unit="sc">
+              <span class="qsym milho">MILHO</span>
+              <span class="qpr">R$ 58,12</span>
+              <span class="qdl dn">▼ 0,34%</span>
+            </div>
+            <div class="qrow" data-base="84.30" data-open="83.81" data-unit="sc">
+              <span class="qsym trigo">TRIGO</span>
+              <span class="qpr">R$ 84,30</span>
+              <span class="qdl up">▲ 0,58%</span>
+            </div>
+            <div class="qrow" data-base="5.38" data-open="5.39" data-unit="usd">
+              <span class="qsym usd">USD</span>
+              <span class="qpr">R$ 5,38</span>
+              <span class="qdl dn">▼ 0,12%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">
+            <h3>Pipeline de propostas</h3>
+            <span class="link">Ver todas →</span>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Cliente</th><th>Commodity</th><th class="num">Volume</th><th class="num">Preço</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="cli"><div class="av2">AG</div><div><span class="nm">Agropecuária Vale</span><span class="sub">Rio Verde · GO</span></div></div></td>
+                <td>Soja</td>
+                <td class="num">1.200 t</td>
+                <td class="num">R$ 132,50</td>
+                <td><span class="badge ok">Fechado</span></td>
+              </tr>
+              <tr>
+                <td><div class="cli"><div class="av2">FB</div><div><span class="nm">Fazenda Boa Vista</span><span class="sub">Sorriso · MT</span></div></div></td>
+                <td>Milho</td>
+                <td class="num">3.500 t</td>
+                <td class="num">R$ 58,20</td>
+                <td><span class="badge warn">Em análise</span></td>
+              </tr>
+              <tr>
+                <td><div class="cli"><div class="av2">CT</div><div><span class="nm">Coop. Triângulo</span><span class="sub">Uberaba · MG</span></div></div></td>
+                <td>Soja</td>
+                <td class="num">800 t</td>
+                <td class="num">R$ 131,90</td>
+                <td><span class="badge info">Enviada</span></td>
+              </tr>
+              <tr>
+                <td><div class="cli"><div class="av2">RN</div><div><span class="nm">Grupo Renascer</span><span class="sub">Luís Eduardo · BA</span></div></div></td>
+                <td>Trigo</td>
+                <td class="num">2.100 t</td>
+                <td class="num">R$ 84,00</td>
+                <td><span class="badge neg">Recusada</span></td>
+              </tr>
+              <tr>
+                <td><div class="cli"><div class="av2">SP</div><div><span class="nm">São Pedro Grãos</span><span class="sub">Dourados · MS</span></div></div></td>
+                <td>Milho</td>
+                <td class="num">1.650 t</td>
+                <td class="num">R$ 57,80</td>
+                <td><span class="badge ok">Fechado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <div class="card">
+            <div class="card-head"><h3>Aguardando você</h3><span class="link">3 pendências →</span></div>
+            <div class="quote">
+              <div class="ic" style="background:var(--warn-soft);color:var(--warn)">!</div>
+              <div class="qn"><b>Fazenda Boa Vista</b><span>Contraproposta milho · R$ 58,90/sc</span></div>
+              <div class="qp"><span class="badge warn">2h</span></div>
+            </div>
+            <div class="quote">
+              <div class="ic" style="background:var(--info-soft);color:var(--info)">↩</div>
+              <div class="qn"><b>Coop. Triângulo</b><span>Aceite de proposta soja · 800 t</span></div>
+              <div class="qp"><span class="badge info">5h</span></div>
+            </div>
+            <div class="quote">
+              <div class="ic" style="background:var(--danger-soft);color:var(--danger)">⚑</div>
+              <div class="qn"><b>Grupo Renascer</b><span>Contrato vence amanhã · assinatura</span></div>
+              <div class="qp"><span class="badge neg">1d</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Mensagens · Produtores</h3><span class="link">Inbox →</span></div>
+            <div class="quote">
+              <div class="ic" style="background:var(--surface-2,var(--border));color:var(--text-mute)">AG</div>
+              <div class="qn"><b>Agropecuária Vale</b><span>"Fechado, pode emitir o contrato."</span></div>
+              <div class="qp"><span class="msgt">09:02</span></div>
+            </div>
+            <div class="quote">
+              <div class="ic" style="background:var(--surface-2,var(--border));color:var(--text-mute)">SP</div>
+              <div class="qn"><b>São Pedro Grãos</b><span>"Consegue melhorar o frete?"</span></div>
+              <div class="qp"><span class="msgt">08:47</span></div>
+            </div>
+            <div class="quote">
+              <div class="ic" style="background:var(--surface-2,var(--border));color:var(--text-mute)">FB</div>
+              <div class="qn"><b>Fazenda Boa Vista</b><span>"Recebi a proposta, analisando."</span></div>
+              <div class="qp"><span class="msgt">Ontem</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RODAPÉ DE STATUS — integrações + canais numa linha só -->
+      <div class="statusbar">
+        <span class="sb-group">
+          <span class="sb-item"><i class="sd ok"></i>CEPEA<small>120ms</small></span>
+          <span class="sb-item"><i class="sd ok"></i>PTAX<small>88ms</small></span>
+          <span class="sb-item"><i class="sd ok"></i>Braspag<small>210ms</small></span>
+          <span class="sb-item"><i class="sd warn"></i>ReceitaWS<small>timeout</small></span>
+        </span>
+        <span class="sb-sep"></span>
+        <span class="sb-group">
+          <span class="sb-item"><svg viewBox="0 0 24 24" fill="currentColor" class="ch-i"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm5.8 14.13c-.25.69-1.44 1.32-1.98 1.36-.53.05-.53.43-3.34-.7-2.82-1.13-4.6-4-4.74-4.19-.14-.19-1.13-1.5-1.13-2.86 0-1.36.71-2.03.97-2.31.25-.28.55-.35.73-.35l.53.01c.17 0 .4-.06.62.48l.86 2.08c.07.14.12.31.02.5l-.3.46c-.14.18-.29.4-.42.54-.14.14-.28.29-.12.57.16.28.71 1.17 1.53 1.9 1.05.93 1.94 1.22 2.22 1.36.28.14.44.12.6-.07l.86-1c.21-.28.39-.21.65-.12l1.93.91c.26.13.43.19.5.3.07.11.07.64-.18 1.33z"/></svg>WhatsApp<small>conectado</small></span>
+          <span class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ch-i"><rect x="2" y="2" width="20" height="20" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>Instagram<small>conectado</small></span>
+          <span class="sb-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ch-i"><path d="M4 4h16v16H4z"/><path d="m4 7 8 5 8-5"/></svg>E-mail<small>Resend ok</small></span>
+        </span>
+        <span class="sb-sep"></span>
+        <span class="sb-item sb-uptime"><i class="sd ok"></i>Sistema operacional <small>uptime 99,98%</small></span>
+      </div>
+    </main>
+  </div>
+</template>
+
+<!-- MODAL: todas as cotações ao vivo do sistema -->
+<template id="quotes-modal">
+  <div class="qm-overlay">
+    <div class="qm-dialog">
+      <div class="qm-head">
+        <div>
+          <div class="qm-eyebrow">Cotações em tempo real</div>
+          <div class="qm-title">Painel completo de preços <span class="live"><i></i>ao vivo</span></div>
+        </div>
+        <button class="qm-close" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="qm-tabs">
+        <span class="qm-tab active">Todas</span>
+        <span class="qm-tab">Grãos</span>
+        <span class="qm-tab">Câmbio</span>
+        <span class="qm-tab">Bolsa</span>
+        <span class="qm-tab">Insumos</span>
+      </div>
+      <div class="qm-body"><!-- linhas injetadas via JS --></div>
+      <div class="qm-foot">
+        <span>Fontes: CEPEA/ESALQ · B3 · BCB · CME Group · Bloomberg</span>
+        <span class="qm-upd">Atualizado <b data-upd>agora</b></span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- As seções são geradas por JS abaixo -->
+<div id="sections"></div>
+
+<div class="foot">
+  Protótipo estático de exploração visual · BH Grain / MercoGrain<br/>
+  Cada direção é um conjunto de design tokens (cor, tipografia, raio, sombra, motion) pronto para virar <code style="color:#C8F051">tokens.css</code> no app Next.js + Tailwind.
+</div>
+
+<script>
+/* ============================================================
+   Definição das 10 direções de design system.
+   Cada uma é um objeto com: id, nome, tag, vars (CSS custom props),
+   classe extra opcional, e descrição de fontes/meta.
+   O mockup é clonado e recebe essas vars inline no .app.
+   ============================================================ */
+const SANS = "'Inter', system-ui, sans-serif";
+const MONO = "'JetBrains Mono', monospace";
+
+const SYSTEMS = [
+  {
+    id:'ds1', name:'Lime Noir', tag:'evolução premium do tema atual',
+    meta:'Inter + JetBrains Mono · dark · accent lime',
+    palette:[['#0A0B0E','bg'],['#14171D','surface'],['#C8F051','accent'],['#7FA8FF','blue'],['#4ADE80','up']],
+    vars:{
+      '--font-sans':SANS,'--font-mono':MONO,'--font-num':MONO,'--font-display':SANS,
+      '--bg':'#0A0B0E','--surface':'#14171D','--surface-2':'#1B1F27','--side-bg':'#0c0e12',
+      '--border':'rgba(255,255,255,0.07)','--text':'#ECEEF2','--text-mute':'#9AA0AB','--text-dim':'#5C6370',
+      '--accent':'#C8F051','--accent-ink':'#0A0B0E','--accent-2':'#7FA8FF',
+      '--success':'#4ADE80','--success-soft':'rgba(74,222,128,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)',
+      '--danger':'#F87171','--danger-soft':'rgba(248,113,113,0.14)','--info':'#7FA8FF','--info-soft':'rgba(127,168,255,0.14)',
+      '--r':'16px','--nav-active-bg':'rgba(255,255,255,0.05)','--row-hover':'rgba(255,255,255,0.025)',
+      '--btn-glow':'0 6px 20px rgba(200,240,81,0.22)','--shadow-card':'0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.4)',
+      '--hero-bg':'#C8F051','--hero-text':'#0A0B0E'
+    }
+  },
+  {
+    id:'ds2', name:'Terminal Pro', tag:'estética de pregão · denso e técnico',
+    meta:'IBM Plex Mono/Sans · near-black · âmbar',
+    palette:[['#0B0E12','bg'],['#11161D','surface'],['#FF8A3D','amber'],['#3DDC97','up'],['#FF5C5C','dn']],
+    vars:{
+      '--font-sans':"'IBM Plex Sans', sans-serif",'--font-mono':"'IBM Plex Mono', monospace",'--font-num':"'IBM Plex Mono', monospace",'--font-display':"'IBM Plex Sans', sans-serif",
+      '--bg':'#0B0E12','--surface':'#11161D','--surface-2':'#161C26','--side-bg':'#090C10',
+      '--border':'rgba(120,150,180,0.12)','--text':'#D6DEE8','--text-mute':'#7C8896','--text-dim':'#525E6C',
+      '--accent':'#FF8A3D','--accent-ink':'#0B0E12','--accent-2':'#3DDC97',
+      '--success':'#3DDC97','--success-soft':'rgba(61,220,151,0.12)','--warn':'#FFC542','--warn-soft':'rgba(255,197,66,0.12)',
+      '--danger':'#FF5C5C','--danger-soft':'rgba(255,92,92,0.13)','--info':'#56A8FF','--info-soft':'rgba(86,168,255,0.13)',
+      '--r':'8px','--input-r':'6px','--btn-r':'6px','--badge-r':'5px','--nav-r':'6px','--logo-r':'5px',
+      '--nav-active-bg':'rgba(255,138,61,0.12)','--nav-active-text':'#FF8A3D','--nav-bar-display':'none',
+      '--row-hover':'rgba(120,150,180,0.06)','--thead-bg':'rgba(120,150,180,0.04)',
+      '--shadow-card':'none','--hero-bg':'#11161D','--hero-text':'#FF8A3D','--hero-label':'#7C8896','--hero-delta':'#3DDC97','--hero-border':'rgba(255,138,61,0.3)'
+    }
+  },
+  {
+    id:'ds3', name:'Editorial Serif', tag:'sofisticado · revista financeira premium',
+    meta:'Fraunces display + Inter · dark warm',
+    palette:[['#15110D','bg'],['#1E1813','surface'],['#B8895A','bronze'],['#C8A876','gold'],['#7FA88A','sage']],
+    vars:{
+      '--font-sans':"'Inter', sans-serif",'--font-mono':MONO,'--font-num':"'Inter', sans-serif",'--font-display':"'Fraunces', serif",'--font-serif':"'Fraunces', serif",
+      '--bg':'#15110D','--surface':'#1E1813','--surface-2':'#272019','--side-bg':'#120E0A',
+      '--border':'rgba(200,168,118,0.14)','--text':'#EFE7DB','--text-mute':'#A99B86','--text-dim':'#6F6354',
+      '--accent':'#B8895A','--accent-ink':'#15110D','--accent-2':'#C8A876',
+      '--success':'#7FA88A','--success-soft':'rgba(127,168,138,0.14)','--warn':'#D4A24E','--warn-soft':'rgba(212,162,78,0.14)',
+      '--danger':'#C77B6B','--danger-soft':'rgba(199,123,107,0.16)','--info':'#8DA3B8','--info-soft':'rgba(141,163,184,0.15)',
+      '--r':'14px','--title-weight':'500','--title-size':'30px',
+      '--nav-active-bg':'rgba(184,137,90,0.14)','--row-hover':'rgba(200,168,118,0.05)',
+      '--shadow-card':'0 10px 30px rgba(0,0,0,0.35)','--hero-bg':'linear-gradient(135deg,#C8A876,#B8895A)','--hero-text':'#15110D','--hero-label':'rgba(21,17,13,0.6)','--hero-delta':'rgba(21,17,13,0.7)'
+    }
+  },
+  {
+    id:'ds4', name:'Linen Light', tag:'tema claro premium · papel & tinta',
+    meta:'Inter + Spline Mono · off-white · verde escuro',
+    palette:[['#F4F1EA','bg'],['#FFFFFF','surface'],['#1F6B4A','green'],['#B45309','amber'],['#1F6B4A','up']],
+    vars:{
+      '--font-sans':SANS,'--font-mono':"'Spline Sans Mono', monospace",'--font-num':"'Spline Sans Mono', monospace",'--font-display':SANS,
+      '--bg':'#F4F1EA','--surface':'#FFFFFF','--surface-2':'#F4F1EA','--side-bg':'#FBF9F4',
+      '--border':'rgba(31,41,38,0.10)','--text':'#1A1F1C','--text-mute':'#5C665F','--text-dim':'#909A92',
+      '--accent':'#1F6B4A','--accent-ink':'#FFFFFF','--accent-2':'#1F6B4A',
+      '--success':'#1F6B4A','--success-soft':'rgba(31,107,74,0.10)','--warn':'#B45309','--warn-soft':'rgba(180,83,9,0.10)',
+      '--danger':'#B91C1C','--danger-soft':'rgba(185,28,28,0.09)','--info':'#1D4ED8','--info-soft':'rgba(29,78,216,0.10)',
+      '--r':'16px','--nav-active-bg':'rgba(31,107,74,0.09)','--nav-active-text':'#1F6B4A','--row-hover':'rgba(31,41,38,0.025)',
+      '--grain-soja':'#3F7D2E','--grain-milho':'#B45309','--grain-trigo':'#9A5B22','--grain-usd':'#0F766E',
+      '--shadow-card':'0 1px 2px rgba(31,41,38,0.05), 0 8px 24px rgba(31,41,38,0.06)','--btn-glow':'0 6px 18px rgba(31,107,74,0.22)',
+      '--hero-bg':'#1F6B4A','--hero-text':'#FFFFFF','--hero-label':'rgba(255,255,255,0.7)','--hero-delta':'rgba(255,255,255,0.85)'
+    }
+  },
+  {
+    id:'ds5', name:'Carbon Steel', tag:'industrial · enterprise · azul elétrico',
+    meta:'Sora + Geist Mono · grafite · azul',
+    palette:[['#0E1014','bg'],['#171A20','surface'],['#4F7CFF','blue'],['#22D3A6','up'],['#2A2F38','steel']],
+    vars:{
+      '--font-sans':"'Sora', sans-serif",'--font-mono':"'Geist Mono', monospace",'--font-num':"'Geist Mono', monospace",'--font-display':"'Sora', sans-serif",
+      '--bg':'#0E1014','--surface':'#171A20','--surface-2':'#1F242C','--side-bg':'#0B0D11',
+      '--border':'rgba(255,255,255,0.08)','--text':'#E4E7EC','--text-mute':'#8B93A0','--text-dim':'#565E6B',
+      '--accent':'#4F7CFF','--accent-ink':'#FFFFFF','--accent-2':'#22D3A6',
+      '--success':'#22D3A6','--success-soft':'rgba(34,211,166,0.12)','--warn':'#F5A623','--warn-soft':'rgba(245,166,35,0.12)',
+      '--danger':'#FF5470','--danger-soft':'rgba(255,84,112,0.13)','--info':'#4F7CFF','--info-soft':'rgba(79,124,255,0.14)',
+      '--r':'12px','--input-r':'9px','--btn-r':'9px',
+      '--nav-active-bg':'rgba(79,124,255,0.14)','--nav-active-text':'#a8c0ff','--row-hover':'rgba(255,255,255,0.03)',
+      '--shadow-card':'0 12px 32px rgba(0,0,0,0.45)','--btn-glow':'0 6px 22px rgba(79,124,255,0.3)',
+      '--hero-bg':'linear-gradient(135deg,#4F7CFF,#3B5FE0)','--hero-text':'#FFFFFF','--hero-label':'rgba(255,255,255,0.72)','--hero-delta':'rgba(255,255,255,0.9)'
+    }
+  },
+  {
+    id:'ds6', name:'Verdant Agro', tag:'campo · sustentável · terroso natural',
+    meta:'Manrope + JetBrains Mono · dark green · folha',
+    palette:[['#0C140E','bg'],['#13201605','surface'],['#3FA34D','leaf'],['#D9A441','wheat'],['#5FB286','up']],
+    vars:{
+      '--font-sans':"'Manrope', sans-serif",'--font-mono':MONO,'--font-num':"'Manrope', sans-serif",'--font-display':"'Manrope', sans-serif",
+      '--bg':'#0C140E','--surface':'#13201A','--surface-2':'#1A2C22','--side-bg':'#0A1009',
+      '--border':'rgba(120,200,140,0.12)','--text':'#E6F0E8','--text-mute':'#94AC9C','--text-dim':'#5E7466',
+      '--accent':'#3FA34D','--accent-ink':'#FFFFFF','--accent-2':'#D9A441',
+      '--success':'#5FB286','--success-soft':'rgba(95,178,134,0.14)','--warn':'#D9A441','--warn-soft':'rgba(217,164,65,0.14)',
+      '--danger':'#D17B6B','--danger-soft':'rgba(209,123,107,0.15)','--info':'#5C9CB0','--info-soft':'rgba(92,156,176,0.14)',
+      '--r':'18px','--nav-active-bg':'rgba(63,163,77,0.16)','--nav-active-text':'#7fd68a','--row-hover':'rgba(120,200,140,0.05)',
+      '--shadow-card':'0 10px 28px rgba(0,0,0,0.4)','--btn-glow':'0 6px 20px rgba(63,163,77,0.28)',
+      '--hero-bg':'linear-gradient(140deg,#4CB85A,#2F8A3D)','--hero-text':'#FFFFFF','--hero-label':'rgba(255,255,255,0.72)','--hero-delta':'rgba(255,255,255,0.9)'
+    }
+  },
+  {
+    id:'ds7', name:'Swiss Grid', tag:'minimalismo suíço · alto contraste',
+    meta:'Archivo + JetBrains Mono · branco puro · vermelho',
+    palette:[['#FAFAFA','bg'],['#FFFFFF','surface'],['#E5484D','red'],['#111111','ink'],['#0A7D4B','up']],
+    vars:{
+      '--font-sans':"'Archivo', sans-serif",'--font-mono':MONO,'--font-num':MONO,'--font-display':"'Archivo', sans-serif",
+      '--bg':'#FAFAFA','--surface':'#FFFFFF','--surface-2':'#F2F2F2','--side-bg':'#111111',
+      '--border':'rgba(0,0,0,0.10)','--text':'#111111','--text-mute':'#6B6B6B','--text-dim':'#A0A0A0',
+      '--accent':'#E5484D','--accent-ink':'#FFFFFF','--accent-2':'#111111',
+      '--success':'#0A7D4B','--success-soft':'rgba(10,125,75,0.10)','--warn':'#B5750A','--warn-soft':'rgba(181,117,10,0.10)',
+      '--danger':'#E5484D','--danger-soft':'rgba(229,72,77,0.10)','--info':'#1E5FD8','--info-soft':'rgba(30,95,216,0.10)',
+      '--r':'4px','--input-r':'3px','--btn-r':'3px','--badge-r':'3px','--nav-r':'3px','--logo-r':'3px',
+      '--title-weight':'700','--title-size':'30px',
+      '--grain-soja':'#3F7D2E','--grain-milho':'#B45309','--grain-trigo':'#9A5B22','--grain-usd':'#0F766E',
+      '--nav-active-bg':'#111111','--nav-active-text':'#FFFFFF','--nav-bar-display':'none','--row-hover':'rgba(0,0,0,0.03)','--thead-bg':'#FAFAFA',
+      '--shadow-card':'none','--side-bg':'#FFFFFF',
+      '--hero-bg':'#111111','--hero-text':'#FFFFFF','--hero-label':'rgba(255,255,255,0.55)','--hero-delta':'#7CECAE'
+    }
+  },
+  {
+    id:'ds8', name:'Aurora Glass', tag:'glassmorphism · futurista · gradiente vivo',
+    meta:'Space Grotesk + JetBrains Mono · roxo/teal',
+    palette:[['#0B0A14','bg'],['#16142400','surface'],['#7C5CFF','violet'],['#2DD4BF','teal'],['#FF6AC2','pink']],
+    vars:{
+      '--font-sans':"'Space Grotesk', sans-serif",'--font-mono':MONO,'--font-num':"'Space Grotesk', sans-serif",'--font-display':"'Space Grotesk', sans-serif",
+      '--bg':'radial-gradient(1200px 600px at 80% -10%, rgba(124,92,255,0.18), transparent 60%), radial-gradient(900px 500px at 0% 110%, rgba(45,212,191,0.14), transparent 55%), #0B0A14',
+      '--surface':'rgba(30,28,48,0.55)','--surface-2':'rgba(44,40,68,0.6)','--side-bg':'rgba(18,16,32,0.55)',
+      '--border':'rgba(255,255,255,0.10)','--text':'#ECEAF6','--text-mute':'#A29DC4','--text-dim':'#6B6691',
+      '--accent':'#7C5CFF','--accent-ink':'#FFFFFF','--accent-2':'#2DD4BF',
+      '--success':'#2DD4BF','--success-soft':'rgba(45,212,191,0.16)','--warn':'#FFC857','--warn-soft':'rgba(255,200,87,0.16)',
+      '--danger':'#FF6AC2','--danger-soft':'rgba(255,106,194,0.16)','--info':'#7C5CFF','--info-soft':'rgba(124,92,255,0.18)',
+      '--r':'20px','--nav-active-bg':'rgba(124,92,255,0.22)','--nav-active-text':'#fff','--row-hover':'rgba(255,255,255,0.04)',
+      '--shadow-card':'0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)','--btn-glow':'0 8px 26px rgba(124,92,255,0.4)',
+      '--hero-bg':'linear-gradient(135deg,#7C5CFF,#2DD4BF)','--hero-text':'#FFFFFF','--hero-label':'rgba(255,255,255,0.8)','--hero-delta':'rgba(255,255,255,0.92)'
+    },
+    glass:true
+  },
+  {
+    id:'ds9', name:'Cognac Premium', tag:'luxo discreto · private banking',
+    meta:'Newsreader + Libre Franklin · grafite · ouro',
+    palette:[['#16151A','bg'],['#1E1D24','surface'],['#D4A017','gold'],['#9C8B6E','sand'],['#5E9B7E','up']],
+    vars:{
+      '--font-sans':"'Libre Franklin', sans-serif",'--font-mono':MONO,'--font-num':"'Libre Franklin', sans-serif",'--font-display':"'Newsreader', serif",'--font-serif':"'Newsreader', serif",
+      '--bg':'#16151A','--surface':'#1E1D24','--surface-2':'#27262F','--side-bg':'#131217',
+      '--border':'rgba(212,160,23,0.14)','--text':'#EAE7E0','--text-mute':'#A39E92','--text-dim':'#6B6659',
+      '--accent':'#D4A017','--accent-ink':'#16151A','--accent-2':'#C9B896',
+      '--success':'#5E9B7E','--success-soft':'rgba(94,155,126,0.14)','--warn':'#C99A3C','--warn-soft':'rgba(201,154,60,0.14)',
+      '--danger':'#B5685E','--danger-soft':'rgba(181,104,94,0.15)','--info':'#7D93A8','--info-soft':'rgba(125,147,168,0.14)',
+      '--r':'10px','--title-weight':'500','--title-size':'31px',
+      '--nav-active-bg':'rgba(212,160,23,0.13)','--nav-active-text':'#e8c45a','--row-hover':'rgba(212,160,23,0.05)',
+      '--shadow-card':'0 14px 36px rgba(0,0,0,0.42)','--btn-glow':'0 6px 20px rgba(212,160,23,0.25)',
+      '--hero-bg':'linear-gradient(135deg,#E0B53A,#D4A017)','--hero-text':'#16151A','--hero-label':'rgba(22,21,26,0.6)','--hero-delta':'rgba(22,21,26,0.72)'
+    }
+  },
+  {
+    id:'ds10', name:'Slate Mint', tag:'fintech moderno · limpo & confiável',
+    meta:'Manrope + Spline Mono · slate escuro · menta',
+    palette:[['#0F1419','bg'],['#18202A','surface'],['#2DD4BF','mint'],['#60A5FA','blue'],['#34D399','up']],
+    vars:{
+      '--font-sans':"'Manrope', sans-serif",'--font-mono':"'Spline Sans Mono', monospace",'--font-num':"'Spline Sans Mono', monospace",'--font-display':"'Manrope', sans-serif",
+      '--bg':'#0F1419','--surface':'#18202A','--surface-2':'#202B38','--side-bg':'#0C1116',
+      '--border':'rgba(148,180,200,0.10)','--text':'#E8EEF2','--text-mute':'#8FA0AE','--text-dim':'#586674',
+      '--accent':'#2DD4BF','--accent-ink':'#06201C','--accent-2':'#60A5FA',
+      '--success':'#34D399','--success-soft':'rgba(52,211,153,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)',
+      '--danger':'#FB7185','--danger-soft':'rgba(251,113,133,0.14)','--info':'#60A5FA','--info-soft':'rgba(96,165,250,0.14)',
+      '--r':'16px','--nav-active-bg':'rgba(45,212,191,0.14)','--nav-active-text':'#7fe9da','--row-hover':'rgba(148,180,200,0.04)',
+      '--shadow-card':'0 10px 30px rgba(0,0,0,0.38)','--btn-glow':'0 6px 20px rgba(45,212,191,0.28)',
+      '--hero-bg':'linear-gradient(135deg,#2DD4BF,#14B8A6)','--hero-text':'#06201C','--hero-label':'rgba(6,32,28,0.62)','--hero-delta':'rgba(6,32,28,0.78)'
+    }
+  }
+];
+
+const tpl = document.getElementById('mock');
+const root = document.getElementById('sections');
+
+SYSTEMS.forEach((s, i) => {
+  const section = document.createElement('section');
+  section.className = 'ds-section';
+  section.id = s.id;
+
+  // Label
+  const label = document.createElement('div');
+  label.className = 'ds-label';
+  label.innerHTML = `
+    <div class="left">
+      <span class="idx">${String(i+1).padStart(2,'0')}</span>
+      <h2>${s.name} <span class="tag">· ${s.tag}</span></h2>
+    </div>
+    <div class="meta">${s.meta.split('·').map(p=>p.trim()).join('<br/><b>')}</b></div>`;
+  section.appendChild(label);
+
+  // Frame + clone
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  const clone = tpl.content.cloneNode(true);
+  const app = clone.querySelector('.app');
+  if (s.glass) app.classList.add('glass-theme');
+  // aplica vars
+  Object.entries(s.vars).forEach(([k,v]) => app.style.setProperty(k, v));
+  // ajustes da topnav em temas que pedem barra própria
+  if (s.sideVars) {
+    const nav = app.querySelector('.topnav');
+    Object.entries(s.sideVars).forEach(([k,v]) => nav.style.setProperty(k, v));
+  }
+  // cor da spark-line acompanha accent (ou success no hero)
+  app.querySelectorAll('.spark-line').forEach(el=>{
+    el.style.stroke = s.vars['--hero-text'] && s.vars['--hero-text'].startsWith('#') ? s.vars['--hero-text'] : 'rgba(0,0,0,0.5)';
+  });
+  frame.appendChild(clone);
+  section.appendChild(frame);
+
+  // Botão "ver todas as cotações" → abre o modal dentro deste frame (herda tokens do tema)
+  const expandBtn = frame.querySelector('[data-open-quotes]');
+  if (expandBtn) expandBtn.addEventListener('click', () => openQuotesModal(frame, app));
+
+  // Palette
+  const pal = document.createElement('div');
+  pal.className = 'palette';
+  pal.innerHTML = s.palette.map(([hex,nm])=>`<span class="chip"><i style="background:${hex}"></i>${nm} ${hex}</span>`).join('');
+  section.appendChild(pal);
+
+  root.appendChild(section);
+});
+
+/* glass effect: aplica backdrop-filter nos cards/side quando tema é glass */
+document.querySelectorAll('.glass-theme .card, .glass-theme .topnav, .glass-theme .search, .glass-theme .kpi:not(.hero)').forEach(el=>{
+  el.style.backdropFilter = 'blur(22px) saturate(150%)';
+  el.style.webkitBackdropFilter = 'blur(22px) saturate(150%)';
+});
+
+/* ============================================================
+   Cotações ao vivo (mockup): o último KPI de cada tema lista as
+   4 cotações (Soja, Milho, Trigo, Dólar) e atualiza preço + variação
+   a cada ~2.5s com micro-variações, simulando o feed CEPEA realtime.
+   ============================================================ */
+(function liveQuotes(){
+  const rows = [...document.querySelectorAll('.qrow')].map((row, idx) => ({
+    row,
+    pr: row.querySelector('.qpr'),
+    dl: row.querySelector('.qdl'),
+    base: parseFloat(row.dataset.base),
+    open: parseFloat(row.dataset.open),
+    usd: row.dataset.unit === 'usd',
+    seed: idx * 17,
+  }));
+  function fmt(n, usd){ return 'R$ ' + n.toFixed(2).replace('.', ','); }
+  function tick(){
+    const t = Date.now();
+    rows.forEach(s => {
+      s.seed = (s.seed + 13) % 211;
+      const amp = s.usd ? 0.012 : s.base * 0.0045;            // dólar oscila menos
+      const drift = Math.sin(t/8000 + s.seed) * amp;
+      const noise = ((s.seed % 7) - 3) * (amp * 0.3);
+      const price = +(s.base + drift + noise).toFixed(2);
+      const pct = ((price - s.open) / s.open) * 100;
+      const up = pct >= 0;
+      s.pr.textContent = fmt(price, s.usd);
+      s.pr.style.color = up ? 'var(--success)' : 'var(--danger)';
+      setTimeout(()=>{ s.pr.style.color = 'var(--text)'; }, 240);
+      s.dl.className = 'qdl ' + (up ? 'up' : 'dn');
+      s.dl.textContent = (up ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%';
+    });
+  }
+  setInterval(tick, 2500);
+})();
+
+/* ============================================================
+   MODAL — painel completo de cotações ao vivo do sistema.
+   Lista bem mais ampla que o card resumo: grãos, câmbio, bolsa,
+   insumos. Abre dentro do .frame do tema (herda CSS vars),
+   atualiza preços ao vivo, e ao fechar volta ao layout atual.
+   ============================================================ */
+const QUOTE_FEED = [
+  { g:'Grãos', sym:'SOJA', cls:'soja', name:'Soja', src:'CEPEA/ESALQ · Paranaguá', unit:'sc 60kg', base:132.84, open:131.25 },
+  { g:'Grãos', sym:'SOJA', cls:'soja', name:'Soja FOB', src:'Porto · Rio Grande', unit:'sc 60kg', base:134.10, open:133.40 },
+  { g:'Grãos', sym:'MILH', cls:'milho', name:'Milho', src:'CEPEA/ESALQ · Campinas', unit:'sc 60kg', base:58.12, open:58.32 },
+  { g:'Grãos', sym:'MILH', cls:'milho', name:'Milho', src:'B3 · vencimento N25', unit:'sc 60kg', base:59.45, open:59.10 },
+  { g:'Grãos', sym:'TRIG', cls:'trigo', name:'Trigo', src:'CEPEA · Paraná', unit:'sc 60kg', base:84.30, open:83.81 },
+  { g:'Grãos', sym:'SORG', cls:'milho', name:'Sorgo', src:'CEPEA · Goiás', unit:'sc 60kg', base:46.70, open:46.95 },
+  { g:'Grãos', sym:'ALGD', cls:'trigo', name:'Algodão', src:'CEPEA · @ pluma', unit:'@', base:142.30, open:140.90 },
+  { g:'Grãos', sym:'CAFE', cls:'trigo', name:'Café Arábica', src:'CEPEA · bica corrida', unit:'sc 60kg', base:1842.00, open:1858.00 },
+  { g:'Câmbio', sym:'USD', cls:'usd', name:'Dólar', src:'PTAX · BCB', unit:'BRL', base:5.38, open:5.39 },
+  { g:'Câmbio', sym:'USD', cls:'usd', name:'Dólar Comercial', src:'B3 · spot', unit:'BRL', base:5.39, open:5.40 },
+  { g:'Câmbio', sym:'EUR', cls:'usd', name:'Euro', src:'BCB', unit:'BRL', base:5.84, open:5.83 },
+  { g:'Bolsa', sym:'ZS', cls:'soja', name:'Soybean', src:'CBOT · CME Group', unit:'¢/bu', base:1218.50, open:1224.00 },
+  { g:'Bolsa', sym:'ZC', cls:'milho', name:'Corn', src:'CBOT · CME Group', unit:'¢/bu', base:447.25, open:445.00 },
+  { g:'Bolsa', sym:'ZW', cls:'trigo', name:'Wheat', src:'CBOT · CME Group', unit:'¢/bu', base:592.00, open:596.50 },
+  { g:'Insumos', sym:'UREIA', cls:'milho', name:'Ureia', src:'Índice · porto', unit:'USD/t', base:412.00, open:409.00 },
+  { g:'Insumos', sym:'KCL', cls:'trigo', name:'Cloreto de Potássio', src:'Índice · CFR Brasil', unit:'USD/t', base:318.00, open:319.50 },
+];
+function symBg(cls){ return `color-mix(in srgb, var(--grain-${cls=='usd'?'usd':cls}, var(--accent)) 16%, transparent)`; }
+function symFg(cls){ return `var(--grain-${cls=='usd'?'usd':cls}, var(--accent))`; }
+
+let activeModal = null;
+function openQuotesModal(frame, app){
+  if (activeModal) closeQuotesModal();
+  const node = document.getElementById('quotes-modal').content.cloneNode(true);
+  const overlay = node.querySelector('.qm-overlay');
+  const body = node.querySelector('.qm-body');
+  const tabs = [...node.querySelectorAll('.qm-tab')];
+
+  function render(filter){
+    body.innerHTML = '';
+    const groups = [...new Set(QUOTE_FEED.map(q=>q.g))]
+      .filter(g => filter==='Todas' || g===filter);
+    groups.forEach(g => {
+      const lbl = document.createElement('div');
+      lbl.className = 'qm-group-label'; lbl.textContent = g;
+      body.appendChild(lbl);
+      QUOTE_FEED.filter(q=>q.g===g).forEach((q, i) => {
+        const up0 = q.base >= q.open;
+        const row = document.createElement('div');
+        row.className = 'qm-row';
+        row.dataset.base = q.base; row.dataset.open = q.open; row.dataset.cls = q.cls;
+        row.innerHTML = `
+          <div class="qm-ic" style="background:${symBg(q.cls)};color:${symFg(q.cls)}">${q.cls==='usd'?'$':q.name[0]}</div>
+          <div class="qm-nm">${q.name}<small>${q.sym} · ${q.unit}</small></div>
+          <div class="qm-src">${q.src}</div>
+          <div class="qm-price">R$ ${q.base.toFixed(2).replace('.',',')}</div>
+          <div class="qm-chg ${up0?'up':'dn'}">${up0?'▲':'▼'} ${(Math.abs((q.base-q.open)/q.open*100)).toFixed(2)}%</div>`;
+        body.appendChild(row);
+      });
+    });
+  }
+  render('Todas');
+
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active');
+    render(t.textContent.trim());
+  }));
+
+  // fechar: X, clique no overlay, ESC
+  const close = () => closeQuotesModal();
+  node.querySelector('.qm-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', escHandler);
+
+  frame.appendChild(node);
+  activeModal = { overlay: frame.querySelector('.qm-overlay'), frame, timer:null };
+
+  // live update das linhas do modal
+  activeModal.timer = setInterval(() => {
+    const t = Date.now();
+    activeModal.overlay.querySelectorAll('.qm-row').forEach((row, idx) => {
+      const base = parseFloat(row.dataset.base), open = parseFloat(row.dataset.open);
+      const usd = row.dataset.cls === 'usd';
+      const amp = usd ? 0.01 : base * 0.004;
+      const price = +(base + Math.sin(t/8000 + idx*1.3)*amp + (((idx*13)%7)-3)*amp*0.25).toFixed(2);
+      const pct = (price - open)/open*100, up = pct>=0;
+      const pEl = row.querySelector('.qm-price'), cEl = row.querySelector('.qm-chg');
+      pEl.textContent = 'R$ ' + price.toFixed(2).replace('.',',');
+      pEl.style.color = up ? 'var(--success)' : 'var(--danger)';
+      setTimeout(()=>{ pEl.style.color = 'var(--text)'; }, 240);
+      cEl.className = 'qm-chg ' + (up?'up':'dn');
+      cEl.textContent = (up?'▲ ':'▼ ') + Math.abs(pct).toFixed(2) + '%';
+    });
+    const upd = activeModal.overlay.querySelector('[data-upd]');
+    if (upd) upd.textContent = 'agora';
+  }, 2000);
+}
+function escHandler(e){ if (e.key === 'Escape') closeQuotesModal(); }
+function closeQuotesModal(){
+  if (!activeModal) return;
+  clearInterval(activeModal.timer);
+  document.removeEventListener('keydown', escHandler);
+  activeModal.overlay.remove();
+  activeModal = null;
+}
+</script>
+</body>
+</html>

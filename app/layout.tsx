@@ -1,7 +1,26 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Urbanist, Inter, JetBrains_Mono, Instrument_Serif } from 'next/font/google'
+import {
+  Urbanist,
+  Inter,
+  JetBrains_Mono,
+  Instrument_Serif,
+  IBM_Plex_Sans,
+  IBM_Plex_Mono,
+  Fraunces,
+  Newsreader,
+  Libre_Franklin,
+  Manrope,
+  Spline_Sans_Mono,
+  Space_Grotesk,
+  Lexend,
+  DM_Mono,
+  DM_Sans,
+  Public_Sans,
+  Martian_Mono,
+  Instrument_Sans,
+} from 'next/font/google'
 import './globals.css'
 
 const urbanist = Urbanist({
@@ -31,9 +50,26 @@ const instrumentSerif = Instrument_Serif({
   weight: ['400'],
   style: ['normal', 'italic'],
 })
+
+// ── Fontes dos design systems selecionáveis pela corretora ──────────────
+// (lib/ui/design-systems.ts). Cada tema usa um subconjunto via var(--font-*).
+const ibmPlexSans = IBM_Plex_Sans({ subsets: ['latin'], display: 'swap', variable: '--font-ibm-plex-sans', weight: ['400', '500', '600', '700'] })
+const ibmPlexMono = IBM_Plex_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-ibm-plex-mono', weight: ['400', '500', '600'] })
+const fraunces = Fraunces({ subsets: ['latin'], display: 'swap', variable: '--font-fraunces', style: ['normal', 'italic'] })
+const newsreader = Newsreader({ subsets: ['latin'], display: 'swap', variable: '--font-newsreader', style: ['normal', 'italic'] })
+const libreFranklin = Libre_Franklin({ subsets: ['latin'], display: 'swap', variable: '--font-libre-franklin', weight: ['400', '500', '600', '700'] })
+const manrope = Manrope({ subsets: ['latin'], display: 'swap', variable: '--font-manrope', weight: ['400', '500', '600', '700', '800'] })
+const splineMono = Spline_Sans_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-spline-mono', weight: ['400', '500', '600'] })
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], display: 'swap', variable: '--font-space-grotesk', weight: ['400', '500', '600', '700'] })
+const lexend = Lexend({ subsets: ['latin'], display: 'swap', variable: '--font-lexend', weight: ['400', '500', '600', '700'] })
+const dmMono = DM_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-dm-mono', weight: ['400', '500'] })
+const dmSans = DM_Sans({ subsets: ['latin'], display: 'swap', variable: '--font-dm-sans', weight: ['400', '500', '600', '700'] })
+const publicSans = Public_Sans({ subsets: ['latin'], display: 'swap', variable: '--font-public-sans', weight: ['400', '500', '600', '700'] })
+const martianMono = Martian_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-martian-mono', weight: ['400', '500', '600'] })
+const instrumentSans = Instrument_Sans({ subsets: ['latin'], display: 'swap', variable: '--font-instrument-sans', weight: ['400', '500', '600', '700'] })
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProviderClient } from '@/contexts/SessionProviderClient'
-import { getUiTheme } from '@/lib/ui/theme'
+import { getWorkspaceDesignSystem } from '@/lib/ui/workspace-theme'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,20 +144,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const theme = await getUiTheme().catch(() => 'phb' as const)
-  // Script anti-FOUC: aplica preferência do localStorage antes do hydrate.
-  // Evita flash dark→light no carregamento.
-  const themeBootScript = `(function(){try{var t=localStorage.getItem('bhg-theme');var r=document.documentElement;if(t==='light'){r.setAttribute('data-theme','light');}else{r.setAttribute('data-theme','phb');}}catch(e){}})();`
+  // Tema (design system) resolvido por workspace no SSR — todos os usuários da
+  // corretora veem o mesmo tema. Sem override por usuário, sem FOUC (vem pronto
+  // do servidor), sem boot script de localStorage.
+  const designSystem = await getWorkspaceDesignSystem()
   return (
     <html
       lang="pt-BR"
       data-palette="synthex"
-      data-theme={theme}
-      className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable} ${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable}`}
+      data-theme={designSystem}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${urbanist.variable} ${inter.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} ${fraunces.variable} ${newsreader.variable} ${libreFranklin.variable} ${manrope.variable} ${splineMono.variable} ${spaceGrotesk.variable} ${lexend.variable} ${dmMono.variable} ${dmSans.variable} ${publicSans.variable} ${martianMono.variable} ${instrumentSans.variable}`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
-      </head>
+      <head />
       <body className="bg-bg-0 text-fg-1 font-sans antialiased min-h-screen">
         <SessionProviderClient>
           <ToastProvider position="top-right">{children}</ToastProvider>

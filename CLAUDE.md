@@ -1,3 +1,20 @@
+## Infraestrutura & Deploy (FONTE DE VERDADE)
+
+**Plataforma: Railway** — tudo (app + banco) roda no Railway. NÃO usar Supabase.
+
+- **Projeto Railway:** `PHB Grain` · ambiente `production`.
+- **Banco de produção:** Postgres do Railway (`postgres.railway.internal`), serviço `Postgres`.
+  - O CLI Railway **está logado** (`fabrikadeapp@gmail.com`). Verificar com `railway whoami` / `railway status`.
+  - Acesso externo (migrations, scripts locais): usar `DATABASE_PUBLIC_URL` do Railway.
+  - ⚠️ O `DATABASE_URL`/`DIRECT_URL` que aparecem no `.env.local` apontando para Supabase estão **obsoletos** — o banco real é o Railway. Ao rodar migrations/queries localmente, usar as vars do Railway.
+- **Rodar comandos com o ambiente do Railway:** prefixar com `railway run` (injeta as env vars do projeto), ex.:
+  - Aplicar migration: `railway run npx prisma db execute --file <arquivo.sql> --schema prisma/schema.prisma`
+  - Prisma Studio / queries: `railway run npx prisma studio`
+- **Deploy:** Railway (CI/CD da plataforma). Operações de deploy/infra são autoridade do @devops (Gage).
+- **Migrations:** o projeto usa **migrations SQL manuais** em `prisma/migrations/manual_*.sql` (não `prisma migrate dev`). Aplicar via `railway run npx prisma db execute --file ...`.
+
+---
+
 ## Workflow Orchestration
 
 ### 1. Plan Mode Default

@@ -210,6 +210,13 @@ model Workspace {
   /// null/vazio = usa DEFAULT_DASHBOARD_IDS (lib/commodities/catalog.ts).
   dashboardSymbols Json?
 
+  /// Design system (tema visual) escolhido pela corretora — aplicado a TODOS
+  /// os usuários do workspace via data-theme no <html> (SSR).
+  /// Slugs válidos: lib/ui/design-systems.ts (lime|terminal|linen|cognac|frost|
+  /// graphite|paper|aurora|sand|arctic). Default 'lime' (= NewDB v2 atual).
+  /// Editável em Gestão → Configurações → Aparência & Tema (owner/admin).
+  designSystem String @default("lime")
+
   onboardingCompletedAt DateTime?
 
   /// Código de 3 letras do workspace, usado como prefixo na numeração de

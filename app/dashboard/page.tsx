@@ -11,7 +11,7 @@ import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { loadFeaturesFor } from '@/lib/features'
 import { AppShell } from '@/components/ui/phb'
-import { BhGrainDashboard } from '@/app/bhgrain/_components/BhGrainDashboard'
+import { MesaOperacoes } from '@/app/dashboard/_components/MesaOperacoes'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
   return (
     <AppShell>
-      <BhGrainDashboard
+      <MesaOperacoes
         firstName={firstName}
         workspaceName={workspace?.name ?? 'Workspace'}
         enabledFeatures={features as Record<string, boolean>}

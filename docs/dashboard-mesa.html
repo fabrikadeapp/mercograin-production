@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BH Grain · Estrutura do Dashboard da Mesa — opções</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:'Inter',system-ui,sans-serif;
+  background:#08090c; color:#e7e7ea;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+
+/* ===== TOKENS POR TEMA (no :root via [data-theme]) ===== */
+[data-theme="lime"]{
+  --font-sans:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-num:'JetBrains Mono',monospace;
+  --bg:#0A0B0E; --surface:#14171D; --surface-2:#1B1F27; --nav-bg:#0c0e12;
+  --border:rgba(255,255,255,0.07); --border-strong:rgba(255,255,255,0.13);
+  --text:#ECEEF2; --text-mute:#9AA0AB; --text-dim:#5C6370;
+  --accent:#C8F051; --accent-ink:#0A0B0E; --accent-2:#7FA8FF;
+  --success:#4ADE80; --success-soft:rgba(74,222,128,0.13);
+  --warn:#FBBF24; --warn-soft:rgba(251,191,36,0.13);
+  --danger:#F87171; --danger-soft:rgba(248,113,113,0.14);
+  --info:#7FA8FF; --info-soft:rgba(127,168,255,0.14);
+  --r:16px; --row-hover:rgba(255,255,255,0.025); --shadow:0 8px 24px rgba(0,0,0,0.4);
+  --grain-soja:#C5E861; --grain-milho:#FFB020; --grain-trigo:#E8843D; --grain-usd:#4DD9B0;
+}
+[data-theme="terminal"]{
+  --font-sans:'IBM Plex Sans',sans-serif; --font-mono:'IBM Plex Mono',monospace; --font-num:'IBM Plex Mono',monospace;
+  --bg:#0B0E12; --surface:#11161D; --surface-2:#161C26; --nav-bg:#090C10;
+  --border:rgba(120,150,180,0.12); --border-strong:rgba(120,150,180,0.22);
+  --text:#D6DEE8; --text-mute:#7C8896; --text-dim:#525E6C;
+  --accent:#FF8A3D; --accent-ink:#0B0E12; --accent-2:#3DDC97;
+  --success:#3DDC97; --success-soft:rgba(61,220,151,0.12);
+  --warn:#FFC542; --warn-soft:rgba(255,197,66,0.12);
+  --danger:#FF5C5C; --danger-soft:rgba(255,92,92,0.13);
+  --info:#56A8FF; --info-soft:rgba(86,168,255,0.13);
+  --r:8px; --row-hover:rgba(120,150,180,0.06); --shadow:none;
+  --grain-soja:#C5E861; --grain-milho:#FFB020; --grain-trigo:#E8843D; --grain-usd:#4DD9B0;
+}
+[data-theme="slate"]{
+  --font-sans:'Manrope',sans-serif; --font-mono:'Spline Sans Mono',monospace; --font-num:'Spline Sans Mono',monospace;
+  --bg:#0F1419; --surface:#18202A; --surface-2:#202B38; --nav-bg:#0C1116;
+  --border:rgba(148,180,200,0.10); --border-strong:rgba(148,180,200,0.20);
+  --text:#E8EEF2; --text-mute:#8FA0AE; --text-dim:#586674;
+  --accent:#2DD4BF; --accent-ink:#06201C; --accent-2:#60A5FA;
+  --success:#34D399; --success-soft:rgba(52,211,153,0.13);
+  --warn:#FBBF24; --warn-soft:rgba(251,191,36,0.13);
+  --danger:#FB7185; --danger-soft:rgba(251,113,133,0.14);
+  --info:#60A5FA; --info-soft:rgba(96,165,250,0.14);
+  --r:16px; --row-hover:rgba(148,180,200,0.04); --shadow:0 10px 30px rgba(0,0,0,0.38);
+  --grain-soja:#7FD68A; --grain-milho:#FFB020; --grain-trigo:#E8843D; --grain-usd:#2DD4BF;
+}
+
+/* ===== CHROME DA PÁGINA ===== */
+.head { max-width:1240px; margin:0 auto; padding:56px 28px 8px; }
+.head .eyebrow { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.26em; text-transform:uppercase; color:#C8F051; margin-bottom:16px; }
+.head h1 { font-size:clamp(28px,4vw,42px); font-weight:700; letter-spacing:-0.03em; line-height:1.05;
+  background:linear-gradient(180deg,#fff,#9aa0ab 140%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.head p { margin-top:14px; font-size:15px; line-height:1.6; color:#9aa0ab; max-width:680px; }
+
+/* seletor de tema fixo */
+.theme-switch { position:sticky; top:0; z-index:50; backdrop-filter:blur(12px); background:rgba(8,9,12,0.8); border-bottom:1px solid rgba(255,255,255,0.06); }
+.theme-switch .inner { max-width:1240px; margin:0 auto; padding:12px 28px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.theme-switch .lbl { font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:#6b7280; }
+.theme-switch .opts { display:flex; gap:8px; }
+.theme-btn { padding:7px 14px; border-radius:99px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02); color:#c4c7cd; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; }
+.theme-btn i { width:12px; height:12px; border-radius:50%; }
+.theme-btn.active { border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#fff; }
+.toc-mini { margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
+.toc-mini a { font-size:11.5px; color:#9aa0ab; text-decoration:none; padding:6px 11px; border-radius:8px; border:1px solid rgba(255,255,255,0.07); }
+.toc-mini a:hover { color:#fff; border-color:rgba(200,240,81,0.4); }
+
+/* área temável */
+.stage { background:var(--bg); color:var(--text); font-family:var(--font-sans); transition:background .25s ease; }
+.section { max-width:1240px; margin:0 auto; padding:48px 28px 8px; }
+.section-head { margin-bottom:8px; }
+.section-head .kicker { font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:0.16em; color:var(--accent); }
+.section-head h2 { font-size:23px; font-weight:600; letter-spacing:-0.02em; color:var(--text); margin-top:8px; }
+.section-head p { font-size:14px; color:var(--text-mute); margin-top:7px; max-width:760px; line-height:1.55; }
+
+.opt-label { display:flex; align-items:center; gap:10px; margin:26px 0 12px; }
+.opt-label .badge-opt { font-family:var(--font-mono); font-size:10.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent); padding:3px 9px; border-radius:6px; }
+.opt-label .ot { font-size:14px; font-weight:600; color:var(--text); }
+.opt-label .od { font-size:12.5px; color:var(--text-mute); }
+.rec { font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--success); border:1px solid color-mix(in srgb,var(--success) 40%,transparent); background:var(--success-soft); padding:2px 7px; border-radius:5px; }
+
+/* ===== COMPONENTES BASE ===== */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden; }
+.card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 18px; border-bottom:1px solid var(--border); }
+.card-head h3 { font-size:14.5px; font-weight:600; letter-spacing:-0.01em; color:var(--text); display:flex; align-items:center; gap:9px; }
+.card-head .cnt { font-family:var(--font-num); font-size:11px; font-weight:700; color:var(--accent-2); background:color-mix(in srgb,var(--accent-2) 14%,transparent); padding:2px 8px; border-radius:99px; }
+.card-head .link { font-size:12px; color:var(--accent-2); font-weight:500; cursor:pointer; }
+
+.badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:99px; font-size:10.5px; font-weight:600; font-family:var(--font-sans); white-space:nowrap; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.badge.ok{ background:var(--success-soft); color:var(--success);} .badge.warn{ background:var(--warn-soft); color:var(--warn);} .badge.neg{ background:var(--danger-soft); color:var(--danger);} .badge.info{ background:var(--info-soft); color:var(--info);}
+.badge.flat::before{ display:none; }
+
+.btn-sm { font-family:var(--font-sans); font-size:11.5px; font-weight:600; padding:6px 12px; border-radius:8px; cursor:pointer; border:1px solid transparent; white-space:nowrap; }
+.btn-sm.primary{ background:var(--accent); color:var(--accent-ink); } .btn-sm.ghost{ background:transparent; border-color:var(--border-strong); color:var(--text-mute); }
+
+.av2 { width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-size:12px; font-weight:700; flex-shrink:0; }
+
+/* origem tag */
+.otag { font-family:var(--font-mono); font-size:9px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:2px 7px; border-radius:5px; }
+.otag.pedido{ color:var(--info); background:var(--info-soft);} .otag.rascunho{ color:var(--warn); background:var(--warn-soft);} .otag.travada{ color:var(--danger); background:var(--danger-soft);}
+
+.cols { display:grid; gap:16px; }
+.cols.c3 { grid-template-columns:repeat(3,1fr); }
+.cols.c2 { grid-template-columns:repeat(2,1fr); }
+
+/* ===== FILA: variação ABAS ===== */
+.tabs { display:flex; gap:4px; padding:12px 16px 0; }
+.tab { font-size:12.5px; font-weight:600; color:var(--text-mute); padding:8px 13px; border-radius:9px 9px 0 0; cursor:pointer; display:flex; align-items:center; gap:7px; border-bottom:2px solid transparent; }
+.tab .tc { font-family:var(--font-num); font-size:10.5px; padding:1px 7px; border-radius:99px; background:var(--surface-2); }
+.tab.active { color:var(--text); border-bottom-color:var(--accent); }
+.tab.active .tc { background:var(--accent); color:var(--accent-ink); }
+
+.qrow { display:flex; align-items:center; gap:12px; padding:13px 18px; border-top:1px solid var(--border); }
+.qrow:first-of-type { border-top:1px solid var(--border); }
+.qrow .qbody { flex:1; min-width:0; }
+.qrow .qn { font-size:13.5px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.qrow .qs { font-size:11.5px; color:var(--text-mute); font-family:var(--font-mono); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.qrow .qmeta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.qrow .sla { font-family:var(--font-mono); font-size:11px; font-weight:600; }
+.qrow .sla.hot{ color:var(--danger);} .qrow .sla.warm{ color:var(--warn);} .qrow .sla.cool{ color:var(--text-dim);}
+
+/* ===== KANBAN ===== */
+.kanban { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; padding:16px; overflow-x:auto; }
+.kcol { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px; min-width:170px; }
+.kcol-head { display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px; }
+.kcol-head .kt { font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-mute); display:flex; align-items:center; gap:7px; }
+.kcol-head .kt .kdot { width:7px; height:7px; border-radius:50%; }
+.kcol-head .kn { font-family:var(--font-num); font-size:11px; font-weight:700; color:var(--text-dim); }
+.kcard { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px; margin-bottom:8px; cursor:grab; }
+.kcard:last-child { margin-bottom:0; }
+.kcard .kc-cli { font-size:12.5px; font-weight:600; color:var(--text); }
+.kcard .kc-meta { font-size:11px; color:var(--text-mute); font-family:var(--font-mono); margin-top:5px; display:flex; justify-content:space-between; gap:8px; }
+.kcard .kc-foot { display:flex; align-items:center; justify-content:space-between; margin-top:9px; }
+.kcard .kc-price { font-family:var(--font-num); font-size:12px; font-weight:700; color:var(--text); }
+.kcard .kc-ic { width:20px; height:20px; border-radius:6px; display:grid; place-items:center; font-size:9px; font-weight:700; }
+
+/* ===== TABELA ===== */
+table { width:100%; border-collapse:collapse; }
+thead th { font-family:var(--font-mono); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); text-align:left; padding:11px 18px; font-weight:500; }
+thead th.num { text-align:right; } thead th.ctr { text-align:center; }
+tbody td { padding:12px 18px; font-size:12.5px; color:var(--text); border-top:1px solid var(--border); }
+tbody td.num { text-align:right; font-family:var(--font-num); font-variant-numeric:tabular-nums; }
+tbody tr:hover td { background:var(--row-hover); }
+.cli { display:flex; align-items:center; gap:10px; }
+.cli .nm { font-weight:600; } .cli .sub { display:block; font-size:10.5px; color:var(--text-mute); margin-top:1px; }
+.tact { display:flex; gap:6px; justify-content:flex-end; }
+.iconbtn { width:28px; height:28px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--text-mute); cursor:pointer; display:grid; place-items:center; }
+.iconbtn svg { width:14px; height:14px; stroke:currentColor; fill:none; }
+.iconbtn:hover { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,transparent); }
+
+/* ===== OUTRAS FILAS (assinatura/fixação/risco/logística) ===== */
+.mini-row { display:flex; align-items:center; gap:11px; padding:11px 16px; border-top:1px solid var(--border); }
+.mini-row:first-of-type{ border-top:none; }
+.mini-row .mi { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; }
+.mini-row .mb { flex:1; min-width:0; }
+.mini-row .mn { font-size:12.5px; font-weight:600; color:var(--text); }
+.mini-row .ms { font-size:11px; color:var(--text-mute); font-family:var(--font-mono); margin-top:2px; }
+.mini-row .mr { text-align:right; flex-shrink:0; }
+.mini-row .mr b { font-family:var(--font-num); font-size:12.5px; font-weight:700; color:var(--text); display:block; }
+.progress { height:5px; border-radius:99px; background:var(--border); overflow:hidden; margin:4px 16px 14px; }
+.progress > i { display:block; height:100%; border-radius:99px; }
+
+.note { max-width:1240px; margin:10px auto 0; padding:14px 28px; font-size:12.5px; color:var(--text-dim); line-height:1.6; }
+.note b { color:var(--text-mute); }
+
+.foot { max-width:1240px; margin:50px auto; padding:28px; text-align:center; color:#6b7280; font-size:12.5px; line-height:1.7; border-top:1px solid rgba(255,255,255,0.06); }
+
+@media (max-width:1000px){ .cols.c3{ grid-template-columns:1fr; } .cols.c2{ grid-template-columns:1fr; } .kanban{ grid-template-columns:repeat(3,minmax(160px,1fr)); } }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="eyebrow">BH Grain · Mesa de Operações · estrutura do dashboard</div>
+  <h1>Como organizar o core do processo</h1>
+  <p>Cada decisão estrutural com suas variações, renderizadas lado a lado. Troque o tema no topo para ver estrutura + cor juntas. As marcadas <span class="rec" style="color:#4ADE80">recomendada</span> são as direções que conversamos.</p>
+</div>
+
+<div class="theme-switch">
+  <div class="inner">
+    <span class="lbl">Tema</span>
+    <div class="opts">
+      <button class="theme-btn active" data-set="lime"><i style="background:#C8F051"></i>Lime Noir</button>
+      <button class="theme-btn" data-set="terminal"><i style="background:#FF8A3D"></i>Terminal Pro</button>
+      <button class="theme-btn" data-set="slate"><i style="background:#2DD4BF"></i>Slate Mint</button>
+    </div>
+    <nav class="toc-mini">
+      <a href="#fila">1 · Fila de ação</a>
+      <a href="#pipeline">2 · Pipeline</a>
+      <a href="#outras">3 · Outras filas</a>
+    </nav>
+  </div>
+</div>
+
+<div class="stage" data-theme="lime" id="stage">
+
+  <!-- ============ 1 · FILA DE AÇÃO ============ -->
+  <section class="section" id="fila">
+    <div class="section-head">
+      <div class="kicker">Decisão 1</div>
+      <h2>Fila de ação — o que exige decisão agora</h2>
+      <p>Separa o que entra na mesa (pedidos de clientes, rascunhos não enviados, propostas travadas na automação) do pipeline de acompanhamento. Três formas de organizar.</p>
+    </div>
+
+    <!-- OPÇÃO A: ABAS -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção A</span><span class="ot">Um box com abas</span>
+      <span class="od">· compacto, alterna entre filas</span>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Fila de ação <span class="cnt">10</span></h3><span class="link">Configurar SLA →</span></div>
+      <div class="tabs">
+        <div class="tab active">Pedidos <span class="tc">5</span></div>
+        <div class="tab">Rascunhos <span class="tc">3</span></div>
+        <div class="tab">Travadas <span class="tc">2</span></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--info-soft);color:var(--info)">FB</div>
+        <div class="qbody"><div class="qn">Fazenda Boa Vista</div><div class="qs">Oferta de venda · Milho · 3.500 t · pede R$ 58,90/sc</div></div>
+        <div class="qmeta"><span class="sla warm">2h</span><button class="btn-sm primary">Responder</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--info-soft);color:var(--info)">CS</div>
+        <div class="qbody"><div class="qn">Coop. São João</div><div class="qs">Oferta de venda · Soja · 1.200 t · a mercado</div></div>
+        <div class="qmeta"><span class="sla cool">4h</span><button class="btn-sm primary">Responder</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--info-soft);color:var(--info)">AV</div>
+        <div class="qbody"><div class="qn">Agropecuária Vale</div><div class="qs">Pedido de cotação · Soja · 2.000 t · entrega Jul</div></div>
+        <div class="qmeta"><span class="sla cool">6h</span><button class="btn-sm primary">Responder</button></div>
+      </div>
+    </div>
+
+    <!-- OPÇÃO B: 3 BOXES -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção B</span><span class="ot">Três boxes separados</span>
+      <span class="od">· tudo visível, sem clicar</span>
+    </div>
+    <div class="cols c3">
+      <div class="card">
+        <div class="card-head"><h3><span class="otag pedido">Pedidos</span></h3><span class="cnt">5</span></div>
+        <div class="qrow"><div class="av2" style="background:var(--info-soft);color:var(--info)">FB</div><div class="qbody"><div class="qn">Boa Vista</div><div class="qs">Milho 3.500t</div></div><span class="sla warm">2h</span></div>
+        <div class="qrow"><div class="av2" style="background:var(--info-soft);color:var(--info)">CS</div><div class="qbody"><div class="qn">Coop São João</div><div class="qs">Soja 1.200t</div></div><span class="sla cool">4h</span></div>
+        <div class="qrow"><div class="av2" style="background:var(--info-soft);color:var(--info)">AV</div><div class="qbody"><div class="qn">Agrop. Vale</div><div class="qs">Soja 2.000t</div></div><span class="sla cool">6h</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3><span class="otag rascunho">Rascunhos</span></h3><span class="cnt">3</span></div>
+        <div class="qrow"><div class="av2" style="background:var(--warn-soft);color:var(--warn)">SP</div><div class="qbody"><div class="qn">São Pedro Grãos</div><div class="qs">Proposta soja</div></div><button class="btn-sm primary">Enviar</button></div>
+        <div class="qrow"><div class="av2" style="background:var(--warn-soft);color:var(--warn)">RN</div><div class="qbody"><div class="qn">Renascer</div><div class="qs">Proposta trigo</div></div><button class="btn-sm primary">Enviar</button></div>
+        <div class="qrow"><div class="av2" style="background:var(--warn-soft);color:var(--warn)">CT</div><div class="qbody"><div class="qn">Coop Triângulo</div><div class="qs">Barter milho</div></div><button class="btn-sm primary">Enviar</button></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3><span class="otag travada">Travadas</span></h3><span class="cnt">2</span></div>
+        <div class="qrow"><div class="av2" style="background:var(--danger-soft);color:var(--danger)">SP</div><div class="qbody"><div class="qn">São Pedro</div><div class="qs">sem cotação CEPEA</div></div><button class="btn-sm ghost">Resolver</button></div>
+        <div class="qrow"><div class="av2" style="background:var(--danger-soft);color:var(--danger)">GR</div><div class="qbody"><div class="qn">Grão Forte</div><div class="qs">KYC pendente</div></div><button class="btn-sm ghost">Resolver</button></div>
+      </div>
+    </div>
+
+    <!-- OPÇÃO C: UNIFICADA -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção C</span><span class="ot">Fila unificada por urgência</span>
+      <span class="rec">recomendada</span>
+      <span class="od">· uma lista, selo de origem, ordenada por SLA</span>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Fila de ação <span class="cnt">10</span></h3><span class="link">Ordenar por: urgência ▾</span></div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--danger-soft);color:var(--danger)">SP</div>
+        <div class="qbody"><div class="qn"><span class="otag travada">Travada</span>São Pedro Grãos</div><div class="qs">Auto-envio falhou · sem cotação CEPEA para o vencimento</div></div>
+        <div class="qmeta"><span class="sla hot">1d 4h</span><button class="btn-sm primary">Resolver</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--danger-soft);color:var(--danger)">GR</div>
+        <div class="qbody"><div class="qn"><span class="otag travada">Travada</span>Grão Forte</div><div class="qs">Bloqueada · cliente sem KYC aprovado (compliance)</div></div>
+        <div class="qmeta"><span class="sla hot">22h</span><button class="btn-sm primary">Resolver</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--info-soft);color:var(--info)">FB</div>
+        <div class="qbody"><div class="qn"><span class="otag pedido">Pedido</span>Fazenda Boa Vista</div><div class="qs">Oferta de venda milho 3.500 t · pede R$ 58,90/sc</div></div>
+        <div class="qmeta"><span class="sla warm">2h</span><button class="btn-sm primary">Responder</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--warn-soft);color:var(--warn)">SP</div>
+        <div class="qbody"><div class="qn"><span class="otag rascunho">Rascunho</span>São Pedro Grãos</div><div class="qs">Proposta soja 800 t montada · aguardando seu envio</div></div>
+        <div class="qmeta"><span class="sla warm">5h</span><button class="btn-sm primary">Revisar e enviar</button></div>
+      </div>
+      <div class="qrow">
+        <div class="av2" style="background:var(--info-soft);color:var(--info)">CS</div>
+        <div class="qbody"><div class="qn"><span class="otag pedido">Pedido</span>Coop. São João</div><div class="qs">Oferta de venda soja 1.200 t · a mercado</div></div>
+        <div class="qmeta"><span class="sla cool">6h</span><button class="btn-sm primary">Responder</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="note">
+    <b>Nota de produto.</b> A fila unificada (C) prioriza <b>"o que fazer primeiro"</b> em vez de "de onde veio" — o trader trabalha de cima pra baixo. As travadas sobem porque travam receita. O selo de origem mantém o contexto sem fragmentar a tela em 3 lugares para olhar.
+  </div>
+
+  <!-- ============ 2 · PIPELINE ============ -->
+  <section class="section" id="pipeline">
+    <div class="section-head">
+      <div class="kicker">Decisão 2</div>
+      <h2>Pipeline de propostas — o core do acompanhamento</h2>
+      <p>O que já está em jogo: propostas enviadas e seus estágios até virar contrato. Três formas de visualizar o mesmo funil.</p>
+    </div>
+
+    <!-- OPÇÃO A: TABELA -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção A</span><span class="ot">Tabela de acompanhamento</span>
+      <span class="od">· densa, ordenável, registro do que está em jogo</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Cliente</th><th>Commodity</th><th class="num">Volume</th><th class="num">Preço</th><th>Validade</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">AV</div><div><span class="nm">Agropecuária Vale</span><span class="sub">Rio Verde · GO</span></div></div></td><td>Soja</td><td class="num">1.200 t</td><td class="num">R$ 132,50</td><td><span class="badge ok flat">vigente</span></td><td><span class="badge ok">Fechado</span></td></tr>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">FB</div><div><span class="nm">Fazenda Boa Vista</span><span class="sub">Sorriso · MT</span></div></div></td><td>Milho</td><td class="num">3.500 t</td><td class="num">R$ 58,20</td><td><span class="badge warn flat">expira 6h</span></td><td><span class="badge warn">Em análise</span></td></tr>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">CT</div><div><span class="nm">Coop. Triângulo</span><span class="sub">Uberaba · MG</span></div></div></td><td>Soja</td><td class="num">800 t</td><td class="num">R$ 131,90</td><td><span class="badge ok flat">vigente</span></td><td><span class="badge info">Enviada</span></td></tr>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">RN</div><div><span class="nm">Grupo Renascer</span><span class="sub">Luís Eduardo · BA</span></div></div></td><td>Trigo</td><td class="num">2.100 t</td><td class="num">R$ 84,00</td><td><span class="badge neg flat">vencida</span></td><td><span class="badge neg">Recusada</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- OPÇÃO B: KANBAN -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção B</span><span class="ot">Quadro Kanban por etapa</span>
+      <span class="rec">recomendada</span>
+      <span class="od">· cada negócio é um card que avança entre colunas</span>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Pipeline · arraste para mover de etapa</h3><span class="link">+ Nova proposta</span></div>
+      <div class="kanban">
+        <div class="kcol">
+          <div class="kcol-head"><span class="kt"><span class="kdot" style="background:var(--text-dim)"></span>Rascunho</span><span class="kn">2</span></div>
+          <div class="kcard"><div class="kc-cli">São Pedro Grãos</div><div class="kc-meta"><span>Soja · 800t</span></div><div class="kc-foot"><span class="kc-price">R$ 131,40</span><div class="kc-ic" style="background:var(--grain-soja);color:#0a0b0e">S</div></div></div>
+          <div class="kcard"><div class="kc-cli">Coop Triângulo</div><div class="kc-meta"><span>Barter milho</span></div><div class="kc-foot"><span class="kc-price">—</span><div class="kc-ic" style="background:var(--grain-milho);color:#0a0b0e">M</div></div></div>
+        </div>
+        <div class="kcol">
+          <div class="kcol-head"><span class="kt"><span class="kdot" style="background:var(--info)"></span>Enviada</span><span class="kn">2</span></div>
+          <div class="kcard"><div class="kc-cli">Coop. Triângulo</div><div class="kc-meta"><span>Soja · 800t</span></div><div class="kc-foot"><span class="kc-price">R$ 131,90</span><div class="kc-ic" style="background:var(--grain-soja);color:#0a0b0e">S</div></div></div>
+          <div class="kcard"><div class="kc-cli">Renascer</div><div class="kc-meta"><span>Trigo · 2.100t</span></div><div class="kc-foot"><span class="kc-price">R$ 84,00</span><div class="kc-ic" style="background:var(--grain-trigo);color:#0a0b0e">T</div></div></div>
+        </div>
+        <div class="kcol">
+          <div class="kcol-head"><span class="kt"><span class="kdot" style="background:var(--warn)"></span>Em análise</span><span class="kn">1</span></div>
+          <div class="kcard"><div class="kc-cli">Fazenda Boa Vista</div><div class="kc-meta"><span>Milho · 3.500t</span></div><div class="kc-foot"><span class="kc-price">R$ 58,20</span><div class="kc-ic" style="background:var(--grain-milho);color:#0a0b0e">M</div></div></div>
+        </div>
+        <div class="kcol">
+          <div class="kcol-head"><span class="kt"><span class="kdot" style="background:var(--success)"></span>Aceita</span><span class="kn">1</span></div>
+          <div class="kcard"><div class="kc-cli">Agropecuária Vale</div><div class="kc-meta"><span>Soja · 1.200t</span></div><div class="kc-foot"><span class="kc-price">R$ 132,50</span><div class="kc-ic" style="background:var(--grain-soja);color:#0a0b0e">S</div></div></div>
+        </div>
+        <div class="kcol">
+          <div class="kcol-head"><span class="kt"><span class="kdot" style="background:var(--accent)"></span>Contrato</span><span class="kn">1</span></div>
+          <div class="kcard"><div class="kc-cli">São Pedro Grãos</div><div class="kc-meta"><span>Milho · 1.650t</span></div><div class="kc-foot"><span class="kc-price">R$ 57,80</span><div class="kc-ic" style="background:var(--grain-milho);color:#0a0b0e">M</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPÇÃO C: TABELA COM AÇÕES INLINE -->
+    <div class="opt-label">
+      <span class="badge-opt">Opção C</span><span class="ot">Tabela com ações rápidas inline</span>
+      <span class="od">· acompanhamento + ação no mesmo lugar</span>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Cliente</th><th>Commodity</th><th class="num">Preço</th><th>Status</th><th class="ctr">Ações</th></tr></thead>
+        <tbody>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">AV</div><div><span class="nm">Agropecuária Vale</span><span class="sub">Soja · 1.200t</span></div></div></td><td>Soja</td><td class="num">R$ 132,50</td><td><span class="badge ok">Aceita</span></td>
+            <td><div class="tact">
+              <button class="iconbtn" title="Gerar contrato"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></button>
+              <button class="iconbtn" title="Chat"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+            </div></td></tr>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">FB</div><div><span class="nm">Fazenda Boa Vista</span><span class="sub">Milho · 3.500t</span></div></div></td><td>Milho</td><td class="num">R$ 58,20</td><td><span class="badge warn">Em análise</span></td>
+            <td><div class="tact">
+              <button class="iconbtn" title="Lembrar cliente"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+              <button class="iconbtn" title="Chat"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+            </div></td></tr>
+          <tr><td><div class="cli"><div class="av2" style="background:var(--surface-2);color:var(--text-mute)">CT</div><div><span class="nm">Coop. Triângulo</span><span class="sub">Soja · 800t</span></div></div></td><td>Soja</td><td class="num">R$ 131,90</td><td><span class="badge info">Enviada</span></td>
+            <td><div class="tact">
+              <button class="iconbtn" title="Cancelar"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+              <button class="iconbtn" title="Chat"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+            </div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="note">
+    <b>Nota de produto.</b> O Kanban (B) é o melhor para "onde cada negócio está" e dá a sensação de avanço — mas a tabela (A/C) é insuperável para volume alto e leitura numérica rápida. Combinação possível: <b>Kanban como visão padrão + toggle para tabela</b>. As ações inline (C) funcionam dentro de ambos.
+  </div>
+
+  <!-- ============ 3 · OUTRAS FILAS ============ -->
+  <section class="section" id="outras">
+    <div class="section-head">
+      <div class="kicker">Decisão 3</div>
+      <h2>Outras filas críticas da mesa</h2>
+      <p>O ciclo não acaba na proposta. Estas filas vivem em paralelo e cada uma tem um prazo que, se estourar, vira problema. Marcadas as que você priorizou.</p>
+    </div>
+
+    <div class="cols c2">
+      <!-- ASSINATURA -->
+      <div>
+        <div class="opt-label"><span class="badge-opt">A</span><span class="ot">Contratos aguardando assinatura</span><span class="rec">priorizada</span></div>
+        <div class="card">
+          <div class="card-head"><h3>Assinatura pendente <span class="cnt">4</span></h3><span class="link">ZapSign →</span></div>
+          <div class="mini-row"><div class="mi" style="background:var(--danger-soft);color:var(--danger)">⚑</div><div class="mb"><div class="mn">Grupo Renascer · CT-0291</div><div class="ms">Trigo 2.100t · enviado 3d atrás</div></div><div class="mr"><b style="color:var(--danger)">vence amanhã</b><span class="badge neg" style="margin-top:4px">1 de 2 assinou</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--warn-soft);color:var(--warn)">✎</div><div class="mb"><div class="mn">Agropecuária Vale · CT-0288</div><div class="ms">Soja 1.200t · enviado hoje</div></div><div class="mr"><b>5 dias</b><span class="badge warn" style="margin-top:4px">aguardando</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--info-soft);color:var(--info)">✎</div><div class="mb"><div class="mn">São Pedro · CT-0285</div><div class="ms">Milho 1.650t · enviado 1d</div></div><div class="mr"><b>6 dias</b><span class="badge info" style="margin-top:4px">visualizado</span></div></div>
+        </div>
+      </div>
+
+      <!-- FIXAÇÃO DE PREÇO -->
+      <div>
+        <div class="opt-label"><span class="badge-opt">B</span><span class="ot">Fixações de preço pendentes</span><span class="rec">priorizada</span></div>
+        <div class="card">
+          <div class="card-head"><h3>Preço-a-fixar <span class="cnt">3</span></h3><span class="link">Ver contratos →</span></div>
+          <div class="mini-row"><div class="mi" style="background:var(--grain-soja);color:#0a0b0e">S</div><div class="mb"><div class="mn">Coop. Triângulo · 600t soja</div><div class="ms">Janela fecha em 2 dias · ref R$ 132,84</div></div><div class="mr"><b style="color:var(--warn)">2 dias</b><span class="badge warn" style="margin-top:4px">a fixar</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--grain-milho);color:#0a0b0e">M</div><div class="mb"><div class="mn">Fazenda Boa Vista · 1.200t milho</div><div class="ms">Janela fecha em 8 dias · ref R$ 58,12</div></div><div class="mr"><b>8 dias</b><span class="badge info" style="margin-top:4px">no prazo</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--grain-soja);color:#0a0b0e">S</div><div class="mb"><div class="mn">Agrop. Vale · 900t soja</div><div class="ms">Janela fecha HOJE 18h · ref R$ 132,50</div></div><div class="mr"><b style="color:var(--danger)">hoje</b><span class="badge neg" style="margin-top:4px">urgente</span></div></div>
+        </div>
+      </div>
+
+      <!-- RISCO -->
+      <div>
+        <div class="opt-label"><span class="badge-opt">C</span><span class="ot">Alertas de risco / limite</span><span class="rec">priorizada</span></div>
+        <div class="card">
+          <div class="card-head"><h3>Risco & limites <span class="cnt" style="color:var(--danger);background:var(--danger-soft)">2 alertas</span></h3><span class="link">Painel de risco →</span></div>
+          <div class="mini-row"><div class="mi" style="background:var(--danger-soft);color:var(--danger)">!</div><div class="mb"><div class="mn">Grão Forte · limite de crédito</div><div class="ms">Exposição R$ 2,1M / teto R$ 2,0M</div></div><div class="mr"><b style="color:var(--danger)">+5%</b></div></div>
+          <div class="progress"><i style="width:105%;background:var(--danger);max-width:100%"></i></div>
+          <div class="mini-row"><div class="mi" style="background:var(--warn-soft);color:var(--warn)">▲</div><div class="mb"><div class="mn">VaR da carteira soja</div><div class="ms">R$ 184k / teto R$ 200k</div></div><div class="mr"><b style="color:var(--warn)">92%</b></div></div>
+          <div class="progress"><i style="width:92%;background:var(--warn)"></i></div>
+        </div>
+      </div>
+
+      <!-- LOGÍSTICA -->
+      <div>
+        <div class="opt-label"><span class="badge-opt">D</span><span class="ot">Romaneios / logística do dia</span><span class="od">· (não priorizada — fica como opção)</span></div>
+        <div class="card" style="opacity:0.72">
+          <div class="card-head"><h3>Logística hoje <span class="cnt">7</span></h3><span class="link">Operação física →</span></div>
+          <div class="mini-row"><div class="mi" style="background:var(--success-soft);color:var(--success)">✓</div><div class="mb"><div class="mn">Carga #4821 · Vale → Paranaguá</div><div class="ms">Balança ok · CT-e emitido</div></div><div class="mr"><span class="badge ok">a caminho</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--warn-soft);color:var(--warn)">⏱</div><div class="mb"><div class="mn">Carga #4822 · Boa Vista</div><div class="ms">MDF-e pendente de emissão</div></div><div class="mr"><span class="badge warn">pendente</span></div></div>
+          <div class="mini-row"><div class="mi" style="background:var(--info-soft);color:var(--info)">⊙</div><div class="mb"><div class="mn">3 cargas agendadas</div><div class="ms">Recebimento previsto 14h–17h</div></div><div class="mr"><span class="badge info">agendado</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="note">
+    <b>Como tudo se conecta.</b> Fila de ação (entra) → Pipeline/Kanban (anda) → ao aceitar, gera <b>Contrato</b> (vai pra fila de assinatura) → contrato preço-a-fixar gera <b>fixações</b> com prazo → tudo isso sob o teto de <b>risco/limite</b> do cliente. As 3 filas priorizadas são as que bloqueiam receita se estourarem o prazo.
+  </div>
+
+  <div class="foot">
+    Protótipo de estrutura · BH Grain / MercoGrain — Dashboard da Mesa<br/>
+    Próximo passo: escolher uma variação por decisão e montar o dashboard final coeso no tema definitivo.
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+document.querySelectorAll('.theme-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    stage.setAttribute('data-theme', b.dataset.set);
+  });
+});
+</script>
+</body>
+</html>

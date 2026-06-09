@@ -16,6 +16,7 @@ import {
   Wheat,
   Shield,
   FileText,
+  Palette,
   Settings as SettingsIcon,
 } from 'lucide-react'
 
@@ -52,6 +53,12 @@ const GROUPS: SectionGroup[] = [
         title: 'Marca & Logo',
         description: 'Logo exibida em PDFs (contratos, propostas, boletos).',
         icon: ImageIcon,
+      },
+      {
+        href: '/configuracoes/tema',
+        title: 'Aparência & Tema',
+        description: 'Escolha o design system visual da corretora (10 temas).',
+        icon: Palette,
       },
     ],
   },

@@ -17,6 +17,21 @@ const nextConfig = {
     remotePatterns: [],
   },
 
+  // Redirect canônico: sem-www → www.
+  // O NextAuth está configurado com NEXTAUTH_URL=https://www.profitsync.ia.br.
+  // Acessar o domínio apex (sem www) quebra cookie/CSRF de sessão e prende o
+  // login em "Conectando...". Forçar www garante login consistente.
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'profitsync.ia.br' }],
+        destination: 'https://www.profitsync.ia.br/:path*',
+        permanent: true,
+      },
+    ]
+  },
+
   // Security headers — aplicam em TODAS as rotas
   async headers() {
     const ContentSecurityPolicy = [

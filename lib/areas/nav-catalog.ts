@@ -61,6 +61,7 @@ export const NAV: Record<Area, NavItem[]> = {
   gestao: [
     { href: '/perfil', label: 'Meu perfil', icon: 'User' },
     { href: '/configuracoes/marca', label: 'Marca & Logo', icon: 'Image' },
+    { href: '/configuracoes/tema', label: 'Aparência & Tema', icon: 'Palette' },
     { href: '/configuracoes', label: 'Configurações', icon: 'Settings' },
     { href: '/assinatura', label: 'Plano & assinatura', icon: 'CreditCard' },
     { href: '/fiscal', label: 'Fiscal & SPED', icon: 'Receipt' },

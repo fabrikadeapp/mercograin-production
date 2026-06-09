@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BH Grain · 25 Design Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Libre+Franklin:wght@300;400;500;600;700&family=Archivo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:wght@400;500;600;700&family=Albert+Sans:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=Red+Hat+Display:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Onest:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Martian+Mono:wght@400;500;600&family=Azeret+Mono:wght@400;500;600&family=Fragment+Mono&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',system-ui,sans-serif; background:#070809; color:#e7e7ea; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+
+/* ===== CHROME ===== */
+.head { max-width:1200px; margin:0 auto; padding:60px 28px 8px; text-align:center; }
+.head .eyebrow { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.26em; text-transform:uppercase; color:#C8F051; margin-bottom:16px; }
+.head h1 { font-size:clamp(30px,4.5vw,50px); font-weight:700; letter-spacing:-0.03em; line-height:1.04; background:linear-gradient(180deg,#fff,#9aa0ab 140%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.head p { margin:16px auto 0; font-size:15px; line-height:1.6; color:#9aa0ab; max-width:640px; }
+
+.toc { max-width:1200px; margin:30px auto 10px; padding:0 28px; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+.toc a { display:flex; align-items:center; gap:9px; padding:9px 12px; border:1px solid rgba(255,255,255,0.07); border-radius:9px; background:rgba(255,255,255,0.02); color:#c4c7cd; text-decoration:none; font-size:12px; font-weight:500; }
+.toc a:hover { border-color:rgba(200,240,81,0.4); color:#fff; }
+.toc a .n { font-family:'JetBrains Mono',monospace; font-size:10px; color:#6b7280; }
+.toc a i { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+
+.ds { max-width:1200px; margin:0 auto; padding:40px 28px 4px; }
+.ds-label { display:flex; align-items:baseline; gap:14px; margin-bottom:14px; flex-wrap:wrap; }
+.ds-label .idx { font-family:'JetBrains Mono',monospace; font-size:12px; color:#6b7280; }
+.ds-label h2 { font-size:20px; font-weight:600; letter-spacing:-0.02em; color:#fff; }
+.ds-label .tag { font-size:12.5px; color:#9aa0ab; font-weight:400; }
+.ds-label .meta { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#6b7280; }
+.frame { border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); box-shadow:0 24px 60px rgba(0,0,0,0.45); }
+.palette { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+.palette i { width:26px; height:18px; border-radius:5px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12); }
+.foot { max-width:1100px; margin:50px auto; padding:26px; text-align:center; color:#6b7280; font-size:12.5px; line-height:1.7; border-top:1px solid rgba(255,255,255,0.06); }
+
+/* ===== MINI DASHBOARD (temável via vars no .mini) ===== */
+.mini {
+  --r:14px; font-family:var(--font-sans); background:var(--bg); color:var(--text);
+}
+.mini .nav { display:flex; align-items:center; gap:14px; padding:0 18px; height:48px; background:var(--nav-bg,var(--surface)); border-bottom:1px solid var(--border); }
+.mini .logo { width:26px; height:26px; border-radius:var(--logo-r,8px); background:var(--accent); display:grid; place-items:center; font-weight:800; font-size:13px; color:var(--accent-ink); }
+.mini .bname { font-weight:700; font-size:13px; color:var(--text); letter-spacing:-0.01em; }
+.mini .nlist { display:flex; gap:2px; flex:1; }
+.mini .nitem { font-size:12px; font-weight:500; color:var(--text-mute); padding:6px 11px; border-radius:var(--chip-r,8px); }
+.mini .nitem.on { background:var(--nav-active); color:var(--text); }
+.mini .nuser { width:26px; height:26px; border-radius:50%; background:var(--accent-2,var(--accent)); display:grid; place-items:center; font-size:10px; font-weight:700; color:var(--accent-ink); }
+
+.mini .body { padding:18px; }
+.mini .toprow { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.mini .ttl { font-family:var(--font-display,var(--font-sans)); font-size:20px; font-weight:var(--ttl-w,600); letter-spacing:-0.02em; color:var(--text); }
+.mini .ttl em { font-family:var(--font-serif,inherit); font-style:italic; font-weight:400; color:var(--accent); }
+.mini .sub { font-size:12px; color:var(--text-mute); margin-top:4px; }
+.mini .acts { display:flex; gap:9px; }
+
+/* BOTÕES — efeito definido por --btn-fx */
+.mini .btn { font-family:var(--font-sans); font-size:12.5px; font-weight:600; padding:8px 15px; border-radius:var(--btn-r,9px); cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:7px; transition:all .16s ease; position:relative; }
+.mini .btn.primary { background:var(--btn-bg,var(--accent)); color:var(--accent-ink); box-shadow:var(--btn-sh,none); border-color:var(--btn-bd,transparent); }
+.mini .btn.ghost { background:var(--btn-ghost-bg,transparent); color:var(--text-mute); border-color:var(--border-strong,var(--border)); }
+.mini .btn.primary:hover { transform:var(--btn-hover-t,none); box-shadow:var(--btn-hover-sh,var(--btn-sh,none)); filter:var(--btn-hover-f,none); background:var(--btn-hover-bg,var(--btn-bg,var(--accent))); }
+.mini .btn.ghost:hover { color:var(--text); border-color:var(--text-dim); }
+
+/* KPIs */
+.mini .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:11px; margin-bottom:14px; }
+.mini .kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:13px 15px; box-shadow:var(--card-sh,none); }
+.mini .kpi.hl { background:var(--hero-bg,var(--accent)); border-color:transparent; }
+.mini .kl { font-family:var(--font-mono); font-size:9px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-mute); }
+.mini .kpi.hl .kl { color:var(--hero-mute,rgba(0,0,0,0.55)); }
+.mini .kv { font-family:var(--font-num,var(--font-sans)); font-size:23px; font-weight:var(--num-w,600); letter-spacing:-0.025em; color:var(--text); margin-top:7px; font-variant-numeric:tabular-nums; }
+.mini .kpi.hl .kv { color:var(--hero-text,var(--accent-ink)); }
+.mini .kd { font-size:10.5px; font-weight:600; margin-top:5px; color:var(--success); font-family:var(--font-num,var(--font-sans)); }
+.mini .kpi.hl .kd { color:var(--hero-mute,rgba(0,0,0,0.62)); }
+
+/* GRID: tabela + card */
+.mini .grid { display:grid; grid-template-columns:1.6fr 1fr; gap:14px; }
+.mini .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--card-sh,none); overflow:hidden; }
+.mini .ch { display:flex; align-items:center; justify-content:space-between; padding:12px 15px; border-bottom:1px solid var(--border); }
+.mini .ch h3 { font-family:var(--font-display,var(--font-sans)); font-size:13px; font-weight:600; color:var(--text); }
+.mini .ch .lk { font-size:11px; color:var(--accent-2,var(--accent)); font-weight:500; }
+
+.mini table { width:100%; border-collapse:collapse; }
+.mini thead th { font-family:var(--font-mono); font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); text-align:left; padding:9px 15px; font-weight:500; }
+.mini thead th.n { text-align:right; }
+.mini tbody td { padding:10px 15px; font-size:11.5px; color:var(--text); border-top:1px solid var(--border); }
+.mini tbody td.n { text-align:right; font-family:var(--font-num,var(--font-mono)); font-variant-numeric:tabular-nums; }
+.mini tbody tr:hover td { background:var(--row-hover,transparent); }
+.mini .cli { display:flex; align-items:center; gap:8px; }
+.mini .av { width:24px; height:24px; border-radius:var(--av-r,7px); background:var(--surface-2,var(--border)); display:grid; place-items:center; font-size:9px; font-weight:700; color:var(--text-mute); }
+.mini .cn { font-weight:600; }
+
+/* BADGE — formato via --badge-r */
+.mini .bd { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:var(--badge-r,99px); font-size:10px; font-weight:600; }
+.mini .bd::before { content:''; width:4px; height:4px; border-radius:50%; background:currentColor; }
+.mini .bd.ok{ background:var(--success-soft); color:var(--success);} .mini .bd.wn{ background:var(--warn-soft); color:var(--warn);} .mini .bd.ng{ background:var(--danger-soft); color:var(--danger);} .mini .bd.if{ background:var(--info-soft); color:var(--info);}
+
+/* card lateral: cotações */
+.mini .q { display:flex; align-items:center; gap:10px; padding:10px 15px; border-top:1px solid var(--border); }
+.mini .q:first-of-type{ border-top:none; }
+.mini .qic { width:28px; height:28px; border-radius:var(--ic-r,8px); display:grid; place-items:center; font-size:12px; font-weight:700; }
+.mini .qn { flex:1; font-size:12px; font-weight:600; color:var(--text); }
+.mini .qn span { display:block; font-size:9.5px; color:var(--text-mute); font-family:var(--font-mono); font-weight:400; margin-top:1px; }
+.mini .qp { text-align:right; }
+.mini .qp b { font-family:var(--font-num,var(--font-mono)); font-size:12px; font-weight:700; color:var(--text); }
+.mini .qp em { font-style:normal; font-size:10px; font-weight:600; display:block; margin-top:1px; }
+.mini .qp em.up{ color:var(--success);} .mini .qp em.dn{ color:var(--danger);}
+
+/* tira de amostras: input + chips + botões de estado */
+.mini .swrow { display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.mini .inp { display:flex; align-items:center; gap:7px; background:var(--surface-2,var(--surface)); border:1px solid var(--border); border-radius:var(--btn-r,9px); padding:8px 12px; font-size:11.5px; color:var(--text-dim); min-width:180px; }
+.mini .inp.focus { border-color:var(--accent-2,var(--accent)); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent-2,var(--accent)) 22%,transparent); color:var(--text); }
+.mini .chip { font-size:11px; font-weight:600; padding:5px 11px; border-radius:var(--badge-r,99px); background:var(--surface-2,var(--surface)); border:1px solid var(--border); color:var(--text-mute); }
+.mini .chip.on { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+
+@media (max-width:820px){ .mini .kpis{ grid-template-columns:1fr 1fr;} .mini .grid{ grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="eyebrow">BH Grain · Mesa de Operações · biblioteca de estilos</div>
+  <h1>25 Design Systems</h1>
+  <p>O mesmo dashboard reduzido, 25 identidades visuais — cada uma com seu par tipográfico, paleta, sombras, raios de borda e efeito de botão (passe o mouse nos botões). Todos pensados para um trading floor premium.</p>
+</div>
+
+<nav class="toc" id="toc"></nav>
+
+<template id="mock">
+  <div class="mini">
+    <div class="nav">
+      <div class="logo">B</div>
+      <div class="bname">BH Grain</div>
+      <div class="nlist">
+        <span class="nitem on">Mesa</span><span class="nitem">Clientes</span><span class="nitem">Contratos</span><span class="nitem">Cotações</span>
+      </div>
+      <div class="nuser">RC</div>
+    </div>
+    <div class="body">
+      <div class="toprow">
+        <div>
+          <div class="ttl">Mesa de <em>Operações</em></div>
+          <div class="sub">Soja em alta de 1,2% · 5 pendências aguardando você</div>
+        </div>
+        <div class="acts">
+          <button class="btn ghost">Kanban</button>
+          <button class="btn primary">+ Nova proposta</button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi hl"><div class="kl">Vendido hoje</div><div class="kv">R$ 842k</div><div class="kd">▲ 9,1% · 9,1k t</div></div>
+        <div class="kpi"><div class="kl">Propostas</div><div class="kv">24</div><div class="kd">7 aceitas · 12 enviadas</div></div>
+        <div class="kpi"><div class="kl">Contratos</div><div class="kv">16</div><div class="kd">5 assinados · 8 enviados</div></div>
+        <div class="kpi"><div class="kl">Soja · CEPEA</div><div class="kv">132,84</div><div class="kd">▲ 1,21% · sc 60kg</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="ch"><h3>Pipeline de propostas</h3><span class="lk">Abrir Kanban →</span></div>
+          <table>
+            <thead><tr><th>Cliente</th><th>Commodity</th><th class="n">Preço</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><div class="cli"><div class="av">AV</div><span class="cn">Agrop. Vale</span></div></td><td>Soja</td><td class="n">132,50</td><td><span class="bd ok">Aceita</span></td></tr>
+              <tr><td><div class="cli"><div class="av">FB</div><span class="cn">Boa Vista</span></div></td><td>Milho</td><td class="n">58,20</td><td><span class="bd wn">Análise</span></td></tr>
+              <tr><td><div class="cli"><div class="av">CT</div><span class="cn">Coop. Triângulo</span></div></td><td>Soja</td><td class="n">131,90</td><td><span class="bd if">Enviada</span></td></tr>
+              <tr><td><div class="cli"><div class="av">RN</div><span class="cn">Renascer</span></div></td><td>Trigo</td><td class="n">84,00</td><td><span class="bd ng">Recusada</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="ch"><h3>Cotações ao vivo</h3><span class="lk">CEPEA</span></div>
+          <div class="q"><div class="qic" style="background:color-mix(in srgb,var(--grain-soja,#C5E861) 16%,transparent);color:var(--grain-soja,#C5E861)">S</div><div class="qn">Soja<span>Paranaguá</span></div><div class="qp"><b>132,84</b><em class="up">▲ 1,21%</em></div></div>
+          <div class="q"><div class="qic" style="background:color-mix(in srgb,var(--grain-milho,#FFB020) 16%,transparent);color:var(--grain-milho,#FFB020)">M</div><div class="qn">Milho<span>Campinas</span></div><div class="qp"><b>58,12</b><em class="dn">▼ 0,34%</em></div></div>
+          <div class="q"><div class="qic" style="background:color-mix(in srgb,var(--grain-usd,#4DD9B0) 16%,transparent);color:var(--grain-usd,#4DD9B0)">$</div><div class="qn">Dólar<span>PTAX · BCB</span></div><div class="qp"><b>5,38</b><em class="dn">▼ 0,12%</em></div></div>
+        </div>
+      </div>
+
+      <div class="swrow">
+        <div class="inp">🔍 Buscar cliente, contrato…</div>
+        <div class="inp focus">Campo em foco</div>
+        <span class="chip on">Todas</span><span class="chip">Soja</span><span class="chip">Milho</span>
+        <button class="btn primary">Salvar</button>
+        <button class="btn ghost">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div id="sections"></div>
+
+<div class="foot">
+  25 direções de design system · BH Grain / MercoGrain<br/>
+  Cada uma é um conjunto de tokens (fonte · cor · sombra · borda · efeito de botão) pronto para virar <code style="color:#C8F051">tokens.css</code>.
+</div>
+
+<script>
+const M="'JetBrains Mono',monospace";
+// helper para sombras/efeitos comuns
+const S = {
+  flat:'none',
+  soft:'0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 22px rgba(0,0,0,0.4)',
+  deep:'0 18px 44px rgba(0,0,0,0.5)',
+  lightCard:'0 1px 2px rgba(20,20,30,0.05), 0 10px 26px rgba(20,20,30,0.07)',
+};
+
+const T = [
+/* 01 */{name:'Lime Noir', tag:'dark · accent lime', font:'Inter · JetBrains Mono', pal:['#0A0B0E','#14171D','#C8F051','#7FA8FF','#4ADE80'], v:{
+  '--font-sans':"'Inter',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#0A0B0E','--nav-bg':'#0c0e12','--surface':'#14171D','--surface-2':'#1B1F27','--border':'rgba(255,255,255,0.07)','--border-strong':'rgba(255,255,255,0.13)','--text':'#ECEEF2','--text-mute':'#9AA0AB','--text-dim':'#5C6370','--accent':'#C8F051','--accent-ink':'#0A0B0E','--accent-2':'#7FA8FF','--success':'#4ADE80','--success-soft':'rgba(74,222,128,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)','--danger':'#F87171','--danger-soft':'rgba(248,113,113,0.14)','--info':'#7FA8FF','--info-soft':'rgba(127,168,255,0.14)','--r':'14px','--card-sh':S.soft,'--row-hover':'rgba(255,255,255,0.025)','--nav-active':'rgba(255,255,255,0.05)','--hero-bg':'#C8F051','--hero-text':'#0A0B0E','--btn-hover-sh':'0 6px 20px rgba(200,240,81,0.3)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#C5E861','--grain-milho':'#FFB020','--grain-usd':'#4DD9B0'}},
+/* 02 */{name:'Cobalt Pro', tag:'dark · azul cobalto', font:'Sora · Geist Mono', pal:['#0B0F17','#141A26','#4F7CFF','#22D3A6','#2A3344'], v:{
+  '--font-sans':"'Sora',sans-serif",'--font-mono':"'Geist Mono',monospace",'--font-num':"'Geist Mono',monospace",'--bg':'#0B0F17','--nav-bg':'#080C12','--surface':'#141A26','--surface-2':'#1C2436','--border':'rgba(255,255,255,0.08)','--border-strong':'rgba(255,255,255,0.16)','--text':'#E4E9F2','--text-mute':'#8B96A8','--text-dim':'#586477','--accent':'#4F7CFF','--accent-ink':'#fff','--accent-2':'#22D3A6','--success':'#22D3A6','--success-soft':'rgba(34,211,166,0.13)','--warn':'#F5A623','--warn-soft':'rgba(245,166,35,0.13)','--danger':'#FF5470','--danger-soft':'rgba(255,84,112,0.14)','--info':'#4F7CFF','--info-soft':'rgba(79,124,255,0.15)','--r':'12px','--btn-r':'10px','--card-sh':S.deep,'--row-hover':'rgba(255,255,255,0.03)','--nav-active':'rgba(79,124,255,0.14)','--hero-bg':'linear-gradient(135deg,#4F7CFF,#3B5FE0)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.78)','--btn-bg':'linear-gradient(135deg,#4F7CFF,#3B5FE0)','--btn-hover-sh':'0 8px 26px rgba(79,124,255,0.4)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#7FD68A','--grain-milho':'#FFB020','--grain-usd':'#22D3A6'}},
+/* 03 */{name:'Terminal Amber', tag:'pregão · âmbar · denso', font:'IBM Plex Sans/Mono', pal:['#0B0E12','#11161D','#FF8A3D','#3DDC97','#FF5C5C'], v:{
+  '--font-sans':"'IBM Plex Sans',sans-serif",'--font-mono':"'IBM Plex Mono',monospace",'--font-num':"'IBM Plex Mono',monospace",'--bg':'#0B0E12','--nav-bg':'#090C10','--surface':'#11161D','--surface-2':'#161C26','--border':'rgba(120,150,180,0.12)','--border-strong':'rgba(120,150,180,0.24)','--text':'#D6DEE8','--text-mute':'#7C8896','--text-dim':'#525E6C','--accent':'#FF8A3D','--accent-ink':'#0B0E12','--accent-2':'#3DDC97','--success':'#3DDC97','--success-soft':'rgba(61,220,151,0.12)','--warn':'#FFC542','--warn-soft':'rgba(255,197,66,0.12)','--danger':'#FF5C5C','--danger-soft':'rgba(255,92,92,0.13)','--info':'#56A8FF','--info-soft':'rgba(86,168,255,0.13)','--r':'7px','--btn-r':'5px','--badge-r':'4px','--chip-r':'5px','--av-r':'5px','--ic-r':'5px','--logo-r':'4px','--card-sh':S.flat,'--row-hover':'rgba(120,150,180,0.06)','--nav-active':'rgba(255,138,61,0.13)','--hero-bg':'#11161D','--hero-text':'#FF8A3D','--hero-mute':'#7C8896','--btn-hover-f':'brightness(1.1)','--grain-soja':'#C5E861','--grain-milho':'#FFB020','--grain-usd':'#4DD9B0'}},
+/* 04 */{name:'Slate Mint', tag:'fintech · slate · menta', font:'Manrope · Spline Mono', pal:['#0F1419','#18202A','#2DD4BF','#60A5FA','#34D399'], v:{
+  '--font-sans':"'Manrope',sans-serif",'--font-mono':"'Spline Sans Mono',monospace",'--font-num':"'Spline Sans Mono',monospace",'--bg':'#0F1419','--nav-bg':'#0C1116','--surface':'#18202A','--surface-2':'#202B38','--border':'rgba(148,180,200,0.10)','--border-strong':'rgba(148,180,200,0.20)','--text':'#E8EEF2','--text-mute':'#8FA0AE','--text-dim':'#586674','--accent':'#2DD4BF','--accent-ink':'#06201C','--accent-2':'#60A5FA','--success':'#34D399','--success-soft':'rgba(52,211,153,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)','--danger':'#FB7185','--danger-soft':'rgba(251,113,133,0.14)','--info':'#60A5FA','--info-soft':'rgba(96,165,250,0.14)','--r':'16px','--card-sh':S.soft,'--row-hover':'rgba(148,180,200,0.04)','--nav-active':'rgba(45,212,191,0.14)','--hero-bg':'linear-gradient(135deg,#2DD4BF,#14B8A6)','--hero-text':'#06201C','--hero-mute':'rgba(6,32,28,0.65)','--btn-hover-sh':'0 6px 20px rgba(45,212,191,0.32)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#7FD68A','--grain-milho':'#FFB020','--grain-usd':'#2DD4BF'}},
+/* 05 */{name:'Linen Light', tag:'claro · papel · verde', font:'Inter · Spline Mono', pal:['#F4F1EA','#FFFFFF','#1F6B4A','#B45309','#1F6B4A'], v:{
+  '--font-sans':"'Inter',sans-serif",'--font-mono':"'Spline Sans Mono',monospace",'--font-num':"'Spline Sans Mono',monospace",'--bg':'#F4F1EA','--nav-bg':'#FBF9F4','--surface':'#FFFFFF','--surface-2':'#F4F1EA','--border':'rgba(31,41,38,0.10)','--border-strong':'rgba(31,41,38,0.18)','--text':'#1A1F1C','--text-mute':'#5C665F','--text-dim':'#909A92','--accent':'#1F6B4A','--accent-ink':'#fff','--accent-2':'#1F6B4A','--success':'#1F6B4A','--success-soft':'rgba(31,107,74,0.10)','--warn':'#B45309','--warn-soft':'rgba(180,83,9,0.10)','--danger':'#B91C1C','--danger-soft':'rgba(185,28,28,0.09)','--info':'#1D4ED8','--info-soft':'rgba(29,78,216,0.10)','--r':'16px','--card-sh':S.lightCard,'--row-hover':'rgba(31,41,38,0.025)','--nav-active':'rgba(31,107,74,0.09)','--hero-bg':'#1F6B4A','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.72)','--btn-hover-sh':'0 6px 18px rgba(31,107,74,0.28)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#3F7D2E','--grain-milho':'#B45309','--grain-usd':'#0F766E'}},
+/* 06 */{name:'Cognac Premium', tag:'luxo · grafite · ouro', font:'Libre Franklin · Newsreader', pal:['#16151A','#1E1D24','#D4A017','#C9B896','#5E9B7E'], v:{
+  '--font-sans':"'Libre Franklin',sans-serif",'--font-mono':M,'--font-num':"'Libre Franklin',sans-serif",'--font-display':"'Newsreader',serif",'--font-serif':"'Newsreader',serif",'--ttl-w':'500','--bg':'#16151A','--nav-bg':'#131217','--surface':'#1E1D24','--surface-2':'#27262F','--border':'rgba(212,160,23,0.14)','--border-strong':'rgba(212,160,23,0.26)','--text':'#EAE7E0','--text-mute':'#A39E92','--text-dim':'#6B6659','--accent':'#D4A017','--accent-ink':'#16151A','--accent-2':'#C9B896','--success':'#5E9B7E','--success-soft':'rgba(94,155,126,0.14)','--warn':'#C99A3C','--warn-soft':'rgba(201,154,60,0.14)','--danger':'#B5685E','--danger-soft':'rgba(181,104,94,0.15)','--info':'#7D93A8','--info-soft':'rgba(125,147,168,0.14)','--r':'10px','--card-sh':S.deep,'--row-hover':'rgba(212,160,23,0.05)','--nav-active':'rgba(212,160,23,0.13)','--hero-bg':'linear-gradient(135deg,#E0B53A,#D4A017)','--hero-text':'#16151A','--hero-mute':'rgba(22,21,26,0.62)','--btn-hover-sh':'0 6px 20px rgba(212,160,23,0.3)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#C5E861','--grain-milho':'#FFB020','--grain-usd':'#5E9B7E'}},
+/* 07 */{name:'Carbon Steel', tag:'industrial · grafite', font:'Archivo · JetBrains Mono', pal:['#0E1014','#171A20','#5B6CFF','#2BD4A4','#2A2F38'], v:{
+  '--font-sans':"'Archivo',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#0E1014','--nav-bg':'#0B0D11','--surface':'#171A20','--surface-2':'#1F242C','--border':'rgba(255,255,255,0.08)','--border-strong':'rgba(255,255,255,0.16)','--text':'#E4E7EC','--text-mute':'#8B93A0','--text-dim':'#565E6B','--accent':'#5B6CFF','--accent-ink':'#fff','--accent-2':'#2BD4A4','--success':'#2BD4A4','--success-soft':'rgba(43,212,164,0.13)','--warn':'#F5A623','--warn-soft':'rgba(245,166,35,0.13)','--danger':'#FF5470','--danger-soft':'rgba(255,84,112,0.14)','--info':'#5B6CFF','--info-soft':'rgba(91,108,255,0.15)','--r':'11px','--btn-r':'8px','--card-sh':S.deep,'--row-hover':'rgba(255,255,255,0.03)','--nav-active':'rgba(91,108,255,0.14)','--hero-bg':'#5B6CFF','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.76)','--btn-hover-sh':'0 0 0 1px rgba(91,108,255,0.5), 0 6px 22px rgba(91,108,255,0.35)','--grain-soja':'#7FD68A','--grain-milho':'#FFB020','--grain-usd':'#2BD4A4'}},
+/* 08 */{name:'Editorial Serif', tag:'revista financeira', font:'Inter · Fraunces', pal:['#15110D','#1E1813','#B8895A','#C8A876','#7FA88A'], v:{
+  '--font-sans':"'Inter',sans-serif",'--font-mono':M,'--font-num':"'Inter',sans-serif",'--font-display':"'Fraunces',serif",'--font-serif':"'Fraunces',serif",'--ttl-w':'500','--bg':'#15110D','--nav-bg':'#120E0A','--surface':'#1E1813','--surface-2':'#272019','--border':'rgba(200,168,118,0.14)','--border-strong':'rgba(200,168,118,0.26)','--text':'#EFE7DB','--text-mute':'#A99B86','--text-dim':'#6F6354','--accent':'#B8895A','--accent-ink':'#15110D','--accent-2':'#C8A876','--success':'#7FA88A','--success-soft':'rgba(127,168,138,0.14)','--warn':'#D4A24E','--warn-soft':'rgba(212,162,78,0.14)','--danger':'#C77B6B','--danger-soft':'rgba(199,123,107,0.16)','--info':'#8DA3B8','--info-soft':'rgba(141,163,184,0.15)','--r':'14px','--card-sh':S.deep,'--row-hover':'rgba(200,168,118,0.05)','--nav-active':'rgba(184,137,90,0.14)','--hero-bg':'linear-gradient(135deg,#C8A876,#B8895A)','--hero-text':'#15110D','--hero-mute':'rgba(21,17,13,0.6)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#C5E861','--grain-milho':'#D4A24E','--grain-usd':'#7FA88A'}},
+/* 09 */{name:'Midnight Indigo', tag:'dark · índigo profundo', font:'Plus Jakarta · JetBrains', pal:['#0C0D1A','#15172B','#8B7CFF','#5EEAD4','#1E2138'], v:{
+  '--font-sans':"'Plus Jakarta Sans',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#0C0D1A','--nav-bg':'#090A14','--surface':'#15172B','--surface-2':'#1E2138','--border':'rgba(140,130,200,0.12)','--border-strong':'rgba(140,130,200,0.24)','--text':'#E6E5F2','--text-mute':'#9690B4','--text-dim':'#605C82','--accent':'#8B7CFF','--accent-ink':'#fff','--accent-2':'#5EEAD4','--success':'#5EEAD4','--success-soft':'rgba(94,234,212,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)','--danger':'#FB7185','--danger-soft':'rgba(251,113,133,0.14)','--info':'#8B7CFF','--info-soft':'rgba(139,124,255,0.15)','--r':'16px','--card-sh':S.deep,'--row-hover':'rgba(140,130,200,0.05)','--nav-active':'rgba(139,124,255,0.16)','--hero-bg':'linear-gradient(135deg,#8B7CFF,#6D5CE0)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.78)','--btn-hover-sh':'0 8px 26px rgba(139,124,255,0.4)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#FBBF24','--grain-usd':'#5EEAD4'}},
+/* 10 */{name:'Forest Deep', tag:'agro · verde escuro', font:'Outfit · JetBrains Mono', pal:['#0A1410','#11211A','#3DD68C','#D9A441','#5FB286'], v:{
+  '--font-sans':"'Outfit',sans-serif",'--font-mono':M,'--font-num':"'Outfit',sans-serif",'--bg':'#0A1410','--nav-bg':'#081009','--surface':'#11211A','--surface-2':'#193027','--border':'rgba(120,200,150,0.12)','--border-strong':'rgba(120,200,150,0.24)','--text':'#E6F0E9','--text-mute':'#92AC9D','--text-dim':'#5C7466','--accent':'#3DD68C','--accent-ink':'#06140D','--accent-2':'#D9A441','--success':'#5FB286','--success-soft':'rgba(95,178,134,0.14)','--warn':'#D9A441','--warn-soft':'rgba(217,164,65,0.14)','--danger':'#E08571','--danger-soft':'rgba(224,133,113,0.15)','--info':'#5C9CB0','--info-soft':'rgba(92,156,176,0.14)','--r':'18px','--card-sh':S.soft,'--row-hover':'rgba(120,200,150,0.05)','--nav-active':'rgba(61,214,140,0.15)','--hero-bg':'linear-gradient(140deg,#4CE89A,#2FB873)','--hero-text':'#06140D','--hero-mute':'rgba(6,20,13,0.65)','--btn-hover-sh':'0 6px 20px rgba(61,214,140,0.32)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#D9A441','--grain-usd':'#5FB286'}},
+/* 11 */{name:'Frost Light', tag:'claro · azul gelo', font:'Lexend · DM Mono', pal:['#F2F5F9','#FFFFFF','#2563EB','#0E7490','#16A34A'], v:{
+  '--font-sans':"'Lexend',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-num':"'DM Mono',monospace",'--bg':'#F2F5F9','--nav-bg':'#FBFCFE','--surface':'#FFFFFF','--surface-2':'#F2F5F9','--border':'rgba(30,41,59,0.10)','--border-strong':'rgba(30,41,59,0.18)','--text':'#0F172A','--text-mute':'#5A6478','--text-dim':'#94A0B4','--accent':'#2563EB','--accent-ink':'#fff','--accent-2':'#0E7490','--success':'#16A34A','--success-soft':'rgba(22,163,74,0.10)','--warn':'#D97706','--warn-soft':'rgba(217,119,6,0.10)','--danger':'#DC2626','--danger-soft':'rgba(220,38,38,0.09)','--info':'#2563EB','--info-soft':'rgba(37,99,235,0.10)','--r':'14px','--card-sh':S.lightCard,'--row-hover':'rgba(30,41,59,0.025)','--nav-active':'rgba(37,99,235,0.10)','--hero-bg':'linear-gradient(135deg,#2563EB,#1D4ED8)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.74)','--btn-hover-sh':'0 6px 18px rgba(37,99,235,0.3)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#16A34A','--grain-milho':'#D97706','--grain-usd':'#0E7490'}},
+/* 12 */{name:'Noir Crimson', tag:'dark · vermelho vinho', font:'Schibsted · JetBrains', pal:['#100A0C','#1A1114','#E5484D','#E8A23D','#3DDC97'], v:{
+  '--font-sans':"'Schibsted Grotesk',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#100A0C','--nav-bg':'#0C0708','--surface':'#1A1114','--surface-2':'#241719','--border':'rgba(229,72,77,0.13)','--border-strong':'rgba(229,72,77,0.24)','--text':'#F0E6E7','--text-mute':'#AC9598','--text-dim':'#705C5E','--accent':'#E5484D','--accent-ink':'#fff','--accent-2':'#E8A23D','--success':'#3DDC97','--success-soft':'rgba(61,220,151,0.13)','--warn':'#E8A23D','--warn-soft':'rgba(232,162,61,0.14)','--danger':'#E5484D','--danger-soft':'rgba(229,72,77,0.15)','--info':'#7D93A8','--info-soft':'rgba(125,147,168,0.14)','--r':'12px','--card-sh':S.deep,'--row-hover':'rgba(229,72,77,0.05)','--nav-active':'rgba(229,72,77,0.13)','--hero-bg':'linear-gradient(135deg,#E5484D,#C0353A)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.76)','--btn-hover-sh':'0 8px 24px rgba(229,72,77,0.4)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#E8A23D','--grain-usd':'#3DDC97'}},
+/* 13 */{name:'Graphite Flat', tag:'minimal · cinza · flat', font:'Public Sans · Martian', pal:['#121212','#1A1A1A','#E6E6E6','#9CA3AF','#4ADE80'], v:{
+  '--font-sans':"'Public Sans',sans-serif",'--font-mono':"'Martian Mono',monospace",'--font-num':"'Martian Mono',monospace",'--bg':'#121212','--nav-bg':'#0E0E0E','--surface':'#1A1A1A','--surface-2':'#242424','--border':'rgba(255,255,255,0.09)','--border-strong':'rgba(255,255,255,0.2)','--text':'#F0F0F0','--text-mute':'#9CA3AF','--text-dim':'#5E5E5E','--accent':'#E6E6E6','--accent-ink':'#121212','--accent-2':'#4ADE80','--success':'#4ADE80','--success-soft':'rgba(74,222,128,0.12)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.12)','--danger':'#F87171','--danger-soft':'rgba(248,113,113,0.13)','--info':'#7FB5FF','--info-soft':'rgba(127,181,255,0.13)','--r':'10px','--btn-r':'7px','--card-sh':S.flat,'--row-hover':'rgba(255,255,255,0.03)','--nav-active':'rgba(255,255,255,0.07)','--hero-bg':'#E6E6E6','--hero-text':'#121212','--hero-mute':'rgba(18,18,18,0.55)','--btn-hover-f':'brightness(0.92)','--grain-soja':'#86EFAC','--grain-milho':'#FBBF24','--grain-usd':'#5EEAD4'}},
+/* 14 */{name:'Ocean Teal', tag:'dark · petróleo · teal', font:'Hanken · Spline Mono', pal:['#08161A','#0E2227','#14B8C4','#FBBF24','#1A3640'], v:{
+  '--font-sans':"'Hanken Grotesk',sans-serif",'--font-mono':"'Spline Sans Mono',monospace",'--font-num':"'Spline Sans Mono',monospace",'--bg':'#08161A','--nav-bg':'#061115','--surface':'#0E2227','--surface-2':'#163138','--border':'rgba(80,180,196,0.13)','--border-strong':'rgba(80,180,196,0.24)','--text':'#DEEEF0','--text-mute':'#86A4AA','--text-dim':'#52696E','--accent':'#14B8C4','--accent-ink':'#03171A','--accent-2':'#FBBF24','--success':'#34D399','--success-soft':'rgba(52,211,153,0.13)','--warn':'#FBBF24','--warn-soft':'rgba(251,191,36,0.13)','--danger':'#FB7185','--danger-soft':'rgba(251,113,133,0.14)','--info':'#38BDF8','--info-soft':'rgba(56,189,248,0.14)','--r':'14px','--card-sh':S.soft,'--row-hover':'rgba(80,180,196,0.05)','--nav-active':'rgba(20,184,196,0.14)','--hero-bg':'linear-gradient(135deg,#1ACDD9,#0F97A1)','--hero-text':'#03171A','--hero-mute':'rgba(3,23,26,0.62)','--btn-hover-sh':'0 6px 20px rgba(20,184,196,0.34)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#FBBF24','--grain-usd':'#14B8C4'}},
+/* 15 */{name:'Paper Slate', tag:'claro · cinza ardósia', font:'Geist · Geist Mono', pal:['#FAFAFA','#FFFFFF','#18181B','#3B82F6','#16A34A'], v:{
+  '--font-sans':"'Geist',sans-serif",'--font-mono':"'Geist Mono',monospace",'--font-num':"'Geist Mono',monospace",'--bg':'#FAFAFA','--nav-bg':'#FFFFFF','--surface':'#FFFFFF','--surface-2':'#F4F4F5','--border':'rgba(24,24,27,0.10)','--border-strong':'rgba(24,24,27,0.2)','--text':'#18181B','--text-mute':'#71717A','--text-dim':'#A1A1AA','--accent':'#18181B','--accent-ink':'#fff','--accent-2':'#3B82F6','--success':'#16A34A','--success-soft':'rgba(22,163,74,0.10)','--warn':'#CA8A04','--warn-soft':'rgba(202,138,4,0.10)','--danger':'#DC2626','--danger-soft':'rgba(220,38,38,0.09)','--info':'#3B82F6','--info-soft':'rgba(59,130,246,0.10)','--r':'12px','--btn-r':'9px','--card-sh':'0 1px 3px rgba(24,24,27,0.08)','--row-hover':'rgba(24,24,27,0.025)','--nav-active':'rgba(24,24,27,0.06)','--hero-bg':'#18181B','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.6)','--btn-hover-f':'brightness(1.4)','--grain-soja':'#16A34A','--grain-milho':'#CA8A04','--grain-usd':'#0D9488'}},
+/* 16 */{name:'Violet Aurora', tag:'dark · gradiente vivo', font:'Space Grotesk · JetBrains', pal:['#0B0A14','#1A1726','#7C5CFF','#2DD4BF','#FF6AC2'], v:{
+  '--font-sans':"'Space Grotesk',sans-serif",'--font-mono':M,'--font-num':"'Space Grotesk',sans-serif",'--bg':'#0B0A14','--nav-bg':'#08070F','--surface':'#1A1726','--surface-2':'#241F36','--border':'rgba(255,255,255,0.10)','--border-strong':'rgba(255,255,255,0.2)','--text':'#ECEAF6','--text-mute':'#A29DC4','--text-dim':'#6B6691','--accent':'#7C5CFF','--accent-ink':'#fff','--accent-2':'#2DD4BF','--success':'#2DD4BF','--success-soft':'rgba(45,212,191,0.14)','--warn':'#FFC857','--warn-soft':'rgba(255,200,87,0.14)','--danger':'#FF6AC2','--danger-soft':'rgba(255,106,194,0.15)','--info':'#7C5CFF','--info-soft':'rgba(124,92,255,0.16)','--r':'18px','--card-sh':'0 8px 30px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.05)','--row-hover':'rgba(255,255,255,0.04)','--nav-active':'rgba(124,92,255,0.2)','--hero-bg':'linear-gradient(135deg,#7C5CFF,#2DD4BF)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.82)','--btn-bg':'linear-gradient(135deg,#7C5CFF,#9D7CFF)','--btn-hover-sh':'0 8px 28px rgba(124,92,255,0.45)','--btn-hover-t':'translateY(-2px)','--grain-soja':'#86EFAC','--grain-milho':'#FFC857','--grain-usd':'#2DD4BF'}},
+/* 17 */{name:'Sand Stone', tag:'claro quente · areia', font:'DM Sans · DM Mono', pal:['#F5F0E8','#FFFCF7','#A8521C','#1F6B4A','#1A1714'], v:{
+  '--font-sans':"'DM Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-num':"'DM Mono',monospace",'--bg':'#F5F0E8','--nav-bg':'#FFFCF7','--surface':'#FFFCF7','--surface-2':'#F1EADD','--border':'rgba(26,23,20,0.10)','--border-strong':'rgba(26,23,20,0.18)','--text':'#241F18','--text-mute':'#6B6356','--text-dim':'#9C9384','--accent':'#A8521C','--accent-ink':'#fff','--accent-2':'#1F6B4A','--success':'#1F6B4A','--success-soft':'rgba(31,107,74,0.10)','--warn':'#A8521C','--warn-soft':'rgba(168,82,28,0.10)','--danger':'#A12D2D','--danger-soft':'rgba(161,45,45,0.09)','--info':'#2C5C8A','--info-soft':'rgba(44,92,138,0.10)','--r':'14px','--card-sh':'0 1px 2px rgba(26,23,20,0.05), 0 10px 24px rgba(26,23,20,0.06)','--row-hover':'rgba(26,23,20,0.025)','--nav-active':'rgba(168,82,28,0.10)','--hero-bg':'linear-gradient(135deg,#C2651F,#A8521C)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.74)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#1F6B4A','--grain-milho':'#A8521C','--grain-usd':'#0F766E'}},
+/* 18 */{name:'Cyber Neon', tag:'dark · neon · cyber', font:'Sora · Azeret Mono', pal:['#080A0F','#0E1219','#00E5A0','#FF2E97','#1A1F2B'], v:{
+  '--font-sans':"'Sora',sans-serif",'--font-mono':"'Azeret Mono',monospace",'--font-num':"'Azeret Mono',monospace",'--bg':'#080A0F','--nav-bg':'#06080C','--surface':'#0E1219','--surface-2':'#161C26','--border':'rgba(0,229,160,0.14)','--border-strong':'rgba(0,229,160,0.3)','--text':'#DCF5EC','--text-mute':'#7D9A92','--text-dim':'#4C6660','--accent':'#00E5A0','--accent-ink':'#05140E','--accent-2':'#FF2E97','--success':'#00E5A0','--success-soft':'rgba(0,229,160,0.13)','--warn':'#FFD43B','--warn-soft':'rgba(255,212,59,0.13)','--danger':'#FF2E97','--danger-soft':'rgba(255,46,151,0.14)','--info':'#3BC4FF','--info-soft':'rgba(59,196,255,0.14)','--r':'10px','--btn-r':'7px','--card-sh':'0 0 0 1px rgba(0,229,160,0.06), 0 14px 36px rgba(0,0,0,0.5)','--row-hover':'rgba(0,229,160,0.04)','--nav-active':'rgba(0,229,160,0.13)','--hero-bg':'linear-gradient(135deg,#00E5A0,#00B884)','--hero-text':'#05140E','--hero-mute':'rgba(5,20,14,0.62)','--btn-hover-sh':'0 0 0 1px rgba(0,229,160,0.6), 0 0 24px rgba(0,229,160,0.45)','--grain-soja':'#00E5A0','--grain-milho':'#FFD43B','--grain-usd':'#3BC4FF'}},
+/* 19 */{name:'Royal Navy', tag:'corporativo · navy', font:'Red Hat Display · Mono', pal:['#0A101E','#121A2E','#3E63DD','#46C77E','#1C2742'], v:{
+  '--font-sans':"'Red Hat Display',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#0A101E','--nav-bg':'#070C17','--surface':'#121A2E','--surface-2':'#1A2540','--border':'rgba(120,150,210,0.12)','--border-strong':'rgba(120,150,210,0.24)','--text':'#E2E8F5','--text-mute':'#8896B4','--text-dim':'#566182','--accent':'#3E63DD','--accent-ink':'#fff','--accent-2':'#46C77E','--success':'#46C77E','--success-soft':'rgba(70,199,126,0.13)','--warn':'#F1A33C','--warn-soft':'rgba(241,163,60,0.13)','--danger':'#E5556E','--danger-soft':'rgba(229,85,110,0.14)','--info':'#3E63DD','--info-soft':'rgba(62,99,221,0.15)','--r':'12px','--card-sh':S.deep,'--row-hover':'rgba(120,150,210,0.05)','--nav-active':'rgba(62,99,221,0.15)','--hero-bg':'linear-gradient(135deg,#3E63DD,#2E4FC0)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.78)','--btn-hover-sh':'0 6px 22px rgba(62,99,221,0.4)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#F1A33C','--grain-usd':'#46C77E'}},
+/* 20 */{name:'Olive Field', tag:'dark · oliva · trigo', font:'Bricolage · JetBrains', pal:['#12130C','#1C1E12','#A3B833','#E0A82E','#7FB069'], v:{
+  '--font-sans':"'Bricolage Grotesque',sans-serif",'--font-mono':M,'--font-num':"'Bricolage Grotesque',sans-serif",'--bg':'#12130C','--nav-bg':'#0E0F08','--surface':'#1C1E12','--surface-2':'#272A19','--border':'rgba(163,184,51,0.14)','--border-strong':'rgba(163,184,51,0.26)','--text':'#ECEEDB','--text-mute':'#A4A988','--text-dim':'#696D52','--accent':'#A3B833','--accent-ink':'#12130C','--accent-2':'#E0A82E','--success':'#7FB069','--success-soft':'rgba(127,176,105,0.14)','--warn':'#E0A82E','--warn-soft':'rgba(224,168,46,0.14)','--danger':'#CC6B49','--danger-soft':'rgba(204,107,73,0.15)','--info':'#6B9CB0','--info-soft':'rgba(107,156,176,0.14)','--r':'15px','--card-sh':S.soft,'--row-hover':'rgba(163,184,51,0.05)','--nav-active':'rgba(163,184,51,0.14)','--hero-bg':'linear-gradient(135deg,#B6CC3A,#9AAE2E)','--hero-text':'#12130C','--hero-mute':'rgba(18,19,12,0.62)','--btn-hover-t':'translateY(-1px)','--btn-hover-sh':'0 6px 18px rgba(163,184,51,0.3)','--grain-soja':'#A3B833','--grain-milho':'#E0A82E','--grain-usd':'#7FB069'}},
+/* 21 */{name:'Mono Brutalist', tag:'brutalista · alto contraste', font:'Archivo · Fragment Mono', pal:['#0D0D0D','#161616','#FFE600','#FFFFFF','#00C853'], v:{
+  '--font-sans':"'Archivo',sans-serif",'--font-mono':"'Fragment Mono',monospace",'--font-num':"'Fragment Mono',monospace",'--ttl-w':'700','--bg':'#0D0D0D','--nav-bg':'#000000','--surface':'#161616','--surface-2':'#222222','--border':'rgba(255,255,255,0.16)','--border-strong':'rgba(255,255,255,0.4)','--text':'#FFFFFF','--text-mute':'#999999','--text-dim':'#5C5C5C','--accent':'#FFE600','--accent-ink':'#0D0D0D','--accent-2':'#FFFFFF','--success':'#00C853','--success-soft':'rgba(0,200,83,0.13)','--warn':'#FFB300','--warn-soft':'rgba(255,179,0,0.13)','--danger':'#FF1744','--danger-soft':'rgba(255,23,68,0.14)','--info':'#2979FF','--info-soft':'rgba(41,121,255,0.14)','--r':'2px','--btn-r':'2px','--badge-r':'2px','--chip-r':'2px','--av-r':'2px','--ic-r':'2px','--logo-r':'2px','--card-sh':'4px 4px 0 rgba(255,230,0,0.9)','--row-hover':'rgba(255,255,255,0.04)','--nav-active':'rgba(255,230,0,0.16)','--hero-bg':'#FFE600','--hero-text':'#0D0D0D','--hero-mute':'rgba(13,13,13,0.6)','--btn-bd':'#0D0D0D','--btn-hover-t':'translate(-2px,-2px)','--btn-hover-sh':'3px 3px 0 rgba(255,255,255,0.9)','--grain-soja':'#00C853','--grain-milho':'#FFB300','--grain-usd':'#2979FF'}},
+/* 22 */{name:'Rose Quartz', tag:'claro · rosé sóbrio', font:'Albert Sans · DM Mono', pal:['#FBF6F6','#FFFFFF','#B03A5B','#2C7A6B','#1B1416'], v:{
+  '--font-sans':"'Albert Sans',sans-serif",'--font-mono':"'DM Mono',monospace",'--font-num':"'DM Mono',monospace",'--bg':'#FBF6F6','--nav-bg':'#FFFFFF','--surface':'#FFFFFF','--surface-2':'#F6ECEE','--border':'rgba(27,20,22,0.10)','--border-strong':'rgba(27,20,22,0.18)','--text':'#1F1619','--text-mute':'#6A5C60','--text-dim':'#9E8E92','--accent':'#B03A5B','--accent-ink':'#fff','--accent-2':'#2C7A6B','--success':'#2C7A6B','--success-soft':'rgba(44,122,107,0.10)','--warn':'#B5740A','--warn-soft':'rgba(181,116,10,0.10)','--danger':'#B03A5B','--danger-soft':'rgba(176,58,91,0.10)','--info':'#3457A8','--info-soft':'rgba(52,87,168,0.10)','--r':'16px','--card-sh':'0 1px 2px rgba(27,20,22,0.05), 0 10px 24px rgba(176,58,91,0.06)','--row-hover':'rgba(27,20,22,0.025)','--nav-active':'rgba(176,58,91,0.09)','--hero-bg':'linear-gradient(135deg,#C5476A,#B03A5B)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.74)','--btn-hover-t':'translateY(-1px)','--btn-hover-sh':'0 6px 18px rgba(176,58,91,0.28)','--grain-soja':'#2C7A6B','--grain-milho':'#B5740A','--grain-usd':'#0F766E'}},
+/* 23 */{name:'Obsidian Glow', tag:'dark · preto · glow esmeralda', font:'Onest · JetBrains', pal:['#060708','#0F1112','#10D9A0','#F0B429','#181B1C'], v:{
+  '--font-sans':"'Onest',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#060708','--nav-bg':'#040505','--surface':'#0F1112','--surface-2':'#181B1C','--border':'rgba(255,255,255,0.07)','--border-strong':'rgba(16,217,160,0.3)','--text':'#EAEEEC','--text-mute':'#8A9591','--text-dim':'#535D59','--accent':'#10D9A0','--accent-ink':'#04130D','--accent-2':'#F0B429','--success':'#10D9A0','--success-soft':'rgba(16,217,160,0.13)','--warn':'#F0B429','--warn-soft':'rgba(240,180,41,0.13)','--danger':'#F76C6C','--danger-soft':'rgba(247,108,108,0.14)','--info':'#4FB6F0','--info-soft':'rgba(79,182,240,0.14)','--r':'14px','--card-sh':'0 14px 38px rgba(0,0,0,0.55)','--row-hover':'rgba(16,217,160,0.04)','--nav-active':'rgba(16,217,160,0.12)','--hero-bg':'radial-gradient(120% 120% at 0% 0%, #16E8AC, #0BB587)','--hero-text':'#04130D','--hero-mute':'rgba(4,19,13,0.6)','--btn-hover-sh':'0 0 0 1px rgba(16,217,160,0.5), 0 8px 28px rgba(16,217,160,0.4)','--btn-hover-t':'translateY(-1px)','--grain-soja':'#86EFAC','--grain-milho':'#F0B429','--grain-usd':'#10D9A0'}},
+/* 24 */{name:'Clay Warm', tag:'dark quente · terracota', font:'Figtree · Spline Mono', pal:['#161210','#211A16','#E07856','#E0B84E','#88B89E'], v:{
+  '--font-sans':"'Figtree',sans-serif",'--font-mono':"'Spline Sans Mono',monospace",'--font-num':"'Spline Sans Mono',monospace",'--bg':'#161210','--nav-bg':'#120E0C','--surface':'#211A16','--surface-2':'#2E241E','--border':'rgba(224,120,86,0.13)','--border-strong':'rgba(224,120,86,0.26)','--text':'#F0E8E2','--text-mute':'#AC9B90','--text-dim':'#6F6055','--accent':'#E07856','--accent-ink':'#fff','--accent-2':'#E0B84E','--success':'#88B89E','--success-soft':'rgba(136,184,158,0.14)','--warn':'#E0B84E','--warn-soft':'rgba(224,184,78,0.14)','--danger':'#D4615C','--danger-soft':'rgba(212,97,92,0.15)','--info':'#7FA0B8','--info-soft':'rgba(127,160,184,0.14)','--r':'16px','--card-sh':S.soft,'--row-hover':'rgba(224,120,86,0.05)','--nav-active':'rgba(224,120,86,0.13)','--hero-bg':'linear-gradient(135deg,#EC8A66,#E07856)','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.76)','--btn-hover-t':'translateY(-1px)','--btn-hover-sh':'0 6px 20px rgba(224,120,86,0.34)','--grain-soja':'#88B89E','--grain-milho':'#E0B84E','--grain-usd':'#7FA0B8'}},
+/* 25 */{name:'Arctic Mono', tag:'claro · branco · azul aço', font:'Instrument Sans · Mono', pal:['#FFFFFF','#F7F9FB','#0F62FE','#0D9488','#0F172A'], v:{
+  '--font-sans':"'Instrument Sans',sans-serif",'--font-mono':M,'--font-num':M,'--bg':'#F7F9FB','--nav-bg':'#FFFFFF','--surface':'#FFFFFF','--surface-2':'#EEF2F6','--border':'rgba(15,23,42,0.09)','--border-strong':'rgba(15,23,42,0.18)','--text':'#0F172A','--text-mute':'#647084','--text-dim':'#9AA4B4','--accent':'#0F62FE','--accent-ink':'#fff','--accent-2':'#0D9488','--success':'#0D9488','--success-soft':'rgba(13,148,136,0.10)','--warn':'#B45309','--warn-soft':'rgba(180,83,9,0.10)','--danger':'#DA1E28','--danger-soft':'rgba(218,30,40,0.09)','--info':'#0F62FE','--info-soft':'rgba(15,98,254,0.10)','--r':'10px','--btn-r':'8px','--card-sh':'0 1px 2px rgba(15,23,42,0.06), 0 8px 20px rgba(15,23,42,0.05)','--row-hover':'rgba(15,23,42,0.025)','--nav-active':'rgba(15,98,254,0.09)','--hero-bg':'#0F62FE','--hero-text':'#fff','--hero-mute':'rgba(255,255,255,0.74)','--btn-hover-f':'brightness(1.12)','--btn-hover-sh':'0 6px 18px rgba(15,98,254,0.3)','--grain-soja':'#0D9488','--grain-milho':'#B45309','--grain-usd':'#0F62FE'}},
+];
+
+const tpl=document.getElementById('mock');
+const root=document.getElementById('sections');
+const toc=document.getElementById('toc');
+
+T.forEach((t,i)=>{
+  const n=String(i+1).padStart(2,'0');
+  // toc
+  const a=document.createElement('a');
+  a.href='#ds'+(i+1);
+  a.innerHTML=`<span class="n">${n}</span><i style="background:${t.pal[2]}"></i>${t.name}`;
+  toc.appendChild(a);
+
+  const sec=document.createElement('div'); sec.className='ds'; sec.id='ds'+(i+1);
+  const lab=document.createElement('div'); lab.className='ds-label';
+  lab.innerHTML=`<span class="idx">${n}</span><h2>${t.name}</h2><span class="tag">· ${t.tag}</span><span class="meta">${t.font}</span>`;
+  sec.appendChild(lab);
+
+  const frame=document.createElement('div'); frame.className='frame';
+  const clone=tpl.content.cloneNode(true);
+  const mini=clone.querySelector('.mini');
+  Object.entries(t.v).forEach(([k,v])=>mini.style.setProperty(k,v));
+  frame.appendChild(clone);
+  sec.appendChild(frame);
+
+  const pal=document.createElement('div'); pal.className='palette';
+  pal.innerHTML=t.pal.map(c=>`<i style="background:${c}"></i>`).join('');
+  sec.appendChild(pal);
+
+  root.appendChild(sec);
+});
+</script>
+</body>
+</html>
