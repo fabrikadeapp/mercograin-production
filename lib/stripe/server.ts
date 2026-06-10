@@ -11,6 +11,32 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy
 })
 
 /**
+ * Garante que a Stripe está configurada com uma chave real ANTES de
+ * executar qualquer cobrança/checkout/webhook.
+ *
+ * NÃO valida no top-level do módulo de propósito: o `next build` carrega
+ * este módulo e pode rodar com NODE_ENV=production sem a env — um throw
+ * no load quebraria o build. Validamos de forma LAZY (por request),
+ * chamando `assertStripeConfigured()` no início de cada handler.
+ *
+ * Em dev/test mantemos o fallback dummy para não travar o build local.
+ */
+export class StripeNotConfiguredError extends Error {
+  constructor() {
+    super('STRIPE_SECRET_KEY ausente/inválida em produção')
+    this.name = 'StripeNotConfiguredError'
+  }
+}
+
+export function assertStripeConfigured(): void {
+  if (process.env.NODE_ENV !== 'production') return
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key || !key.startsWith('sk_')) {
+    throw new StripeNotConfiguredError()
+  }
+}
+
+/**
  * @deprecated O conjunto de planos não é mais fixo — leia do model Plan.
  * Mantido como string genérica para compatibilidade com Subscription.plan.
  */

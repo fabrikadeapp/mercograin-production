@@ -50,6 +50,10 @@ export const MUTATION_LIMITS = {
   // Workspace admin
   'workspace.feature-toggle': { max: 20, windowMs: 60_000 },
   'workspace.codigo': { max: 5, windowMs: 60_000 },
+
+  // Checkout público (sem auth) — vetor de abuso/DoS contra Stripe.
+  // 5 tentativas / 15 min por IP (e por email).
+  'checkout.publico': { max: 5, windowMs: 15 * 60_000 },
 } as const
 
 export type MutationOp = keyof typeof MUTATION_LIMITS

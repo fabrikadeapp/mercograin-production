@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
-import { stripe, getPriceIdForPlan } from '@/lib/stripe/server'
+import {
+  stripe,
+  getPriceIdForPlan,
+  assertStripeConfigured,
+  StripeNotConfiguredError,
+} from '@/lib/stripe/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +19,16 @@ async function ensureCustomer(userId: string, email: string, name: string): Prom
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    assertStripeConfigured()
+  } catch (e) {
+    if (e instanceof StripeNotConfiguredError) {
+      console.error('[stripe/checkout]', e.message)
+      return NextResponse.json({ error: 'stripe_nao_configurado' }, { status: 500 })
+    }
+    throw e
+  }
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

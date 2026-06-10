@@ -11,7 +11,14 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { stripe, getPriceIdForPlan } from '@/lib/stripe/server'
+import {
+  stripe,
+  getPriceIdForPlan,
+  assertStripeConfigured,
+  StripeNotConfiguredError,
+} from '@/lib/stripe/server'
+import { getClientIp } from '@/lib/security/rate-limit'
+import { checkMutationLimit } from '@/lib/security/mutation-rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -21,6 +28,26 @@ function isEmailValido(email: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    assertStripeConfigured()
+  } catch (e) {
+    if (e instanceof StripeNotConfiguredError) {
+      console.error('[stripe/checkout-publico]', e.message)
+      return NextResponse.json({ error: 'stripe_nao_configurado' }, { status: 500 })
+    }
+    throw e
+  }
+
+  // Rate limit por IP — rota pública sem auth, vetor de abuso/DoS contra Stripe.
+  const ip = getClientIp(req)
+  const ipLimit = checkMutationLimit('checkout.publico', `ip:${ip}`)
+  if (!ipLimit.ok) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas. Tente novamente mais tarde.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(ipLimit.resetIn / 1000)) } }
+    )
+  }
+
   let body: { plan?: string; email?: string; nome?: string; cnpj?: string }
   try {
     body = await req.json()
@@ -38,6 +65,16 @@ export async function POST(req: NextRequest) {
   }
   if (!email || !isEmailValido(email)) {
     return NextResponse.json({ error: 'E-mail inválido' }, { status: 400 })
+  }
+
+  // Rate limit adicional por email — evita abuso de um único endereço por trás
+  // de IPs rotativos.
+  const emailLimit = checkMutationLimit('checkout.publico', `email:${email}`)
+  if (!emailLimit.ok) {
+    return NextResponse.json(
+      { error: 'Muitas tentativas. Tente novamente mais tarde.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(emailLimit.resetIn / 1000)) } }
+    )
   }
 
   const planRow = await db.plan.findUnique({ where: { slug: plan } })
