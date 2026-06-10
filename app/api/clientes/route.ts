@@ -218,6 +218,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Violação de unicidade (cnpj/cpf são @unique). Antes virava 500 genérico;
+    // agora retorna 409 com mensagem amigável apontando o campo duplicado.
+    if ((error as any)?.code === 'P2002') {
+      const target = (error as any)?.meta?.target
+      const campos = Array.isArray(target) ? target : [target].filter(Boolean)
+      const msg = campos.includes('cnpj')
+        ? 'Já existe um cliente cadastrado com este CNPJ.'
+        : campos.includes('cpf')
+          ? 'Já existe um cliente cadastrado com este CPF.'
+          : 'Já existe um cliente com esses dados.'
+      return NextResponse.json({ error: msg }, { status: 409 })
+    }
+
     console.error('Create cliente error:', error)
     return NextResponse.json({ error: 'Erro ao criar cliente' }, { status: 500 })
   }
