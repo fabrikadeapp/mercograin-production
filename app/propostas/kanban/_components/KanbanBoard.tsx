@@ -12,6 +12,7 @@
  */
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { Skeleton, Dialog, Button } from '@/components/ui/phb'
 import { ChevronLeft, Plus, Send, Mail, MessageCircle, AlertTriangle } from 'lucide-react'
@@ -72,7 +73,13 @@ export function KanbanBoard() {
   const [loading, setLoading] = useState(true)
   const [dragId, setDragId] = useState<string | null>(null)
   const [overCol, setOverCol] = useState<string | null>(null)
-  const [filtro, setFiltro] = useState<(typeof COMMODITIES)[number]>('todas')
+  // Pré-filtra por commodity quando vem via ?commodity= (ex: atalho do dashboard).
+  const searchParams = useSearchParams()
+  const commodityParam = searchParams.get('commodity')?.toLowerCase()
+  const filtroInicial = (COMMODITIES as readonly string[]).includes(commodityParam ?? '')
+    ? (commodityParam as (typeof COMMODITIES)[number])
+    : 'todas'
+  const [filtro, setFiltro] = useState<(typeof COMMODITIES)[number]>(filtroInicial)
   // Proposta aguardando confirmação de envio ao cliente (drop em "Enviada").
   const [confirmarEnvio, setConfirmarEnvio] = useState<Proposta | null>(null)
   const [enviando, setEnviando] = useState(false)

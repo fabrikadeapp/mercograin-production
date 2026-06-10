@@ -123,7 +123,9 @@ export function ContratosContent() {
           <Tabs options={FILTERS} value={filter} onChange={setFilter} size="sm" />
           <div className="flex items-center gap-3">
             <Pill>Últimos 30 dias</Pill>
-            <Button variant="ghost" leftIcon={<Download className="h-4 w-4" />}>CSV</Button>
+            <a href="/api/contratos/export" className="inline-flex">
+              <Button variant="ghost" leftIcon={<Download className="h-4 w-4" />}>CSV</Button>
+            </a>
           </div>
         </CardHeader>
         {!contratos ? (

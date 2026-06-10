@@ -1,8 +1,8 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, BarChart3, Users, TrendingUp } from 'lucide-react'
-import { AppShell, PageHeader, Button, Card } from '@/components/ui/phb'
+import { BarChart3, Users, TrendingUp } from 'lucide-react'
+import { AppShell, PageHeader, Card } from '@/components/ui/phb'
 import { RelatoriosContent } from './_components/RelatoriosContent'
 
 export const dynamic = 'force-dynamic'
@@ -38,17 +38,9 @@ export default async function Page() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Análises · Safra 24/25"
+        eyebrow="Análises · BI"
         title="Relatórios"
         subtitle="Composição de margem e desempenho por canal"
-        actions={
-          <>
-            <Button variant="secondary" leftIcon={<Calendar className="h-4 w-4" />}>
-              Safra 24/25
-            </Button>
-            <Button variant="ghost">PDF</Button>
-          </>
-        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

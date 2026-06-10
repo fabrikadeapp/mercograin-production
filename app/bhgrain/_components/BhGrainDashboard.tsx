@@ -171,7 +171,7 @@ export function BhGrainDashboard({
                 ×
               </button>
               <Link
-                href={`/admin/bhgrain/prioridades${insight.commodity ? `?commodity=${insight.commodity}` : ''}`}
+                href={`/propostas/kanban${insight.commodity ? `?commodity=${insight.commodity}` : ''}`}
                 style={{
                   background: 'var(--accent)',
                   color: 'var(--accent-ink)',
@@ -195,7 +195,7 @@ export function BhGrainDashboard({
 
       {/* Atalho — Dashboard executivo (visão de dono) */}
       <Link
-        href="/bhgrain/executivo"
+        href="/relatorios/clevel"
         className="flex items-center justify-between gap-3 rounded-lg transition hover:opacity-90"
         style={{
           padding: '12px 16px',
