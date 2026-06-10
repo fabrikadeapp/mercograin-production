@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
@@ -9,6 +10,8 @@ const schema = z.object({ observacao: z.string().optional() })
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   let body: any = {}
   try {
     body = schema.parse(await req.json())

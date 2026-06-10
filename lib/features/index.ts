@@ -24,10 +24,11 @@ export const FEATURES = {
     core: true,
     default: true,
   },
+  // fiscal NÃO é mais core — virou exclusivo do plano enterprise (ver PLAN_FEATURES).
   fiscal: {
     label: 'Fiscal',
     description: 'Notas fiscais, SPED, compliance tributário',
-    core: true,
+    core: false,
     default: true,
   },
   gestao: {
@@ -48,25 +49,25 @@ export const FEATURES = {
     label: 'EUDR (compliance UE)',
     description: 'Rastreabilidade de origem, DDS, áreas protegidas',
     core: false,
-    default: false,
+    default: true,
   },
   hedge: {
     label: 'Hedge & Futuros',
     description: 'Posições CBOT, marcação a mercado, risco',
     core: false,
-    default: false,
+    default: true,
   },
   portal_produtor: {
     label: 'Portal do Produtor',
     description: 'B2C lite — produtor acessa contratos próprios',
     core: false,
-    default: false,
+    default: true,
   },
   logistica: {
     label: 'Logística',
     description: 'Romaneios, ordens de carga, armazéns',
     core: false,
-    default: false,
+    default: true,
   },
   marketplace: {
     label: 'Marketplace de Ofertas',
@@ -78,7 +79,7 @@ export const FEATURES = {
     label: 'Laura.IA',
     description: 'Agente conversacional WhatsApp/Telefone',
     core: false,
-    default: false,
+    default: true,
   },
   classificados: {
     label: 'Classificados',
@@ -91,32 +92,115 @@ export const FEATURES = {
     description:
       'Comissão por vendedor interno: % fixo, valor fixo, piso+%, faixas progressivas. Apuração por período.',
     core: false,
-    default: false,
+    default: true,
   },
   match: {
     label: 'Motor de Match',
     description: 'Cruza ofertas (venda) × demandas (compra) por produto, volume, preço, região e qualidade.',
     core: false,
-    default: false,
+    default: true,
   },
   dossie: {
     label: 'Dossiê do Negócio',
     description: 'Histórico consolidado por negócio: timeline, documentos, contrato, NF, romaneio, comissão.',
     core: false,
-    default: false,
+    default: true,
   },
   demandas: {
     label: 'Demandas de Compra',
     description: 'Pedidos de compra estruturados (quem quer comprar), tratados pela IA por canal.',
     core: false,
-    default: false,
+    default: true,
   },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES
 
+/**
+ * MAPA PLANO → FEATURES (modelo ESTRITO).
+ *
+ * O plano é a ÚNICA fonte de verdade do que está liberado. Uma feature
+ * (não-core) só está ON se o plano da subscription do workspace a concede.
+ * WorkspaceFeature manual NÃO concede acima do plano — ele só pode refinar
+ * pra MENOS (admin desligar algo que o plano dá).
+ *
+ * Só listamos features NÃO-core aqui. Os módulos core (mesa, financeiro,
+ * gestao) estão sempre on via isCore() — não precisam constar na matriz.
+ *
+ * Features do catálogo que NÃO aparecem em nenhum plano (originacao,
+ * marketplace, classificados) ficam OFF para todos sob o modelo estrito,
+ * até que sejam atribuídas a algum plano.
+ *
+ * ⚠️ COERÊNCIA COM lib/ai/client.ts (Plan.aiAccess):
+ *   - laura_ai só está em pro/enterprise → esses planos DEVEM ter
+ *     Plan.aiAccess != 'none' ('managed' ou 'byok_allowed').
+ *   - starter NÃO tem laura_ai → Plan.aiAccess do starter DEVE ser 'none'.
+ *   A aplicação dos valores de aiAccess nos planos é feita por outro processo;
+ *   aqui apenas garantimos que a matriz não se contradiga com aquela regra.
+ */
+export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
+  starter: [
+    // core (mesa/financeiro/gestao) já vem on via isCore — não listar aqui.
+    'portal_produtor',
+    'demandas',
+  ],
+  pro: [
+    'portal_produtor',
+    'demandas',
+    'laura_ai',
+    'hedge',
+    'match',
+    'comissionamento',
+    'logistica',
+  ],
+  enterprise: [
+    'portal_produtor',
+    'demandas',
+    'laura_ai',
+    'hedge',
+    'match',
+    'comissionamento',
+    'logistica',
+    'fiscal',
+    'eudr',
+    'dossie',
+  ],
+}
+
+/**
+ * Plano usado como fallback quando o workspace não tem subscription
+ * (trial pré-checkout, dados inconsistentes, etc.). Escolhemos `starter`
+ * (acesso mínimo viável) em vez de bloqueio geral, para não deixar ninguém
+ * numa tela quebrada — o core continua acessível e as features básicas
+ * (portal_produtor, demandas) também.
+ */
+export const FALLBACK_PLAN = 'starter' as const
+
+/**
+ * Retorna as FeatureKeys concedidas por um slug de plano.
+ * Plano desconhecido/ausente cai no FALLBACK_PLAN.
+ */
+export function featuresForPlan(planSlug: string | null | undefined): FeatureKey[] {
+  if (planSlug && PLAN_FEATURES[planSlug]) return PLAN_FEATURES[planSlug]
+  return PLAN_FEATURES[FALLBACK_PLAN]
+}
+
+/** O plano concede esta feature (não considera kill-switch nem core). */
+export function planGrants(planSlug: string | null | undefined, key: FeatureKey): boolean {
+  return featuresForPlan(planSlug).includes(key)
+}
+
 export function isCore(key: FeatureKey): boolean {
   return FEATURES[key]?.core ?? false
+}
+
+/** Busca o slug do plano da subscription do workspace (null se não houver). */
+async function getWorkspacePlan(workspaceId: string): Promise<string | null> {
+  const sub = await db.subscription.findUnique({
+    where: { workspaceId },
+    select: { plan: true },
+  })
+  return sub?.plan ?? null
 }
 
 export function listOptional(): FeatureKey[] {
@@ -144,25 +228,39 @@ export async function getSystemFlag(key: FeatureKey): Promise<boolean> {
 
 /**
  * Verifica se uma feature está habilitada para o workspace.
- * Core features sempre retornam true.
  *
- * Resolução em cascata:
- *   1. SystemFeatureFlag (super-admin global) → se false, retorna false sempre
- *   2. WorkspaceFeature (por workspace) → se setado, usa
- *   3. FEATURES[key].default → fallback do catálogo
+ * MODELO ESTRITO POR PLANO — o plano é a única fonte de verdade.
+ *
+ * Resolução:
+ *   1. Core (isCore) → sempre ON.
+ *   2. Kill-switch global (SystemFeatureFlag) off → OFF sempre.
+ *   3. Plano concede a feature? (PLAN_FEATURES[plano].includes(key))
+ *      - NÃO concede → OFF (WorkspaceFeature manual NÃO liga acima do plano).
+ *      - Concede → ON, A MENOS que exista WorkspaceFeature explicitamente OFF
+ *        (admin pode refinar pra menos). Sem registro WorkspaceFeature, vale
+ *        o plano.
+ *
+ * Sem subscription → usa FALLBACK_PLAN (starter), nunca 403 geral.
  */
 export async function isFeatureEnabled(
   workspaceId: string,
   key: FeatureKey,
 ): Promise<boolean> {
   if (isCore(key)) return true
+
   const globalOn = await getSystemFlag(key)
   if (!globalOn) return false
+
+  const plan = await getWorkspacePlan(workspaceId)
+  if (!planGrants(plan, key)) return false
+
+  // Plano concede: ON, salvo override manual pra MENOS.
   const row = await db.workspaceFeature.findUnique({
     where: { workspaceId_feature: { workspaceId, feature: key } },
     select: { enabled: true },
   })
-  return row?.enabled ?? FEATURES[key]?.default ?? false
+  // Sem registro → vale o plano (ON). Com registro → respeita o off manual.
+  return row?.enabled ?? true
 }
 
 /**
@@ -174,7 +272,7 @@ export async function isFeatureEnabled(
 export async function loadFeaturesFor(
   workspaceId: string,
 ): Promise<Record<FeatureKey, boolean>> {
-  const [wsRows, sysRows] = await Promise.all([
+  const [wsRows, sysRows, sub] = await Promise.all([
     db.workspaceFeature.findMany({
       where: { workspaceId },
       select: { feature: true, enabled: true },
@@ -182,21 +280,33 @@ export async function loadFeaturesFor(
     db.systemFeatureFlag.findMany({
       select: { feature: true, enabled: true },
     }),
+    db.subscription.findUnique({
+      where: { workspaceId },
+      select: { plan: true },
+    }),
   ])
   const wsMap = new Map(wsRows.map((r) => [r.feature, r.enabled]))
   const sysMap = new Map(sysRows.map((r) => [r.feature, r.enabled]))
+  const plan = sub?.plan ?? null
   const out = {} as Record<FeatureKey, boolean>
   for (const k of Object.keys(FEATURES) as FeatureKey[]) {
     if (isCore(k)) {
       out[k] = true
       continue
     }
+    // Kill-switch global.
     const sysOn = sysMap.has(k) ? sysMap.get(k)! : FEATURES[k].default
     if (!sysOn) {
       out[k] = false
       continue
     }
-    out[k] = wsMap.get(k) ?? FEATURES[k].default
+    // Modelo estrito: plano precisa conceder.
+    if (!planGrants(plan, k)) {
+      out[k] = false
+      continue
+    }
+    // Plano concede → ON, salvo override manual pra menos.
+    out[k] = wsMap.get(k) ?? true
   }
   return out
 }

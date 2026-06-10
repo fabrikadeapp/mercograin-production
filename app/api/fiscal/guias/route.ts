@@ -7,6 +7,7 @@
  */
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarDARF } from '@/lib/fiscal/guias/darf'
 import { gerarGNRE } from '@/lib/fiscal/guias/gnre'
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const tipo = searchParams.get('tipo') || undefined
   const status = searchParams.get('status') || undefined
@@ -52,6 +55,8 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const body = await request.json()
   const parsed = createSchema.safeParse(body)

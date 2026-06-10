@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { logAudit } from '@/lib/audit/log'
@@ -17,6 +18,8 @@ const schema = z.object({
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   const limite = await db.limiteRisco.findFirst({
     where: { id: params.id, ...scope.whereOwn() },
     include: {
@@ -30,6 +33,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   try {
     const body = schema.parse(await req.json())
     const found = await db.limiteRisco.findFirst({ where: { id: params.id, ...scope.whereOwn() } })
@@ -54,6 +59,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   const found = await db.limiteRisco.findFirst({ where: { id: params.id, ...scope.whereOwn() } })
   if (!found) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   await db.limiteRisco.delete({ where: { id: params.id } })

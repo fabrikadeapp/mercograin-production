@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, EmptyState } from '@/components/ui/phb'
+import { FileText } from 'lucide-react'
 import { SpedActions } from '../_components/SpedActions'
 import { EcdEcfActions } from '../_components/EcdEcfActions'
 
@@ -13,6 +15,14 @@ export default async function SpedPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Fiscal" title="SPED" subtitle="EFD-ICMS/IPI e Contribuições." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const exports_ = await db.spedExport.findMany({
     where: scope.whereOwn(),

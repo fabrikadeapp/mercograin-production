@@ -4,12 +4,15 @@
  */
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   const pagoEm = body?.pagoEm ? new Date(body.pagoEm) : new Date()

@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card, KPICard, Chip } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, KPICard, Chip, EmptyState } from '@/components/ui/phb'
+import { Shield } from 'lucide-react'
 import { calcularExposicao } from '@/lib/hedge/exposicao'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +18,14 @@ export default async function ExposicaoPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Hedge" title="Exposição cambial" subtitle="Hedge ratio + alertas." />
+        <EmptyState icon={Shield} title="Módulo não disponível no seu plano" description="Hedge & Risco está disponível nos planos Pro e Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const hoje = new Date()
 

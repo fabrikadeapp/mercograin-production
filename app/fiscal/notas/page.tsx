@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
-import { Receipt } from 'lucide-react'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, EmptyState } from '@/components/ui/phb'
+import { Receipt, FileText } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,14 @@ export default async function NotasFiscaisPage({
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Fiscal" title="Notas fiscais" subtitle="NF-e emitidas." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const params = (await searchParams) ?? {}
   const where: any = scope.whereOwn()

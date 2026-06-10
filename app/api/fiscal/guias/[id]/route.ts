@@ -3,6 +3,7 @@
  */
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const guia = await db.guia.findFirst({ where: { id: params.id, workspaceId: scope.workspaceId } })
   if (!guia) return NextResponse.json({ error: 'Guia não encontrada' }, { status: 404 })
@@ -28,6 +31,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const body = await request.json()
   const parsed = patchSchema.safeParse(body)
@@ -66,6 +71,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const existing = await db.guia.findFirst({ where: { id: params.id, workspaceId: scope.workspaceId } })
   if (!existing) return NextResponse.json({ error: 'Guia não encontrada' }, { status: 404 })

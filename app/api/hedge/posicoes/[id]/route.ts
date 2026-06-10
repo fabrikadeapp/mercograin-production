@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -17,6 +18,8 @@ export async function GET(
 ) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const pos = await db.posicaoHedge.findFirst({
     where: { id: params.id, ...scope.whereOwn() },
@@ -35,6 +38,8 @@ export async function PATCH(
 ) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const data = patchSchema.parse(await request.json())
   const pos = await db.posicaoHedge.findFirst({
@@ -55,6 +60,8 @@ export async function DELETE(
 ) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const pos = await db.posicaoHedge.findFirst({
     where: { id: params.id, ...scope.whereOwn() },

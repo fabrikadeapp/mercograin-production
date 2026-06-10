@@ -2,7 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, EmptyState } from '@/components/ui/phb'
+import { FileText } from 'lucide-react'
 import { NovaNotaWizard } from '../../_components/NovaNotaWizard'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +18,14 @@ export default async function NovaNotaPage({
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Fiscal" title="Nova NF-e" subtitle="Emissão de nota fiscal eletrônica." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const params = (await searchParams) ?? {}
 

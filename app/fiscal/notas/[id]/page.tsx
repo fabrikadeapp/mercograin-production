@@ -3,7 +3,9 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, EmptyState } from '@/components/ui/phb'
+import { FileText } from 'lucide-react'
 import { NotaActions } from '../../_components/NotaActions'
 
 export const dynamic = 'force-dynamic'
@@ -28,6 +30,14 @@ export default async function NotaDetalhePage({ params }: { params: Promise<{ id
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Fiscal" title="Nota fiscal" subtitle="Detalhe da NF-e." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
   const { id } = await params
 
   const nota = await db.notaFiscal.findFirst({

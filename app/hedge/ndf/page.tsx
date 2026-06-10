@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card, Chip, Button } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, Chip, Button, EmptyState } from '@/components/ui/phb'
+import { Shield } from 'lucide-react'
 import { NovoNdfDialog } from '../_components/NovoNdfDialog'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +15,14 @@ export default async function NdfPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Hedge" title="NDF" subtitle="Forwards de moeda e commodity." />
+        <EmptyState icon={Shield} title="Módulo não disponível no seu plano" description="Hedge & Risco está disponível nos planos Pro e Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const ndfs = await db.nDF.findMany({
     where: scope.whereOwn(),

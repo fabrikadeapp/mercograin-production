@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card, Chip, Button } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, Chip, Button, EmptyState } from '@/components/ui/phb'
+import { Shield } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +31,14 @@ export default async function PosicoesPage({
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Hedge" title="Posições" subtitle="Abrir, fechar e marcar a mercado." />
+        <EmptyState icon={Shield} title="Módulo não disponível no seu plano" description="Hedge & Risco está disponível nos planos Pro e Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const where: any = scope.whereOwn()
   if (searchParams.status) where.status = searchParams.status

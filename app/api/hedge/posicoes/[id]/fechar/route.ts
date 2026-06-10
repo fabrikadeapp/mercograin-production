@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { calcularPnLFinal } from '@/lib/hedge/pnl'
@@ -24,6 +25,8 @@ export async function POST(
 ) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const data = schema.parse(await request.json())
   const pos = await db.posicaoHedge.findFirst({

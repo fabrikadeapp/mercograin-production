@@ -2,9 +2,10 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
-import { AppShell, PageHeader, Card, Button } from '@/components/ui/phb'
+import { Plus, FileText } from 'lucide-react'
+import { AppShell, PageHeader, Card, Button, EmptyState } from '@/components/ui/phb'
 import { GuiasClient } from './GuiasClient'
 
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,14 @@ export default async function GuiasPage({ searchParams }: { searchParams: { tipo
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Fiscal" title="Guias" subtitle="DARF · GNRE · GARE-SP." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const where: any = scope.whereOwn()
   if (searchParams.tipo) where.tipo = searchParams.tipo

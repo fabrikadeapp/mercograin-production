@@ -2,8 +2,9 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { db } from '@/lib/db'
-import { AppShell, PageHeader, Card, KPICard } from '@/components/ui/phb'
+import { AppShell, PageHeader, Card, KPICard, EmptyState } from '@/components/ui/phb'
 import { AlertTriangle, Shield, Target, TrendingDown } from 'lucide-react'
 import { calcularExposicaoAtual } from '@/lib/risco/limites'
 
@@ -18,6 +19,14 @@ export default async function RiscoHubPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge'))) {
+    return (
+      <AppShell>
+        <PageHeader title="Risco" subtitle="Painel de risco de mercado: VaR, limites, breaches e P&L." />
+        <EmptyState icon={Shield} title="Módulo não disponível no seu plano" description="Hedge & Risco está disponível nos planos Pro e Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const expo = await calcularExposicaoAtual(scope.workspaceId)
 

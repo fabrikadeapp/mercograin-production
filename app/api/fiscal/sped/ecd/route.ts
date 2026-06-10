@@ -5,6 +5,7 @@
  */
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarECD } from '@/lib/fiscal/sped/ecd'
 import { z } from 'zod'
@@ -22,6 +23,8 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const body = await request.json()
   const parsed = schema.safeParse(body)

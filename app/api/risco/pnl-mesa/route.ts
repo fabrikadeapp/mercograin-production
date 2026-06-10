@@ -1,10 +1,13 @@
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularPnLPorMesa } from '@/lib/risco/pnl-hierarquico'
 
 export async function GET(req: NextRequest) {
   const scope = await getScope()
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   const { searchParams } = new URL(req.url)
   const de = searchParams.get('de')
   const ate = searchParams.get('ate')

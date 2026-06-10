@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { AppShell, PageHeader, Card, KPICard } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { AppShell, PageHeader, Card, KPICard, EmptyState } from '@/components/ui/phb'
 import { Shield, TrendingUp, Globe2, Wallet } from 'lucide-react'
 import { calcularExposicao } from '@/lib/hedge/exposicao'
 
@@ -21,6 +22,14 @@ export default async function HedgeHubPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'hedge'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Operações · Hedge & Risco" title="Hedge & Risco" subtitle="Controle de risco de mercado e exposição cambial." />
+        <EmptyState icon={Shield} title="Módulo não disponível no seu plano" description="Hedge & Risco está disponível nos planos Pro e Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const hoje = new Date()
   const ontem = new Date(hoje.getTime() - 24 * 86400_000)

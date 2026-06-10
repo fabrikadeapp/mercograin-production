@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { getProvider } from '@/lib/fiscal/providers'
 import { z } from 'zod'
@@ -10,6 +11,8 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   const { id } = await ctx.params
 
   const body = await request.json().catch(() => ({}))

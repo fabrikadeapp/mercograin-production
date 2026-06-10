@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
-import { PageHeader, Card, KPICard } from '@/components/ui/phb'
+import { isFeatureEnabled } from '@/lib/features'
+import { PageHeader, Card, KPICard, EmptyState } from '@/components/ui/phb'
 import { AppShell } from '@/components/ui/phb'
 import { FileText, FileWarning, FileCheck, Cog, Receipt } from 'lucide-react'
 
@@ -18,6 +19,14 @@ export default async function FiscalHubPage() {
   if (!session) redirect('/auth/login')
   const scope = await getScope()
   if (!scope) redirect('/onboarding')
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal'))) {
+    return (
+      <AppShell>
+        <PageHeader eyebrow="Operações · Fiscal" title="Fiscal NF-e + SPED" subtitle="Emissão de NF-e, tributos e SPED." />
+        <EmptyState icon={FileText} title="Módulo não disponível no seu plano" description="O módulo Fiscal está disponível no plano Enterprise. Faça upgrade para habilitar." />
+      </AppShell>
+    )
+  }
 
   const hoje = new Date()
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)

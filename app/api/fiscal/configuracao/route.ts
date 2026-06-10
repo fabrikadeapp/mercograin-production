@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
+import { isFeatureEnabled } from '@/lib/features'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getProvider } from '@/lib/fiscal/providers'
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const cfg = await db.configuracaoFiscal.findUnique({
     where: { workspaceId: scope.workspaceId },
@@ -44,6 +47,8 @@ export async function PUT(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
   if (!scope.isWorkspaceOwner && scope.workspaceRole !== 'admin') {
     return NextResponse.json({ error: 'Apenas owner/admin pode editar config fiscal' }, { status: 403 })
   }
@@ -69,6 +74,8 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const scope = await getScope(searchParams)
   if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!(await isFeatureEnabled(scope.workspaceId, 'fiscal')))
+    return NextResponse.json({ error: 'feature_disabled' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   if (body?.acao !== 'testar_conexao') {
