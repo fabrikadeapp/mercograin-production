@@ -2,41 +2,78 @@ import { stripe } from './server'
 import { db } from '@/lib/db'
 
 /**
- * Garante existência de um Stripe Price recorrente para "membro extra"
- * com o valor configurado no Plan (DB). NÃO usa hardcode — preço vem
- * do banco e é editável via /admin/pricing.
+ * Faixas de cobrança ESCALONADA POR VOLUME (graduated pricing) para
+ * assentos extras (seats além do Plan.includedMembers).
  *
- * Estratégia (Stripe não permite editar preço de Price existente):
- *   1. Procura Price ativo com metadata.kind='seat' + metadata.planSlug={slug} +
- *      unit_amount === plan.extraMemberPriceCents
- *   2. Se encontra, retorna ele
- *   3. Se NÃO encontra (preço mudou ou primeira vez), arquiva o antigo e cria novo
- *   4. Persiste o priceId em Plan.stripeExtraSeatPriceId pra cache
+ * Graduado = cada faixa se aplica à PORÇÃO correspondente de seats, não o
+ * preço de uma faixa para todos. Ex: 15 seats extras = 10×R$500 + 5×R$400.
  *
- * Resultado: SuperAdmin altera extraMemberPriceCents em /admin/pricing,
- * próxima chamada syncWorkspaceSeats cria novo Price e usa ele. Subscriptions
- * existentes mantêm preço antigo até proximo billing cycle ou novo update.
+ * Regra de negócio aprovada pelo dono:
+ *   - 1º ao 10º seat extra:  R$ 500,00/mês cada (50000 centavos)
+ *   - 11º ao 30º seat extra: R$ 400,00/mês cada (40000 centavos)
+ *   - 31º+ seat extra:       R$ 300,00/mês cada (30000 centavos)
+ *
+ * `up_to: null` representa o último tier (infinito) na criação do Price.
+ * Valores em centavos (BRL). Configurável aqui no topo do arquivo — não
+ * precisa expor no admin no momento.
+ *
+ * IMPORTANTE: ao alterar qualquer valor/limite abaixo, INCREMENTE
+ * SEAT_TIERS_VERSION para forçar a recriação/invalidação do Price cacheado.
+ */
+const SEAT_TIERS: Array<{ up_to: number | null; unit_amount: number }> = [
+  { up_to: 10, unit_amount: 50000 }, // 1º–10º
+  { up_to: 30, unit_amount: 40000 }, // 11º–30º
+  { up_to: null, unit_amount: 30000 }, // 31º+
+]
+
+/**
+ * Versão da estrutura de tiers. Gravada em metadata.tiersVersion no Price.
+ * Se a versão do Price cacheado divergir desta, o Price é arquivado e
+ * recriado. Mais simples e robusto do que comparar arrays de tiers
+ * (que exigiriam expand:['tiers'] no retrieve).
+ */
+const SEAT_TIERS_VERSION = 'v1-500-400-300'
+
+/**
+ * Garante existência de um Stripe Price recorrente TIERED (graduated) para
+ * "membro extra". O preço NÃO é mais um unit_amount fixo — o Stripe aplica
+ * automaticamente a graduação por faixa (SEAT_TIERS) sobre a quantity.
+ *
+ * Estratégia (Stripe não permite editar tiers de um Price existente):
+ *   1. Se há priceId cacheado (Plan.stripeExtraSeatPriceId), valida que
+ *      ainda é ativo, mensal, BRL, billing_scheme='tiered' e que
+ *      metadata.tiersVersion === SEAT_TIERS_VERSION.
+ *   2. Se válido, retorna ele.
+ *   3. Se inválido (versão de tiers mudou, ou não é tiered, ou foi deletado),
+ *      arquiva o antigo e cria novo Price tiered.
+ *   4. Persiste o priceId em Plan.stripeExtraSeatPriceId (cache).
+ *
+ * Nota: Plan.extraMemberPriceCents ficou OBSOLETO para o cálculo de cobrança
+ * (a graduação não usa um valor único). O campo é mantido no schema/DB pois
+ * outros lugares podem lê-lo, mas NÃO é mais usado aqui como unit_amount.
  */
 export async function ensureSeatPriceForPlan(planSlug: string): Promise<string> {
   const plan = await db.plan.findUnique({ where: { slug: planSlug } })
   if (!plan) throw new Error(`Plan ${planSlug} não encontrado`)
 
-  const desiredAmount = plan.extraMemberPriceCents
   const cachedPriceId = plan.stripeExtraSeatPriceId
 
-  // Se já tem priceId cacheado, valida que ainda é válido e tem valor correto
+  // Se já tem priceId cacheado, valida que ainda é um Price tiered válido e
+  // na versão corrente de tiers (via metadata.tiersVersion).
   if (cachedPriceId) {
     try {
       const cached = await stripe.prices.retrieve(cachedPriceId)
       if (
         cached.active &&
-        cached.unit_amount === desiredAmount &&
+        cached.billing_scheme === 'tiered' &&
+        cached.tiers_mode === 'graduated' &&
         cached.recurring?.interval === 'month' &&
-        cached.currency === 'brl'
+        cached.currency === 'brl' &&
+        cached.metadata?.tiersVersion === SEAT_TIERS_VERSION
       ) {
         return cached.id
       }
-      // Valor mudou ou price não está mais utilizável → arquiva
+      // Estrutura de tiers mudou ou price não está mais utilizável → arquiva
       if (cached.active) {
         await stripe.prices.update(cachedPriceId, { active: false }).catch(() => {})
       }
@@ -66,16 +103,23 @@ export async function ensureSeatPriceForPlan(planSlug: string): Promise<string> 
     })
   }
 
-  // Cria Price novo com valor atual do plano
+  // Cria Price novo TIERED (graduated). O Stripe cobra a quantity (extraSeats)
+  // aplicando cada faixa à porção correspondente automaticamente.
   const newPrice = await stripe.prices.create({
-    unit_amount: desiredAmount,
     currency: 'brl',
     recurring: { interval: 'month' },
     product: product.id,
+    billing_scheme: 'tiered',
+    tiers_mode: 'graduated',
+    tiers: SEAT_TIERS.map((t) => ({
+      up_to: t.up_to === null ? ('inf' as const) : t.up_to,
+      unit_amount: t.unit_amount,
+    })),
     metadata: {
       kind: 'seat',
       planSlug,
       includedMembers: String(plan.includedMembers),
+      tiersVersion: SEAT_TIERS_VERSION,
     },
   })
 
@@ -90,13 +134,16 @@ export async function ensureSeatPriceForPlan(planSlug: string): Promise<string> 
 
 /**
  * Sincroniza assentos extras na Subscription do workspace com o Stripe.
- * Usa o preço configurado no Plan (banco) — NÃO hardcoded.
+ * Usa o Price TIERED (graduated) garantido por ensureSeatPriceForPlan.
  *
- * Calcula extraSeats = max(0, memberCount - plan.includedMembers).
- * Atualiza/cria/remove Stripe SubscriptionItem do tipo 'seat'.
- * Quando preço do plano muda em /admin/pricing, próximo sync cria novo
- * Price e move o item para ele (subscriptions existentes pagam o novo
- * valor no próximo ciclo, conforme proration_behavior).
+ * Calcula extraSeats = max(0, memberCount - plan.includedMembers) e passa
+ * esse valor como `quantity` do SubscriptionItem. NÃO calcula faixas
+ * manualmente: com tiers graduated + quantity, o próprio Stripe aplica
+ * cada faixa (SEAT_TIERS) à porção correspondente (ex: 15 extras =
+ * 10×R$500 + 5×R$400). Atualiza/cria/remove o SubscriptionItem 'seat'.
+ * Se a estrutura de tiers mudar (SEAT_TIERS_VERSION), o próximo sync cria
+ * novo Price e move o item para ele, com proration no ciclo conforme
+ * proration_behavior.
  */
 export async function syncWorkspaceSeats(workspaceId: string): Promise<{
   memberCount: number
