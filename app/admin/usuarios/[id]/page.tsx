@@ -149,6 +149,7 @@ export default async function UserDetailPage({
           </div>
           <UserActions
             userId={user.id}
+            userEmail={user.email}
             hasSubscription={!!user.subscription}
             isCanceled={user.subscription?.status === 'canceled'}
           />

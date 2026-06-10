@@ -41,7 +41,7 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } },
 ) {
   try {
@@ -52,6 +52,51 @@ export async function DELETE(
         { status: 400 },
       )
     }
+
+    const target = await db.user.findUnique({
+      where: { id: params.id },
+      include: {
+        workspacesOwned: { include: { subscription: true } },
+      },
+    })
+    if (!target) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 })
+    }
+
+    if (target.role === 'admin') {
+      return NextResponse.json(
+        { error: 'cannot_delete_admin' },
+        { status: 403 },
+      )
+    }
+
+    const activeStatuses = ['active', 'trialing', 'past_due']
+    const hasActiveSubscription = target.workspacesOwned.some(
+      (w) => w.subscription && activeStatuses.includes(w.subscription.status),
+    )
+    if (hasActiveSubscription) {
+      return NextResponse.json(
+        {
+          error: 'has_active_subscription',
+          message: 'Cancele a assinatura antes de excluir este usuário.',
+        },
+        { status: 409 },
+      )
+    }
+
+    const url = new URL(req.url)
+    let confirm = url.searchParams.get('confirm')
+    if (!confirm) {
+      const body = await req.json().catch(() => ({}))
+      confirm = body?.confirm ?? null
+    }
+    if (!confirm || confirm !== target.email) {
+      return NextResponse.json(
+        { error: 'confirmation_required' },
+        { status: 400 },
+      )
+    }
+
     await db.auditLog.create({
       data: {
         userId: admin.id,

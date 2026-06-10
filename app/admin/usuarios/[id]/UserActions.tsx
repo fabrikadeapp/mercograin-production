@@ -6,10 +6,12 @@ import { UserCog, Pause, Play, Trash2, KeyRound } from 'lucide-react'
 
 export function UserActions({
   userId,
+  userEmail,
   hasSubscription,
   isCanceled,
 }: {
   userId: string
+  userEmail: string
   hasSubscription: boolean
   isCanceled: boolean
 }) {
@@ -27,15 +29,27 @@ export function UserActions({
 
   async function call(action: string, method: 'POST' | 'DELETE' = 'POST') {
     if (busy) return
-    if (
-      action === 'delete' &&
-      !confirm('Tem certeza? Esta ação remove o usuário e todos os dados.')
-    )
-      return
+    let confirmEmail: string | null = null
+    if (action === 'delete') {
+      confirmEmail = window.prompt(
+        `Esta ação remove o usuário e todos os dados. Para confirmar, digite o e-mail do usuário (${userEmail}):`,
+      )
+      if (confirmEmail == null) return
+      if (confirmEmail.trim() !== userEmail) {
+        alert('E-mail de confirmação não confere. Exclusão cancelada.')
+        return
+      }
+    }
     setBusy(action)
     try {
       const r = await fetch(`/api/admin/users/${userId}/${action}`, {
         method,
+        ...(confirmEmail != null
+          ? {
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ confirm: confirmEmail.trim() }),
+            }
+          : {}),
       })
       if (!r.ok) {
         const d = await r.json().catch(() => ({}))
