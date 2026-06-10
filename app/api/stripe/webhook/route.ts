@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import type Stripe from 'stripe'
-import { stripe, planFromPriceMetadata } from '@/lib/stripe/server'
+import {
+  stripe,
+  planFromPriceMetadata,
+  assertStripeConfigured,
+  StripeNotConfiguredError,
+} from '@/lib/stripe/server'
 import { db } from '@/lib/db'
 import {
   gerarCodigoLicenca,
@@ -10,6 +15,7 @@ import {
 } from '@/lib/license/codigo'
 import { sendEmail } from '@/lib/email/send'
 import { licencaCompradaTemplate } from '@/lib/email/templates/licenca-comprada'
+import { pagamentoFalhouTemplate } from '@/lib/email/templates/pagamento-falhou'
 import { logAudit } from '@/lib/audit/log'
 
 export const dynamic = 'force-dynamic'
@@ -96,6 +102,63 @@ async function upsertSubscription(sub: Stripe.Subscription) {
   })
 
   await recountWorkspaceMembers(workspaceId)
+}
+
+/**
+ * Dunning: pagamento falhou → marca past_due e avisa o owner do workspace.
+ *
+ * Best-effort: nunca lança (não pode quebrar o webhook). Idempotente via
+ * `notifPaymentFailedAt` — só envia 1 aviso por ciclo de falha; o flag é
+ * resetado em `invoice.payment_succeeded`.
+ */
+async function handlePaymentFailed(customerId: string) {
+  // Marca past_due em todas as subscriptions desse customer.
+  await db.subscription.updateMany({
+    where: { stripeCustomerId: customerId },
+    data: { status: 'past_due' },
+  })
+
+  // Resolve subscription + owner para notificar. Só avisa se ainda não avisou
+  // neste ciclo de falha (notifPaymentFailedAt IS NULL).
+  const sub = await db.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: {
+      workspace: {
+        select: {
+          name: true,
+          owner: { select: { email: true, nome: true } },
+        },
+      },
+    },
+  })
+  if (!sub) return
+  if (sub.notifPaymentFailedAt) return // já avisamos neste ciclo
+
+  const email = sub.workspace?.owner?.email
+  if (!email) return
+
+  const tpl = pagamentoFalhouTemplate({
+    name: sub.workspace?.owner?.nome || email,
+    workspaceName: sub.workspace?.name,
+    planName: sub.plan,
+  })
+
+  const r = await sendEmail({
+    to: email,
+    subject: tpl.subject,
+    html: tpl.html,
+    text: tpl.text,
+    tags: [{ name: 'kind', value: 'pagamento-falhou' }],
+  })
+
+  if (r) {
+    await db.subscription
+      .update({
+        where: { id: sub.id },
+        data: { notifPaymentFailedAt: new Date() },
+      })
+      .catch(() => undefined)
+  }
 }
 
 /**
@@ -228,6 +291,16 @@ async function handlePurchaseFirstSession(session: Stripe.Checkout.Session) {
 }
 
 export async function POST(req: Request) {
+  try {
+    assertStripeConfigured()
+  } catch (e) {
+    if (e instanceof StripeNotConfiguredError) {
+      console.error('[stripe/webhook]', e.message)
+      return NextResponse.json({ error: 'stripe_nao_configurado' }, { status: 500 })
+    }
+    throw e
+  }
+
   const body = await req.text()
   const sig = (await headers()).get('stripe-signature') || ''
   const secret = process.env.STRIPE_WEBHOOK_SECRET || ''
@@ -296,6 +369,16 @@ export async function POST(req: Request) {
           const subId = typeof subRef === 'string' ? subRef : subRef.id
           const sub = await stripe.subscriptions.retrieve(subId)
           await upsertSubscription(sub)
+          // Pagamento regularizado: limpa o flag de dunning para que uma
+          // próxima falha (novo ciclo) possa notificar novamente.
+          const customerId =
+            typeof sub.customer === 'string' ? sub.customer : sub.customer.id
+          await db.subscription
+            .updateMany({
+              where: { stripeCustomerId: customerId, notifPaymentFailedAt: { not: null } },
+              data: { notifPaymentFailedAt: null },
+            })
+            .catch(() => undefined)
         }
         break
       }
@@ -306,10 +389,10 @@ export async function POST(req: Request) {
             ? invoice.customer
             : invoice.customer?.id
         if (customerId) {
-          await db.subscription.updateMany({
-            where: { stripeCustomerId: customerId },
-            data: { status: 'past_due' },
-          })
+          // Best-effort: marca past_due + avisa owner. Não quebra o webhook.
+          await handlePaymentFailed(customerId).catch((e) =>
+            console.error('[stripe/webhook] dunning falhou:', e)
+          )
         }
         break
       }

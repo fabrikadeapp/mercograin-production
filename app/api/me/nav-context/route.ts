@@ -34,11 +34,20 @@ export async function GET() {
   const features = workspaceId
     ? await loadFeaturesFor(workspaceId).catch(() => ({}))
     : {}
+  const subscription = workspaceId
+    ? await db.subscription
+        .findUnique({
+          where: { workspaceId },
+          select: { status: true },
+        })
+        .catch(() => null)
+    : null
   return NextResponse.json({
     ok: true,
     features,
     permittedAreas: membership?.areasPermitidas ?? [],
     userName: u.nome ?? u.email ?? null,
     workspaceName: membership?.workspace?.name ?? null,
+    subscriptionStatus: subscription?.status ?? null,
   })
 }

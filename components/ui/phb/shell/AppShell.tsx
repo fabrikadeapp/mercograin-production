@@ -1,6 +1,8 @@
 'use client'
 import * as React from 'react'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { AlertCircle } from 'lucide-react'
 import { AreaShell } from './AreaShell'
 
 export interface AppShellProps {
@@ -12,6 +14,7 @@ interface NavState {
   permittedAreas?: string[]
   userName?: string
   workspaceName?: string
+  subscriptionStatus?: string | null
   loaded: boolean
 }
 
@@ -43,6 +46,7 @@ export function AppShell({ children }: AppShellProps) {
           permittedAreas: j.permittedAreas,
           userName: j.userName,
           workspaceName: j.workspaceName,
+          subscriptionStatus: j.subscriptionStatus ?? null,
           loaded: true,
         })
       })
@@ -52,6 +56,8 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [session?.user])
 
+  const pastDue = state.subscriptionStatus === 'past_due'
+
   return (
     <AreaShell
       enabledFeatures={state.features}
@@ -60,6 +66,23 @@ export function AppShell({ children }: AppShellProps) {
       userName={state.userName}
       workspaceName={state.workspaceName}
     >
+      {pastDue && (
+        <Link
+          href="/assinatura"
+          className="mb-4 flex items-start gap-2 rounded-md border border-l-2 border-border-1 bg-bg-2 p-3 text-small text-fg-1 no-underline hover:bg-bg-3"
+          style={{ borderLeftColor: 'var(--warn)' }}
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
+          <span>
+            <strong>Pagamento atrasado.</strong> Não conseguimos cobrar sua
+            assinatura. Atualize sua forma de pagamento para evitar a suspensão
+            do acesso.{' '}
+            <span className="font-semibold text-accent underline">
+              Resolver agora →
+            </span>
+          </span>
+        </Link>
+      )}
       {children}
     </AreaShell>
   )

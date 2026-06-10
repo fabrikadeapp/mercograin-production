@@ -139,6 +139,29 @@ export function AssinaturaClient({ success, subscription }: Props) {
           </div>
         )}
 
+        {subscription?.status === 'past_due' && (
+          <div
+            className="rounded-md border border-l-2 border-border-1 bg-bg-2 p-4 space-y-3"
+            style={{ borderLeftColor: 'var(--warn)' }}
+          >
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-warn shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-fg-1 font-semibold">Pagamento atrasado</p>
+                <p className="text-fg-2 text-small">
+                  Não conseguimos processar a cobrança da sua assinatura.
+                  Atualize sua forma de pagamento para evitar a suspensão do
+                  acesso ao painel.
+                </p>
+              </div>
+            </div>
+            <Button loading={loading === 'portal'} onClick={openPortal}>
+              <CreditCard className="h-4 w-4 mr-2" />
+              Atualizar forma de pagamento
+            </Button>
+          </div>
+        )}
+
         {!subscription ? (
           <Card className="space-y-4">
             <h2 className="text-h3 text-fg-1">Sem assinatura ativa</h2>
