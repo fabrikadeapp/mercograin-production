@@ -49,6 +49,13 @@ export function MetricasContent({ initialMetrics }: Props) {
   const [metrics, setMetrics] = React.useState<DashboardMetrics>(initialMetrics)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  // `geradoEm` formatado SÓ no cliente: toLocaleString('pt-BR') usa o fuso do
+  // ambiente, e servidor (UTC) ≠ navegador (BRT) gerava hydration mismatch
+  // (React #418/#425/#423). Mantemos vazio no SSR e preenchemos após o mount.
+  const [geradoEmLabel, setGeradoEmLabel] = React.useState('')
+  React.useEffect(() => {
+    setGeradoEmLabel(new Date(metrics.geradoEm).toLocaleString('pt-BR'))
+  }, [metrics.geradoEm])
 
   const handleRefresh = React.useCallback(async () => {
     setLoading(true)
@@ -96,9 +103,11 @@ export function MetricasContent({ initialMetrics }: Props) {
       <PageHeader
         eyebrow="Super Admin"
         title="Métricas"
-        subtitle={`Snapshot operacional e financeiro · gerado ${new Date(
-          metrics.geradoEm,
-        ).toLocaleString('pt-BR')}`}
+        subtitle={
+          geradoEmLabel
+            ? `Snapshot operacional e financeiro · gerado ${geradoEmLabel}`
+            : 'Snapshot operacional e financeiro'
+        }
         search={false}
         showBell={false}
         actions={
