@@ -32,6 +32,23 @@ export interface CnpjData {
 const cache = new Map<string, { data: CnpjData; expires: number }>()
 const CACHE_TTL = 1000 * 60 * 60 * 24 // 24h
 
+/**
+ * Normaliza o telefone vindo da Receita para um formato que passe na validação
+ * do app (isValidPhone exige 10 ou 11 dígitos).
+ *
+ * A ReceitaWS frequentemente devolve DOIS números separados por '/'
+ * (ex.: "(51) 3635-4333 / (51) 3635-1603"). Concatenados, viram ~20 dígitos e
+ * são rejeitados pelo form, travando o autofill. Aqui pegamos só o primeiro
+ * número e descartamos se não tiver 10-11 dígitos.
+ */
+function normalizarTelefone(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  // Pega o primeiro telefone quando vêm vários separados por '/', ',' ou ';'.
+  const primeiro = String(raw).split(/[/,;]/)[0] ?? ''
+  const digits = primeiro.replace(/\D/g, '')
+  return digits.length === 10 || digits.length === 11 ? primeiro.trim() : null
+}
+
 export async function consultarCnpj(cnpj: string): Promise<CnpjData | null> {
   const clean = cnpj.replace(/\D/g, '')
   if (clean.length !== 14) return null
@@ -52,7 +69,7 @@ export async function consultarCnpj(cnpj: string): Promise<CnpjData | null> {
         razaoSocial: j.razao_social || '',
         nomeFantasia: j.nome_fantasia || null,
         email: j.email || null,
-        telefone: j.ddd_telefone_1 || null,
+        telefone: normalizarTelefone(j.ddd_telefone_1),
         cep: j.cep || null,
         logradouro: j.logradouro || null,
         numero: j.numero || null,
@@ -87,7 +104,7 @@ export async function consultarCnpj(cnpj: string): Promise<CnpjData | null> {
       razaoSocial: j.nome || '',
       nomeFantasia: j.fantasia || null,
       email: j.email || null,
-      telefone: j.telefone || null,
+      telefone: normalizarTelefone(j.telefone),
       cep: j.cep || null,
       logradouro: j.logradouro || null,
       numero: j.numero || null,

@@ -212,7 +212,7 @@ export default function ClientesPage() {
         }
         return (
           <Link
-            href={`/clientes/${c.id}/portal`}
+            href={`/clientes/${c.id}/documentos`}
             className="text-[11px] text-accent underline"
           >
             criar acesso
