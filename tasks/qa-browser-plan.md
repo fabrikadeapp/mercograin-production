@@ -187,3 +187,61 @@ Acesso: `aero.gus@hotmail.com` (único super-admin puro) + TOTP gerado do
 - ProdutorAccess + cliente `QA-TEST Produtor Portal` → desativar
 - SolicitacaoCotacao QA-TEST → cancelar
 - Senha do `aero.gus` foi resetada p/ teste (avisar o dono p/ redefinir)
+
+---
+
+# QA PROFUNDO DE BILLING + SUPER-ADMIN (pré-venda) — 2026-06-10
+
+Objetivo: validar profundidade de produção (planos, compras, vouchers, processamento,
+recorrência) para colocar o software à venda. Stripe em **TEST mode**.
+
+## ✅ Validado end-to-end (testado na prática)
+- **Compra purchase-first**: checkout-publico → Stripe Checkout (cartão teste 4242) →
+  webhook → License criada (BHG-2026-GVY3KG, status pending, onboardingToken). Cadeia OK.
+- **CRUD de plano**: criar plano → Stripe Product+Price reais criados (sync OK no happy path).
+- **Login super-admin com 2FA** (TOTP gerado do secret) → /admin OK.
+
+## 🔴 BLOQUEADORES (confirmados por auditoria de código + teste)
+- **B1 — Stripe em TEST mode em produção**: nenhuma cobrança real. Trocar `STRIPE_SECRET_KEY`
+  para `sk_live_*` no Railway antes de vender. → Mitigado em código: `assertStripeConfigured()`
+  (fail-fast lazy nos handlers de checkout/webhook). **Troca da chave = ação do dono.**
+- **B2 — Seat billing sem aviso** (CORRIGIDO): convidar membro cobrava R$150/mês imediato sem
+  disclosure. Agora API retorna 409 `confirmacao_cobranca_necessaria` com o valor; frontend
+  confirma antes. `app/api/workspace/members/route.ts`, EquipeManager, Step2Equipe.
+- **B3 — delete user destrutivo** (CORRIGIDO): apagava tenant inteiro em cascata sem proteção.
+  Agora bloqueia deletar admin, bloqueia owner com assinatura ativa, exige confirmação tipada
+  (email). `app/api/admin/users/[id]/route.ts` + UserActions.
+
+## 🟠 ALTOS (corrigidos)
+- **Dunning** (CORRIGIDO): `invoice.payment_failed` agora envia email ao owner
+  (`pagamento-falhou.ts`, idempotente via `notifPaymentFailedAt`) + banner global past_due
+  (AppShell) + alerta com CTA Stripe portal na /assinatura.
+- **checkout-publico sem rate limit** (CORRIGIDO): rate limit por IP + email (5/15min).
+- **Impersonate quebrado** (DOCUMENTADO, não corrigido): aponta para callback inexistente
+  (404). Está atrás de flag ENABLE_IMPERSONATE (desligado). Pendência: implementar ou ocultar.
+
+## 🟡 MÉDIOS (corrigidos)
+- **system-features** (CORRIGIDO): passou a usar `requireAdmin()` (re-checa DB) em vez do
+  role do JWT (staleness 60s).
+- **cotacoes/sync** (CORRIGIDO): throttle 1/min.
+- **Slug de plano renomeável** quebra cálculo de seats (DOCUMENTADO; sem UI de rename, risco baixo).
+
+## ✅ Refutados (não eram bugs — auditados no código)
+- Idempotência do webhook: adequada (findUnique por subId + upsert + retry via 500).
+- Authz das APIs admin: sólida (requireAdmin re-checa DB em ~todas).
+- Validação de input: zod consistente, sem mass-assignment.
+- Fonte de verdade de preço: só o banco (Plan.stripePriceId); env vars STRIPE_PRICE_* não usadas.
+- Trial "furo de receita": refutado (cartão capturado no início; Stripe cobra/cancela).
+
+## Migration aplicada
+- `manual_subscription_notif_payment_failed.sql` → coluna `Subscription.notifPaymentFailedAt`
+  (idempotente, aplicada em produção).
+
+## Limpeza
+- License de teste → canceled; plano qa-test-plano → arquivado; clientes QA → desativados.
+- Subscription de teste fica no Stripe TEST dashboard (sem impacto).
+
+## VEREDITO PRÉ-VENDA
+Pronto para vender APÓS: (1) trocar Stripe para LIVE; (2) decidir impersonate (implementar/ocultar).
+Os demais bloqueadores/altos foram corrigidos. Recorrência, dunning, seats e proteções
+destrutivas agora têm tratamento adequado.

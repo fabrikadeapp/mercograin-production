@@ -88,3 +88,24 @@
   Postgres) → logs do banco.
 - Modelo `User`: campo de senha é `senha` (hash bcrypt), papel é `role`.
 - Modelo `Workspace`: usa `name` e `codigo` (não `nome`/`slug`).
+
+## Billing / Stripe (QA pré-venda)
+
+- **Stripe pode estar em TEST em produção** — sempre confirmar `STRIPE_SECRET_KEY`
+  começa com `sk_live_` antes de vender. Há fallback `sk_test_dummy` em
+  lib/stripe/server.ts; agora protegido por `assertStripeConfigured()` (fail-fast
+  lazy nos handlers, não no module load — senão quebra o `next build`).
+- **Cobrança recorrente NUNCA sem confirmação explícita** (CDC/transparência).
+  Convidar membro que excede includedMembers gera seat extra — exigir confirmação
+  com o valor ANTES (409 `confirmacao_cobranca_necessaria` → frontend confirma).
+- **Delete de usuário owner = cascade destrutivo do tenant** (Workspace.owner é
+  onDelete:Cascade). Proteger: bloquear admin, bloquear owner com sub ativa, exigir
+  confirmação tipada (email) no backend — nunca confiar só no confirm() do frontend.
+- **Dunning**: invoice.payment_failed deve notificar (email + banner), não só setar
+  past_due. Idempotência via campo timestamp resetado em payment_succeeded.
+- **Rotas admin**: usar SEMPRE `requireAdmin()` (re-checa DB), nunca `session.role`
+  do JWT (staleness ~60s). Endpoints públicos (checkout-publico) e de fetch externo
+  (cotacoes/sync) precisam de rate limit.
+- **Verificar antes de "corrigir"**: vários "bugs" reportados por exploração foram
+  refutados ao ler o código (idempotência webhook, authz admin, trial furo). Auditar
+  o código real com ceticismo evita retrabalho.

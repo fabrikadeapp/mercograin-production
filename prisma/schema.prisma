@@ -637,6 +637,9 @@ model Subscription {
   // Notificações idempotentes (cron de trial)
   notifTrialEndingAt  DateTime?
   notifTrialExpiredAt DateTime?
+  // Dunning: última vez que avisamos o owner de pagamento falho (past_due).
+  // Resetado em invoice.payment_succeeded para permitir novo aviso futuro.
+  notifPaymentFailedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
