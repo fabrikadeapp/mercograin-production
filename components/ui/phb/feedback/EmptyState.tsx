@@ -1,4 +1,7 @@
-'use client'
+// Sem 'use client': componente puramente apresentacional (sem hooks/eventos).
+// Mantê-lo como Server Component permite receber `icon` (uma função LucideIcon)
+// de páginas Server Component sem o erro "Functions cannot be passed directly
+// to Client Components".
 import * as React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Inbox } from 'lucide-react'
