@@ -64,8 +64,10 @@ export default async function WorkspaceFeaturesPage({
           <code style={{ fontFamily: 'var(--f-mono)' }}>{workspace.codigo}</code>
         </h1>
         <p style={{ marginTop: 6, fontSize: 13, color: 'var(--text-mute)' }}>
-          Ative ou desative módulos contratados. Mudanças aplicadas
-          imediatamente, podem requerer logout/login para refletir na UI do user.
+          O <strong>plano contratado</strong> define quais módulos o workspace
+          tem acesso. Estes toggles servem apenas para <strong>restringir</strong>{' '}
+          (desligar) um módulo do plano — não liberam módulos acima do plano.
+          Mudanças aplicadas imediatamente, podem requerer logout/login.
         </p>
       </header>
 

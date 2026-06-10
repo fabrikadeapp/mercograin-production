@@ -245,3 +245,58 @@ recorrência) para colocar o software à venda. Stripe em **TEST mode**.
 Pronto para vender APÓS: (1) trocar Stripe para LIVE; (2) decidir impersonate (implementar/ocultar).
 Os demais bloqueadores/altos foram corrigidos. Recorrência, dunning, seats e proteções
 destrutivas agora têm tratamento adequado.
+
+---
+
+# REESTRUTURAÇÃO DE PRICING + FEATURE-GATING (pré-venda) — 2026-06-10
+
+Decisões do dono: fluxo SIGNUP-FIRST; 3 planos por FUNCIONALIDADE (base 1 user);
+seats extras GRADUADOS; feature-gating ESTRITO por plano; add-ons embutidos em cada plano.
+
+## Planos finais (CMS + Stripe TEST, aplicados)
+| Plano | Preço base (1 user) | aiAccess | Foco |
+|-------|--------------------|----------|------|
+| Starter | R$ 1.500 | none | Operacional: cotações, contratos, propostas, kanban, fluxo de caixa, portal produtor, demandas |
+| **Professional** ⭐ | R$ 2.900 | managed | + Laura.IA, Hedge & Risco, Match, Comissionamento, Logística, DRE/C-Level |
+| Enterprise | R$ 4.900 | managed | + Fiscal (NF-e/SPED), EUDR/Compliance, Dossiê, multi-mesa |
+
+(plano `business` anterior arquivado; Stripe Prices novos criados, antigos arquivados)
+
+## Seat extra GRADUADO (lib/stripe/seats.ts)
+- 1º–10º: R$500/mês · 11º–30º: R$400 · 31º+: R$300 (graduated pricing nativo Stripe,
+  billing_scheme=tiered/graduated, versionado via metadata.tiersVersion).
+
+## Feature-gating ESTRITO por plano (lib/features/index.ts)
+- Mapa PLAN_FEATURES (starter/pro/enterprise). isFeatureEnabled resolve:
+  core→on; kill-switch global→off; senão plano concede AND workspaceFeature!=off.
+- Modelo estrito: toggle manual NÃO concede acima do plano (só refina pra menos).
+- `fiscal` removido de CORE → agora enterprise-only.
+- Guards criados em hedge/risco (key 'hedge') e fiscal — páginas (EmptyState) + 36 APIs (403).
+- `originacao` deixada aberta (não está em nenhum plano; é core comercial — gatear quebraria todos).
+- IA: Plan.aiAccess já enforced em lib/ai/client.ts; starter=none, pro/ent=managed (coerente).
+
+## Landing fonte única (CMS)
+- app/_landing/Pricing.tsx agora data-driven (loadActivePlans), removido hardcoded
+  Free/Business/R$297-4997. precos + home passam plans. signup valida starter/pro/enterprise.
+
+## ⚠️ Impacto da decisão ESTRITA (avisar)
+- Workspace "Gustavo (Aero)" (admin@mercograin, SEM subscription) cai no fallback STARTER
+  → perde hedge/fiscal/IA nesse workspace. "Mercograin Trading" (enterprise) não perde nada.
+- Trials/contas sem plano = acesso starter (correto para o modelo).
+
+## Verificação
+tsc 0 · test 10/10 · build compiled successfully · gating testado logicamente (matriz correta).
+
+## Pendências (não bloqueiam, documentar)
+- aiMonthlyMessages (cota de IA) ainda NÃO é enforced (campo existe, não conta mensagens).
+- SSO/SAML não existe no código (não prometer no Enterprise até construir).
+- Admin /workspaces/[id]/features agora é override pontual, não fonte primária (semântica mudou).
+- Fluxo /comprar (purchase-first) permanece órfão (desativado por decisão: signup-first é o oficial).
+
+## Pendências RESOLVIDAS (segunda passada)
+- **Cota de IA enforçada:** lib/ai/quota.ts (checkAiQuota), gate em process-message.ts +
+  /api/ai/chat (402 over_quota) + uso exibido em config/ai. 0=ilimitado (pro/ent não mordem).
+- **SSO/SAML:** confirmado que NÃO é prometido em lugar nenhum (bullets enterprise não citam) → nada a remover.
+- **/comprar desativado:** redireciona p/ /auth/signup?plan=X (ou /precos). Signup-first oficial.
+- **Admin features:** texto ajustado — deixa claro que o plano define o acesso e os toggles só restringem.
+- Limitação documentada: /api/ai/chat não grava LauraMessage (não conta na cota); nenhum frontend usa hoje.
