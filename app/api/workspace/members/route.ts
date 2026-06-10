@@ -37,6 +37,7 @@ const inviteSchema = z.object({
   funcoes: z.array(z.enum(FUNCAO_VALUES)).optional().default([]),
   cpf: z.string().trim().min(11).max(20).optional().nullable(),
   telefoneWhats: z.string().trim().min(10).max(20).optional().nullable(),
+  confirmCobranca: z.boolean().optional().default(false),
 })
 
 function canManageMembers(role: string): boolean {
@@ -100,7 +101,8 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
-    const { email, role, cargo, areasPermitidas, funcoes, cpf, telefoneWhats } = parsed.data
+    const { email, role, cargo, areasPermitidas, funcoes, cpf, telefoneWhats, confirmCobranca } =
+      parsed.data
 
     // Validações extras: CPF e telefone (se fornecidos)
     const cpfDigits = cpf ? onlyDigits(cpf) : null
@@ -125,6 +127,51 @@ export async function POST(req: Request) {
 
     // Vincula a User existente se houver
     const user = await db.user.findUnique({ where: { email } })
+    const willBeActive = !!user
+
+    // Confirmação de cobrança extra (CDC): se este membro vai ULTRAPASSAR
+    // os membros incluídos no plano e gerar seat extra cobrado, exige
+    // confirmação explícita ANTES de criar o membro / disparar a cobrança.
+    // Só conta quando o membro entra como 'active' (pendente não cobra).
+    if (willBeActive && confirmCobranca !== true) {
+      const sub = await db.subscription.findUnique({
+        where: { workspaceId: scope.workspaceId },
+        select: { plan: true, status: true },
+      })
+      const isTerminal = sub
+        ? ['canceled', 'incomplete_expired', 'unpaid'].includes(sub.status)
+        : false
+      const plan =
+        sub && !isTerminal && sub.plan
+          ? await db.plan.findUnique({
+              where: { slug: sub.plan },
+              select: { includedMembers: true, extraMemberPriceCents: true },
+            })
+          : null
+
+      if (plan) {
+        const currentActiveMembers = await db.workspaceMember.count({
+          where: { workspaceId: scope.workspaceId, status: 'active' },
+        })
+        // Após adicionar, ultrapassa o incluído → gera (mais um) seat cobrado
+        if (currentActiveMembers + 1 > plan.includedMembers) {
+          const reais = (plan.extraMemberPriceCents / 100).toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+          return NextResponse.json(
+            {
+              error: 'confirmacao_cobranca_necessaria',
+              extraMemberPriceCents: plan.extraMemberPriceCents,
+              includedMembers: plan.includedMembers,
+              currentActiveMembers,
+              message: `Adicionar este membro aumentará sua mensalidade em R$${reais}.`,
+            },
+            { status: 409 }
+          )
+        }
+      }
+    }
 
     const inviteToken = randomBytes(24).toString('hex')
 

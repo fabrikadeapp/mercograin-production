@@ -851,7 +851,7 @@ function MemberForm({
           ? '/api/workspace/members'
           : `/api/workspace/members/${member!.id}`
       const method = mode === 'create' ? 'POST' : 'PATCH'
-      const body =
+      const baseBody =
         mode === 'create'
           ? {
               email,
@@ -864,11 +864,29 @@ function MemberForm({
             }
           : { role, cargo: cargo || null, areasPermitidas: areas, funcoes }
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const send = (extra?: Record<string, unknown>) =>
+        fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...baseBody, ...extra }),
+        })
+
+      let res = await send()
+
+      // Confirmação de cobrança extra (CDC): a API retorna 409 antes de criar
+      // o membro quando ele ultrapassa os incluídos no plano. Confirmamos com
+      // o usuário e reenviamos com confirmCobranca:true.
+      if (res.status === 409) {
+        const j = await res.json().catch(() => ({}))
+        if (j?.error === 'confirmacao_cobranca_necessaria') {
+          const ok = window.confirm(
+            `${j.message ?? 'Este membro gerará cobrança extra.'}\n\nDeseja confirmar a adição e a cobrança?`,
+          )
+          if (!ok) return
+          res = await send({ confirmCobranca: true })
+        }
+      }
+
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
         setErr(j?.error || 'Erro ao salvar.')

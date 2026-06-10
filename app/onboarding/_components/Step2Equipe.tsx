@@ -46,12 +46,29 @@ export function Step2Equipe({ onNext, onSkip, onBack }: Props) {
     setAdding(true)
     setError(null)
     try {
-      const res = await fetch('/api/workspace/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role }),
-      })
-      const data = await res.json()
+      const post = (extra?: Record<string, unknown>) =>
+        fetch('/api/workspace/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role, ...extra }),
+        })
+
+      let res = await post()
+      let data = await res.json().catch(() => ({}))
+
+      // Confirmação de cobrança extra (CDC) antes de criar/cobrar.
+      if (res.status === 409 && data?.error === 'confirmacao_cobranca_necessaria') {
+        const ok = window.confirm(
+          `${data.message ?? 'Este membro gerará cobrança extra.'}\n\nDeseja confirmar a adição e a cobrança?`,
+        )
+        if (!ok) {
+          setAdding(false)
+          return
+        }
+        res = await post({ confirmCobranca: true })
+        data = await res.json().catch(() => ({}))
+      }
+
       if (!res.ok) throw new Error(data?.error || 'Erro ao convidar')
       setMembers((prev) => [...prev, data.member])
       setEmail('')
