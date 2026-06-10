@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions'
 import { getScope } from '@/lib/auth/scope'
 import { getAiClient, AiNotAvailableError } from '@/lib/ai/client'
+import { checkAiQuota } from '@/lib/ai/quota'
 import { getQuote } from '@/lib/quotes/registry'
 import type { QuoteLabel } from '@/lib/quotes/types'
 
@@ -108,6 +109,22 @@ export async function POST(req: NextRequest) {
         )
       }
       throw e
+    }
+
+    // Gate de cota mensal — só para o modo gerenciado (managed). No BYOK o
+    // cliente paga o consumo direto à OpenAI, então não há cota da plataforma.
+    if (resolved.source === 'managed') {
+      const quota = await checkAiQuota(scope.workspaceId)
+      if (!quota.ok) {
+        return NextResponse.json(
+          {
+            error: 'ai_not_available',
+            reason: 'over_quota',
+            message: `Você atingiu o limite de ${quota.limit} mensagens de IA do seu plano este mês. Faça upgrade para continuar.`,
+          },
+          { status: 402 },
+        )
+      }
     }
 
     const conversation: ChatCompletionMessageParam[] = [

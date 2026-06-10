@@ -22,6 +22,7 @@ import {
   type LLMTelemetry,
 } from './intent'
 import { isFeatureEnabled } from '@/lib/features'
+import { checkAiQuota } from '@/lib/ai/quota'
 
 /**
  * Mescla múltiplas telemetrias de chamadas LLM em um único registro pra gravar
@@ -119,6 +120,20 @@ export async function processIncomingMessage(
     where: { id: conv.id },
     data: { ultimaMensagemEm: new Date() },
   })
+
+  // GATE de cota: ANTES de chamar qualquer LLM. Se a cota mensal do plano
+  // estourou, gravamos a mensagem (acima, para histórico) mas NÃO processamos
+  // intent/extração — avisamos o usuário com uma mensagem amigável. 0 = ilimitado.
+  const quota = await checkAiQuota(input.workspaceId)
+  if (!quota.ok) {
+    const aviso = `Você atingiu o limite de ${quota.limit} mensagens de IA do seu plano este mês. Faça upgrade para continuar.`
+    return {
+      conversationId: conv.id,
+      messageId: msg.id,
+      proximaAcao: 'cota de IA atingida — upgrade necessário',
+      respostaSugerida: aviso,
+    }
+  }
 
   // Identifica cliente se ainda não tem
   if (!conv.clienteId) {

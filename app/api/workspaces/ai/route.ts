@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { encryptApiKey, isValidOpenAIKey, maskKey } from '@/lib/ai/key-vault'
+import { countAiMessagesThisMonth } from '@/lib/ai/quota'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -55,12 +56,19 @@ export async function GET() {
     const ws = await loadAiState(scope.workspaceId)
     if (!ws) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
+    // Uso do mês corrente (mensagens de IA consumidas) para exibir "X/Y".
+    const used = await countAiMessagesThisMonth(scope.workspaceId)
+
     return NextResponse.json({
       mode: ws.aiMode,
       model: ws.aiModel,
       hasKey: !!ws.aiKeyEncrypted,
       keyMask: ws.aiKeyEncrypted ? maskKey('sk-proj-' + ws.aiKeyEncrypted.slice(0, 10)) : null,
       plan: ws.plan,
+      usage: {
+        used,
+        limit: ws.plan.aiMonthlyMessages,
+      },
     })
   } catch (e: any) {
     console.error('[workspaces/ai GET]', e)

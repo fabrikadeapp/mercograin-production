@@ -15,6 +15,8 @@ interface Props {
   initialMode: string
   initialModel: string
   initialHasKey: boolean
+  /** Mensagens de IA consumidas no mês corrente. */
+  aiUsed: number
   plan: PlanInfo | null
 }
 
@@ -30,6 +32,7 @@ export function AiSettingsForm({
   initialMode,
   initialModel,
   initialHasKey,
+  aiUsed,
   plan,
 }: Props) {
   const [mode, setMode] = useState(initialMode)
@@ -42,6 +45,11 @@ export function AiSettingsForm({
 
   const aiAccess = plan?.aiAccess ?? 'none'
   const byokAllowed = aiAccess === 'byok_allowed'
+
+  const monthlyLimit = plan?.aiMonthlyMessages ?? 0
+  const unlimited = monthlyLimit === 0
+  // BYOK não consome cota da plataforma; só mostramos uso quando relevante.
+  const overQuota = !unlimited && mode !== 'byok' && aiUsed >= monthlyLimit
 
   const planBadge = plan ? (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -148,6 +156,33 @@ export function AiSettingsForm({
           {byokAllowed ? (
             <span className="text-xs text-gray-500">Inclui BYOK (chave própria)</span>
           ) : null}
+        </div>
+      ) : null}
+
+      {mode !== 'byok' ? (
+        <div
+          className={`flex items-center justify-between gap-3 p-3 rounded border text-sm ${
+            overQuota
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-border bg-surface-1 text-gray-700'
+          }`}
+        >
+          <span className="font-medium">Mensagens de IA este mês</span>
+          <span className="font-mono">
+            {unlimited
+              ? `${aiUsed} (ilimitado)`
+              : `${aiUsed}/${monthlyLimit}`}
+          </span>
+        </div>
+      ) : null}
+
+      {overQuota ? (
+        <div className="flex items-start gap-2 p-3 rounded border border-red-200 bg-red-50 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>
+            Você atingiu o limite de {monthlyLimit} mensagens de IA do seu plano este mês. A
+            Laura não responderá automaticamente até a renovação. Faça upgrade para continuar.
+          </span>
         </div>
       ) : null}
 

@@ -4,6 +4,7 @@ import { AppShell, PageHeader } from '@/components/ui/phb'
 import { db } from '@/lib/db'
 import { getScope } from '@/lib/auth/scope'
 import { AiSettingsForm } from './_components/AiSettingsForm'
+import { countAiMessagesThisMonth } from '@/lib/ai/quota'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,12 @@ export default async function AiSettingsPage() {
       })
     : null
 
+  // Uso de mensagens de IA no mês corrente (para exibir "X/Y mensagens").
+  const aiUsed =
+    plan && plan.aiAccess !== 'none'
+      ? await countAiMessagesThisMonth(scope.workspaceId)
+      : 0
+
   return (
     <AppShell>
       <PageHeader
@@ -48,6 +55,7 @@ export default async function AiSettingsPage() {
         initialMode={ws?.aiMode ?? 'managed'}
         initialModel={ws?.aiModel ?? 'gpt-4o-mini'}
         initialHasKey={!!ws?.aiKeyEncrypted}
+        aiUsed={aiUsed}
         plan={
           plan
             ? {
