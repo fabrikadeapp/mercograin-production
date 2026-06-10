@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { fetchCepeaQuotes } from '@/lib/quotes/cepea'
 import { requireAdmin, adminErrorResponse } from '@/lib/auth/admin'
+import { rateLimit } from '@/lib/security/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,19 @@ const SYMBOLS: Record<'soja' | 'milho' | 'trigo', string> = {
 export async function POST() {
   try {
     const admin = await requireAdmin()
+
+    // Throttle global: dispara fetch externo (CEPEA) + inserts. No máx. 1/min.
+    const limit = rateLimit('admin:cotacoes-sync', 1, 60_000)
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'Aguarde antes de sincronizar novamente.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(limit.resetIn / 1000)) },
+        }
+      )
+    }
+
     const quotes = await fetchCepeaQuotes(['soja', 'milho', 'trigo'])
     const created: string[] = []
     for (const label of ['soja', 'milho', 'trigo'] as const) {
