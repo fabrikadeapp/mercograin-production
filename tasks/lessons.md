@@ -43,6 +43,32 @@
   números); o validador exige 10-11 dígitos. Extrair só o primeiro e descartar se
   inválido — ver `normalizarTelefone()` em `lib/br/receitaws.ts`.
 
+## SSR / Hydration (Next.js App Router)
+
+- **Formatar datas com `toLocaleString`/`toLocaleDateString` no JSX de um client
+  component causa hydration mismatch** (React #418/#425/#423). O servidor (UTC no
+  Railway) e o navegador (BRT) produzem strings diferentes → SSR ≠ CSR. Solução:
+  formatar a data só no cliente (`useState('')` + `useEffect` que preenche após
+  mount), mantendo o SSR estável. Visto em `/admin/metricas`.
+- O React se recupera (#423) e a página renderiza, mas os erros poluem o console
+  e indicam fragilidade — tratar, não ignorar.
+
+## Scope / multi-tenant (super-admin)
+
+- **Super-admin Mercograin não tem workspace → `getScope()` retorna null → 401**
+  em qualquer API que dependa de workspace scope. Telas /admin que consomem APIs
+  de workspace (corretores, mesas) ficam vazias. Padrão de correção seguro: conceder
+  scope global SOMENTE para `isAdmin` + `?scope=all` + sem workspace; `whereOwn()`
+  não filtra (lista tudo); manter POST exigindo workspace real. Nunca abrir o scope
+  global sem o gate `isAdmin`.
+
+## Auth do portal do produtor
+
+- Auth do portal é SEPARADA do NextAuth: cookie próprio, modelo `ProdutorAccess`
+  (`emailLogin` + `passwordHash` bcrypt). Login: `POST /api/portal/login`
+  ({email, senha}), busca por `emailLogin`, valida `ativo` + `passwordHash`.
+  URL de login: `/portal/<slug>/login`.
+
 ## Rotas / links
 
 - Antes de criar um `<Link href>`, confirmar que a rota existe. O link "criar

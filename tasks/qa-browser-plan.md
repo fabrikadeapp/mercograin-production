@@ -137,3 +137,53 @@ Usuário operacional: `admin@mercograin.com` (owner do workspace "Gustavo (Aero)
 - Oferta `QA-TEST Oferta smoke` → `cancelada`
 - Alerta soja>130 → `inativo`
 - Usuário sintético `qa.browser@mercograin.com` (criado p/ diagnóstico) → deletado
+
+---
+
+# RESULTADOS — PORTAL DO PRODUTOR + SUPER-ADMIN — 2026-06-10
+
+## Portal do produtor (`/portal/mercograin`)
+Credencial de teste: `qa.portal@example.com` / `QaPortal@2026!` (cliente QA-TEST,
+workspace mercograin).
+
+| Fluxo | Resultado |
+|-------|-----------|
+| Login (`/portal/mercograin/login`) | ✅ chega no dashboard |
+| Dashboard | ✅ "Olá, QA-TEST Produtor Portal" |
+| Propostas, Contratos, Cotações, Fixações, Recebíveis, Documentos, Chat, Perfil | ✅ 9 telas, 0 erros de console |
+| Solicitar cotação (escrita real) | ✅ SolicitacaoCotacao persistida (soja 100, status em_analise) |
+
+**Portal: nenhum bug. Cadeia completa funcionando.**
+
+## Super-admin (`/admin`)
+Acesso: `aero.gus@hotmail.com` (único super-admin puro) + TOTP gerado do
+`totpSecret` via otpauth. Senha resetada p/ teste.
+
+| Tela | Resultado |
+|------|-----------|
+| Login com 2FA | ✅ (validou também o fix do BUG-1: campo 2FA abre corretamente) |
+| usuarios, workspaces, leads, pricing, crons, financeiro, cotacoes, assinaturas, bhgrain, laura, infra, backups, system-features, comissao-regras | ✅ carregam, 0 erros |
+
+### BUG-5 (corrigido) — /admin/metricas: hydration mismatch
+- **Sintoma:** 9 erros React (#418/#425/#423) — hydration failed.
+- **Causa:** `new Date(metrics.geradoEm).toLocaleString('pt-BR')` renderizado no
+  JSX usa o fuso do ambiente; servidor (UTC) ≠ navegador (BRT) → HTML SSR ≠ CSR.
+- **Fix:** formatar a data só no cliente via useState+useEffect (vazio no SSR).
+  `app/admin/metricas/_components/MetricasContent.tsx`. **Pendente deploy.**
+
+### BUG-6 (corrigido) — /admin/corretores e /admin/mesas: 401 → telas vazias
+- **Sintoma:** `/api/corretores` e `/api/mesas` retornam 401 p/ o super-admin;
+  telas ficam sempre vazias (degradação silenciosa).
+- **Causa:** as APIs usam `getScope()`, que retorna null p/ super-admin (sem
+  workspace). Faltava o caminho de scope global.
+- **Fix (com cuidado de segurança):** `getScope` agora concede scope global
+  APENAS p/ `isAdmin` + `?scope=all` + sem workspace; `whereOwn()` não filtra
+  (lista tudo, função legítima do painel). POST continua exigindo workspace real
+  (super-admin não cria avulso). Telas passam `?scope=all`.
+  Arquivos: `lib/auth/scope.ts`, `app/api/corretores/route.ts`,
+  `app/api/mesas/route.ts`, `app/admin/corretores/page.tsx`. **Pendente deploy.**
+
+## Limpeza (portal + super-admin)
+- ProdutorAccess + cliente `QA-TEST Produtor Portal` → desativar
+- SolicitacaoCotacao QA-TEST → cancelar
+- Senha do `aero.gus` foi resetada p/ teste (avisar o dono p/ redefinir)
