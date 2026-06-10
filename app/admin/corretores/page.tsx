@@ -24,9 +24,11 @@ export default function CorretoresAdminPage() {
 
   async function recarregar() {
     setLoading(true)
+    // scope=all: painel super-admin (sem workspace próprio) lê todos os
+    // corretores/mesas. Sem isso, getScope() devolve 401 e as listas ficam vazias.
     const [cr, mr] = await Promise.all([
-      fetch('/api/corretores').then((r) => r.json()),
-      fetch('/api/mesas').then((r) => r.json()),
+      fetch('/api/corretores?scope=all').then((r) => r.json()),
+      fetch('/api/mesas?scope=all').then((r) => r.json()),
     ])
     setData(cr.data || [])
     setMesas(mr.data || [])

@@ -11,9 +11,9 @@ const schema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const scope = await getScope()
-  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   const { searchParams } = new URL(request.url)
+  const scope = await getScope(searchParams)
+  if (!scope) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   const ativo = searchParams.get('ativo')
   const where: any = scope.whereOwn()
   if (ativo === 'true') where.ativo = true

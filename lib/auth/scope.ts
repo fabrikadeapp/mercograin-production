@@ -98,6 +98,32 @@ export async function getScope(
   const isAdmin = u.role === 'admin'
   const wantAllScope = isAdmin && searchParams?.get('scope') === 'all'
 
+  // Super-admin Mercograin (role='admin' SEM workspace) pedindo scope global.
+  // Sem este caminho, o super-admin não passa pela resolução de workspace
+  // abaixo (retorna null → 401) e telas como /admin/corretores e /admin/mesas
+  // ficam vazias. O acesso global é restrito a isAdmin + ?scope=all, então NÃO
+  // expõe dados cross-workspace a usuários comuns. whereOwn() não filtra por
+  // workspace neste modo (wantAllScope), retornando tudo — função legítima do
+  // painel super-admin (read-only; POST continua exigindo workspaceId real).
+  if (wantAllScope) {
+    const hasWorkspace = (u as any).hasWorkspace !== false
+    if (!hasWorkspace) {
+      return {
+        userId: u.id,
+        workspaceId: '',
+        workspaceRole: 'admin',
+        isAdmin: true,
+        isWorkspaceOwner: false,
+        whereOwn(extra?: any) {
+          return { ...(extra || {}) }
+        },
+        whereOwnVia(_relationPath: string, extra?: any) {
+          return { ...(extra || {}) }
+        },
+      }
+    }
+  }
+
   // Caminho rápido: JWT tem todos os dados que precisamos
   const tokenWsId = u.activeWorkspaceId as string | null | undefined
   const tokenRole = u.workspaceRole as string | null | undefined
