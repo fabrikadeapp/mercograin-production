@@ -7,8 +7,10 @@ import { Pricing } from './Pricing'
 import { Faq } from './Faq'
 import { Footer } from './Footer'
 import { SalesContactFab } from './SalesContactFab'
+import { loadActivePlans } from '@/lib/pricing/serialize'
 
-export function LandingPage() {
+export async function LandingPage() {
+  const plans = await loadActivePlans()
   return (
     <div className="min-h-screen bg-bg-0 text-fg-1">
       <LandingNav />
@@ -17,7 +19,7 @@ export function LandingPage() {
         <LiveProof />
         <Features />
         <ScreenshotShowcase />
-        <Pricing />
+        <Pricing plans={plans} />
         <Faq />
       </main>
       <Footer />

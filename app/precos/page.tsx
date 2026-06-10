@@ -86,7 +86,7 @@ export default async function PrecosPage() {
           </div>
         </section>
 
-        <Pricing />
+        <Pricing plans={plans} />
 
         {/* Tabela comparativa */}
         {rows.length > 0 && plans.length > 0 ? (
