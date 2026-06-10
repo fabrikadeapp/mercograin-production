@@ -1,9 +1,28 @@
 import type { NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { CredentialsSignin } from 'next-auth'
 import { compare } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { rateLimit } from '@/lib/security/rate-limit'
 import { logAudit } from '@/lib/audit/log'
+
+// NextAuth v5 (beta) NÃO preserva a mensagem de um `throw new Error(...)` no
+// authorize — qualquer Error genérico vira `error=Configuration` no cliente, e
+// a mensagem se perde. A forma idiomática de sinalizar um motivo específico
+// (rate-limit, 2FA) é lançar uma subclasse de CredentialsSignin com `code`: o
+// `code` é exposto ao cliente em `signIn(..., { redirect:false }).code`.
+//
+// Por que `code` slug (sem espaço/acento): ele viaja na query string da URL de
+// erro; texto livre seria frágil. O frontend traduz o code → mensagem.
+class RateLimitSignin extends CredentialsSignin {
+  code = 'rate_limit'
+}
+class TwoFactorRequiredSignin extends CredentialsSignin {
+  code = '2fa_required'
+}
+class TwoFactorInvalidSignin extends CredentialsSignin {
+  code = '2fa_invalid'
+}
 
 export const authConfig = {
   pages: {
@@ -156,11 +175,11 @@ export const authConfig = {
         const emailKey = String(credentials.email).toLowerCase()
         const limit = rateLimit(`login:email:${emailKey}`, 5, 15 * 60 * 1000)
         if (!limit.ok) {
-          const minutes = Math.ceil(limit.resetIn / 60000)
           console.warn(`[auth] login rate limit triggered for ${emailKey}`)
-          throw new Error(
-            `Muitas tentativas de login. Aguarde ${minutes} minuto(s).`,
-          )
+          // code='rate_limit' chega no cliente via signIn().code. Não dá pra
+          // mandar os minutos no code (slug puro), então o frontend mostra uma
+          // mensagem genérica de "aguarde". 15min é o teto da janela.
+          throw new RateLimitSignin()
         }
 
         try {
@@ -191,8 +210,8 @@ export const authConfig = {
               | undefined
 
             if (!totpCode && !recoveryCode) {
-              // Sinal pro frontend: precisa 2FA
-              throw new Error('2FA_REQUIRED')
+              // Sinal pro frontend: precisa 2FA (code='2fa_required')
+              throw new TwoFactorRequiredSignin()
             }
 
             // Validação inline (evita import circular com lib/auth/totp.ts)
@@ -240,7 +259,7 @@ export const authConfig = {
                 entidadeId: user.id,
                 mudancas: { motivo: '2FA_INVALID' },
               }).catch(() => undefined)
-              throw new Error('2FA_INVALID')
+              throw new TwoFactorInvalidSignin()
             }
           }
 
@@ -250,11 +269,12 @@ export const authConfig = {
             name: user.nome,
           }
         } catch (error: any) {
-          // 2FA_REQUIRED e 2FA_INVALID precisam chegar no frontend pro modal
-          // exibir o campo TOTP. NextAuth empacota em CredentialsSignin
-          // automaticamente, mas a mensagem é preservada em res.error.
-          const msg = String(error?.message || '')
-          if (msg === '2FA_REQUIRED' || msg === '2FA_INVALID' || msg.startsWith('Muitas tentativas')) {
+          // Sinais de fluxo (rate-limit, 2FA) são subclasses de
+          // CredentialsSignin — re-lança pra que o NextAuth exponha o `code`
+          // ao cliente (signIn().code). Um Error genérico vira
+          // `error=Configuration` e a mensagem se perde, então NÃO re-lançar
+          // outros erros: loga e retorna null ("credenciais inválidas").
+          if (error instanceof CredentialsSignin) {
             throw error
           }
           console.error('Auth error:', error)

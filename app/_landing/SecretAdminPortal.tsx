@@ -95,7 +95,15 @@ export function SecretAdminPortal() {
         redirect: false,
       })
       if (res?.error) {
-        if (needsTotp) {
+        // `res.code` (subclasses de CredentialsSignin em auth.config.ts)
+        // distingue os motivos. `res.error` só traz o tipo genérico.
+        const code = (res as any)?.code || ''
+        if (code === 'rate_limit') {
+          setError('Muitas tentativas. Aguarde alguns minutos e tente novamente.')
+        } else if (code === '2fa_required') {
+          setNeedsTotp(true)
+          setError(null)
+        } else if (needsTotp || code === '2fa_invalid') {
           setError('Código 2FA inválido')
         } else {
           setError('Credenciais inválidas')

@@ -53,18 +53,22 @@ export default function LoginPage() {
 
       // result pode vir null/undefined em falhas de rede — trata como erro.
       if (!result || !result.ok || result.error) {
-        const errMsg = (result as any)?.error || ''
-        if (errMsg.includes('2FA_REQUIRED')) {
+        // NextAuth v5: o motivo específico vem em `result.code` (slug definido
+        // nas subclasses de CredentialsSignin em auth.config.ts). `result.error`
+        // só traz o tipo genérico ('CredentialsSignin'), por isso não dá pra
+        // depender dele pra distinguir os casos.
+        const code = (result as any)?.code || ''
+        if (code === '2fa_required') {
           setTwofa(true)
           setError('')
           return
         }
-        if (errMsg.includes('2FA_INVALID')) {
+        if (code === '2fa_invalid') {
           setError('Código 2FA inválido')
           return
         }
-        if (errMsg.toLowerCase().includes('muitas tentativas')) {
-          setError(errMsg)
+        if (code === 'rate_limit') {
+          setError('Muitas tentativas de login. Aguarde alguns minutos e tente novamente.')
           return
         }
         setError('Email ou senha inválidos')

@@ -34,7 +34,10 @@ interface Proposta {
 }
 
 const propostaSchema = z.object({
-  numero: z.string().min(1),
+  // `numero` é read-only (campo disabled) e imutável — não exigir min(1), senão
+  // o input disabled registra undefined no react-hook-form e o handleSubmit
+  // bloqueia silenciosamente (botão "Salvar" parece morto, sem request).
+  numero: z.string().optional(),
   tipo: z.enum(['venda', 'compra']),
   descricao: z.string().optional(),
   validadeEm: z.string().min(1),
@@ -66,6 +69,7 @@ export default function EditarPropostaPage() {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm<PropostaFormData>({
     resolver: zodResolver(propostaSchema),
@@ -95,6 +99,17 @@ export default function EditarPropostaPage() {
       }
 
       setProposta(data)
+      // Popula o react-hook-form com os valores carregados. Sem isso,
+      // `validadeEm`/`tipo` ficam vazios no estado do RHF e a validação
+      // bloqueia o submit silenciosamente (apesar da UI parecer preenchida).
+      reset({
+        numero: data.numero ?? '',
+        tipo: data.tipo,
+        descricao: data.descricao ?? data.observacoes ?? '',
+        validadeEm: data.validadeEm
+          ? new Date(data.validadeEm).toISOString().slice(0, 10)
+          : '',
+      })
       // Normaliza graos para array (propostas de IA gravam como objeto único).
       const rg = data.graos
       setGraos(
