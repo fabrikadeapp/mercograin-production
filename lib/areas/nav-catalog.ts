@@ -60,6 +60,7 @@ export const NAV: Record<Area, NavItem[]> = {
     { href: '/simulador-premios', label: 'Simulador de Prêmios', icon: 'Calculator', requires: 'simulador_premios' },
     { href: '/calculadora-mesa', label: 'Calculadora de Mesa', icon: 'LayoutGrid', requires: 'calculadora_mesa' },
     { href: '/relatorios-usda', label: 'Relatórios USDA', icon: 'FileBarChart', requires: 'relatorios_usda' },
+    { href: '/intel', label: 'Inteligência de Mercado', icon: 'Brain', requires: 'relatorios_usda' },
     { href: '/alertas', label: 'Alertas de preço', icon: 'BellRing' },
     { href: '/aprovacoes', label: 'Aprovações', icon: 'CheckSquare' },
     // Opcionais (feature-flagged)
