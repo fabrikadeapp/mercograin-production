@@ -79,23 +79,40 @@ export function WhatsAppContent() {
     }
   }, [])
 
-  const fetchConnect = React.useCallback(async () => {
-    setRefreshingQR(true)
-    try {
-      const r = await fetch('/api/whatsapp/connect', { cache: 'no-store' })
-      const d = await r.json()
-      if (!r.ok) {
-        toast.error(d?.error || 'Erro ao gerar QR Code')
-        return
+  // Evita spam de toast idêntico (ex.: serviço Evolution fora → 404 a cada refresh).
+  const lastToastRef = React.useRef<string | null>(null)
+
+  // `silent` = chamada automática (polling/interval): não dispara toast de erro,
+  // para não empilhar dezenas de notificações quando o serviço está indisponível.
+  const fetchConnect = React.useCallback(
+    async (silent = false) => {
+      setRefreshingQR(true)
+      try {
+        const r = await fetch('/api/whatsapp/connect', { cache: 'no-store' })
+        const d = await r.json()
+        if (!r.ok) {
+          const msg = d?.error || 'Erro ao gerar QR Code'
+          // Só toasta em ação manual e quando a mensagem mudou (não repete a mesma).
+          if (!silent && lastToastRef.current !== msg) {
+            lastToastRef.current = msg
+            toast.error(msg)
+          }
+          return
+        }
+        lastToastRef.current = null
+        setConn(d)
+        if (d?.qrCode) setQrUpdatedAt(Date.now())
+      } catch {
+        if (!silent && lastToastRef.current !== '__network__') {
+          lastToastRef.current = '__network__'
+          toast.error('Erro ao gerar QR Code')
+        }
+      } finally {
+        setRefreshingQR(false)
       }
-      setConn(d)
-      if (d?.qrCode) setQrUpdatedAt(Date.now())
-    } catch {
-      toast.error('Erro ao gerar QR Code')
-    } finally {
-      setRefreshingQR(false)
-    }
-  }, [toast])
+    },
+    [toast],
+  )
 
   React.useEffect(() => {
     ;(async () => {
@@ -112,10 +129,10 @@ export function WhatsAppContent() {
     return () => clearInterval(id)
   }, [isConnected, fetchStatus])
 
-  // Auto-refresh QR every 30s while not connected
+  // Auto-refresh QR every 30s while not connected (silencioso — sem toast)
   React.useEffect(() => {
     if (isConnected) return
-    const id = setInterval(fetchConnect, 30_000)
+    const id = setInterval(() => fetchConnect(true), 30_000)
     return () => clearInterval(id)
   }, [isConnected, fetchConnect])
 
@@ -254,7 +271,7 @@ export function WhatsAppContent() {
                   variant="secondary"
                   fullWidth
                   leftIcon={<RefreshCw className="h-4 w-4" />}
-                  onClick={fetchConnect}
+                  onClick={() => fetchConnect()}
                   loading={refreshingQR}
                 >
                   Atualizar QR
