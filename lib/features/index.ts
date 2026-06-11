@@ -133,6 +133,13 @@ export const FEATURES = {
     core: false,
     default: true,
   },
+  relatorios_usda: {
+    label: 'Relatórios USDA',
+    description:
+      'Projeções USDA (WASDE/PSD) de oferta e demanda — estoques, produção e produtividade de soja e milho, com link público compartilhável.',
+    core: false,
+    default: true,
+  },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES
@@ -176,6 +183,7 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'simulador_cbot',
     'simulador_premios',
     'calculadora_mesa',
+    'relatorios_usda',
   ],
   enterprise: [
     'portal_produtor',
@@ -191,6 +199,7 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'simulador_cbot',
     'simulador_premios',
     'calculadora_mesa',
+    'relatorios_usda',
   ],
 }
 

@@ -237,6 +237,7 @@ model Workspace {
   features           WorkspaceFeature[]
   lauraConversations LauraConversation[]
   simuladorConfig    SimuladorConfig?
+  relatoriosUsda     RelatorioUsda[]
 
   // Purchase-first: licença vinculada (criada antes do workspace, depois ligada)
   license License?
@@ -985,6 +986,22 @@ model SimuladorConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Snapshot de relatório USDA gerado, para compartilhar via link.
+model RelatorioUsda {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  titulo        String
+  mesReferencia String
+  config        Json // { graos, secoes, metricas }
+  dados         Json // snapshot do RelatorioUsda montado (secoes/linhas)
+  geradoPor     String? // userId
+  geradoEm      DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([workspaceId])
 }
 
 // ============================================
