@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { fetchCepeaQuotes, type CepeaLabel } from '@/lib/quotes/cepea'
 import { fetchBcbDolar } from '@/lib/quotes/bcb'
+import { fetchCbotQuotes } from '@/lib/quotes/cbot'
 import { fetchQuoteBySymbol, TD_SYMBOLS } from '@/lib/quotes/twelvedata'
 import { captureError, captureMessage } from '@/lib/observability/capture'
 
@@ -44,11 +45,16 @@ async function handle(req: Request) {
   const startedAt = Date.now()
   const dataDia = todayUtcMidnight()
 
-  // Roda CEPEA (1 chamada agregando 3 indicadores) + BCB em paralelo
-  const [cepeaRes, bcbRes] = await Promise.allSettled([
+  // Roda CEPEA (1 chamada agregando 3 indicadores) + BCB + CBOT em paralelo
+  const [cepeaRes, bcbRes, cbotRes] = await Promise.allSettled([
     fetchCepeaQuotes(['soja', 'milho', 'trigo']),
     fetchBcbDolar(),
+    fetchCbotQuotes(),
   ])
+
+  // CBOT ¢/bu (Yahoo Finance) — best-effort; null por grão se a fonte falhar.
+  const cbot: Record<CepeaLabel, number | null> =
+    cbotRes.status === 'fulfilled' ? cbotRes.value : { soja: null, milho: null, trigo: null }
 
   const summary: {
     ok: boolean
@@ -58,14 +64,19 @@ async function handle(req: Request) {
     milhoR$?: number | null
     trigoR$?: number | null
     usdBrl?: number | null
+    cbot?: Record<string, number | null>
     saved: number
     errors: string[]
   } = {
     ok: true,
     savedAt: new Date().toISOString(),
     elapsedMs: 0,
+    cbot,
     saved: 0,
     errors: [],
+  }
+  if (cbotRes.status === 'rejected') {
+    summary.errors.push(`cbot: ${cbotRes.reason?.message || cbotRes.reason}`)
   }
 
   // Taxa USD/BRL — precisamos dela tanto para TaxaCambio quanto para enriquecer Cotacao
@@ -156,6 +167,7 @@ async function handle(req: Request) {
             high: ohlcHigh ?? undefined,
             low: ohlcLow ?? undefined,
             close: ohlcClose,
+            cbotCents: cbot[label] ?? undefined,
           },
           update: {
             preco,
@@ -166,6 +178,7 @@ async function handle(req: Request) {
             high: ohlcHigh ?? undefined,
             low: ohlcLow ?? undefined,
             close: ohlcClose,
+            cbotCents: cbot[label] ?? undefined,
           },
         })
         summary.saved++

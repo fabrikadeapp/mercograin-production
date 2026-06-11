@@ -56,6 +56,7 @@ export const NAV: Record<Area, NavItem[]> = {
     { href: '/match', label: 'Match de ofertas', icon: 'GitMerge', requires: 'match' },
     { href: '/negocios', label: 'Negócios', icon: 'Handshake', requires: 'match' },
     { href: '/cotacoes', label: 'Cotações ao vivo', icon: 'TrendingUp' },
+    { href: '/simulador-cbot', label: 'Simulador CBOT', icon: 'LineChart', requires: 'simulador_cbot' },
     { href: '/alertas', label: 'Alertas de preço', icon: 'BellRing' },
     { href: '/aprovacoes', label: 'Aprovações', icon: 'CheckSquare' },
     // Opcionais (feature-flagged)
