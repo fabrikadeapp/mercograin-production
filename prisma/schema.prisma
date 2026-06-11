@@ -236,6 +236,7 @@ model Workspace {
   contadores         NumberingCounter[]
   features           WorkspaceFeature[]
   lauraConversations LauraConversation[]
+  simuladorConfig    SimuladorConfig?
 
   // Purchase-first: licença vinculada (criada antes do workspace, depois ligada)
   license License?
@@ -935,6 +936,9 @@ model Cotacao {
   high      Decimal? @db.Decimal(10, 2)
   low       Decimal? @db.Decimal(10, 2)
   close     Decimal? @db.Decimal(10, 2)
+  // Simulador CBOT — futuro Chicago em centavos de dólar por bushel (US¢/bu),
+  // fonte Yahoo Finance (ZS=F/ZC=F/ZW=F). Distinto de `preco` (CEPEA R$/sc60).
+  cbotCents Decimal? @db.Decimal(10, 2)
   data      DateTime @default(now())
 
   // BH Grain — back-relation: propostas que referenciam esta cotação
@@ -956,6 +960,27 @@ model TaxaCambio {
 
   @@unique([origem, destino, data])
   @@index([data])
+}
+
+/// Configuração do Simulador CBOT por workspace.
+/// Guarda os parâmetros da mesa que não mudam todo dia (prêmios por trading,
+/// fretes por praça, FOBBINGS) para não serem redigitados a cada simulação.
+/// Listas variáveis (tradings/praças) ficam em JSON; valores escalares em colunas.
+model SimuladorConfig {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /// FOBBINGS padrão (custo de embarque, US$/t — tipicamente negativo).
+  fobbingsUsdTon Decimal @default(-10) @db.Decimal(10, 2)
+
+  /// Lista de tradings com prêmio próprio: [{ nome, premioCentavosBu }]
+  tradings Json @default("[]")
+  /// Lista de praças com frete: [{ nome, fretePorSacaBrl }]
+  pracas   Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================

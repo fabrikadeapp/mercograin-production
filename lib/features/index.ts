@@ -112,6 +112,13 @@ export const FEATURES = {
     core: false,
     default: true,
   },
+  simulador_cbot: {
+    label: 'Simulador CBOT',
+    description:
+      'Formação de preço de exportação: CBOT + prêmio + FOBBINGS + câmbio + frete → R$/saca por trading e por praça.',
+    core: false,
+    default: true,
+  },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES
@@ -152,6 +159,7 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'match',
     'comissionamento',
     'logistica',
+    'simulador_cbot',
   ],
   enterprise: [
     'portal_produtor',
@@ -164,6 +172,7 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'fiscal',
     'eudr',
     'dossie',
+    'simulador_cbot',
   ],
 }
 
