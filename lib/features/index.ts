@@ -119,6 +119,20 @@ export const FEATURES = {
     core: false,
     default: true,
   },
+  simulador_premios: {
+    label: 'Simulador de Prêmios',
+    description:
+      'Engenharia reversa do prêmio: preço de balcão das tradings → prêmio implícito (basis), por mês de vencimento.',
+    core: false,
+    default: true,
+  },
+  calculadora_mesa: {
+    label: 'Calculadora de Mesa',
+    description:
+      'Visão integrada: preço formado, prêmio implícito e spread por trading.',
+    core: false,
+    default: true,
+  },
 } as const
 
 export type FeatureKey = keyof typeof FEATURES
@@ -160,6 +174,8 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'comissionamento',
     'logistica',
     'simulador_cbot',
+    'simulador_premios',
+    'calculadora_mesa',
   ],
   enterprise: [
     'portal_produtor',
@@ -173,6 +189,8 @@ export const PLAN_FEATURES: Record<string, FeatureKey[]> = {
     'eudr',
     'dossie',
     'simulador_cbot',
+    'simulador_premios',
+    'calculadora_mesa',
   ],
 }
 

@@ -17,9 +17,10 @@ import {
   fetchLiveQuote as fetchTwelveQuote,
   fetchSparkline as fetchTwelveSparkline,
 } from '@/lib/quotes/twelvedata'
-import { fetchFxBidAsk } from '@/lib/quotes/awesomeapi'
+import { fetchFxBidAsk, type FxBidAsk } from '@/lib/quotes/awesomeapi'
 import { fetchBcbDolar } from '@/lib/quotes/bcb'
 import { marketStatus } from '@/lib/quotes/market-hours'
+import { podeConsultar, registrarConsulta } from '@/lib/quotes/rate-budget'
 import { db as prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -84,7 +85,28 @@ async function getUsdbrlCached() {
   }
 
   // 2) FALLBACK: AwesomeAPI (caso BCB caia)
-  const fx = await fetchFxBidAsk('USD-BRL')
+  // Guarda de orçamento: só consulta se dentro do teto; caso contrário pula
+  // (cai para Twelve Data ou cache stale mais abaixo).
+  let fx: FxBidAsk
+  if ((await podeConsultar('awesomeapi')).ok) {
+    fx = await fetchFxBidAsk('USD-BRL')
+    await registrarConsulta('awesomeapi')
+  } else {
+    fx = {
+      pair: 'USD/BRL',
+      bid: null,
+      ask: null,
+      high: null,
+      low: null,
+      varBid: null,
+      pctChange: null,
+      spread: null,
+      spreadPct: null,
+      timestamp: null,
+      source: 'awesomeapi',
+      fetchedAt: new Date().toISOString(),
+    }
+  }
   if (fx.bid !== null && fx.ask !== null) {
     const mid = (fx.bid + fx.ask) / 2
     const prevMid = fx.bid && fx.varBid !== null ? mid - fx.varBid : null
@@ -108,25 +130,36 @@ async function getUsdbrlCached() {
     return fresh as any
   }
 
-  // 3) FALLBACK Twelve Data
-  const td = await fetchTwelveQuote('usdbrl')
-  if (td.price !== null) {
-    usdbrlCache.data = td
-    usdbrlCache.at = now
+  // 3) FALLBACK Twelve Data — guardado pelo orçamento (fonte mais restritiva).
+  if ((await podeConsultar('twelvedata')).ok) {
+    const td = await fetchTwelveQuote('usdbrl')
+    await registrarConsulta('twelvedata')
+    if (td.price !== null) {
+      usdbrlCache.data = td
+      usdbrlCache.at = now
+      return td
+    }
+    // 4) Cache stale
+    if (usdbrlCache.data) return usdbrlCache.data
+    // 5) Tudo vazio — retorna empty (NÃO fabrica número errado)
     return td
   }
 
-  // 4) Cache stale
+  // Orçamento Twelve Data esgotado: serve cache stale se houver.
   if (usdbrlCache.data) return usdbrlCache.data
-
-  // 5) Tudo vazio — retorna empty (NÃO fabrica número errado)
-  return td
+  // Sem cache: ainda assim tenta uma vez (degradação graciosa — não fabrica número).
+  return await fetchTwelveQuote('usdbrl')
 }
 
 async function getUsdbrlSparkCached(): Promise<number[]> {
   const now = Date.now()
   if (sparkCache.data && now - sparkCache.at < TTL_SPARK) return sparkCache.data
+  // Guarda de orçamento: se Twelve Data estourou o teto, serve cache (ou vazio).
+  if (!(await podeConsultar('twelvedata')).ok) {
+    return sparkCache.data ?? ([] as number[])
+  }
   const fresh = await fetchTwelveSparkline('usdbrl').catch(() => [] as number[])
+  await registrarConsulta('twelvedata')
   if (fresh.length > 0) {
     sparkCache.data = fresh
     sparkCache.at = now
