@@ -940,6 +940,8 @@ model Cotacao {
   // fonte Yahoo Finance (ZS=F/ZC=F/ZW=F). Distinto de `preco` (CEPEA R$/sc60).
   cbotCents Decimal? @db.Decimal(10, 2)
   data      DateTime @default(now())
+  // Timestamp real da última gravação/sincronização (hora exata do cron).
+  updatedAt DateTime @default(now()) @updatedAt
 
   // BH Grain — back-relation: propostas que referenciam esta cotação
   propostasRef Proposta[] @relation("PropostaCotacaoRef")
@@ -957,6 +959,8 @@ model TaxaCambio {
   taxa    Decimal  @db.Decimal(10, 4)
   fonte   String   @default("Investing.com")
   data    DateTime @default(now())
+  // Timestamp real da última gravação/sincronização (hora exata do cron).
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([origem, destino, data])
   @@index([data])

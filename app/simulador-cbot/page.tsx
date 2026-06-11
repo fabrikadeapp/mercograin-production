@@ -40,6 +40,9 @@ export default async function SimuladorCbotPage() {
   const cbot: Record<GraoLabel, number | null> = { soja: null, milho: null, trigo: null }
   let cambio: number | null = null
   let dataCotacao: string | null = null
+  // Timestamp real (com hora) da última sincronização dos dados usados.
+  let atualizadoEmMs = 0
+  let fonteDados: string | null = null
 
   try {
     const [cotacoes, taxaCambio] = await Promise.all([
@@ -49,12 +52,19 @@ export default async function SimuladorCbotPage() {
         orderBy: { data: 'desc' },
         distinct: ['grao'],
         take: 3,
-        select: { grao: true, cbotCents: true, dolarReal: true, data: true },
+        select: {
+          grao: true,
+          cbotCents: true,
+          dolarReal: true,
+          data: true,
+          updatedAt: true,
+          fonte: true,
+        },
       }),
       db.taxaCambio.findFirst({
         where: { origem: 'USD', destino: 'BRL' },
         orderBy: { data: 'desc' },
-        select: { taxa: true },
+        select: { taxa: true, updatedAt: true, fonte: true },
       }),
     ])
 
@@ -62,9 +72,17 @@ export default async function SimuladorCbotPage() {
       if (c.grao === 'soja' || c.grao === 'milho' || c.grao === 'trigo') {
         cbot[c.grao] = c.cbotCents != null ? Number(c.cbotCents) : null
         if (!dataCotacao) dataCotacao = c.data.toISOString()
+        // Considera a cotação na atualização só se ela tem CBOT (dado do simulador).
+        if (c.cbotCents != null) {
+          atualizadoEmMs = Math.max(atualizadoEmMs, c.updatedAt.getTime())
+          if (!fonteDados) fonteDados = c.fonte
+        }
       }
     }
-    if (taxaCambio?.taxa != null) cambio = Number(taxaCambio.taxa)
+    if (taxaCambio?.taxa != null) {
+      cambio = Number(taxaCambio.taxa)
+      atualizadoEmMs = Math.max(atualizadoEmMs, taxaCambio.updatedAt.getTime())
+    }
     // Fallback de câmbio: dolarReal anexado à cotação, se TaxaCambio vazia.
     if (cambio == null) {
       const comDolar = cotacoes.find((c) => c.dolarReal != null)
@@ -80,12 +98,18 @@ export default async function SimuladorCbotPage() {
   if (semCbot || cambio == null) {
     try {
       const g = await getGrainPrices()
+      let usouFallback = false
       if (semCbot) {
-        cbot.soja = cbot.soja ?? g.soja
-        cbot.milho = cbot.milho ?? g.milho
-        cbot.trigo = cbot.trigo ?? g.trigo
+        if (g.soja != null) { cbot.soja = cbot.soja ?? g.soja; usouFallback = true }
+        if (g.milho != null) { cbot.milho = cbot.milho ?? g.milho; usouFallback = true }
+        if (g.trigo != null) { cbot.trigo = cbot.trigo ?? g.trigo; usouFallback = true }
       }
-      if (cambio == null) cambio = g.taxaCambio
+      if (cambio == null && g.taxaCambio != null) { cambio = g.taxaCambio; usouFallback = true }
+      // Scraping ao vivo → a "atualização" é agora.
+      if (usouFallback) {
+        atualizadoEmMs = Date.now()
+        fonteDados = fonteDados ?? 'Investing.com (ao vivo)'
+      }
     } catch {
       // mantém nulls — UI cai para entrada manual
     }
@@ -108,7 +132,13 @@ export default async function SimuladorCbotPage() {
     // sem config salva — client usa defaults
   }
 
-  const cotacoesIniciais: CotacoesIniciais = { cbot, cambio, dataCotacao }
+  const cotacoesIniciais: CotacoesIniciais = {
+    cbot,
+    cambio,
+    dataCotacao,
+    atualizadoEm: atualizadoEmMs > 0 ? new Date(atualizadoEmMs).toISOString() : null,
+    fonte: fonteDados,
+  }
 
   return (
     <AppShell>

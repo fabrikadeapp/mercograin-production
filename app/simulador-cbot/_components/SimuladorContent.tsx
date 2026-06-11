@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { TrendingUp, MapPin, Building2, RefreshCw, Save, Check, Plus, Trash2 } from 'lucide-react'
+import { TrendingUp, MapPin, Building2, RefreshCw, Save, Check, Plus, Trash2, Clock } from 'lucide-react'
 import {
   Card,
   CardHeader,
@@ -29,8 +29,12 @@ export interface CotacoesIniciais {
   cbot: Record<GraoLabel, number | null>
   /** Câmbio USD/BRL (BCB PTAX do banco; null se indisponível). */
   cambio: number | null
-  /** Data ISO da cotação usada (para exibir "atualizado em"). */
+  /** Data ISO da cotação usada (dia de referência). */
   dataCotacao: string | null
+  /** Timestamp ISO real (com hora) da última sincronização dos dados. */
+  atualizadoEm: string | null
+  /** Fonte dos dados (ex.: CEPEA-ESALQ, BCB-PTAX, Investing.com ao vivo). */
+  fonte: string | null
 }
 
 export interface SimuladorConfigDTO {
@@ -180,9 +184,19 @@ export function SimuladorContent({ cotacoes, config }: Props) {
   )
 
   const temCotacao = cbotDoGrao(grao) != null || cotacoes.cambio != null
-  const dataLabel = cotacoes.dataCotacao
-    ? new Date(cotacoes.dataCotacao).toLocaleDateString('pt-BR')
-    : null
+  // Data/hora real da última atualização dos dados (com hora), fuso de Brasília.
+  const atualizadoLabel = cotacoes.atualizadoEm
+    ? new Date(cotacoes.atualizadoEm).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo',
+      })
+    : cotacoes.dataCotacao
+      ? new Date(cotacoes.dataCotacao).toLocaleDateString('pt-BR')
+      : null
 
   return (
     <div className="space-y-4">
@@ -277,24 +291,31 @@ export function SimuladorContent({ cotacoes, config }: Props) {
                 />
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                {temCotacao ? (
-                  <>
-                    <Chip variant="info">
-                      Cotações automáticas{dataLabel ? ` · ${dataLabel}` : ''}
-                    </Chip>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<RefreshCw className="h-4 w-4" />}
-                      onClick={restaurarCotacao}
-                    >
-                      Restaurar cotação atual
-                    </Button>
-                  </>
-                ) : (
-                  <Chip variant="neutral">Cotação automática indisponível — insira manualmente</Chip>
-                )}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {temCotacao ? (
+                    <>
+                      <Chip variant="info">Cotações automáticas</Chip>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<RefreshCw className="h-4 w-4" />}
+                        onClick={restaurarCotacao}
+                      >
+                        Restaurar cotação atual
+                      </Button>
+                    </>
+                  ) : (
+                    <Chip variant="neutral">Cotação automática indisponível — insira manualmente</Chip>
+                  )}
+                </div>
+                {temCotacao && atualizadoLabel ? (
+                  <p className="text-small text-fg-3 inline-flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    Dados atualizados em <span className="text-fg-2 font-medium">{atualizadoLabel}</span>
+                    {cotacoes.fonte ? <span className="text-fg-3">· fonte: {cotacoes.fonte}</span> : null}
+                  </p>
+                ) : null}
               </div>
             </CardBody>
           </Card>
