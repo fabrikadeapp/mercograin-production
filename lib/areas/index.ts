@@ -11,7 +11,7 @@
  * têm acesso a TODAS as áreas independente desse array.
  */
 
-export const AREAS = ['mesa', 'operacao', 'financeiro', 'gestao'] as const
+export const AREAS = ['mesa', 'operacao', 'financeiro', 'gestao', 'intelligence'] as const
 export type Area = (typeof AREAS)[number]
 
 export const AREA_LABEL: Record<Area, string> = {
@@ -19,6 +19,7 @@ export const AREA_LABEL: Record<Area, string> = {
   operacao: 'Operação',
   financeiro: 'Financeiro',
   gestao: 'Gestão',
+  intelligence: 'BH Intelligence',
 }
 
 export const AREA_DESCRICAO: Record<Area, string> = {
@@ -26,6 +27,8 @@ export const AREA_DESCRICAO: Record<Area, string> = {
   operacao: 'Logística, romaneios, estoque e compliance ambiental.',
   financeiro: 'Tesouraria, fluxo de caixa, boletos, DRE e relatórios.',
   gestao: 'Equipe, configurações, fiscal, integrações e BI executivo.',
+  intelligence:
+    'Inteligência de mercado: relatórios USDA, panorama de 6 fontes e análise integrada para decisão.',
 }
 
 // Compatibilidade: código legado pode referenciar 'fiscal' como área separada.
@@ -38,6 +41,11 @@ export const AREA_DESCRICAO: Record<Area, string> = {
  * Padrão: cada prefix DEVE começar com / e DEVE existir como dir em app/.
  */
 const ROUTE_AREAS: Array<{ prefix: string; area: Area }> = [
+  // BH Intelligence — inteligência de mercado. Mais específicas primeiro.
+  { prefix: '/intel/integrada', area: 'intelligence' },
+  { prefix: '/intel', area: 'intelligence' },
+  { prefix: '/relatorios-usda', area: 'intelligence' },
+
   // Gestão (CEO / admin) — mais específicas primeiro
   { prefix: '/gestao', area: 'gestao' },
   { prefix: '/admin-empresa', area: 'gestao' },
@@ -180,6 +188,7 @@ export const AREA_ENTRY: Record<Area, string> = {
   operacao: '/operacao',
   financeiro: '/financeiro',
   gestao: '/configuracoes',
+  intelligence: '/intel',
 }
 
 /**
@@ -240,5 +249,10 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
     { href: '/fiscal', label: 'Fiscal & SPED' },
     { href: '/auditoria', label: 'Auditoria' },
     { href: '/webhooks', label: 'Webhooks' },
+  ],
+  intelligence: [
+    { href: '/intel', label: 'Inteligência de Mercado' },
+    { href: '/intel/integrada', label: 'Análise Integrada' },
+    { href: '/relatorios-usda', label: 'Relatórios USDA' },
   ],
 }

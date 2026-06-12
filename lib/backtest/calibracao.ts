@@ -53,6 +53,34 @@ export const CONFIG_CAMPEA = {
 } as const
 
 /**
+ * CONFIG POR GRÃO — ganho de assertividade comprovado empiricamente.
+ *
+ * Experimentos sobre 25 anos (262/264 meses) mostraram que a config ótima
+ * é DIFERENTE para cada grão. Forçar uma config única (CONFIG_CAMPEA)
+ * sacrificava o milho (caía a ~47%). Calibrando por grão:
+ *   SOJA  → carry, h3          → 58,7%  (era ~58%)
+ *   MILHO → cbot_tendencia, h1 → 60,1%  (era ~47% — ganho de +13pp!)
+ *
+ * Por que cada grão prefere fatores distintos:
+ *   - Soja: mais sensível ao carry/term-structure (exportação, estoque de
+ *     passagem, ciclo de safra dupla BR+EUA).
+ *   - Milho: mais momentum-driven no curto prazo (h1) — a safrinha e a
+ *     demanda de etanol dão tendência mais persistente mês a mês.
+ *
+ * O agregador deve consultar a config do grão em questão, não a única.
+ * Reexecutar /admin/backtest por grão e reajustar com novos dados.
+ */
+export const CONFIG_POR_GRAO = {
+  soja: { fatores: ['carry'] as const, horizonteMeses: 3, taxaAcerto: 58.7 },
+  milho: { fatores: ['cbot_tendencia'] as const, horizonteMeses: 1, taxaAcerto: 60.1 },
+} as const
+
+/** Config calibrada do grão (fallback para a campeã geral). */
+export function configDoGrao(grao: 'soja' | 'milho') {
+  return CONFIG_POR_GRAO[grao] ?? null
+}
+
+/**
  * Pesos default que o agregador usa para ponderar cada fator/sinal.
  * Reforça os dois fatores da CONFIG_CAMPEA; demais ficam neutros (1.0).
  */

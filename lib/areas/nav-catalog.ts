@@ -59,9 +59,6 @@ export const NAV: Record<Area, NavItem[]> = {
     { href: '/simulador-cbot', label: 'Simulador CBOT', icon: 'LineChart', requires: 'simulador_cbot' },
     { href: '/simulador-premios', label: 'Simulador de Prêmios', icon: 'Calculator', requires: 'simulador_premios' },
     { href: '/calculadora-mesa', label: 'Calculadora de Mesa', icon: 'LayoutGrid', requires: 'calculadora_mesa' },
-    { href: '/relatorios-usda', label: 'Relatórios USDA', icon: 'FileBarChart', requires: 'relatorios_usda' },
-    { href: '/intel', label: 'Inteligência de Mercado', icon: 'Brain', requires: 'relatorios_usda' },
-    { href: '/intel/integrada', label: 'Análise Integrada', icon: 'Sparkles', requires: 'relatorios_usda' },
     { href: '/alertas', label: 'Alertas de preço', icon: 'BellRing' },
     { href: '/aprovacoes', label: 'Aprovações', icon: 'CheckSquare' },
     // Opcionais (feature-flagged)
@@ -119,6 +116,14 @@ export const NAV: Record<Area, NavItem[]> = {
     // Opcionais
     { href: '/whatsapp', label: 'WhatsApp Bot', icon: 'MessageCircle' },
     { href: '/laura', label: 'Laura.IA', icon: 'Bot', requires: 'laura_ai' },
+  ],
+  // BH Intelligence — inteligência de mercado p/ decisão dos corretores.
+  // (O backtest /admin/backtest é exclusivo do superadmin e calibra estas
+  // telas — fica fora do menu do cliente.)
+  intelligence: [
+    { href: '/intel', label: 'Inteligência de Mercado', icon: 'Brain', requires: 'relatorios_usda' },
+    { href: '/intel/integrada', label: 'Análise Integrada', icon: 'Sparkles', requires: 'relatorios_usda' },
+    { href: '/relatorios-usda', label: 'Relatórios USDA', icon: 'FileBarChart', requires: 'relatorios_usda' },
   ],
 }
 

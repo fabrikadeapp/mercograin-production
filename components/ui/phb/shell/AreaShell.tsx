@@ -27,6 +27,7 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
 /** Áreas que dependem de uma feature para aparecer no topnav. */
 const AREA_REQUIRES: Partial<Record<Area, string>> = {
   operacao: 'logistica',
+  intelligence: 'relatorios_usda',
   // mesa/financeiro/gestao são sempre visíveis (core)
 }
 
