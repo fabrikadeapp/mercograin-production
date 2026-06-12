@@ -47,6 +47,12 @@ export interface PanoramaFonte {
 export interface PanoramaSinal {
   texto: string
   vies: Vies
+  /**
+   * Confiança histórica opcional do sinal (ex.: '72% acerto histórico'),
+   * anexada de forma aditiva por lib/backtest/calibracao.ts → aplicarConfianca.
+   * Campo OPCIONAL: o agregador puro não o preenche; não quebra consumidores.
+   */
+  confianca?: string
 }
 
 export interface PanoramaIntel {
