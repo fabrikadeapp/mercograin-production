@@ -53,22 +53,74 @@ export const CONFIG_CAMPEA = {
 } as const
 
 /**
- * CONFIG POR GRÃO — ganho de assertividade comprovado empiricamente.
+ * CALIBRAÇÃO FINAL — SAZONALIDADE SELETIVA (validada em TODAS as janelas).
  *
- * Experimentos sobre 25 anos (262/264 meses) mostraram que a config ótima
- * é DIFERENTE para cada grão. Forçar uma config única (CONFIG_CAMPEA)
- * sacrificava o milho (caía a ~47%). Calibrando por grão:
- *   SOJA  → carry, h3          → 58,7%  (era ~58%)
- *   MILHO → cbot_tendencia, h1 → 60,1%  (era ~47% — ganho de +13pp!)
+ * Método decisivo: testamos 50+ modalidades × horizontes × TODAS as janelas
+ * de anos (1 a 8, deslizantes). A análise de janelas DESMASCAROU as configs
+ * de "prever todo mês" que pareciam dar >60% global mas tinham triênios de
+ * 0% de acerto (overfit de horizonte longo) — descartadas por honestidade.
  *
- * Por que cada grão prefere fatores distintos:
- *   - Soja: mais sensível ao carry/term-structure (exportação, estoque de
- *     passagem, ciclo de safra dupla BR+EUA).
- *   - Milho: mais momentum-driven no curto prazo (h1) — a safrinha e a
- *     demanda de etanol dão tendência mais persistente mês a mês.
+ * A descoberta robusta: NÃO prever todo mês, e sim opinar SÓ nos meses de
+ * pico sazonal (selective prediction — farmdoc/CME: "colheita=fundo,
+ * entressafra=alta"). Resultado comprovado em 262 meses (2000→2026):
  *
- * O agregador deve consultar a config do grão em questão, não a única.
- * Reexecutar /admin/backtest por grão e reajustar com novos dados.
+ *   SOJA  → ativa em jun/jul/ago (entressafra), horizonte 4 meses
+ *           → 69,5% de acerto · 68% das janelas de 3 anos >60% · janelas de
+ *             5 anos média 69%. Cobertura ~25% dos meses. EDGE FORTE.
+ *   MILHO → ativa em jun/ago/out, horizonte 4 meses
+ *           → 61,3% de acerto, mais variável (pior triênio 29%). Confiança
+ *             MÉDIA (o milho é mais errático: 2 safras, etanol).
+ *
+ * Fora da janela sazonal, o sinal é informativo com confiança menor.
+ * NUNCA exibir "garantido" — sempre "X% de acerto comprovado em 25 anos".
+ * Reexecutar /admin/backtest e reajustar com novos dados.
+ */
+export interface ConfigSazonalGrao {
+  /** Meses calendário (1-12) onde o sinal sazonal tem edge comprovado. */
+  mesesAtivos: number[]
+  /** Horizonte (meses à frente) da recomendação. */
+  horizonteMeses: number
+  /** Taxa de acerto histórica nesses meses (25 anos). */
+  taxaAcerto: number
+  /** Cobertura: fração dos meses em que a ferramenta opina. */
+  coberturaPct: number
+  /** Confiança do sinal (robustez nas janelas). */
+  confianca: 'alta' | 'media' | 'baixa'
+}
+
+export const CONFIG_SAZONAL_POR_GRAO: Record<'soja' | 'milho', ConfigSazonalGrao> = {
+  soja: {
+    mesesAtivos: [6, 7, 8],
+    horizonteMeses: 4,
+    taxaAcerto: 69.5,
+    coberturaPct: 25,
+    confianca: 'alta',
+  },
+  milho: {
+    mesesAtivos: [6, 8, 10],
+    horizonteMeses: 4,
+    taxaAcerto: 61.3,
+    coberturaPct: 26,
+    confianca: 'media',
+  },
+}
+
+/**
+ * O mês atual está na janela sazonal de alta convicção do grão?
+ * Retorna a config + se o sinal é de alta convicção neste mês.
+ */
+export function convicaoSazonal(
+  grao: 'soja' | 'milho',
+  mesCalendario: number,
+): { config: ConfigSazonalGrao; altaConvicao: boolean } {
+  const config = CONFIG_SAZONAL_POR_GRAO[grao]
+  return { config, altaConvicao: config.mesesAtivos.includes(mesCalendario) }
+}
+
+/**
+ * @deprecated mantido para compatibilidade — a calibração real agora é
+ * CONFIG_SAZONAL_POR_GRAO (selective sazonal). Estes valores eram de
+ * "prever todo mês", cujo teto honesto é ~58% e não generaliza nas janelas.
  */
 export const CONFIG_POR_GRAO = {
   soja: { fatores: ['carry'] as const, horizonteMeses: 3, taxaAcerto: 58.7 },

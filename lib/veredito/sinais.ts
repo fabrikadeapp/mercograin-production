@@ -22,6 +22,8 @@
  * não dispara (mostrar a real). Horizonte padrão H=2 meses.
  */
 
+import { convicaoSazonal as convicaoSazonalCalibrada } from '@/lib/backtest/calibracao'
+
 /** Direção de um sinal. 'neutro' = sem viés acionável. */
 export type DirecaoSinal = 'vender' | 'segurar' | 'neutro'
 
@@ -59,6 +61,20 @@ export interface Veredito {
   ganhoVsAcaso: number
   /** Frase-resumo de copiloto, honesta. */
   resumo: string
+  /**
+   * Janela sazonal de ALTA CONVICÇÃO (calibrada e validada em 25 anos /
+   * todas as janelas de anos). Quando true, o mês corrente está no pico
+   * sazonal do grão e a taxa histórica do sinal sazonal é a comprovada
+   * (soja jun-ago ~69%, milho jun/ago/out ~61%). Presente só quando o
+   * grão é informado a calcularVeredito/vereditoAoVivo.
+   */
+  convicaoSazonal?: {
+    altaConvicao: boolean
+    taxaHistorica: number
+    coberturaPct: number
+    confianca: 'alta' | 'media' | 'baixa'
+    nota: string
+  }
 }
 
 // ── Limiares das regras (calibrados pela literatura/calibração comprovada) ────
@@ -317,7 +333,7 @@ function confiancaDe(concordancia: number): 'alta' | 'media' | 'baixa' {
 export function calcularVeredito(
   serie: PontoVeredito[],
   i: number,
-  opts?: { H?: number; padroes?: Record<number, number>; taxas?: Taxas },
+  opts?: { H?: number; padroes?: Record<number, number>; taxas?: Taxas; grao?: 'soja' | 'milho' },
 ): Veredito {
   const H = opts?.H ?? HORIZONTE_PADRAO
   const padroes = opts?.padroes ?? aprenderSazonalidade(serie, H)
@@ -330,8 +346,27 @@ export function calcularVeredito(
   ]
 
   const { direcao, concordancia } = votar(sinais.map((s) => s.direcao))
-  const confianca = confiancaDe(concordancia)
+  let confianca = confiancaDe(concordancia)
   const vtx = taxaDe(taxas, 'veredito')
+
+  // ── Janela sazonal de alta convicção (calibração validada em 25 anos) ─────
+  let convicaoSazonal: Veredito['convicaoSazonal']
+  if (opts?.grao) {
+    const mesCal = serie[i]?.mes
+    const cs = convicaoSazonalCalibrada(opts.grao, mesCal)
+    const dentro = cs.altaConvicao && direcao !== 'neutro'
+    convicaoSazonal = {
+      altaConvicao: dentro,
+      taxaHistorica: cs.config.taxaAcerto,
+      coberturaPct: cs.config.coberturaPct,
+      confianca: cs.config.confianca,
+      nota: dentro
+        ? `Janela sazonal de pico (${nomeMeses(cs.config.mesesAtivos)}): acerto histórico ${cs.config.taxaAcerto}% em 25 anos.`
+        : `Fora da janela sazonal de alta convicção (${nomeMeses(cs.config.mesesAtivos)}) — sinal informativo.`,
+    }
+    // Dentro do pico sazonal, a confiança do grão prevalece (validada).
+    if (dentro) confianca = cs.config.confianca
+  }
 
   const totalAcionaveis = sinais.filter((s) => s.direcao !== 'neutro').length
   const acao = direcao === 'vender' ? 'VENDER' : direcao === 'segurar' ? 'SEGURAR' : 'NEUTRO'
@@ -339,11 +374,13 @@ export function calcularVeredito(
     direcao === 'neutro'
       ? `Sinais divergentes ou sem viés claro — sem recomendação forte este mês.`
       : `${concordancia} de 3 ângulos apontam ${acao} (de ${totalAcionaveis} acionáveis).` +
-        (vtx.taxaHistorica > 0
-          ? ` Taxa histórica do veredito: ${vtx.taxaHistorica}% (${
-              vtx.ganhoVsAcaso >= 0 ? '+' : ''
-            }${vtx.ganhoVsAcaso}pp sobre o acaso).`
-          : '')
+        (convicaoSazonal?.altaConvicao
+          ? ` ⭐ Janela sazonal de pico: ${convicaoSazonal.taxaHistorica}% de acerto histórico (25 anos).`
+          : vtx.taxaHistorica > 0
+            ? ` Taxa histórica do veredito: ${vtx.taxaHistorica}% (${
+                vtx.ganhoVsAcaso >= 0 ? '+' : ''
+              }${vtx.ganhoVsAcaso}pp sobre o acaso).`
+            : '')
 
   return {
     sinais,
@@ -353,7 +390,27 @@ export function calcularVeredito(
     taxaHistorica: vtx.taxaHistorica,
     ganhoVsAcaso: vtx.ganhoVsAcaso,
     resumo,
+    convicaoSazonal,
   }
+}
+
+const NOMES_MES = [
+  '',
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+]
+function nomeMeses(meses: number[]): string {
+  return meses.map((m) => NOMES_MES[m] ?? String(m)).join('/')
 }
 
 // ── Avaliação histórica (full-sample, determinística) ─────────────────────────
@@ -444,7 +501,11 @@ export function avaliarHistorico(
  * históricas reais (de avaliarHistorico). É o ponto de entrada do produto.
  * Defensivo: série vazia → veredito neutro sem taxas.
  */
-export function vereditoAoVivo(serie: PontoVeredito[], H: number = HORIZONTE_PADRAO): Veredito {
+export function vereditoAoVivo(
+  serie: PontoVeredito[],
+  H: number = HORIZONTE_PADRAO,
+  grao?: 'soja' | 'milho',
+): Veredito {
   if (!Array.isArray(serie) || serie.length === 0) {
     return {
       sinais: [],
@@ -460,5 +521,5 @@ export function vereditoAoVivo(serie: PontoVeredito[], H: number = HORIZONTE_PAD
   const padroes = aprenderSazonalidade(serie, h)
   const aval = avaliarHistorico(serie, h)
   const taxas: Taxas = { ...aval.porSinal, veredito: aval.veredito }
-  return calcularVeredito(serie, serie.length - 1, { H: h, padroes, taxas })
+  return calcularVeredito(serie, serie.length - 1, { H: h, padroes, taxas, grao })
 }

@@ -138,7 +138,9 @@ export async function GET(req: NextRequest) {
     }
 
     // 6. Veredito ao vivo + performance histórica comprovada (libs puras).
-    const veredito = vereditoAoVivo(serie, H)
+    //    Passa o grão para ativar a janela sazonal de alta convicção
+    //    (calibração validada em 25 anos: soja jun-ago ~69%, milho ~61%).
+    const veredito = vereditoAoVivo(serie, H, grao)
     const historico = avaliarHistorico(serie, H)
     const geradoEm = new Date().toISOString()
 
