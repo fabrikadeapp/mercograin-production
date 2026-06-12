@@ -78,8 +78,11 @@ export async function GET(req: NextRequest) {
     : 'soja'
 
   const geradoEm = new Date().toISOString()
-  // COT da CFTC só tem managed money desde ~2021; alinhamos ~5 anos.
-  const anoInicial = new Date().getFullYear() - 5
+  // MÁXIMO histórico disponível: preço físico IPEA vai a 1993, CBOT (Yahoo
+  // range=max) e câmbio BCB a ~2000. A interseção dá ~25 anos — bem mais
+  // robusto que 5 anos. O COT (CFTC) só tem managed money desde ~2006, então
+  // entra apenas nos meses em que existe (fator opcional, não limita a série).
+  const anoInicial = 2000
 
   try {
     // ── Busca paralela best-effort ────────────────────────────────────────────

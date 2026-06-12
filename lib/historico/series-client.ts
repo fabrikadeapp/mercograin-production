@@ -155,12 +155,13 @@ export async function precoFisicoBR(grao: Grao): Promise<PontoMensal[]> {
 }
 
 /**
- * CBOT mensal (¢/bushel) — futuro front-month, últimos 5 anos.
- * Fonte Yahoo Finance (ZS=F/ZC=F), interval=1mo range=5y. User-Agent obrigatório.
+ * CBOT mensal (¢/bushel) — futuro front-month, MÁXIMO histórico disponível.
+ * Fonte Yahoo Finance (ZS=F/ZC=F), interval=1mo range=max (~25 anos, 2000→).
+ * User-Agent obrigatório. Quanto mais histórico, mais robusto o backtest.
  */
 export async function cbotMensal(grao: Grao): Promise<PontoMensal[]> {
   const sym = CBOT_SYMBOL[grao]
-  const cacheKey = `cbot:${sym}`
+  const cacheKey = `cbot:${sym}:max`
   const now = Date.now()
   const cached = cache.get(cacheKey)
   if (cached && now - cached.at < TTL) return cached.data
@@ -168,7 +169,7 @@ export async function cbotMensal(grao: Grao): Promise<PontoMensal[]> {
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
       sym,
-    )}?interval=1mo&range=5y`
+    )}?interval=1mo&range=max`
     const r = await fetch(url, {
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -217,17 +218,31 @@ export async function cambioMensal(anoInicial: number): Promise<PontoMensal[]> {
   if (cached && now - cached.at < TTL) return cached.data
 
   try {
-    const dataInicial = `01/01/${anoInicial}`
+    // O BCB SGS limita o range por requisição (~10 anos). Para cobrir o
+    // máximo histórico (2000→hoje, ~25 anos) buscamos em janelas de 9 anos
+    // e concatenamos. Cada janela é best-effort: falha de uma não derruba.
     const dd = String(hoje.getDate()).padStart(2, '0')
     const mm = String(hoje.getMonth() + 1).padStart(2, '0')
-    const dataFinal = `${dd}/${mm}/${anoFinal}`
-    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=${dataInicial}&dataFinal=${dataFinal}`
-    const r = await fetch(url, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    })
-    if (!r.ok) return cached?.data ?? []
-    const linhas = (await r.json()) as Array<{ data?: string; valor?: unknown }>
+    const linhas: Array<{ data?: string; valor?: unknown }> = []
+    const PASSO = 9
+    for (let a = anoInicial; a <= anoFinal; a += PASSO) {
+      const aFim = Math.min(a + PASSO - 1, anoFinal)
+      const dataInicial = `01/01/${a}`
+      const dataFinal = aFim === anoFinal ? `${dd}/${mm}/${aFim}` : `31/12/${aFim}`
+      const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=${dataInicial}&dataFinal=${dataFinal}`
+      try {
+        const r = await fetch(url, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        })
+        if (!r.ok) continue
+        const bloco = (await r.json()) as Array<{ data?: string; valor?: unknown }>
+        if (Array.isArray(bloco)) linhas.push(...bloco)
+      } catch {
+        // janela falhou — segue para a próxima
+      }
+    }
+    if (linhas.length === 0) return cached?.data ?? []
 
     // Agrega para o último valor de cada (ano, mes). A série é diária e
     // ascendente, mas comparamos o dia para garantir o "fim de mês" real.

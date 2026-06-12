@@ -152,7 +152,8 @@ export async function GET(req: NextRequest) {
     ? (graoParam as Grao)
     : 'soja'
   const horizonte = intClamp(searchParams.get('horizonte'), 2, 1, 6)
-  const anos = intClamp(searchParams.get('anos'), 5, 1, 20)
+  // Default usa o máximo histórico (~25 anos desde 2000); configurável até 30.
+  const anos = intClamp(searchParams.get('anos'), 25, 1, 30)
 
   const geradoEm = new Date().toISOString()
   const anoInicial = new Date().getFullYear() - anos

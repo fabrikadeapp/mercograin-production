@@ -17,34 +17,38 @@ import type { NomeFator } from './engine'
 import { PESOS_PADRAO } from './engine'
 
 /**
- * CONFIG CAMPEÃ — escolhida pelo GRID SEARCH EXAUSTIVO WALK-FORWARD (V2).
+ * CONFIG CAMPEÃ — escolhida pelo GRID SEARCH EXAUSTIVO WALK-FORWARD (V2),
+ * sobre o MÁXIMO de histórico disponível (~25 anos, 2000→2026, 262 meses).
  *
  * 189 formatos testados (powerset de 6 fatores × horizontes 1-3), validados
- * OUT-OF-SAMPLE (treina no passado, testa no futuro — sem overfit). Critério
- * de escolha: maior robustez = melhor MÉDIA entre soja e milho (não a campeã
- * de um grão só, que generaliza mal).
+ * OUT-OF-SAMPLE (treina no passado, testa no futuro — sem overfit). Critério:
+ * maior robustez = melhor MÉDIA entre soja e milho (não a campeã de um grão).
  *
- * Resultado (mai/2026):
- *   preco_vs_media + sazonal, horizonte 3 meses
- *   → 67,4% de acerto OOS médio (soja 70% · milho 65%)
- *   vs. ~50% do baseline V1 (sem sazonalidade).
+ * Resultado sobre 25 anos:
+ *   sazonal + carry, horizonte 3 meses
+ *   → 56,4% de acerto OOS médio (soja 60% · milho 53%)
+ *   vs. ~50% (acaso) e vs. o resultado inflado de 67% que aparecia com apenas
+ *   5 anos — janela pequena demais (overfit por amostra). 56% sobre 262 meses
+ *   é o número REAL e confiável; menos vistoso, muito mais honesto.
  *
  * Fundamentação acadêmica do par vencedor:
- *   - preco_vs_media (contrarian): melhor fator isolado do V1 (58%).
  *   - sazonal: farmdoc/Illinois e CME — "9 anos em 10 o preço faz fundo na
- *     colheita; vender antes de julho". É o fator que mais elevou a acurácia.
- *   Descartados: cot_extremo (trend-following, agrega ruído — UC Davis) e
- *   carry (forte em soja, frágil em milho — não generaliza).
+ *     colheita; vender antes de julho". O fator mais robusto em 25 anos.
+ *   - carry (term-structure): Wisconsin/Virginia Tech — basis/carry sazonal
+ *     previsível. Complementa a sazonalidade.
+ *   - horizonte de 3 meses venceu de forma consistente nos dois grãos.
+ *   Descartado: cot_extremo (trend-following, agrega ruído — UC Davis).
  *
  * Reexecutar /admin/backtest (exaustivo) e reajustar quando houver mais dados.
  */
 export const CONFIG_CAMPEA = {
-  fatores: ['preco_vs_media', 'sazonal'] as const,
+  fatores: ['sazonal', 'carry'] as const,
   horizonteMeses: 3,
-  taxaAcertoOOS: 67.4,
-  taxaAcertoSoja: 70,
-  taxaAcertoMilho: 65,
-  baselineV1: 50,
+  taxaAcertoOOS: 56.4,
+  taxaAcertoSoja: 60,
+  taxaAcertoMilho: 53,
+  baselineAcaso: 50,
+  mesesAnalisados: 262,
   validadoEm: '2026-06',
 } as const
 
