@@ -1,7 +1,18 @@
 'use client'
 
 import * as React from 'react'
-import { TrendingUp, MapPin, Building2, RefreshCw, Save, Check, Plus, Trash2, Clock } from 'lucide-react'
+import {
+  TrendingUp,
+  MapPin,
+  Building2,
+  RefreshCw,
+  Save,
+  Check,
+  Plus,
+  Trash2,
+  Clock,
+  CalendarClock,
+} from 'lucide-react'
 import {
   Card,
   CardHeader,
@@ -23,6 +34,42 @@ import {
 } from '@/lib/cotacoes/simulador'
 
 type GraoLabel = 'soja' | 'milho' | 'trigo'
+
+/**
+ * Contratos de vencimento clássicos negociados na CBOT, por grão. O usuário
+ * escolhe para qual vencimento está formando o preço — antes a tela mostrava
+ * o preço sem indicar o mês de referência (feedback do Guga: "não diz o
+ * vencimento"). 'codigo' é o símbolo do mês CME (N=jul, U=set, X=nov, Z=dez).
+ */
+interface VencimentoCbot {
+  label: string
+  codigo: string
+}
+const VENCIMENTOS: Record<GraoSimulador, VencimentoCbot[]> = {
+  soja: [
+    { label: 'Julho', codigo: 'N' },
+    { label: 'Agosto', codigo: 'Q' },
+    { label: 'Setembro', codigo: 'U' },
+    { label: 'Novembro', codigo: 'X' },
+    { label: 'Janeiro', codigo: 'F' },
+    { label: 'Março', codigo: 'H' },
+    { label: 'Maio', codigo: 'K' },
+  ],
+  milho: [
+    { label: 'Julho', codigo: 'N' },
+    { label: 'Setembro', codigo: 'U' },
+    { label: 'Dezembro', codigo: 'Z' },
+    { label: 'Março', codigo: 'H' },
+    { label: 'Maio', codigo: 'K' },
+  ],
+  trigo: [
+    { label: 'Julho', codigo: 'N' },
+    { label: 'Setembro', codigo: 'U' },
+    { label: 'Dezembro', codigo: 'Z' },
+    { label: 'Março', codigo: 'H' },
+    { label: 'Maio', codigo: 'K' },
+  ],
+}
 
 export interface CotacoesIniciais {
   /** CBOT ¢/bu por grão (do banco, automatizado; null se indisponível). */
@@ -90,6 +137,8 @@ function fmtUSD(n: number): string {
 
 export function SimuladorContent({ cotacoes, config }: Props) {
   const [grao, setGrao] = React.useState<GraoSimulador>('soja')
+  // Vencimento do contrato CBOT que o preço se refere (0 = primeiro da lista).
+  const [vencimentoIdx, setVencimentoIdx] = React.useState<number>(0)
   const [cbot, setCbot] = React.useState<number>(() => cotacoes.cbot.soja ?? 0)
   const [premio, setPremio] = React.useState<number>(0)
   const [fobbings, setFobbings] = React.useState<number>(config?.fobbingsUsdTon ?? -10)
@@ -112,9 +161,11 @@ export function SimuladorContent({ cotacoes, config }: Props) {
     return cotacoes.cbot[g]
   }
 
-  // Ao trocar de grão, recarrega o CBOT da cotação daquele grão (se houver).
+  // Ao trocar de grão, recarrega o CBOT da cotação daquele grão (se houver) e
+  // reseta o vencimento para o primeiro contrato do novo grão.
   function trocarGrao(g: GraoSimulador) {
     setGrao(g)
+    setVencimentoIdx(0)
     const c = cbotDoGrao(g)
     if (c != null) setCbot(c)
   }
@@ -198,6 +249,12 @@ export function SimuladorContent({ cotacoes, config }: Props) {
       ? new Date(cotacoes.dataCotacao).toLocaleDateString('pt-BR')
       : null
 
+  // ── Vencimento do contrato CBOT (contexto para o usuário ter certeza) ───────
+  // Contratos clássicos negociados na CBOT por grão. O usuário escolhe para
+  // qual vencimento está formando o preço — antes não havia essa indicação.
+  const venc = VENCIMENTOS[grao]
+  const vencimentoLabel = venc[vencimentoIdx]?.label ?? venc[0]?.label ?? ''
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
@@ -226,6 +283,36 @@ export function SimuladorContent({ cotacoes, config }: Props) {
                           label={g.label}
                           className={ativo ? 'ring-2 ring-accent' : 'opacity-70'}
                         />
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Vencimento do contrato CBOT — dá certeza ao usuário de qual
+                  mês de referência o preço está sendo formado. */}
+              <div>
+                <label className="eyebrow mb-2 flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5 text-fg-3" />
+                  Vencimento do contrato
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {venc.map((v, i) => {
+                    const ativo = vencimentoIdx === i
+                    return (
+                      <button
+                        key={v.codigo}
+                        type="button"
+                        onClick={() => setVencimentoIdx(i)}
+                        className={[
+                          'rounded-pill px-3 py-1.5 text-small font-medium transition-colors',
+                          'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                          ativo
+                            ? 'bg-accent text-black'
+                            : 'bg-surface-2 text-fg-2 hover:text-fg-1',
+                        ].join(' ')}
+                      >
+                        {v.label}
                       </button>
                     )
                   })}
@@ -475,6 +562,21 @@ export function SimuladorContent({ cotacoes, config }: Props) {
                   <TrendingUp className="h-4 w-4" /> Preço formado
                 </span>
               </CardTitle>
+              {/* Selo de contexto: deixa explícito grão + vencimento do contrato
+                  ao qual este preço se refere. */}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-2 px-2.5 py-1 text-small font-medium text-fg-2 capitalize">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: `var(--grain-${grao})` }}
+                  />
+                  {grao}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-pill bg-accent/15 px-2.5 py-1 text-small font-semibold text-accent">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Venc. {vencimentoLabel}
+                </span>
+              </div>
             </CardHeader>
             <CardBody>
               <div className="space-y-1">
@@ -505,6 +607,18 @@ export function SimuladorContent({ cotacoes, config }: Props) {
                   </p>
                 </div>
               </div>
+
+              {/* Rodapé de procedência: fonte e horário dos dados, para o
+                  usuário ter certeza do que está vendo. */}
+              {atualizadoLabel ? (
+                <p className="mt-3 pt-3 border-t border-[var(--border)] flex items-center gap-1.5 text-small text-fg-3">
+                  <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    CBOT &amp; câmbio atualizados em{' '}
+                    <span className="text-fg-2 font-medium">{atualizadoLabel}</span>
+                  </span>
+                </p>
+              ) : null}
             </CardBody>
           </Card>
 
