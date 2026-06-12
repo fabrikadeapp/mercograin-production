@@ -3,13 +3,15 @@
 /**
  * app/intel/_components/PanoramaContent.tsx
  *
- * Painel de PANORAMA da Inteligência de Mercado. Consome o endpoint
- * GET /api/intel/panorama?grao=soja|milho e renderiza:
- *  - Bloco de SINAIS no topo (chips de viés altista/baixista/neutro).
- *  - Um Card por fonte (USDA PSD, USDA ESR, BCB Focus, CONAB, Câmbio), cada
- *    item com rótulo + valor + seta colorida (▲ verde / ▼ vermelho / – neutro).
- *  - Curva de dólar futuro (quando presente) como mini-tabela mês × mediana.
- *  - Chip "Atualizado em DD/MM/AAAA HH:mm" (Brasília) + contador fontesOk/Falha.
+ * Painel de PANORAMA da Inteligência de Mercado (REDESIGN PREMIUM). Consome o
+ * endpoint GET /api/intel/panorama?grao=soja|milho e renderiza:
+ *  - HEADER com seletor de grão, BotaoAtualizar (força refresh server-side) e
+ *    chips de status (Atualizado em / fontes ok / indisponíveis).
+ *  - Bloco de SINAIS no topo: chips de viés altista (verde) / baixista
+ *    (vermelho) / neutro, com contadores de saldo.
+ *  - Grid responsivo de CARDS PREMIUM por fonte (USDA PSD, USDA ESR, BCB Focus,
+ *    CONAB, Câmbio): GrainBadge/ícone no topo, valores com setas coloridas
+ *    (▲ var(--success) / ▼ var(--danger)) e Sparkline quando há série numérica.
  *
  * Tudo best-effort: o endpoint sempre responde 200; aqui tratamos loading,
  * erro de rede e ausência de dados sem quebrar a tela.
@@ -24,8 +26,10 @@ import {
   Button,
   Chip,
   Select,
+  Sparkline,
   EmptyState,
 } from '@/components/ui/phb'
+import { BotaoAtualizar } from './BotaoAtualizar'
 import {
   Radar,
   RefreshCw,
@@ -34,6 +38,7 @@ import {
   Minus,
   AlertTriangle,
   CheckCircle2,
+  Clock,
 } from 'lucide-react'
 import type {
   PanoramaIntel,
@@ -71,6 +76,15 @@ const ICONE_FONTE: Record<string, string> = {
   Câmbio: '💵',
 }
 
+// Cor de acento por fonte (para o filete e o sparkline do card).
+const COR_FONTE: Record<string, string> = {
+  'USDA PSD': 'var(--grain-soja)',
+  'USDA ESR': 'var(--accent-2)',
+  'BCB Focus': 'var(--gold)',
+  CONAB: 'var(--grain-milho)',
+  Câmbio: 'var(--success)',
+}
+
 // ── Helpers de formatação ─────────────────────────────────────────────────────
 
 /** Formata a data ISO no fuso de Brasília: DD/MM/AAAA HH:mm. */
@@ -101,6 +115,18 @@ function formatarVariacao(pct: number | null | undefined): string | null {
   })}%`
 }
 
+/**
+ * Deriva uma micro-série de 2 pontos (anterior → atual) a partir da variação
+ * percentual de um item, para alimentar o Sparkline do card. Retorna null
+ * quando não há variação numérica utilizável.
+ */
+function serieDeVariacao(pct: number | null | undefined): number[] | null {
+  if (pct === null || pct === undefined || Number.isNaN(pct)) return null
+  const base = 100
+  const atual = base * (1 + pct / 100)
+  return [base, atual]
+}
+
 // ── Sub-componentes ───────────────────────────────────────────────────────────
 
 /** Seta colorida (▲ verde / ▼ vermelho / – neutro) + variação textual. */
@@ -126,7 +152,7 @@ function SetaVariacao({
   const Icone = up ? TrendingUp : TrendingDown
   return (
     <span
-      className="inline-flex items-center gap-1 text-small"
+      className="inline-flex items-center gap-1 text-small font-medium"
       style={{ color: cor }}
     >
       <Icone className="h-3.5 w-3.5" />
@@ -135,42 +161,75 @@ function SetaVariacao({
   )
 }
 
-/** Uma linha de item (rótulo · valor + seta) dentro de um Card de fonte. */
-function ItemLinha({ item }: { item: PanoramaItem }) {
+/** Uma linha de item (rótulo · valor + seta + sparkline) dentro de um Card. */
+function ItemLinha({ item, cor }: { item: PanoramaItem; cor: string }) {
+  const serie = serieDeVariacao(item.variacao)
+  const corSpark =
+    item.seta === 'up'
+      ? 'var(--success)'
+      : item.seta === 'down'
+        ? 'var(--danger)'
+        : cor
   return (
-    <div className="flex items-start justify-between gap-3 py-2 border-b border-border-1 last:border-b-0">
+    <div className="flex items-start justify-between gap-3 border-b border-border-1 py-2.5 last:border-b-0">
       <div className="min-w-0">
-        <p className="text-small text-fg-2 truncate">{item.rotulo}</p>
+        <p className="truncate text-small text-fg-2">{item.rotulo}</p>
         {item.nota ? <p className="text-small text-fg-3">{item.nota}</p> : null}
       </div>
-      <div className="flex flex-col items-end shrink-0">
-        <span className="text-body font-medium text-fg-1 tabular-nums">
-          {item.valor}
-        </span>
-        <SetaVariacao seta={item.seta} variacao={item.variacao} />
+      <div className="flex shrink-0 items-center gap-3">
+        {serie ? (
+          <div className="hidden w-16 sm:block">
+            <Sparkline data={serie} color={corSpark} height={28} />
+          </div>
+        ) : null}
+        <div className="flex flex-col items-end">
+          <span className="t-num text-body font-semibold text-fg-1">
+            {item.valor}
+          </span>
+          <SetaVariacao seta={item.seta} variacao={item.variacao} />
+        </div>
       </div>
     </div>
   )
 }
 
-/** Card de uma fonte do panorama. */
+/** Card premium de uma fonte do panorama. */
 function CardFonte({ fonte }: { fonte: PanoramaFonte }) {
   const emoji = ICONE_FONTE[fonte.fonte] ?? '📊'
+  const cor = COR_FONTE[fonte.fonte] ?? 'var(--accent)'
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      {/* Filete de acento da fonte no topo. */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-1"
+        style={{
+          background: `linear-gradient(90deg, ${cor}, transparent)`,
+        }}
+      />
       <CardHeader>
         <CardTitle eyebrow={fonte.fonte}>
           <span className="inline-flex items-center gap-2">
-            <span aria-hidden>{emoji}</span>
+            <span
+              aria-hidden
+              className="inline-flex h-8 w-8 items-center justify-center rounded-pill text-base"
+              style={{
+                background: `color-mix(in srgb, ${cor} 16%, transparent)`,
+              }}
+            >
+              {emoji}
+            </span>
             <span>{fonte.titulo}</span>
           </span>
         </CardTitle>
       </CardHeader>
       <CardBody className="space-y-0">
         {fonte.itens.length === 0 ? (
-          <p className="text-small text-fg-3 py-2">Sem dados disponíveis.</p>
+          <p className="py-2 text-small text-fg-3">Sem dados disponíveis.</p>
         ) : (
-          fonte.itens.map((item, i) => <ItemLinha key={i} item={item} />)
+          fonte.itens.map((item, i) => (
+            <ItemLinha key={i} item={item} cor={cor} />
+          ))
         )}
       </CardBody>
     </Card>
@@ -184,47 +243,77 @@ function chipVarianteVies(vies: Vies): 'pos' | 'neg' | 'neutral' {
   return 'neutral'
 }
 
-/** Bloco de sinais (chips de viés) no topo. */
+/** Bloco de sinais (chips de viés) no topo, com saldo agregado. */
 function BlocoSinais({ sinais }: { sinais: PanoramaSinal[] }) {
-  if (sinais.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle eyebrow="Leitura de mercado">Sinais</CardTitle>
-        </CardHeader>
-        <CardBody>
+  const altista = sinais.filter((s) => s.vies === 'altista').length
+  const baixista = sinais.filter((s) => s.vies === 'baixista').length
+  const saldo = altista - baixista
+  const viesGeral: Vies =
+    saldo > 0 ? 'altista' : saldo < 0 ? 'baixista' : 'neutro'
+
+  return (
+    <Card className="relative overflow-hidden">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-1"
+        style={{
+          background: `linear-gradient(90deg, var(--accent), transparent)`,
+        }}
+      />
+      <CardHeader>
+        <CardTitle eyebrow="Leitura de mercado">
+          <span className="inline-flex items-center gap-2">
+            <Radar className="h-4 w-4 text-accent" />
+            Sinais de viés
+          </span>
+        </CardTitle>
+        {sinais.length > 0 ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <Chip
+              variant="pos"
+              leftIcon={<TrendingUp className="h-3.5 w-3.5" />}
+            >
+              {altista} altista{altista === 1 ? '' : 's'}
+            </Chip>
+            <Chip
+              variant="neg"
+              leftIcon={<TrendingDown className="h-3.5 w-3.5" />}
+            >
+              {baixista} baixista{baixista === 1 ? '' : 's'}
+            </Chip>
+            <Chip variant={chipVarianteVies(viesGeral)}>
+              Saldo {saldo > 0 ? `+${saldo}` : saldo}
+            </Chip>
+          </div>
+        ) : null}
+      </CardHeader>
+      <CardBody>
+        {sinais.length === 0 ? (
           <p className="text-small text-fg-3">
             Sem variações relevantes nas fontes para gerar sinais nesta leitura.
           </p>
-        </CardBody>
-      </Card>
-    )
-  }
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle eyebrow="Leitura de mercado">Sinais</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <div className="flex flex-wrap gap-2">
-          {sinais.map((s, i) => {
-            const Icone =
-              s.vies === 'altista'
-                ? TrendingUp
-                : s.vies === 'baixista'
-                  ? TrendingDown
-                  : Minus
-            return (
-              <Chip
-                key={i}
-                variant={chipVarianteVies(s.vies)}
-                leftIcon={<Icone className="h-3.5 w-3.5" />}
-              >
-                {s.texto}
-              </Chip>
-            )
-          })}
-        </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {sinais.map((s, i) => {
+              const Icone =
+                s.vies === 'altista'
+                  ? TrendingUp
+                  : s.vies === 'baixista'
+                    ? TrendingDown
+                    : Minus
+              return (
+                <Chip
+                  key={i}
+                  variant={chipVarianteVies(s.vies)}
+                  leftIcon={<Icone className="h-3.5 w-3.5" />}
+                >
+                  {s.texto}
+                  {s.confianca ? ` · ${s.confianca}` : ''}
+                </Chip>
+              )
+            })}
+          </div>
+        )}
       </CardBody>
     </Card>
   )
@@ -272,13 +361,17 @@ export function PanoramaContent() {
     void carregar(grao)
   }, [grao, carregar])
 
+  const recarregar = React.useCallback(() => {
+    void carregar(grao)
+  }, [carregar, grao])
+
   const panorama = dados?.panorama ?? null
   const fontesOk = dados?.fontesOk ?? []
   const fontesFalha = dados?.fontesFalha ?? []
 
   return (
     <div className="space-y-6">
-      {/* Barra de controle: seletor de grão, atualizar e status. */}
+      {/* Header: seletor de grão, BotaoAtualizar (força refresh) e status. */}
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-wrap items-end gap-4">
@@ -293,15 +386,16 @@ export function PanoramaContent() {
               variant="secondary"
               leftIcon={<RefreshCw className="h-4 w-4" />}
               loading={carregando}
-              onClick={() => void carregar(grao)}
+              onClick={recarregar}
             >
-              Atualizar
+              Recarregar
             </Button>
+            <BotaoAtualizar onAtualizado={recarregar} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {dados ? (
-              <Chip variant="neutral">
+              <Chip variant="neutral" leftIcon={<Clock className="h-3.5 w-3.5" />}>
                 Atualizado em {formatarBrasilia(dados.geradoEm)}
               </Chip>
             ) : null}
@@ -338,7 +432,7 @@ export function PanoramaContent() {
               <Button
                 variant="secondary"
                 leftIcon={<RefreshCw className="h-4 w-4" />}
-                onClick={() => void carregar(grao)}
+                onClick={recarregar}
               >
                 Tentar novamente
               </Button>
@@ -399,7 +493,7 @@ export function PanoramaContent() {
                     </Chip>
                   ))}
                 </div>
-                <p className="text-small text-fg-3 mt-2">
+                <p className="mt-2 text-small text-fg-3">
                   Estas fontes não responderam a tempo. Os demais dados seguem
                   válidos. Tente atualizar para recompor o panorama.
                 </p>

@@ -5,14 +5,17 @@
  *
  * O painel do VEREDITO DE MERCADO — o produto vendável e HONESTO do BH
  * Intelligence. Consome GET /api/intel/veredito?grao=soja|milho e renderiza:
- *  - "3 ÂNGULOS": um Card por sinal (Sazonal · Preço vs média · Momentum), com
- *    a recomendação atual (VENDER vermelho / SEGURAR verde / NEUTRO cinza), o
- *    motivo em 1 linha, a TAXA HISTÓRICA real + ganho vs acaso e uma barra.
- *  - "VEREDITO CONSOLIDADO": a direção final do voto, a concordância (ex.
- *    "2 de 3 ângulos concordam"), a confiança e o resumo, com cor pela direção.
- *  - "TRANSPARÊNCIA": rodapé honesto — não prometemos prever o futuro, apenas
- *    3 métodos comprovados em 25 anos com vantagem real e auditável sobre o
- *    acaso. Mostra mesesAnalisados e o ganho consolidado vs 50%.
+ *  - HERO: o VEREDITO CONSOLIDADO em destaque premium — a direção final do voto
+ *    em número/recomendação grande (VENDER vermelho / SEGURAR verde / NEUTRO),
+ *    com gradiente sutil por direção, a concordância como 3 pontos preenchidos
+ *    (ex. 3/3), a confiança e o resumo. Se a janela sazonal está em pico
+ *    (convicaoSazonal.altaConvicao), exibe um badge destacado.
+ *  - "3 ÂNGULOS": um Card premium por sinal (Sazonal · Preço vs média ·
+ *    Momentum), com ícone, a recomendação atual como chip colorido, o motivo, a
+ *    TAXA HISTÓRICA real + ganho vs acaso e uma ProgressBar de acerto.
+ *  - "TRANSPARÊNCIA": rodapé honesto em card glass discreto — não prometemos
+ *    prever o futuro, apenas 3 métodos comprovados em 25 anos com vantagem real
+ *    e auditável sobre o acaso. Mostra mesesAnalisados e o ganho consolidado.
  *
  * Posicionamento HONESTO: NUNCA exibe "75%" nem "garantido". O teto da direção
  * é ~55-60% e o edge é modesto (+5 a +6pp). Tudo best-effort: o endpoint sempre
@@ -21,20 +24,22 @@
  */
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardHeader,
   CardTitle,
   CardBody,
-  Button,
   Chip,
   Select,
   ProgressBar,
+  GrainBadge,
   EmptyState,
 } from '@/components/ui/phb'
+import type { GrainVariant } from '@/components/ui/phb'
+import { BotaoAtualizar } from '@/app/intel/_components/BotaoAtualizar'
 import {
   Gavel,
-  RefreshCw,
   TrendingDown,
   ShieldCheck,
   Minus,
@@ -42,6 +47,7 @@ import {
   Activity,
   LineChart,
   ScaleIcon,
+  Star,
 } from 'lucide-react'
 
 // ── Tipos da resposta da API (espelham lib/veredito/sinais.ts) ───────────────
@@ -56,6 +62,14 @@ interface ResultadoSinal {
   ganhoVsAcaso: number
 }
 
+interface ConvicaoSazonal {
+  altaConvicao: boolean
+  taxaHistorica: number
+  coberturaPct: number
+  confianca: 'alta' | 'media' | 'baixa'
+  nota: string
+}
+
 interface Veredito {
   sinais: ResultadoSinal[]
   direcao: DirecaoSinal
@@ -64,6 +78,7 @@ interface Veredito {
   taxaHistorica: number
   ganhoVsAcaso: number
   resumo: string
+  convicaoSazonal?: ConvicaoSazonal
 }
 
 interface RespostaVeredito {
@@ -178,6 +193,147 @@ const CONFIANCA_VARIANT: Record<Veredito['confianca'], 'pos' | 'warn' | 'neutral
   baixa: 'neutral',
 }
 
+// ── Sub-componente: pontos de concordância (ex. ●●○ = 2/3) ────────────────────
+
+function PontosConcordancia({
+  concordam,
+  total,
+  cor,
+}: {
+  concordam: number
+  total: number
+  cor: string
+}) {
+  return (
+    <div
+      className="flex items-center gap-1.5"
+      role="img"
+      aria-label={`${concordam} de ${total} ângulos concordam`}
+    >
+      {Array.from({ length: total }).map((_, i) => {
+        const ativo = i < concordam
+        return (
+          <span
+            key={i}
+            className="h-2.5 w-2.5 rounded-full transition-colors"
+            style={{
+              background: ativo ? cor : 'transparent',
+              boxShadow: ativo ? 'none' : `inset 0 0 0 1.5px var(--fg-3)`,
+              opacity: ativo ? 1 : 0.5,
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Sub-componente: HERO do veredito consolidado ─────────────────────────────
+
+function VeredictoHero({ veredito }: { veredito: Veredito }) {
+  const vis = visualDirecao(veredito.direcao)
+  const total = veredito.sinais.length || 3
+  const cs = veredito.convicaoSazonal
+
+  return (
+    <Card
+      className="relative overflow-hidden p-0"
+      style={{ borderColor: vis.cor }}
+    >
+      {/* Gradiente sutil por direção como fundo do hero. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `linear-gradient(135deg, color-mix(in srgb, ${vis.cor} 14%, transparent) 0%, var(--accent-soft) 55%, transparent 100%)`,
+          opacity: 0.6,
+        }}
+      />
+
+      <div className="relative p-6 md:p-7">
+        <div className="flex items-center justify-between gap-3">
+          <p className="eyebrow">Veredito consolidado · voto majoritário dos 3 ângulos</p>
+          <span
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill"
+            style={{ background: 'var(--glass)' }}
+          >
+            <Gavel className="h-4 w-4 text-fg-3" aria-hidden />
+          </span>
+        </div>
+
+        {/* Badge de janela sazonal de pico (quando aplicável). */}
+        {cs?.altaConvicao ? (
+          <div className="mt-3">
+            <span
+              className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-small font-semibold"
+              style={{
+                background: 'color-mix(in srgb, var(--gold) 18%, transparent)',
+                color: 'var(--gold)',
+                boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent)',
+              }}
+            >
+              <Star className="h-4 w-4 fill-current" aria-hidden />
+              Janela sazonal de pico · {cs.taxaHistorica}% histórico
+            </span>
+          </div>
+        ) : null}
+
+        {/* Direção final em destaque grande + concordância visual. */}
+        <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex items-center gap-4">
+            <span
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+              style={{
+                background: `color-mix(in srgb, ${vis.cor} 16%, var(--surface-2))`,
+                boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vis.cor} 35%, transparent)`,
+              }}
+            >
+              <vis.Icone className="h-8 w-8" style={{ color: vis.cor }} aria-hidden />
+            </span>
+            <div>
+              <p
+                className="text-h1 font-semibold leading-none tracking-tight"
+                style={{ color: vis.cor }}
+              >
+                {vis.rotulo}
+              </p>
+              <div className="mt-2 flex items-center gap-2.5">
+                <PontosConcordancia
+                  concordam={veredito.concordancia}
+                  total={total}
+                  cor={vis.cor}
+                />
+                <span className="text-small text-fg-2">
+                  {veredito.concordancia} de {total} ângulos concordam
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Métricas-chave do veredito em chips. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip variant={CONFIANCA_VARIANT[veredito.confianca]}>
+              {CONFIANCA_LABEL[veredito.confianca]}
+            </Chip>
+            <Chip variant="info">
+              {veredito.taxaHistorica}% histórico
+            </Chip>
+            <Chip variant="neutral">{formatarGanho(veredito.ganhoVsAcaso)}</Chip>
+          </div>
+        </div>
+
+        {/* Resumo de copiloto, honesto. */}
+        <p className="text-body text-fg-2 leading-relaxed mt-6">{veredito.resumo}</p>
+
+        {/* Nota sazonal honesta, quando há janela de alta convicção. */}
+        {cs?.altaConvicao && cs.nota ? (
+          <p className="text-small text-fg-3 leading-snug mt-3">{cs.nota}</p>
+        ) : null}
+      </div>
+    </Card>
+  )
+}
+
 // ── Sub-componente: Card de um dos 3 ângulos ─────────────────────────────────
 
 function CardAngulo({ sinal }: { sinal: ResultadoSinal }) {
@@ -185,22 +341,38 @@ function CardAngulo({ sinal }: { sinal: ResultadoSinal }) {
   const vis = visualDirecao(sinal.direcao)
   const taxa = sinal.taxaHistorica
   const acaso = sinal.direcao === 'neutro'
+  const corBarra = acaso ? 'var(--fg-3)' : vis.cor
 
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      {/* Fio de cor no topo identificando a direção do ângulo. */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5"
+        style={{ background: corBarra }}
+      />
       <CardHeader>
         <CardTitle eyebrow={`${meta.ordem}. ${meta.angulo}`}>
           <span className="inline-flex items-center gap-2">
-            <meta.Icone className="h-4 w-4 text-fg-3" aria-hidden />
+            <span
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg"
+              style={{ background: `color-mix(in srgb, ${corBarra} 14%, var(--surface-2))` }}
+            >
+              <meta.Icone className="h-4 w-4" style={{ color: corBarra }} aria-hidden />
+            </span>
             <span>{meta.titulo}</span>
           </span>
         </CardTitle>
       </CardHeader>
       <CardBody className="space-y-4">
-        {/* Recomendação atual em destaque. */}
+        {/* Recomendação atual em destaque (chip colorido). */}
         <div
           className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-small font-semibold"
-          style={{ color: vis.cor, background: 'var(--bg-3)' }}
+          style={{
+            color: vis.cor,
+            background: `color-mix(in srgb, ${vis.cor} 14%, transparent)`,
+            boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vis.cor} 30%, transparent)`,
+          }}
         >
           <vis.Icone className="h-4 w-4" aria-hidden />
           {vis.rotulo}
@@ -215,73 +387,11 @@ function CardAngulo({ sinal }: { sinal: ResultadoSinal }) {
             <span className="text-h2 text-fg-1 t-num">{taxa}%</span>
             <span className="text-small text-fg-3">{formatarGanho(sinal.ganhoVsAcaso)}</span>
           </div>
-          <ProgressBar
-            value={taxa}
-            color={acaso ? 'var(--fg-3)' : vis.cor}
-            showValue={false}
-            size="sm"
-          />
+          <ProgressBar value={taxa} color={corBarra} showValue={false} size="sm" />
           <p className="text-small text-fg-3">
             Acertou a direção em {taxa}% das vezes (referência: 25 anos · 262 meses).
           </p>
         </div>
-      </CardBody>
-    </Card>
-  )
-}
-
-// ── Sub-componente: Veredito consolidado ─────────────────────────────────────
-
-function VeredictoConsolidado({ veredito }: { veredito: Veredito }) {
-  const vis = visualDirecao(veredito.direcao)
-  const total = veredito.sinais.length || 3
-
-  return (
-    <Card
-      style={{
-        borderColor: vis.cor,
-        boxShadow: `inset 0 0 0 1px ${vis.cor}`,
-      }}
-    >
-      <CardHeader>
-        <CardTitle eyebrow="Veredito consolidado · voto majoritário dos 3 ângulos">
-          <span className="inline-flex items-center gap-2">
-            <Gavel className="h-4 w-4 text-fg-3" aria-hidden />
-            <span>Decisão sugerida</span>
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardBody>
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          {/* Direção final em destaque grande. */}
-          <div className="flex items-center gap-3">
-            <vis.Icone className="h-9 w-9 shrink-0" style={{ color: vis.cor }} aria-hidden />
-            <div>
-              <p className="text-h1 font-semibold leading-none" style={{ color: vis.cor }}>
-                {vis.rotulo}
-              </p>
-              <p className="text-small text-fg-3 mt-1">
-                {veredito.concordancia} de {total} ângulos concordam
-              </p>
-            </div>
-          </div>
-
-          {/* Chips de confiança / concordância / taxa do veredito. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip variant={CONFIANCA_VARIANT[veredito.confianca]}>
-              {CONFIANCA_LABEL[veredito.confianca]}
-            </Chip>
-            <Chip variant="neutral">
-              {veredito.concordancia}/{total} concordância
-            </Chip>
-            <Chip variant="info">
-              {veredito.taxaHistorica}% histórico · {formatarGanho(veredito.ganhoVsAcaso)}
-            </Chip>
-          </div>
-        </div>
-
-        {/* Resumo de copiloto, honesto. */}
-        <p className="text-body text-fg-2 leading-relaxed mt-5">{veredito.resumo}</p>
       </CardBody>
     </Card>
   )
@@ -297,7 +407,7 @@ function Transparencia({
   ganhoConsolidado: number
 }) {
   return (
-    <Card>
+    <Card style={{ background: 'var(--glass)', backdropFilter: 'var(--blur-card)' }}>
       <CardHeader>
         <CardTitle eyebrow="Transparência · por que confiar">
           <span className="inline-flex items-center gap-2">
@@ -331,6 +441,7 @@ function Transparencia({
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export function VeredictoContent() {
+  const router = useRouter()
   const [grao, setGrao] = React.useState<string>('soja')
   const [carregando, setCarregando] = React.useState(false)
   const [erro, setErro] = React.useState<string | null>(null)
@@ -370,8 +481,15 @@ export function VeredictoContent() {
     void carregar(grao)
   }, [grao, carregar])
 
+  // Após o BotaoAtualizar forçar o refresh server-side, recarrega o veredito.
+  const aposAtualizar = React.useCallback(() => {
+    router.refresh()
+    void carregar(grao)
+  }, [router, carregar, grao])
+
   const veredito = dados?.veredito ?? null
   const semDado = dados?.erro === 'sem_dados'
+  const grainVariant = (grao === 'milho' ? 'milho' : 'soja') as GrainVariant
 
   // Sinais ordenados pela ordem de apresentação (sazonal · mr · momentum).
   const sinaisOrdenados = React.useMemo(() => {
@@ -383,7 +501,7 @@ export function VeredictoContent() {
 
   return (
     <div className="space-y-6">
-      {/* Barra de controle: seletor de grão, atualizar e status. */}
+      {/* Header: título + botão atualizar agora + barra de controle. */}
       <Card>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-wrap items-end gap-4">
@@ -394,19 +512,17 @@ export function VeredictoContent() {
               onChange={(e) => setGrao(e.target.value)}
               containerClassName="w-40"
             />
-            <Button
-              variant="secondary"
-              leftIcon={<RefreshCw className="h-4 w-4" />}
-              loading={carregando}
-              onClick={() => void carregar(grao)}
-            >
-              Atualizar
-            </Button>
+            <div className="flex items-center gap-2 pb-1">
+              <GrainBadge variant={grainVariant} />
+              {dados && !semDado ? (
+                <Chip variant="neutral">Atualizado em {formatarBrasilia(dados.geradoEm)}</Chip>
+              ) : null}
+            </div>
           </div>
 
-          {dados && !semDado ? (
-            <Chip variant="neutral">Atualizado em {formatarBrasilia(dados.geradoEm)}</Chip>
-          ) : null}
+          <div className="pb-0.5">
+            <BotaoAtualizar onAtualizado={aposAtualizar} />
+          </div>
         </div>
       </Card>
 
@@ -431,8 +547,8 @@ export function VeredictoContent() {
       {/* Conteúdo principal. */}
       {!erro && !semDado && veredito ? (
         <>
-          {/* SEÇÃO 1 — Veredito consolidado em destaque. */}
-          <VeredictoConsolidado veredito={veredito} />
+          {/* SEÇÃO 1 — HERO: veredito consolidado em destaque premium. */}
+          <VeredictoHero veredito={veredito} />
 
           {/* SEÇÃO 2 — Os 3 ângulos lado a lado. */}
           <div>

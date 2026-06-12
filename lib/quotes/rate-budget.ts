@@ -43,6 +43,16 @@ export const BUDGETS: Record<string, BudgetConfig> = {
   cepea: { fonte: 'cepea', perDay: 5000, perMin: 120, pct: 0.8 },
   // Yahoo Finance: teto alto.
   yahoo: { fonte: 'yahoo', perDay: 10000, perMin: 200, pct: 0.8 },
+  // ── Fontes da inteligência (cron LENTAS de hora em hora) ──────────────────
+  // USDA (PSD/ESR): chave gratuita ~1000/dia. Conservador 800/dia, 8/min a 80%
+  // → no máx 640/dia e 6/min. Protege a chave (limite real mais sensível).
+  usda: { fonte: 'usda', perDay: 800, perMin: 8, pct: 0.8 },
+  // BCB Focus (Olinda): API pública generosa. Teto de sanidade.
+  focus: { fonte: 'focus', perDay: 3000, perMin: 60, pct: 0.8 },
+  // CONAB: download de CSV esporádico — teto alto.
+  conab: { fonte: 'conab', perDay: 3000, perMin: 60, pct: 0.8 },
+  // COT (CFTC/histórico): consulta esporádica — teto alto.
+  cot: { fonte: 'cot', perDay: 3000, perMin: 60, pct: 0.8 },
 }
 
 const PCT_PADRAO = 0.8

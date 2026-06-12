@@ -1,0 +1,50 @@
+name: Sync HOT (preço ao vivo)
+
+# Aquece o cache do servidor com o último CBOT (¢/bu) + dólar DURANTE O PREGÃO.
+# Endpoint: /api/cron/sync-hot — só busca dentro do pregão CBOT (11h-15h30 BRT);
+# fora do pregão retorna {pulado:"fora_pregao"} sem gastar chamadas externas.
+#
+# IMPORTANTE: o agendador do GitHub Actions NÃO garante intervalos < 5min e pode
+# atrasar sob carga. Para frequência real de 1-2min durante o pregão, configurar
+# um cron externo (https://cron-job.org) apontando para o MESMO endpoint com o
+# MESMO header `Authorization: Bearer ${CRON_SECRET}`. Este workflow é o piso de
+# confiabilidade; o auto-refresh server-side (stale-while-revalidate) cobre o gap.
+#
+# Setup necessário:
+#   1. Secret CRON_SECRET no repo (Settings → Secrets → Actions); openssl rand -hex 32
+#   2. Mesmo CRON_SECRET nas env vars do Railway.
+
+on:
+  schedule:
+    # A cada 5min, 11-21 UTC (08h-18h BRT) seg-sex — cobre o pregão CBOT (11h-15h30
+    # BRT) com margem. O endpoint pula sozinho fora do pregão, então rodadas extras
+    # são baratas (retorno rápido sem chamada externa).
+    - cron: '*/5 11-21 * * 1-5'
+  workflow_dispatch: # trigger manual via GitHub UI
+
+# Evita acúmulo de execuções se o agendador atrasar e disparar em lote.
+concurrency:
+  group: sync-hot
+  cancel-in-progress: true
+
+jobs:
+  sync-hot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger sync-hot endpoint
+        run: |
+          curl -fsSL --max-time 30 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/sync-hot \
+            | tee response.json
+          # Não falha quando pulado fora do pregão (comportamento esperado).
+          if grep -q '"pulado":"fora_pregao"' response.json; then
+            echo "::notice::Fora do pregão — sync-hot pulou sem gastar chamadas."
+            exit 0
+          fi
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::sync-hot retornou ok=false — verifique Sentry"
+            exit 1
+          fi

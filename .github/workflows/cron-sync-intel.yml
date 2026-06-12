@@ -1,0 +1,35 @@
+name: Sync Intel (LENTAS) Hourly
+
+# Refresca o cache das fontes de inteligência (CEPEA, Focus, CONAB, USDA-PSD,
+# USDA-ESR, COT) de hora em hora, respeitando o rate-budget (80%). As fontes
+# perto do teto são puladas (serve cache) — protege a chave USDA.
+# Endpoint: /api/cron/sync-intel (não persiste tabelas, só aquece caches).
+#
+# Setup necessário:
+#   1. Secret CRON_SECRET no repo (Settings → Secrets → Actions).
+#   2. Mesmo CRON_SECRET nas env vars do Railway.
+
+on:
+  schedule:
+    # De hora em hora numa janela ampla diurna (11–23 UTC = 08–20 BRT).
+    # GitHub Actions pode atrasar; o auto-refresh server-side cobre o gap.
+    - cron: '0 11-23 * * *'
+  workflow_dispatch: # permite trigger manual via GitHub UI
+
+jobs:
+  sync-intel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger sync-intel endpoint
+        run: |
+          curl -fsSL --max-time 90 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Accept: application/json" \
+            https://www.profitsync.ia.br/api/cron/sync-intel \
+            | tee response.json
+          # Aviso (não falha o job) se ok=false — fontes puladas por budget são
+          # esperadas e não devem quebrar o cron.
+          if ! grep -q '"ok":true' response.json; then
+            echo "::warning::sync-intel retornou ok=false (fontes puladas/erros) — verifique Sentry"
+          fi

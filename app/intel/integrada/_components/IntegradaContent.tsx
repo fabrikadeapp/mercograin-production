@@ -28,8 +28,11 @@ import {
   Chip,
   Select,
   KPICard,
+  BarChart,
+  ProgressBar,
   EmptyState,
 } from '@/components/ui/phb'
+import { BotaoAtualizar } from '@/app/intel/_components/BotaoAtualizar'
 import {
   Layers,
   RefreshCw,
@@ -39,6 +42,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Gauge,
+  Clock,
 } from 'lucide-react'
 import {
   simularPrecoGrao,
@@ -128,6 +132,11 @@ function fmtBrl(v: number | null | undefined, casas = 2): string {
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,
   })
+}
+
+/** Encurta "Rondonópolis (MT)" → "Rondonópolis" p/ rótulos de gráfico. */
+function primeiroNomeCurto(nome: string): string {
+  return nome.replace(/\s*\(.*?\)\s*$/, '').trim() || nome
 }
 
 function fmtNum(v: number | null | undefined, casas = 1, sufixo = ''): string {
@@ -253,16 +262,27 @@ function CardVeredito({
 
   const { cor, Icone, variante } = estiloRecomendacao(veredito.recomendacao)
   return (
-    <Card className="p-6">
+    <Card
+      className="relative overflow-hidden p-6"
+      style={{
+        background: `linear-gradient(135deg, color-mix(in srgb, ${cor} 12%, transparent), transparent 60%)`,
+      }}
+    >
+      {/* Filete de acento do veredito. */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-1"
+        style={{ background: `linear-gradient(90deg, ${cor}, transparent)` }}
+      />
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
           <p className="eyebrow">Veredito consolidado · preço × panorama</p>
           <div className="mt-2 flex items-center gap-3">
             <span
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full"
+              className="inline-flex h-14 w-14 items-center justify-center rounded-full shadow-glow"
               style={{ backgroundColor: cor, color: 'var(--bg-2)' }}
             >
-              <Icone className="h-6 w-6" />
+              <Icone className="h-7 w-7" />
             </span>
             <span
               className="text-h1 font-semibold tracking-tight"
@@ -389,54 +409,67 @@ function SecaoPreco({
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Fair value por praça — BarChart comparativo (melhor destacada). */}
               <div>
-                <p className="eyebrow mb-2">Fair value por praça (FOB origem)</p>
-                <div className="space-y-0">
-                  {calculo.pracas.map((p, i) => (
-                    <div
-                      key={p.nome}
-                      className="flex items-center justify-between gap-3 border-b border-border-1 py-1.5 last:border-b-0"
-                    >
-                      <span className="truncate text-small text-fg-2">
-                        {p.nome}
-                      </span>
-                      <span className="tabular-nums text-body font-medium text-fg-1">
-                        {fmtBrl(p.brlPorSacaFobOrigem)}
-                        {i === 0 ? (
-                          <span className="ml-2 align-middle">
-                            <Chip variant="pos">melhor</Chip>
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                  ))}
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="eyebrow">Fair value por praça (FOB origem)</p>
+                  {calculo.pracas.length > 0 ? (
+                    <Chip variant="pos">
+                      {primeiroNomeCurto(calculo.pracas[0].nome)} ·{' '}
+                      {fmtBrl(calculo.pracas[0].brlPorSacaFobOrigem)}
+                    </Chip>
+                  ) : null}
                 </div>
+                <BarChart
+                  data={calculo.pracas.map((p) => ({
+                    label: primeiroNomeCurto(p.nome),
+                    value: Number(
+                      (p.brlPorSacaFobOrigem ?? 0).toFixed(2),
+                    ),
+                  }))}
+                  color="var(--accent)"
+                  highlightLast={false}
+                  height={200}
+                />
               </div>
 
+              {/* Melhor trading — ProgressBar relativa ao melhor pagador. */}
               <div>
-                <p className="eyebrow mb-2">
+                <p className="eyebrow mb-3">
                   Melhor trading (prêmio próprio, porto)
                 </p>
-                <div className="space-y-0">
-                  {calculo.tradings.map((t, i) => (
-                    <div
-                      key={t.nome}
-                      className="flex items-center justify-between gap-3 border-b border-border-1 py-1.5 last:border-b-0"
-                    >
-                      <span className="truncate text-small text-fg-2">
-                        {t.nome} · {t.premioCentavosBu}¢
-                      </span>
-                      <span className="tabular-nums text-body font-medium text-fg-1">
-                        {fmtBrl(t.brlPorSacaPorto)}
-                        {i === 0 ? (
-                          <span className="ml-2 align-middle">
-                            <Chip variant="pos">paga mais</Chip>
+                <div className="space-y-3">
+                  {(() => {
+                    const max =
+                      calculo.tradings.reduce(
+                        (m, t) => Math.max(m, t.brlPorSacaPorto ?? 0),
+                        0,
+                      ) || 1
+                    return calculo.tradings.map((t, i) => (
+                      <div key={t.nome}>
+                        <div className="mb-1 flex items-center justify-between gap-2 text-small">
+                          <span className="truncate text-fg-2">
+                            {t.nome} · {t.premioCentavosBu}¢
+                            {i === 0 ? (
+                              <span className="ml-2 align-middle">
+                                <Chip variant="pos">paga mais</Chip>
+                              </span>
+                            ) : null}
                           </span>
-                        ) : null}
-                      </span>
-                    </div>
-                  ))}
+                          <span className="t-num shrink-0 font-semibold text-fg-1">
+                            {fmtBrl(t.brlPorSacaPorto)}
+                          </span>
+                        </div>
+                        <ProgressBar
+                          value={((t.brlPorSacaPorto ?? 0) / max) * 100}
+                          color={i === 0 ? 'var(--success)' : 'var(--accent-2)'}
+                          showValue={false}
+                          size="sm"
+                        />
+                      </div>
+                    ))
+                  })()}
                 </div>
               </div>
             </div>
@@ -569,6 +602,10 @@ export function IntegradaContent({ base }: { base: BaseIntegrada }) {
     void carregar(grao)
   }, [grao, carregar])
 
+  const recarregar = React.useCallback(() => {
+    void carregar(grao)
+  }, [carregar, grao])
+
   const panorama = dados?.panorama ?? null
   const fontesOk = dados?.fontesOk ?? []
   const fontesFalha = dados?.fontesFalha ?? []
@@ -593,11 +630,12 @@ export function IntegradaContent({ base }: { base: BaseIntegrada }) {
               loading={carregando}
               onClick={() => void carregar(grao)}
             >
-              Atualizar
+              Recarregar
             </Button>
+            <BotaoAtualizar onAtualizado={recarregar} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Chip variant="neutral">
+            <Chip variant="neutral" leftIcon={<Clock className="h-3.5 w-3.5" />}>
               Atualizado em {formatarBrasilia(base.atualizadoEm)}
             </Chip>
             {base.fonteDados ? (
