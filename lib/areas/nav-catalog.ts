@@ -121,6 +121,7 @@ export const NAV: Record<Area, NavItem[]> = {
   // (O backtest /admin/backtest é exclusivo do superadmin e calibra estas
   // telas — fica fora do menu do cliente.)
   intelligence: [
+    { href: '/intel/veredito', label: 'Veredito de Mercado', icon: 'Gavel', requires: 'relatorios_usda' },
     { href: '/intel', label: 'Inteligência de Mercado', icon: 'Brain', requires: 'relatorios_usda' },
     { href: '/intel/integrada', label: 'Análise Integrada', icon: 'Sparkles', requires: 'relatorios_usda' },
     { href: '/relatorios-usda', label: 'Relatórios USDA', icon: 'FileBarChart', requires: 'relatorios_usda' },

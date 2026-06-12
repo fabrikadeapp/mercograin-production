@@ -42,6 +42,7 @@ export const AREA_DESCRICAO: Record<Area, string> = {
  */
 const ROUTE_AREAS: Array<{ prefix: string; area: Area }> = [
   // BH Intelligence — inteligência de mercado. Mais específicas primeiro.
+  { prefix: '/intel/veredito', area: 'intelligence' },
   { prefix: '/intel/integrada', area: 'intelligence' },
   { prefix: '/intel', area: 'intelligence' },
   { prefix: '/relatorios-usda', area: 'intelligence' },
@@ -188,7 +189,7 @@ export const AREA_ENTRY: Record<Area, string> = {
   operacao: '/operacao',
   financeiro: '/financeiro',
   gestao: '/configuracoes',
-  intelligence: '/intel',
+  intelligence: '/intel/veredito',
 }
 
 /**
@@ -251,6 +252,7 @@ export const AREA_SUBMENU: Record<Area, AreaSubItem[]> = {
     { href: '/webhooks', label: 'Webhooks' },
   ],
   intelligence: [
+    { href: '/intel/veredito', label: 'Veredito de Mercado' },
     { href: '/intel', label: 'Inteligência de Mercado' },
     { href: '/intel/integrada', label: 'Análise Integrada' },
     { href: '/relatorios-usda', label: 'Relatórios USDA' },
