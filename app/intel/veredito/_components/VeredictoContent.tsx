@@ -250,61 +250,53 @@ function VeredictoHero({ veredito }: { veredito: Veredito }) {
         }}
       />
 
-      <div className="relative p-6 md:p-7">
+      <div className="relative p-4 md:p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="eyebrow">Veredito consolidado · voto majoritário dos 3 ângulos</p>
-          <span
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill"
-            style={{ background: 'var(--glass)' }}
-          >
-            <Gavel className="h-4 w-4 text-fg-3" aria-hidden />
-          </span>
-        </div>
-
-        {/* Badge de janela sazonal de pico (quando aplicável). */}
-        {cs?.altaConvicao ? (
-          <div className="mt-3">
+          {cs?.altaConvicao ? (
             <span
-              className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-small font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-small font-semibold"
               style={{
                 background: 'color-mix(in srgb, var(--gold) 18%, transparent)',
                 color: 'var(--gold)',
                 boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent)',
               }}
             >
-              <Star className="h-4 w-4 fill-current" aria-hidden />
-              Janela sazonal de pico · {cs.taxaHistorica}% histórico
+              <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
+              Pico sazonal · {cs.taxaHistorica}%
             </span>
-          </div>
-        ) : null}
+          ) : (
+            <Gavel className="h-4 w-4 text-fg-3" aria-hidden />
+          )}
+        </div>
 
-        {/* Direção final em destaque grande + concordância visual. */}
-        <div className="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex items-center gap-4">
+        {/* Direção final em destaque + concordância + métricas (uma linha). */}
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3.5">
             <span
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
               style={{
                 background: `color-mix(in srgb, ${vis.cor} 16%, var(--surface-2))`,
                 boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vis.cor} 35%, transparent)`,
               }}
             >
-              <vis.Icone className="h-8 w-8" style={{ color: vis.cor }} aria-hidden />
+              <vis.Icone className="h-6 w-6" style={{ color: vis.cor }} aria-hidden />
             </span>
             <div>
               <p
-                className="text-h1 font-semibold leading-none tracking-tight"
+                className="text-h2 font-semibold leading-none tracking-tight"
                 style={{ color: vis.cor }}
               >
                 {vis.rotulo}
               </p>
-              <div className="mt-2 flex items-center gap-2.5">
+              <div className="mt-1.5 flex items-center gap-2.5">
                 <PontosConcordancia
                   concordam={veredito.concordancia}
                   total={total}
                   cor={vis.cor}
                 />
                 <span className="text-small text-fg-2">
-                  {veredito.concordancia} de {total} ângulos concordam
+                  {veredito.concordancia} de {total} concordam
                 </span>
               </div>
             </div>
@@ -315,20 +307,13 @@ function VeredictoHero({ veredito }: { veredito: Veredito }) {
             <Chip variant={CONFIANCA_VARIANT[veredito.confianca]}>
               {CONFIANCA_LABEL[veredito.confianca]}
             </Chip>
-            <Chip variant="info">
-              {veredito.taxaHistorica}% histórico
-            </Chip>
+            <Chip variant="info">{veredito.taxaHistorica}% histórico</Chip>
             <Chip variant="neutral">{formatarGanho(veredito.ganhoVsAcaso)}</Chip>
           </div>
         </div>
 
-        {/* Resumo de copiloto, honesto. */}
-        <p className="text-body text-fg-2 leading-relaxed mt-6">{veredito.resumo}</p>
-
-        {/* Nota sazonal honesta, quando há janela de alta convicção. */}
-        {cs?.altaConvicao && cs.nota ? (
-          <p className="text-small text-fg-3 leading-snug mt-3">{cs.nota}</p>
-        ) : null}
+        {/* Resumo de copiloto, honesto (compacto). */}
+        <p className="text-small text-fg-2 leading-snug mt-3">{veredito.resumo}</p>
       </div>
     </Card>
   )
@@ -364,10 +349,10 @@ function CardAngulo({ sinal }: { sinal: ResultadoSinal }) {
           </span>
         </CardTitle>
       </CardHeader>
-      <CardBody className="space-y-4">
+      <CardBody className="space-y-2.5">
         {/* Recomendação atual em destaque (chip colorido). */}
         <div
-          className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-small font-semibold"
+          className="inline-flex items-center gap-2 rounded-pill px-3 py-1 text-small font-semibold"
           style={{
             color: vis.cor,
             background: `color-mix(in srgb, ${vis.cor} 14%, transparent)`,
@@ -382,15 +367,13 @@ function CardAngulo({ sinal }: { sinal: ResultadoSinal }) {
         <p className="text-small text-fg-2 leading-snug">{sinal.motivo}</p>
 
         {/* Taxa histórica real + ganho vs acaso + barra de acerto. */}
-        <div className="space-y-2 pt-1">
+        <div className="space-y-1.5">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-h2 text-fg-1 t-num">{taxa}%</span>
             <span className="text-small text-fg-3">{formatarGanho(sinal.ganhoVsAcaso)}</span>
           </div>
           <ProgressBar value={taxa} color={corBarra} showValue={false} size="sm" />
-          <p className="text-small text-fg-3">
-            Acertou a direção em {taxa}% das vezes (referência: 25 anos · 262 meses).
-          </p>
+          <p className="text-micro text-fg-3">acerto histórico · 25 anos / 262 meses</p>
         </div>
       </CardBody>
     </Card>
@@ -407,34 +390,17 @@ function Transparencia({
   ganhoConsolidado: number
 }) {
   return (
-    <Card style={{ background: 'var(--glass)', backdropFilter: 'var(--blur-card)' }}>
-      <CardHeader>
-        <CardTitle eyebrow="Transparência · por que confiar">
-          <span className="inline-flex items-center gap-2">
-            <ScaleIcon className="h-4 w-4 text-fg-3" aria-hidden />
-            <span>Honestidade que orienta a decisão</span>
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardBody className="space-y-4">
-        <p className="text-body text-fg-2 leading-relaxed">
-          Não prometemos prever o futuro. Mostramos 3 métodos independentes,
-          comprovados em 25 anos ({mesesAnalisados} meses analisados), cada um com
-          vantagem real e auditável sobre o acaso. Você decide melhor informado —
-          não com uma bola de cristal, mas com 3 ângulos que se reforçam.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip variant="neutral">{mesesAnalisados} meses analisados</Chip>
-          <Chip variant="info">Ganho consolidado {formatarGanho(ganhoConsolidado)}</Chip>
-          <Chip variant="neutral">Baseline do acaso = 50%</Chip>
-        </div>
-        <p className="text-small text-fg-3 leading-snug">
-          O teto comprovado da direção é ~55-60%: o edge é modesto, porém
-          consistente. Cada número acima é recalculado ao vivo sobre a própria
-          série histórica de preço — sem promessas infladas.
-        </p>
-      </CardBody>
-    </Card>
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl px-4 py-2.5"
+      style={{ background: 'var(--glass)', backdropFilter: 'var(--blur-card)' }}
+    >
+      <span className="inline-flex items-center gap-1.5 text-small text-fg-2">
+        <ScaleIcon className="h-3.5 w-3.5 text-fg-3 shrink-0" aria-hidden />
+        Não é bola de cristal: 3 métodos auditáveis, comprovados em {mesesAnalisados} meses.
+      </span>
+      <Chip variant="info">Ganho {formatarGanho(ganhoConsolidado)} vs acaso</Chip>
+      <span className="text-micro text-fg-3">Teto comprovado ~55-60% · recalculado ao vivo</span>
+    </div>
   )
 }
 
@@ -500,31 +466,28 @@ export function VeredictoContent() {
   }, [veredito])
 
   return (
-    <div className="space-y-6">
-      {/* Header: título + botão atualizar agora + barra de controle. */}
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-wrap items-end gap-4">
-            <Select
-              label="Grão"
-              options={GRAOS}
-              value={grao}
-              onChange={(e) => setGrao(e.target.value)}
-              containerClassName="w-40"
-            />
-            <div className="flex items-center gap-2 pb-1">
-              <GrainBadge variant={grainVariant} />
-              {dados && !semDado ? (
-                <Chip variant="neutral">Atualizado em {formatarBrasilia(dados.geradoEm)}</Chip>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="pb-0.5">
-            <BotaoAtualizar onAtualizado={aposAtualizar} />
+    <div className="space-y-3">
+      {/* Barra de controle compacta: grão + atualizado + botão (uma linha). */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            label="Grão"
+            options={GRAOS}
+            value={grao}
+            onChange={(e) => setGrao(e.target.value)}
+            containerClassName="w-36"
+          />
+          <div className="flex items-center gap-2 pt-4">
+            <GrainBadge variant={grainVariant} />
+            {dados && !semDado ? (
+              <Chip variant="neutral">Atualizado em {formatarBrasilia(dados.geradoEm)}</Chip>
+            ) : null}
           </div>
         </div>
-      </Card>
+        <div className="pt-4">
+          <BotaoAtualizar onAtualizado={aposAtualizar} />
+        </div>
+      </div>
 
       {/* Estado de erro de rede/plano. */}
       {erro ? (
@@ -552,8 +515,8 @@ export function VeredictoContent() {
 
           {/* SEÇÃO 2 — Os 3 ângulos lado a lado. */}
           <div>
-            <p className="eyebrow mb-3">3 ângulos independentes</p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <p className="eyebrow mb-2">3 ângulos independentes</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {sinaisOrdenados.map((s) => (
                 <CardAngulo key={s.nome} sinal={s} />
               ))}
