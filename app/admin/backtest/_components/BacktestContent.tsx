@@ -28,6 +28,7 @@ import {
   Button,
   Chip,
   Select,
+  Tabs,
   KPICard,
   EmptyState,
   DenseTable,
@@ -41,6 +42,7 @@ import {
   X,
   Clock,
 } from 'lucide-react'
+import { ExaustivoView } from './ExaustivoView'
 
 // ── Tipos do payload (espelham lib/backtest/engine.ts) ──────────────────────
 
@@ -157,7 +159,29 @@ const MENSAGEM_ERRO: Record<string, string> = {
 
 // ── Componente ──────────────────────────────────────────────────────────────
 
+/**
+ * Wrapper com abas: alterna entre o backtest CLÁSSICO (V1, horizonte fixo) e o
+ * EXAUSTIVO (V2, grid search walk-forward sobre todas as combinações).
+ */
 export function BacktestContent() {
+  const [aba, setAba] = React.useState<'classico' | 'exaustivo'>('classico')
+
+  return (
+    <div className="space-y-6">
+      <Tabs
+        options={[
+          { value: 'classico', label: 'Clássico' },
+          { value: 'exaustivo', label: 'Exaustivo (todos os formatos)' },
+        ]}
+        value={aba}
+        onChange={(v) => setAba(v as 'classico' | 'exaustivo')}
+      />
+      {aba === 'classico' ? <BacktestClassico /> : <ExaustivoView />}
+    </div>
+  )
+}
+
+function BacktestClassico() {
   const [grao, setGrao] = React.useState<'soja' | 'milho'>('soja')
   const [horizonte, setHorizonte] = React.useState<'1' | '2' | '3'>('2')
   const [carregando, setCarregando] = React.useState(false)
