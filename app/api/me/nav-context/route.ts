@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { loadFeaturesFor } from '@/lib/features'
+import { listAccessibleAreas } from '@/lib/areas'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -25,7 +26,7 @@ export async function GET() {
   const membership = await db.workspaceMember
     .findFirst({
       where: { userId: u.id, status: 'active' },
-      include: { workspace: { select: { id: true, name: true } } },
+      include: { workspace: { select: { id: true, name: true, ownerId: true } } },
       orderBy: { createdAt: 'desc' },
     })
     .catch(() => null)
@@ -42,10 +43,22 @@ export async function GET() {
         })
         .catch(() => null)
     : null
+
+  // Resolve as áreas com o bypass de admin global / owner do workspace.
+  // Antes retornávamos `areasPermitidas` cru — o que escondia áreas novas
+  // (ex.: BH Intelligence) mesmo para owner/admin, pois o array salvo no
+  // membership não as listava. listAccessibleAreas aplica as regras corretas.
+  const isOwner = membership?.workspace?.ownerId === u.id
+  const permittedAreas = listAccessibleAreas({
+    globalRole: u.role ?? null,
+    workspaceRole: isOwner ? 'owner' : (membership?.role ?? null),
+    areasPermitidas: membership?.areasPermitidas ?? null,
+  })
+
   return NextResponse.json({
     ok: true,
     features,
-    permittedAreas: membership?.areasPermitidas ?? [],
+    permittedAreas,
     userName: u.nome ?? u.email ?? null,
     workspaceName: membership?.workspace?.name ?? null,
     subscriptionStatus: subscription?.status ?? null,
